@@ -5,8 +5,8 @@
     --bg-secondary: #f1f5f9;
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --accent: #4f46e5;
-    --accent-hover: #4338ca;
+    --accent: #8b5cf6;
+    --accent-hover: #7c3aed;
     --border: #e2e8f0;
     --header-bg: rgba(248, 250, 252, 0.3);
 
@@ -27,8 +27,8 @@
     --bg-secondary: #1e293b;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --accent: #818cf8;
-    --accent-hover: #6366f1;
+    --accent: #a78bfa;
+    --accent-hover: #8b5cf6;
     --border: #334155;
     --header-bg: rgba(15, 23, 42, 0.3);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
@@ -361,12 +361,10 @@ main {
 
 section {
     padding: 6rem 0;
-    /* Removidos 2rem de padding duro lateral */
-    max-width: 1600px;
-    /* Expandido a 1600px */
-    width: 95%;
-    /* 95% deja un margen panorámico fino a la galería */
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
 }
 
 .section-title {
@@ -431,7 +429,7 @@ section {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.65);
     /* Efecto de transparencia/velo blanco */
     z-index: 1;
 }
@@ -465,11 +463,32 @@ section {
 
 /* Animación letra por letra */
 .hero-overlay h1 .letter,
-.hero-overlay p .letter {
+.hero-overlay p .letter,
+.char-name .letter,
+.char-role .letter,
+.section-typewriter .letter {
     opacity: 0;
     transform: translateY(15px);
     display: inline-block;
-    animation: fadeLetter 0.6s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.char-card-title-vertical h4 .letter {
+    opacity: 1 !important;
+    transform: none !important;
+    display: inline-block;
+}
+
+/* Sombra en títulos de sección */
+.section-typewriter,
+.section-title h2,
+.artist-bio h2 {
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .section-typewriter,
+[data-theme="dark"] .section-title h2,
+[data-theme="dark"] .artist-bio h2 {
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes fadeLetter {
@@ -485,8 +504,7 @@ section {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.25);
-    /* Filtro mucho más claro (blanco semitransparente) */
+    background: rgba(255, 255, 255, 0.35);
     z-index: 3;
     display: flex;
     flex-direction: column;
@@ -494,30 +512,27 @@ section {
     align-items: center;
     text-align: center;
     color: var(--text-primary);
-    /* Letra oscura/negra según el tema */
     padding: 0 2rem;
 }
 
 .hero-overlay h1 {
     font-size: clamp(3rem, 5vw, 5.5rem);
     font-weight: 300;
-    /* Un poco mas de peso para que no se pierda */
     line-height: 1.1;
     margin-bottom: 1.5rem;
     letter-spacing: -1px;
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    /* Sombra muy sutil para contraste */
 }
 
 .hero-overlay p {
-    font-size: 1.25rem;
-    font-weight: 400;
-    /* Peso normal para legibilidad */
+    font-size: clamp(1rem, 2vw, 1.4rem);
+    font-weight: 300;
     letter-spacing: 0.05em;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    max-width: 600px;
-    margin: 0 auto;
+    max-width: 950px;
+    width: 90%;
+    margin: 1.5rem auto 0;
     text-align: center;
+    line-height: 1.6;
 }
 
 .highlight {
@@ -668,14 +683,17 @@ section {
 
 /* Presentación Split */
 .presentation-section {
-    padding-top: 8rem;
-    padding-bottom: 8rem;
+    padding-top: 11rem;
+    padding-bottom: 11rem;
 }
 
 .presentation-container {
     display: flex;
     gap: 4rem;
     align-items: stretch;
+    max-width: 1400px;
+    width: 95%;
+    margin: 0 auto;
 }
 
 .presentation-artist {
@@ -724,8 +742,27 @@ section {
 /* Animaciones */
 .animations-section {
     background-color: var(--bg-secondary);
-    max-width: 100%;
-    padding-bottom: 6rem;
+    width: 100%;
+    padding: 7rem 0 11rem 0; /* Espaciado reducido arriba para subir el título */
+}
+
+/* El cuadro blanco interno */
+.animations-container-inner, .characters-container-inner {
+    max-width: 1400px;
+    width: 95%;
+    margin: 0 auto;
+    background-color: #ffffff; /* Cuadro blanco para destacar */
+    border-radius: 3.5rem;
+    padding: 5rem 4rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.05);
+}
+
+.animations-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+    width: 100%;
 }
 
 .anim-title-container {
@@ -761,14 +798,14 @@ section {
     border-radius: var(--radius-sm);
     overflow: hidden;
     position: relative;
-    box-shadow: var(--shadow);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), 0 5px 15px -5px rgba(0, 0, 0, 0.3);
     transition: var(--transition);
     background: #000;
 }
 
 .animation-item.video-container:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.6), 0 10px 20px -5px rgba(0, 0, 0, 0.4);
 }
 
 .anim-video {
@@ -889,9 +926,16 @@ section {
 
 /* Personajes - Layout Moderno Acordeón */
 .characters-section {
-    position: relative;
-    padding: 8rem 0;
-    overflow: hidden;
+    background-color: var(--bg-primary); /* Cambiado para coincidir con Ilustraciones */
+    width: 100%;
+    padding: 7rem 0;
+}
+
+.char-accordion {
+    display: flex;
+    gap: 1.5rem;
+    width: 100%;
+    height: 700px;
 }
 
 .char-accordion {
@@ -962,7 +1006,7 @@ section {
 }
 
 .char-card.active .bg-slide {
-    filter: brightness(0.8) grayscale(10%);
+    filter: brightness(0.6) grayscale(30%);
 }
 
 /* 3 imágenes, 15 segundos total. Cada una se muestra 5 segs */
@@ -1074,7 +1118,8 @@ section {
     transform: translateX(-50%);
     z-index: 5;
     text-align: center;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.35);
+    /* Color más oscuro y sutil en reposo */
     transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     width: 100%;
     display: flex;
@@ -1085,8 +1130,7 @@ section {
 
 .char-card:not(.active):hover .char-card-title-vertical {
     color: #8b5cf6;
-    transform: translateX(-50%) translateY(-10px) scale(1.1);
-    text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+    text-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
     opacity: 1;
 }
 
@@ -1100,8 +1144,10 @@ section {
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    font-size: 1.5rem;
-    letter-spacing: 3px;
+    font-size: 3.2rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 5px;
     white-space: nowrap;
 }
 
@@ -1177,17 +1223,18 @@ section {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    background: rgba(15, 23, 42, 0.75);
-    /* Mayor opacidad para que se lea mejor el texto */
-    backdrop-filter: blur(3px);
+    background: rgba(17, 12, 34, 0.9);
+    /* Violeta casi negro muy profundo y denso */
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     z-index: 5;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
 }
 
+/* Override modo claro para mantener el mismo tono */
 [data-theme="light"] .char-card-info {
-    background: rgba(255, 255, 255, 0.85);
-    /* También mayor opacidad en modo claro */
+    background: rgba(17, 12, 34, 0.9);
 }
 
 /* Info Elements */
@@ -1239,6 +1286,8 @@ section {
 .char-card.active .char-desc {
     transform: translateX(0);
     opacity: 1;
+    color: #fff;
+    /* Asegurar legibilidad sobre el violeta */
 }
 
 /* Utilities Personajes Placeholders */
@@ -1256,15 +1305,20 @@ section {
 
 /* Ilustraciones Masonry */
 .gallery-section {
-    padding: 8rem 0;
+    padding: 5rem 0;
 }
 
 .masonry-gallery {
     column-count: 3;
     column-gap: 2rem;
     max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 2rem;
+    margin: 4rem auto 0;
+    padding: 3rem;
+    background: var(--bg-secondary);
+    /* Color secundario más suave y discreto */
+    border-radius: 2rem;
+    border: none;
+    /* Eliminar borde por completo */
 }
 
 .gallery-item {
@@ -1275,7 +1329,7 @@ section {
     position: relative;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     background: var(--bg-secondary);
-    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     cursor: pointer;
     animation: floatingGallery 2.5s ease-in-out infinite alternate;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
@@ -1284,11 +1338,15 @@ section {
 
 @keyframes floatingGallery {
     0% {
-        transform: translateY(0);
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(calc(var(--float-amount, -15px) * 1.5)) rotate(var(--float-rotate, 1deg));
     }
 
     100% {
-        transform: translateY(-8px);
+        transform: translateY(var(--float-amount, -5px)) rotate(calc(var(--float-rotate, 1deg) * -0.5));
     }
 }
 
@@ -1754,7 +1812,7 @@ input:checked+.slider:before {
 
 /* Sección Modelos 3D (Full-Bleed fixes) */
 .models-3d-section {
-    padding: 8rem 0;
+    padding: 5rem 0;
     background: var(--bg-secondary);
     max-width: none !important;
     width: 100% !important;
@@ -1789,6 +1847,17 @@ input:checked+.slider:before {
 
 .model-text {
     flex: 1;
+    background: var(--bg-primary);
+    padding: 3rem;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    transition: var(--transition);
+}
+
+.model-text:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 .model-text h3 {
@@ -1812,19 +1881,16 @@ input:checked+.slider:before {
 .model-video-card {
     position: relative;
     border-radius: 2rem;
-    /* Bordes mas redondeados */
     overflow: hidden;
-    /* Sombras pro y borde sutil */
     border: 1px solid rgba(129, 140, 248, 0.2);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     background: #000;
     transition: all 0.4s ease;
-    animation: floatingModel 8s ease-in-out infinite;
-    /* Mas lento y suave */
+    animation: floatingModel 5s ease-in-out infinite;
 }
 
 .small-card {
-    animation-delay: -4s;
+    animation-delay: -2s;
 }
 
 @keyframes floatingModel {
@@ -1835,10 +1901,8 @@ input:checked+.slider:before {
     }
 
     50% {
-        transform: translateY(-8px) rotate(0.3deg);
+        transform: translateY(-15px) rotate(1deg);
     }
-
-    /* Movimiento mucho mas sutil */
 }
 
 .model-visual-grid-wrapper {
@@ -1858,6 +1922,8 @@ input:checked+.slider:before {
     display: block;
     max-height: 450px;
     object-fit: cover;
+    border-radius: 2rem;
+    /* Sincronizado con el contenedor */
 }
 
 .small-card .obs-video {
@@ -1923,4 +1989,96 @@ input:checked+.slider:before {
     .software-icons-mini {
         justify-content: center;
     }
+}
+
+/* =============================================
+   6. MAIN FOOTER (DARK & ELEGANT)
+   ============================================= */
+.main-footer {
+    background-color: #05070a;
+    /* Negro casi puro */
+    color: #ffffff;
+    padding: 4rem 2rem 2rem;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 0;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-name {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.15em;
+    font-family: 'Raleway', sans-serif;
+}
+
+.footer-role {
+    font-size: 1.2rem;
+    color: #ffffff;
+    /* Eliminado el violeta acentuado */
+    margin-bottom: 1.2rem;
+    /* Más espacio */
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.footer-location {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    /* Más espacio */
+}
+
+.footer-email {
+    display: inline-block;
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin-bottom: 1.5rem;
+    /* Menos espacio para acercar los iconos */
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 5px;
+}
+
+.footer-email:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    /* Menos espacio abajo de los iconos */
+}
+
+.footer-social a {
+    font-size: 1.8rem;
+    color: #ffffff;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.8;
+}
+
+.footer-social a:hover {
+    color: var(--accent);
+    transform: translateY(-5px) scale(1.1);
+    opacity: 1;
+}
+
+.footer-copyright {
+    font-size: 0.85rem;
+    color: #4b5563;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1.5rem;
+    /* Menos espacio */
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
 }
