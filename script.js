@@ -372,3 +372,23 @@ function closeVideoLightbox(event) {
     const lb = document.getElementById('video-lightbox');
     if (lb) { lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; const vid = document.getElementById('lightbox-video'); if (vid) { vid.pause(); vid.src = ''; } }, 300); }
 }
+function createBubbles() {
+    const container = document.getElementById('bubbles-container');
+    if (!container) return;
+    const bubbleCount = 25;
+    for (let i = 0; i < bubbleCount; i++) {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        const size = Math.random() * 80 + 20 + 'px';
+        const left = Math.random() * 100 + '%';
+        const delay = Math.random() * 20 + 's';
+        const duration = Math.random() * 10 + 15 + 's';
+        bubble.style.width = size;
+        bubble.style.height = size;
+        bubble.style.left = left;
+        bubble.style.animationDelay = delay;
+        bubble.style.animationDuration = duration;
+        container.appendChild(bubble);
+    }
+}
+createBubbles();

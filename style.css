@@ -1812,11 +1812,48 @@ input:checked+.slider:before {
 
 /* Sección Modelos 3D (Full-Bleed fixes) */
 .models-3d-section {
-    padding: 5rem 0;
+    padding: 7rem 0;
     background: var(--bg-secondary);
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
+    position: relative; /* Essential for absolute bubbles */
+    overflow: hidden; /* Hide bubbles as they float away */
+}
+
+/* Animación de Burbujas Random en el Fondo */
+.bubbles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bubble {
+    position: absolute;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(139, 92, 246, 0.15));
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1);
+    animation: floatUp 20s infinite ease-in;
+    opacity: 0;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(100vh) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(-20vh) scale(0.5);
+        opacity: 0;
+    }
 }
 
 .models-intro {
