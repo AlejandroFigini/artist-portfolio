@@ -81,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfolio</span>",
             hero_sub: "Bachelor's degree on Animation and Videogames.<br>Illustrator, Character / environment design and 3D generalist",
             hero_btn: "Explore gallery",
-            about_title: "Hello! I'm the author",
-            about_text_1: "Passionate about storytelling through character design and 3D worlds. I merge tradition and technology to give life to unique visions.",
+            about_title: "About Me",
+            about_text_1: "<p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong> based in Montevideo, Uruguay.</p><p>I specialize in both design and animation, with a strong passion for creating characters and designs that bring identity and life to my work. I truly love conveying emotions and stories to the audience in the best possible way.</p><p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT University, Uruguay, and have been working as a freelance artist since 2019. I am now looking to broaden my horizons and be part of new projects!</p>",
             animations_title: "Animations", characters_title: "Character Design", models_3d_title: "3D Models", illustrations_title: "Illustrations"
         },
         es: {
@@ -91,8 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portafolio</span>",
             hero_sub: "Licenciada en Animación y Videojuegos.<br>Ilustradora, diseñadora de personajes/entornos y generalista 3D",
             hero_btn: "Explorar galería",
-            about_title: "¡Hola! Soy la autora",
-            about_text_1: "Apasionada por contar historias a través del diseño de personajes y mundos 3D. Fusiono tradición y tecnología para dar vida a visiones únicas.",
+            about_title: "Sobre Mí",
+            about_text_1: "<p>Mi nombre es <strong>Lucía Montaña</strong> y soy una <strong>artista 2D y 3D</strong> con sede en Montevideo, Uruguay.</p><p>Me especializo tanto en diseño como en animación, con una gran pasión por crear personajes y diseños que brinden identidad y vida a mi trabajo. Realmente amo transmitir emociones e historias a la audiencia de la mejor manera posible.</p><p>Tengo una Licenciatura en <strong>Animación y Diseño de Videojuegos</strong> de la Universidad ORT, Uruguay, y trabajo como artista freelance desde 2019. ¡Ahora busco ampliar mis horizontes y formar parte de nuevos proyectos!</p>",
             animations_title: "Animaciones", characters_title: "Diseño de Personajes", models_3d_title: "Modelos 3D", illustrations_title: "Ilustraciones"
         },
         pt: {
@@ -391,3 +391,235 @@ function createBubbles() {
         container.appendChild(bubble);
     }
 }
+
+// =============================================
+// RANDOM 3D TEXT GENERATOR (Viewport HUD)
+// =============================================
+(function init3DTextGenerator() {
+    const container = document.getElementById('random3dText');
+    if (!container) return;
+
+    function spawnText() {
+        const generators = [
+            () => `POLY_COUNT: ${(Math.floor(Math.random() * 100000) + 10000).toLocaleString()}`,
+            () => `VERTEX_WELD: ${(Math.random() * 0.05).toFixed(3)}`,
+            () => `SKIN_MODIFIER: ${Math.floor(Math.random() * 128)} bones`,
+            () => `BITMAP: ${[512, 1024, 2048, 4096][Math.floor(Math.random()*4)]}x${[512, 1024, 2048, 4096][Math.floor(Math.random()*4)]}`,
+            () => `SUBDIVISION: level ${Math.floor(Math.random() * 5)}`,
+            () => `CAM_FOV: ${Math.floor(Math.random() * (90 - 18) + 18)}mm`,
+            () => `RENDER_TIME: 00:${Math.floor(Math.random()*60).toString().padStart(2,'0')}:${Math.floor(Math.random()*60).toString().padStart(2,'0')}`,
+            () => `RETOPOLOGY: ${(Math.floor(Math.random() * 20000) + 2000).toLocaleString()} tris`,
+            () => `SPLINE: ${Math.floor(Math.random() * 64)} knots`,
+            () => `KEYFRAME: f.${Math.floor(Math.random() * 600)}`,
+            () => `CHAMFER: ${(Math.random() * 2.5).toFixed(1)} segs:${Math.floor(Math.random()*5)}`,
+            () => `EXTRUDE: ${(Math.random() * 45).toFixed(1)} units`,
+            () => `INSET: ${(Math.random() * 8.5).toFixed(1)}`,
+            () => `SCATTER: ${Math.floor(Math.random() * 5000)} objects`,
+            () => `MESH_DENSITY: ${(Math.random() * 0.99).toFixed(2)}`,
+            () => 'UV_UNWRAP: COMPLETE', () => 'NORMALS: RECALCULATED', () => 'TURBOSMOOTH: ON',
+            () => 'RELAX: 0.5 iter:10', () => 'PHYSX: simulating', () => 'SYMMETRY: ON', () => 'PIVOT: centered'
+        ];
+
+        const genIdx = Math.floor(Math.random() * generators.length);
+        const currentGen = generators[genIdx];
+
+        const span = document.createElement('span');
+        span.textContent = currentGen();
+        span.style.left = (Math.random() * 85 + 5) + '%';
+        span.style.top = (Math.random() * 80 + 10) + '%';
+        span.style.animationDuration = (Math.random() * 12 + 14) + 's';
+        span.style.animationDelay = (Math.random() * 4) + 's';
+        container.appendChild(span);
+
+        // Update value while it exists (Live effect)
+        const updateTimer = setInterval(() => {
+            if (Math.random() > 0.6) { // 40% chance per second to update
+                span.textContent = currentGen();
+            }
+        }, 1200);
+
+        // Remove after animation ends
+        setTimeout(() => { 
+            clearInterval(updateTimer);
+            if (span.parentNode) span.remove(); 
+        }, 26000);
+    }
+
+    // Initial batch (30 elements for density)
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => spawnText(), i * 400);
+    }
+
+    // Keep spawning frequently (every 1 second)
+    setInterval(spawnText, 1000);
+})();
+
+// =============================================
+// HUD LIVE STATS UPDATER (Poly, FPS, Angle)
+// =============================================
+(function initHUDUpdater() {
+    const elPoly = document.getElementById('hud-poly');
+    const elGrid = document.getElementById('hud-grid');
+    const elFps = document.getElementById('hud-fps');
+    const elSnap = document.getElementById('hud-snap');
+
+    if (!elPoly) return;
+
+    setInterval(() => {
+        // Randomize Poly Count slightly around a base number
+        const basePoly = 42500;
+        const poly = basePoly + Math.floor(Math.random() * 1200);
+        const verts = Math.floor(poly * 0.52);
+        elPoly.innerText = `POLY: ${poly.toLocaleString()} | VERTS: ${verts.toLocaleString()}`;
+
+        // Randomize FPS slightly (like real software flicker)
+        const fpsBase = Math.random() > 0.9 ? 58 : 60; // Occasionally drop a bit
+        const fps = (fpsBase + Math.random() * 2.5).toFixed(1);
+        elFps.innerText = `FPS: ${fps} | RENDER: Scanline`;
+
+        // Occasionally fluctuate angle or snap settings for realism
+        if (Math.random() > 0.98) {
+            const angle = (Math.random() * 90).toFixed(1);
+            elSnap.innerText = `SNAP: ON | ANGLE: ${angle}°`;
+        }
+    }, 150); 
+})();
+
+// =============================================
+// CHARACTER DESIGN — Blueprint Rig Canvas
+// =============================================
+(function initCharBgCanvas() {
+    const canvas = document.getElementById('charBgCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const section = canvas.closest('.characters-section');
+
+    // Palette
+    const VIOLET  = 'rgba(139, 92, 246,';
+    const CYAN    = 'rgba(34, 211, 238,';
+    const INDIGO  = 'rgba(99, 102, 241,';
+    const ROSE    = 'rgba(244, 114, 182,';
+
+    let W, H, nodes, particles, raf;
+    const NODE_COUNT   = 38;
+    const PARTICLE_COUNT = 55;
+    const LINK_DIST    = 180;
+
+    function resize() {
+        W = canvas.width  = section.offsetWidth;
+        H = canvas.height = section.offsetHeight;
+        buildNodes();
+        buildParticles();
+    }
+
+    // ── Nodes (construction circles + pivots) ──
+    function buildNodes() {
+        nodes = Array.from({ length: NODE_COUNT }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            r:  Math.random() > 0.75 ? Math.random() * 55 + 25 : Math.random() * 12 + 4, // big or small
+            big: Math.random() > 0.75,
+            color: [VIOLET, CYAN, INDIGO, ROSE][Math.floor(Math.random() * 4)],
+            pulse: Math.random() * Math.PI * 2,
+            pulseSpeed: 0.015 + Math.random() * 0.02,
+        }));
+    }
+
+    // ── Particles (small drifting dots) ──
+    function buildParticles() {
+        particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: (Math.random() - 0.5) * 0.6,
+            size: Math.random() * 2.5 + 0.5,
+            alpha: Math.random() * 0.5 + 0.2,
+            color: [VIOLET, CYAN, INDIGO][Math.floor(Math.random() * 3)],
+        }));
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, W, H);
+
+        // ── Update + draw nodes ──
+        for (const n of nodes) {
+            n.x += n.vx; n.y += n.vy; n.pulse += n.pulseSpeed;
+            if (n.x < -n.r * 2) n.x = W + n.r;
+            if (n.x > W + n.r * 2) n.x = -n.r;
+            if (n.y < -n.r * 2) n.y = H + n.r;
+            if (n.y > H + n.r * 2) n.y = -n.r;
+
+            const pulsedR = n.r + Math.sin(n.pulse) * (n.big ? 6 : 2);
+            const alpha   = n.big ? 0.1 + Math.sin(n.pulse) * 0.06 : 0.25 + Math.sin(n.pulse) * 0.12;
+
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, pulsedR, 0, Math.PI * 2);
+            ctx.strokeStyle = `${n.color} ${alpha})`;
+            ctx.lineWidth   = n.big ? 1 : 1.5;
+            ctx.stroke();
+
+            // Draw crosshair for big circles
+            if (n.big) {
+                const ch = pulsedR * 0.4;
+                ctx.beginPath();
+                ctx.moveTo(n.x - ch, n.y); ctx.lineTo(n.x + ch, n.y);
+                ctx.moveTo(n.x, n.y - ch); ctx.lineTo(n.x, n.y + ch);
+                ctx.strokeStyle = `${n.color} ${alpha * 0.8})`;
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+            }
+
+            // Glowing pivot dot on small nodes
+            if (!n.big) {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `${n.color} ${alpha * 1.5 > 1 ? 1 : alpha * 1.5})`;
+                ctx.fill();
+            }
+        }
+
+        // ── Draw rig connection lines ──
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const dx = nodes[i].x - nodes[j].x;
+                const dy = nodes[i].y - nodes[j].y;
+                const d  = Math.sqrt(dx * dx + dy * dy);
+                if (d < LINK_DIST) {
+                    const t = 1 - d / LINK_DIST;
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.strokeStyle = `${VIOLET} ${t * 0.15})`;
+                    ctx.lineWidth   = 0.7;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // ── Update + draw particles ──
+        for (const p of particles) {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+            if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `${p.color} ${p.alpha})`;
+            ctx.fill();
+        }
+
+        raf = requestAnimationFrame(tick);
+    }
+
+    // Start / stop with IntersectionObserver (performance)
+    const io = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) { if (!raf) tick(); }
+        else { cancelAnimationFrame(raf); raf = null; }
+    }, { threshold: 0.05 });
+    io.observe(section);
+
+    window.addEventListener('resize', resize);
+    resize();
+})();

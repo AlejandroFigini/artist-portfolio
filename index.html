@@ -397,27 +397,61 @@
             </div>
         </section>
 
-        <!-- Sección de Presentación -->
+        <!-- Sección de Presentación / About Me -->
         <section id="presentacion" class="presentation-section">
+            <div class="about-bg-animation">
+                <div class="blob-1"></div>
+                <div class="blob-2"></div>
+                <div class="blob-3"></div>
+            </div>
             <div class="presentation-container" data-scroll="reveal">
                 <div class="presentation-artist">
-                    <div class="artist-photo">Photo of me</div>
                     <div class="artist-bio">
-                        <h2 class="section-typewriter" data-i18n="about_title">Hello! I'm the author</h2>
-                        <p data-i18n="about_text_1">Passionate about storytelling through character design and 3D
-                            worlds. I merge tradition
-                            and technology to give life to unique visions.</p>
-                        <p>Always ready to create new visual adventures.</p>
+                        <div class="bio-header">
+                            <h2 class="section-typewriter" data-i18n="about_title">About Me</h2>
+                        </div>
+                        <div class="bio-content" data-i18n="about_text_1">
+                            <p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong> based in Montevideo, Uruguay.</p>
+                            <p>I specialize in both design and animation, with a strong passion for creating characters and designs that bring identity and life to my work. I truly love conveying emotions and stories to the audience in the best possible way.</p>
+                            <p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT University, Uruguay, and have been working as a freelance artist since 2019. I am now looking to broaden my horizons and be part of new projects!</p>
+                        </div>
+                        
+                        <!-- Redes Sociales en About Me -->
+                        <div class="about-socials">
+                            <a href="https://www.instagram.com/" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.linkedin.com/" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+                            <a href="https://www.artstation.com/" target="_blank" title="ArtStation"><i class="fa-brands fa-artstation"></i></a>
+                            <a href="https://vimeo.com/" target="_blank" title="Vimeo"><i class="fa-brands fa-vimeo-v"></i></a>
+                            <a href="https://www.youtube.com/" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                            <a href="https://www.behance.net/" target="_blank" title="Behance"><i class="fa-brands fa-behance"></i></a>
+                        </div>
                     </div>
                 </div>
-                <div class="presentation-illustration bg-color-4">
-                    <span>Featured Main Illustration</span>
+                
+                <div class="presentation-media">
+                    <div class="media-stack">
+                        <div class="artist-photo-wrapper">
+                            <img src="assets/images/feed/aboutMe/IMG_5869.webp" alt="Lucía Montaña" class="artist-photo-img">
+                        </div>
+                        <div class="artist-video-wrapper">
+                            <video autoplay loop muted playsinline class="about-video">
+                                <source src="assets/images/feed/aboutMe/Alessio te saluda.webm" type="video/webm">
+                            </video>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Sección Animaciones -->
         <section id="animaciones" class="animations-section">
+            <div class="anim-bg-animation">
+                <div class="motion-grid"></div>
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+            </div>
             <div class="section-title anim-title-container" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="animations_title">Animations</h2>
                 <p class="anim-subtitle">A collection of movement and storytelling. From professional cutscenes to
@@ -557,6 +591,8 @@
 
         <!-- Diseño de Personajes -->
         <section id="personajes" class="characters-section">
+            <!-- Animated Background: Blueprint Rig Canvas -->
+            <canvas id="charBgCanvas" class="char-bg-canvas"></canvas>
             <div class="section-title" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="characters_title">Character Design</h2>
                 <p>Explore the interactive cast of my creations.</p>
@@ -732,7 +768,79 @@
 
         <!-- Sección Modelos 3D -->
         <section id="3dmodels" class="models-3d-section">
-            <div class="bubbles-container" id="bubbles-container"></div>
+            <div class="models-3d-bg">
+                <!-- 3ds Max Viewport Grid -->
+                <div class="viewport-grid"></div>
+
+                <!-- Viewport HUD Text -->
+                <div class="coord-marker m1" id="hud-viewport">VIEWPORT: Perspective</div>
+                <div class="coord-marker m2" id="hud-poly">POLY: 42,580 | VERTS: 21,340</div>
+                <div class="coord-marker m3" id="hud-grid">GRID: 10.0 UNITS</div>
+                <div class="coord-marker m4" id="hud-fps">FPS: 60 | RENDER: Scanline</div>
+                <div class="coord-marker m5" id="hud-wire">WIREFRAME MODE</div>
+                <div class="coord-marker m6" id="hud-snap">SNAP: ON | ANGLE: 5.0°</div>
+
+                <!-- Random 3D text (populated by JS) -->
+                <div class="random-text-area" id="random3dText"></div>
+
+                <!-- 3D Cubes -->
+                <div class="cube-container c1">
+                    <div class="cube">
+                        <div class="face front"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face back"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face right"></div><div class="face left"></div>
+                        <div class="face top"></div><div class="face bottom"></div>
+                    </div>
+                </div>
+                <div class="cube-container c2">
+                    <div class="cube">
+                        <div class="face front"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face back"></div><div class="face right"></div><div class="face left"></div>
+                        <div class="face top"></div><div class="face bottom"></div>
+                    </div>
+                </div>
+                <div class="cube-container c3">
+                    <div class="cube">
+                        <div class="face front"></div><div class="face back"></div>
+                        <div class="face right"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face left"></div><div class="face top"></div><div class="face bottom"></div>
+                    </div>
+                </div>
+                <div class="cube-container c4">
+                    <div class="cube">
+                        <div class="face front"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face back"></div><div class="face right"></div><div class="face left"></div>
+                        <div class="face top"><span class="v v1"></span><span class="v v2"></span><span class="v v3"></span><span class="v v4"></span></div>
+                        <div class="face bottom"></div>
+                    </div>
+                </div>
+
+                <!-- 3D Cylinders -->
+                <div class="cyl-container cy1">
+                    <div class="cylinder">
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                    </div>
+                </div>
+                <div class="cyl-container cy2">
+                    <div class="cylinder">
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                    </div>
+                </div>
+                <div class="cyl-container cy3">
+                    <div class="cylinder">
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                        <div class="panel"></div><div class="panel"></div><div class="panel"></div>
+                    </div>
+                </div>
+            </div>
             <div class="section-title" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="models_3d_title">3D Models</h2>
                 <p class="models-intro">Merging artistic vision with technical precision. Environment assets and
@@ -818,6 +926,7 @@
                         <p>This animation was entirely created in 3ds Max and then exported to Unreal Engine.</p>
                     </div>
                 </div>
+            </div>
         </section>
 
         <!-- Ilustraciones (Galería) -->
