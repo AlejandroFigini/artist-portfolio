@@ -390,6 +390,57 @@ function createBubbles() {
         bubble.style.animationDuration = duration;
         container.appendChild(bubble);
     }
+
+    // --- VIGNETTE TELEPORTATION ENGINE ---
+    function initVignetteTeleportation() {
+        const vignettes = document.querySelectorAll('.decor-motion');
+        if (!vignettes.length) return;
+
+        // 6 Safe spots (avoiding the central 3x2 grid)
+        const SPOTS = [
+            { top: '8%', left: '3%', right: 'auto', bottom: 'auto' },
+            { top: '10%', right: '4%', left: 'auto', bottom: 'auto' },
+            { top: '42%', left: '2%', right: 'auto', bottom: 'auto' },
+            { top: '48%', right: '2%', left: 'auto', bottom: 'auto' },
+            { bottom: '15%', left: '4%', right: 'auto', top: 'auto' },
+            { bottom: '12%', right: '3%', left: 'auto', top: 'auto' }
+        ];
+
+        let currentSpots = [0, 5]; // Initial Top-Left / Bottom-Right
+
+        function applySpot(el, spotIdx) {
+            const s = SPOTS[spotIdx];
+            el.style.top = s.top;
+            el.style.left = s.left;
+            el.style.right = s.right;
+            el.style.bottom = s.bottom;
+        }
+
+        // Initial setup
+        applySpot(vignettes[0], currentSpots[0]);
+        applySpot(vignettes[1], currentSpots[1]);
+        vignettes.forEach(v => v.style.opacity = 0.85); // Fully visible-ish but integrated
+
+        setInterval(() => {
+            // Fade out
+            vignettes.forEach(v => v.style.opacity = 0);
+            
+            setTimeout(() => {
+                // Shuffle used spots
+                let available = [0, 1, 2, 3, 4, 5];
+                let next1 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
+                let next2 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
+                
+                applySpot(vignettes[0], next1);
+                applySpot(vignettes[1], next2);
+
+                // Fade back in
+                vignettes.forEach(v => v.style.opacity = 0.85);
+            }, 1600); // Wait for CSS transition fade-out (1.5s)
+        }, 15000); // Teleport every 15s
+    }
+
+    initVignetteTeleportation();
 }
 
 // =============================================
@@ -427,7 +478,7 @@ function createBubbles() {
         span.textContent = currentGen();
         span.style.left = (Math.random() * 85 + 5) + '%';
         span.style.top = (Math.random() * 80 + 10) + '%';
-        span.style.animationDuration = (Math.random() * 12 + 14) + 's';
+        span.style.animationDuration = (Math.random() * 6 + 6) + 's';
         span.style.animationDelay = (Math.random() * 4) + 's';
         container.appendChild(span);
 
@@ -442,7 +493,7 @@ function createBubbles() {
         setTimeout(() => { 
             clearInterval(updateTimer);
             if (span.parentNode) span.remove(); 
-        }, 26000);
+        }, 13000);
     }
 
     // Initial batch (30 elements for density)
@@ -451,7 +502,7 @@ function createBubbles() {
     }
 
     // Keep spawning frequently (every 1 second)
-    setInterval(spawnText, 1000);
+    setInterval(spawnText, 500);
 })();
 
 // =============================================
@@ -623,3 +674,217 @@ function createBubbles() {
     window.addEventListener('resize', resize);
     resize();
 })();
+
+// =============================================
+// ANIMATIONS SECTION — Morphing Stretchy Blobs (Canvas)
+// =============================================
+(function initAnimationsBackground() {
+    const canvas = document.getElementById('animBlobCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const container = canvas.closest('.animations-section');
+
+    let W, H, paths = [], raf;
+    const PATH_COUNT = 3; /* Even more subtle */
+    const COLORS = [
+        '#8b5cf6', '#7c3aed', '#a78bfa', '#4c1d95', '#6d28d9'
+    ];
+
+    class MotionPath {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            this.points = [];
+            this.numPoints = 8;
+            this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            this.offset = Math.random() * 2000;
+            this.baseY = Math.random() * H;
+            
+            // Flares that follow this path (8-pointed sophisticated stars)
+            this.particles = Array.from({ length: 4 }, () => ({
+                pos: Math.random(), // 0 to 1 along path
+                speed: 0.00008 + Math.random() * 0.0002, // SLOWER
+                size: 1.5 + Math.random() * 2.5, // SMALLER
+                twinkle: Math.random() * Math.PI * 2
+            }));
+
+            for (let i = 0; i <= this.numPoints; i++) {
+                // Extend beyond width to avoid gaps
+                this.points.push({
+                    x: -200 + (i / this.numPoints) * (W + 400),
+                    y: 0,
+                    phase: (i / this.numPoints) * Math.PI * 3 + Math.random(),
+                    amp: Math.random() * 80 + 40
+                });
+            }
+        }
+
+        update() {
+            this.offset += 0.1; // Much slower, rhythmic morphing
+            this.points.forEach((p, i) => {
+                p.y = this.baseY + Math.sin(this.offset * 0.02 + p.phase) * p.amp;
+            });
+            
+            // Move particles and update twinkle
+            this.particles.forEach(p => {
+                p.pos += p.speed;
+                if (p.pos > 1) p.pos = 0;
+                p.twinkle += 0.04; // Twinkle pulse
+            });
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = this.color;
+            ctx.globalAlpha = 0.35;
+            
+            // Draw main path (softer energy line)
+            ctx.beginPath();
+            ctx.lineWidth = 1.8; // Softer
+            ctx.strokeStyle = this.color;
+            ctx.globalAlpha = 0.25; // More transparent
+            
+            // Rebalanced GLOW
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = this.color;
+            
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 0; i < this.points.length - 1; i++) {
+                const xc = (this.points[i].x + this.points[i + 1].x) / 2;
+                const yc = (this.points[i].y + this.points[i + 1].y) / 2;
+                ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, xc, yc);
+            }
+            ctx.stroke();
+
+            // Draw Flares (Sophisticated Twinkling Stars)
+            this.particles.forEach(part => {
+                const index = Math.floor(part.pos * this.numPoints);
+                const p1 = this.points[index];
+                const p2 = this.points[Math.min(index + 1, this.numPoints)];
+                if (!p1 || !p2) return;
+
+                const t = (part.pos * this.numPoints) % 1;
+                const x = p1.x + (p2.x - p1.x) * t;
+                const y = p1.y + (p2.y - p1.y) * t;
+
+                const pulse = (Math.sin(part.twinkle) + 1.2) / 2; // Twinkle alpha/size
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.globalAlpha = 0.4 + pulse * 0.5; // Pulsating visibility
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = this.color;
+                
+                // Outer glow shadow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                
+                // Draw Elaborate 8-pointed Flare (Star)
+                ctx.beginPath();
+                ctx.arc(0, 0, part.size * 0.4 * pulse, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.lineWidth = 0.8;
+                // Main spikes
+                const s1 = part.size * 2.5 * pulse;
+                ctx.moveTo(-s1, 0); ctx.lineTo(s1, 0);
+                ctx.moveTo(0, -s1); ctx.lineTo(0, s1);
+                
+                // Diagonal spikes (shorter)
+                const s2 = s1 * 0.5;
+                ctx.rotate(Math.PI / 4);
+                ctx.moveTo(-s2, 0); ctx.lineTo(s2, 0);
+                ctx.moveTo(0, -s2); ctx.lineTo(0, s2);
+                
+                ctx.stroke();
+
+                ctx.restore();
+            });
+        }
+    }
+
+    function resize() {
+        W = canvas.width  = container.offsetWidth;
+        H = canvas.height = container.offsetHeight;
+        if (paths.length === 0) {
+            paths = Array.from({ length: PATH_COUNT }, () => new MotionPath());
+        }
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, W, H);
+        paths.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        raf = requestAnimationFrame(loop);
+    }
+
+    const io = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) { if (!raf) loop(); }
+        else { cancelAnimationFrame(raf); raf = null; }
+    }, { threshold: 0.1 });
+    io.observe(container);
+
+    window.addEventListener('resize', resize);
+    resize();
+})();
+
+
+// --- VIGNETTE TELEPORTATION ENGINE ---
+(function initVignetteTeleportation() {
+    const vignettes = document.querySelectorAll('.decor-motion');
+    if (!vignettes.length) return;
+
+    // 6 Safe spots (avoiding the central 3x2 grid)
+    const SPOTS = [
+        { top: '8%', left: '3%', right: 'auto', bottom: 'auto' },
+        { top: '10%', right: '4%', left: 'auto', bottom: 'auto' },
+        { top: '42%', left: '2%', right: 'auto', bottom: 'auto' },
+        { top: '48%', right: '2%', left: 'auto', bottom: 'auto' },
+        { bottom: '15%', left: '4%', right: 'auto', top: 'auto' },
+        { bottom: '12%', right: '3%', left: 'auto', top: 'auto' }
+    ];
+
+    function applySpot(el, spotIdx) {
+        const s = SPOTS[spotIdx];
+        if (!s) return;
+        el.style.top = s.top;
+        el.style.left = s.left;
+        el.style.right = s.right;
+        el.style.bottom = s.bottom;
+        el.style.opacity = '1';
+    }
+
+    // Initial setup
+    if (vignettes.length >= 2) {
+        applySpot(vignettes[0], 0);
+        applySpot(vignettes[1], 5);
+    }
+
+    setInterval(() => {
+        // Fade out
+        vignettes.forEach(v => v.style.opacity = '0');
+        
+        setTimeout(() => {
+            // Pools to ensure NO overlap and balanced layout
+            let leftPool = [0, 2, 4]; // Spots 0, 2, 4 are LEFT
+            let rightPool = [1, 3, 5]; // Spots 1, 3, 5 are RIGHT
+            
+            let nextLeft = leftPool[Math.floor(Math.random() * leftPool.length)];
+            let nextRight = rightPool[Math.floor(Math.random() * rightPool.length)];
+            
+            // Assign one to each vignette (always one per side)
+            if (vignettes[0]) applySpot(vignettes[0], nextLeft);
+            if (vignettes[1]) applySpot(vignettes[1], nextRight);
+
+            // Fade back in
+            vignettes.forEach(v => v.style.opacity = '0.95');
+        }, 900); // Wait for fade-out
+    }, 12000); // Teleport every 12s (Slower)
+})();
+

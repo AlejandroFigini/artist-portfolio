@@ -13,7 +13,7 @@
         rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
     <script>
         // Aplicar tema guardado inmediatamente para evitar parpadeo blanco
         const savedTheme = localStorage.getItem('theme');
@@ -445,12 +445,45 @@
 
         <!-- Sección Animaciones -->
         <section id="animaciones" class="animations-section">
+            <!-- Global Software Stack (Section-Wide) -->
+            <div class="global-soft-reveal">
+                <div class="global-soft-header">Production Stack <i class="fa-solid fa-layer-group"></i></div>
+                <div class="global-soft-icons">
+                    <a href="https://www.adobe.com/products/illustrator.html" target="_blank" rel="noopener noreferrer" class="soft-item">
+                        <span class="soft-badge ai">Ai</span><span class="soft-name">Adobe Illustrator</span>
+                    </a>
+                    <a href="https://www.adobe.com/products/animate.html" target="_blank" rel="noopener noreferrer" class="soft-item">
+                        <span class="soft-badge an">An</span><span class="soft-name">Adobe Animate</span>
+                    </a>
+                    <a href="https://www.adobe.com/products/aftereffects.html" target="_blank" rel="noopener noreferrer" class="soft-item">
+                        <span class="soft-badge ae">Ae</span><span class="soft-name">Adobe After Effects</span>
+                    </a>
+                    <a href="https://www.adobe.com/products/photoshop.html" target="_blank" rel="noopener noreferrer" class="soft-item">
+                        <span class="soft-badge ps">Ps</span><span class="soft-name">Adobe Photoshop</span>
+                    </a>
+                    <a href="https://www.adobe.com/products/premiere.html" target="_blank" rel="noopener noreferrer" class="soft-item">
+                        <span class="soft-badge pr">Pr</span><span class="soft-name">Adobe Premiere Pro</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Decorative Motion Elements (Z-Index Background Support) -->
+            <div class="decor-motion">
+                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                    <source src="assets/images/feed/animation/HAAI THAR. IDLE (1).webm" type="video/webm">
+                </video>
+                <div class="decor-label">Haai Thar</div>
+            </div>
+            <div class="decor-motion">
+                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                    <source src="assets/images/feed/animation/galope.webm" type="video/webm">
+                </video>
+                <div class="decor-label">Galope</div>
+            </div>
+
+            <div class="motion-grid"></div>
             <div class="anim-bg-animation">
-                <div class="motion-grid"></div>
-                <div class="shape shape-1"></div>
-                <div class="shape shape-2"></div>
-                <div class="shape shape-3"></div>
-                <div class="shape shape-4"></div>
+                <canvas id="animBlobCanvas" class="anim-blob-canvas"></canvas>
             </div>
             <div class="section-title anim-title-container" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="animations_title">Animations</h2>
