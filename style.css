@@ -5,8 +5,8 @@
     --bg-secondary: #f1f5f9;
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --accent: #8b5cf6;
-    --accent-hover: #7c3aed;
+    --accent: #6d28d9; /* Deep, rich violet for a premium mark */
+    --accent-hover: #5b21b6;
     --border: #e2e8f0;
     --header-bg: #f2f2f2;
 
@@ -27,8 +27,8 @@
     --bg-secondary: #1e293b;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --accent: #a78bfa;
-    --accent-hover: #8b5cf6;
+    --accent: #7c3aed; /* Deep, rich violet */
+    --accent-hover: #6d28d9;
     --border: #334155;
     --header-bg: #0f172a;
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
@@ -181,8 +181,8 @@ header {
 }
 
 .logo span {
-    color: #a855f7; /* Electric Violet: High-Saturation pop for branding */
-    font-weight: 500; /* Subtle weight increase for clarity */
+    color: #6d28d9; /* Royal Deep Violet: Bold and established */
+    font-weight: 300; /* Matching original minimalist style */
 }
 
 .nav-links {
@@ -805,6 +805,7 @@ section {
     margin: 0;
     color: var(--accent);
     letter-spacing: -2px;
+    font-weight: 300; /* Removed bold for a more artistic look */
 }
 
 .bio-content p {
