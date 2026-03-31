@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_btn: "Explorer la galerie",
             about_title: "Bonjour ! Je suis l'auteure",
             about_text_1: "Passionnée par le storytelling à travers le design de personnages et les mondes 3D. Je fusionne tradition et technologie pour donner vie à des visions uniques.",
-            animations_title: "Animations", characters_title: "Design de Personnages", models_3d_title: "Modèles 3D", illustrations_title: "Illustrations"
+            animations_title: "Animations", characters_title: "Design de Personnages", models_3d_title: "Modèles 3D", illustrations_title: "Ilustrations"
         }
     };
 
@@ -233,24 +233,50 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     if (illustrationsGrid) {
         illustrationsGrid.innerHTML = '';
+        let lastWasBig = false;
         illustrationFiles.forEach((file, index) => {
             const item = document.createElement('div');
-            item.className = 'gallery-item fade-in';
-            item.style.transitionDelay = (index * 0.02) + 's';
-            const duration = (Math.random() * 3 + 3).toFixed(2) + 's';
-            const delay = (Math.random() * -5).toFixed(2) + 's';
-            const floatAmount = (Math.random() * -10 - 10).toFixed(1) + 'px';
-            const floatRotate = (Math.random() * 2 - 1).toFixed(1) + 'deg';
-            item.style.animationDuration = duration;
-            item.style.animationDelay = delay;
-            item.style.setProperty('--float-amount', floatAmount);
-            item.style.setProperty('--float-rotate', floatRotate);
+            
+            // Dynamic Artistic Rhythm — Weighted Probability Distribution
+            const rand = Math.random();
+            let bentoClass = '';
+            if (rand < 0.12 && !lastWasBig) {
+                bentoClass = 'big';
+                lastWasBig = true;
+            } else if (rand < 0.30) {
+                bentoClass = 'wide';
+                lastWasBig = false;
+            } else if (rand < 0.48) {
+                bentoClass = 'tall';
+                lastWasBig = false;
+            } else {
+                lastWasBig = false;
+            }
+            
+            item.className = `gallery-item fade-in ${bentoClass}`;
             const imgPath = 'assets/images/feed/ilustrations/' + file;
+            
+            // Clean Title for meta
+            const cleanTitle = file.split('.')[0].replace(/_/g, ' ').replace(/-/g, ' ');
+            const capitalizedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+            
+            // Randomized organic cosmic drift timing for the WHOLE CONTAINER
+            const driftDuration = (Math.random() * 16 + 12).toFixed(2) + 's';
+            const driftDelay = (Math.random() * -20).toFixed(2) + 's';
+            
             item.innerHTML = `
-                <img src="${imgPath}" alt="${file}"><div class="gallery-overlay"><button class="expand-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                </button></div>`;
-            item.addEventListener('click', () => openLightbox(imgPath));
+                <div class="drift-wrapper" style="width: 100%; height: 100%; animation: cosmic-drift ${driftDuration} ${driftDelay} infinite ease-in-out;">
+                    <img src="${imgPath}" alt="${file}">
+                    <div class="gallery-overlay">
+                        <button class="expand-btn">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>`;
+
+            item.addEventListener('click', () => openLightbox(imgPath, capitalizedTitle, "A unique illustrative exploration by Lucia Montaña."));
             illustrationsGrid.appendChild(item);
             observer.observe(item);
         });
@@ -350,28 +376,96 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('theme', theme);
         });
     }
+
+    // Updated Animation Click Listeners for Info
+    document.querySelectorAll('.animation-item.video-container').forEach(container => {
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.play-pause-btn')) return;
+            const source = container.querySelector('source');
+            const title = container.dataset.title;
+            const desc = container.dataset.desc;
+            if (source) openVideoLightbox(source.src, title, desc);
+        });
+    });
 });
 
 // Lightbox functions (Global scope)
-function openLightbox(src) {
+function openLightbox(src, title, desc) {
     const lb = document.getElementById('image-lightbox');
     const img = document.getElementById('lightbox-img');
-    if (lb && img) { img.src = src; lb.style.display = 'block'; setTimeout(() => lb.style.opacity = '1', 10); }
+    const titleEl = lb.querySelector('.info-title');
+    const descEl = lb.querySelector('.info-desc');
+    const panel = lb.querySelector('.lightbox-info-panel');
+    
+    if (lb && img) { 
+        img.src = src; 
+        if (titleEl) titleEl.innerText = title || "Illustration";
+        if (descEl) descEl.innerText = desc || "A piece from my collection.";
+        if (panel) panel.classList.add('hidden'); // Reset to hidden
+        
+        lb.style.display = 'flex'; 
+        setTimeout(() => lb.style.opacity = '1', 10); 
+    }
 }
+
 function closeLightbox() {
     const lb = document.getElementById('image-lightbox');
-    if (lb) { lb.style.opacity = '0'; setTimeout(() => lb.style.display = 'none', 300); }
+    if (lb) { 
+        lb.style.opacity = '0'; 
+        setTimeout(() => lb.style.display = 'none', 300); 
+    }
 }
-function openVideoLightbox(src) {
+
+function openVideoLightbox(src, title, desc) {
     const lb = document.getElementById('video-lightbox');
     const vid = document.getElementById('lightbox-video');
-    if (lb && vid) { vid.src = src; lb.style.display = 'block'; setTimeout(() => { lb.style.opacity = '1'; vid.play(); }, 10); }
+    const titleEl = lb.querySelector('.info-title');
+    const descEl = lb.querySelector('.info-desc');
+    const panel = lb.querySelector('.lightbox-info-panel');
+    
+    if (lb && vid) { 
+        vid.src = src; 
+        if (titleEl) titleEl.innerText = title || "Animation";
+        if (descEl) descEl.innerText = desc || "Action sequence study.";
+        if (panel) panel.classList.add('hidden'); // Reset to hidden
+        
+        lb.style.display = 'flex'; 
+        setTimeout(() => { 
+            lb.style.opacity = '1'; 
+            vid.play(); 
+        }, 10); 
+    }
 }
-function closeVideoLightbox(event) {
-    if (event && event.target.id !== 'video-lightbox' && !event.target.classList.contains('lightbox-close')) return;
+
+function closeVideoLightbox() {
     const lb = document.getElementById('video-lightbox');
-    if (lb) { lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; const vid = document.getElementById('lightbox-video'); if (vid) { vid.pause(); vid.src = ''; } }, 300); }
+    if (lb) { 
+        lb.style.opacity = '0'; 
+        setTimeout(() => { 
+            lb.style.display = 'none'; 
+            const vid = document.getElementById('lightbox-video'); 
+            if (vid) { vid.pause(); vid.src = ''; } 
+        }, 300); 
+    }
 }
+
+function toggleLightboxInfo(event) {
+    event.stopPropagation();
+    const btn = event.currentTarget;
+    const panel = btn.parentElement.querySelector('.lightbox-info-panel');
+    if (panel) {
+        panel.classList.toggle('hidden');
+    }
+}
+
+function handleLightboxClick(event, type) {
+    // If click is on the background (the lightbox itself), close it
+    if (event.target.classList.contains('lightbox')) {
+        if (type === 'video') closeVideoLightbox();
+        else closeLightbox();
+    }
+}
+
 function createBubbles() {
     const container = document.getElementById('bubbles-container');
     if (!container) return;
@@ -424,13 +518,13 @@ function createBubbles() {
         setInterval(() => {
             // Fade out
             vignettes.forEach(v => v.style.opacity = 0);
-            
+
             setTimeout(() => {
                 // Shuffle used spots
                 let available = [0, 1, 2, 3, 4, 5];
                 let next1 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
                 let next2 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-                
+
                 applySpot(vignettes[0], next1);
                 applySpot(vignettes[1], next2);
 
@@ -455,14 +549,14 @@ function createBubbles() {
             () => `POLY_COUNT: ${(Math.floor(Math.random() * 100000) + 10000).toLocaleString()}`,
             () => `VERTEX_WELD: ${(Math.random() * 0.05).toFixed(3)}`,
             () => `SKIN_MODIFIER: ${Math.floor(Math.random() * 128)} bones`,
-            () => `BITMAP: ${[512, 1024, 2048, 4096][Math.floor(Math.random()*4)]}x${[512, 1024, 2048, 4096][Math.floor(Math.random()*4)]}`,
+            () => `BITMAP: ${[512, 1024, 2048, 4096][Math.floor(Math.random() * 4)]}x${[512, 1024, 2048, 4096][Math.floor(Math.random() * 4)]}`,
             () => `SUBDIVISION: level ${Math.floor(Math.random() * 5)}`,
             () => `CAM_FOV: ${Math.floor(Math.random() * (90 - 18) + 18)}mm`,
-            () => `RENDER_TIME: 00:${Math.floor(Math.random()*60).toString().padStart(2,'0')}:${Math.floor(Math.random()*60).toString().padStart(2,'0')}`,
+            () => `RENDER_TIME: 00:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
             () => `RETOPOLOGY: ${(Math.floor(Math.random() * 20000) + 2000).toLocaleString()} tris`,
             () => `SPLINE: ${Math.floor(Math.random() * 64)} knots`,
             () => `KEYFRAME: f.${Math.floor(Math.random() * 600)}`,
-            () => `CHAMFER: ${(Math.random() * 2.5).toFixed(1)} segs:${Math.floor(Math.random()*5)}`,
+            () => `CHAMFER: ${(Math.random() * 2.5).toFixed(1)} segs:${Math.floor(Math.random() * 5)}`,
             () => `EXTRUDE: ${(Math.random() * 45).toFixed(1)} units`,
             () => `INSET: ${(Math.random() * 8.5).toFixed(1)}`,
             () => `SCATTER: ${Math.floor(Math.random() * 5000)} objects`,
@@ -490,9 +584,9 @@ function createBubbles() {
         }, 1200);
 
         // Remove after animation ends
-        setTimeout(() => { 
+        setTimeout(() => {
             clearInterval(updateTimer);
-            if (span.parentNode) span.remove(); 
+            if (span.parentNode) span.remove();
         }, 13000);
     }
 
@@ -533,147 +627,10 @@ function createBubbles() {
             const angle = (Math.random() * 90).toFixed(1);
             elSnap.innerText = `SNAP: ON | ANGLE: ${angle}°`;
         }
-    }, 150); 
+    }, 150);
 })();
 
-// =============================================
-// CHARACTER DESIGN — Blueprint Rig Canvas
-// =============================================
-(function initCharBgCanvas() {
-    const canvas = document.getElementById('charBgCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const section = canvas.closest('.characters-section');
-
-    // Palette
-    const VIOLET  = 'rgba(139, 92, 246,';
-    const CYAN    = 'rgba(34, 211, 238,';
-    const INDIGO  = 'rgba(99, 102, 241,';
-    const ROSE    = 'rgba(244, 114, 182,';
-
-    let W, H, nodes, particles, raf;
-    const NODE_COUNT   = 38;
-    const PARTICLE_COUNT = 55;
-    const LINK_DIST    = 180;
-
-    function resize() {
-        W = canvas.width  = section.offsetWidth;
-        H = canvas.height = section.offsetHeight;
-        buildNodes();
-        buildParticles();
-    }
-
-    // ── Nodes (construction circles + pivots) ──
-    function buildNodes() {
-        nodes = Array.from({ length: NODE_COUNT }, () => ({
-            x: Math.random() * W,
-            y: Math.random() * H,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4,
-            r:  Math.random() > 0.75 ? Math.random() * 55 + 25 : Math.random() * 12 + 4, // big or small
-            big: Math.random() > 0.75,
-            color: [VIOLET, CYAN, INDIGO, ROSE][Math.floor(Math.random() * 4)],
-            pulse: Math.random() * Math.PI * 2,
-            pulseSpeed: 0.015 + Math.random() * 0.02,
-        }));
-    }
-
-    // ── Particles (small drifting dots) ──
-    function buildParticles() {
-        particles = Array.from({ length: PARTICLE_COUNT }, () => ({
-            x: Math.random() * W,
-            y: Math.random() * H,
-            vx: (Math.random() - 0.5) * 0.6,
-            vy: (Math.random() - 0.5) * 0.6,
-            size: Math.random() * 2.5 + 0.5,
-            alpha: Math.random() * 0.5 + 0.2,
-            color: [VIOLET, CYAN, INDIGO][Math.floor(Math.random() * 3)],
-        }));
-    }
-
-    function tick() {
-        ctx.clearRect(0, 0, W, H);
-
-        // ── Update + draw nodes ──
-        for (const n of nodes) {
-            n.x += n.vx; n.y += n.vy; n.pulse += n.pulseSpeed;
-            if (n.x < -n.r * 2) n.x = W + n.r;
-            if (n.x > W + n.r * 2) n.x = -n.r;
-            if (n.y < -n.r * 2) n.y = H + n.r;
-            if (n.y > H + n.r * 2) n.y = -n.r;
-
-            const pulsedR = n.r + Math.sin(n.pulse) * (n.big ? 6 : 2);
-            const alpha   = n.big ? 0.1 + Math.sin(n.pulse) * 0.06 : 0.25 + Math.sin(n.pulse) * 0.12;
-
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, pulsedR, 0, Math.PI * 2);
-            ctx.strokeStyle = `${n.color} ${alpha})`;
-            ctx.lineWidth   = n.big ? 1 : 1.5;
-            ctx.stroke();
-
-            // Draw crosshair for big circles
-            if (n.big) {
-                const ch = pulsedR * 0.4;
-                ctx.beginPath();
-                ctx.moveTo(n.x - ch, n.y); ctx.lineTo(n.x + ch, n.y);
-                ctx.moveTo(n.x, n.y - ch); ctx.lineTo(n.x, n.y + ch);
-                ctx.strokeStyle = `${n.color} ${alpha * 0.8})`;
-                ctx.lineWidth = 0.8;
-                ctx.stroke();
-            }
-
-            // Glowing pivot dot on small nodes
-            if (!n.big) {
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = `${n.color} ${alpha * 1.5 > 1 ? 1 : alpha * 1.5})`;
-                ctx.fill();
-            }
-        }
-
-        // ── Draw rig connection lines ──
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                const dx = nodes[i].x - nodes[j].x;
-                const dy = nodes[i].y - nodes[j].y;
-                const d  = Math.sqrt(dx * dx + dy * dy);
-                if (d < LINK_DIST) {
-                    const t = 1 - d / LINK_DIST;
-                    ctx.beginPath();
-                    ctx.moveTo(nodes[i].x, nodes[i].y);
-                    ctx.lineTo(nodes[j].x, nodes[j].y);
-                    ctx.strokeStyle = `${VIOLET} ${t * 0.15})`;
-                    ctx.lineWidth   = 0.7;
-                    ctx.stroke();
-                }
-            }
-        }
-
-        // ── Update + draw particles ──
-        for (const p of particles) {
-            p.x += p.vx; p.y += p.vy;
-            if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-            if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `${p.color} ${p.alpha})`;
-            ctx.fill();
-        }
-
-        raf = requestAnimationFrame(tick);
-    }
-
-    // Start / stop with IntersectionObserver (performance)
-    const io = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting) { if (!raf) tick(); }
-        else { cancelAnimationFrame(raf); raf = null; }
-    }, { threshold: 0.05 });
-    io.observe(section);
-
-    window.addEventListener('resize', resize);
-    resize();
-})();
+// ── Characters Background sanitized for Deep Minimalism ──
 
 // =============================================
 // ANIMATIONS SECTION — Morphing Stretchy Blobs (Canvas)
@@ -701,7 +658,7 @@ function createBubbles() {
             this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
             this.offset = Math.random() * 2000;
             this.baseY = Math.random() * H;
-            
+
             // Flares that follow this path (8-pointed sophisticated stars)
             this.particles = Array.from({ length: 4 }, () => ({
                 pos: Math.random(), // 0 to 1 along path
@@ -726,7 +683,7 @@ function createBubbles() {
             this.points.forEach((p, i) => {
                 p.y = this.baseY + Math.sin(this.offset * 0.02 + p.phase) * p.amp;
             });
-            
+
             // Move particles and update twinkle
             this.particles.forEach(p => {
                 p.pos += p.speed;
@@ -740,17 +697,17 @@ function createBubbles() {
             ctx.lineWidth = 1.5;
             ctx.strokeStyle = this.color;
             ctx.globalAlpha = 0.35;
-            
+
             // Draw main path (softer energy line)
             ctx.beginPath();
             ctx.lineWidth = 1.8; // Softer
             ctx.strokeStyle = this.color;
             ctx.globalAlpha = 0.25; // More transparent
-            
+
             // Rebalanced GLOW
             ctx.shadowBlur = 12;
             ctx.shadowColor = this.color;
-            
+
             ctx.moveTo(this.points[0].x, this.points[0].y);
             for (let i = 0; i < this.points.length - 1; i++) {
                 const xc = (this.points[i].x + this.points[i + 1].x) / 2;
@@ -777,11 +734,11 @@ function createBubbles() {
                 ctx.globalAlpha = 0.4 + pulse * 0.5; // Pulsating visibility
                 ctx.fillStyle = this.color;
                 ctx.strokeStyle = this.color;
-                
+
                 // Outer glow shadow
                 ctx.shadowBlur = 15;
                 ctx.shadowColor = this.color;
-                
+
                 // Draw Elaborate 8-pointed Flare (Star)
                 ctx.beginPath();
                 ctx.arc(0, 0, part.size * 0.4 * pulse, 0, Math.PI * 2);
@@ -793,13 +750,13 @@ function createBubbles() {
                 const s1 = part.size * 2.5 * pulse;
                 ctx.moveTo(-s1, 0); ctx.lineTo(s1, 0);
                 ctx.moveTo(0, -s1); ctx.lineTo(0, s1);
-                
+
                 // Diagonal spikes (shorter)
                 const s2 = s1 * 0.5;
                 ctx.rotate(Math.PI / 4);
                 ctx.moveTo(-s2, 0); ctx.lineTo(s2, 0);
                 ctx.moveTo(0, -s2); ctx.lineTo(0, s2);
-                
+
                 ctx.stroke();
 
                 ctx.restore();
@@ -808,7 +765,7 @@ function createBubbles() {
     }
 
     function resize() {
-        W = canvas.width  = container.offsetWidth;
+        W = canvas.width = container.offsetWidth;
         H = canvas.height = container.offsetHeight;
         if (paths.length === 0) {
             paths = Array.from({ length: PATH_COUNT }, () => new MotionPath());
@@ -869,15 +826,15 @@ function createBubbles() {
     setInterval(() => {
         // Fade out
         vignettes.forEach(v => v.style.opacity = '0');
-        
+
         setTimeout(() => {
             // Pools to ensure NO overlap and balanced layout
             let leftPool = [0, 2, 4]; // Spots 0, 2, 4 are LEFT
             let rightPool = [1, 3, 5]; // Spots 1, 3, 5 are RIGHT
-            
+
             let nextLeft = leftPool[Math.floor(Math.random() * leftPool.length)];
             let nextRight = rightPool[Math.floor(Math.random() * rightPool.length)];
-            
+
             // Assign one to each vignette (always one per side)
             if (vignettes[0]) applySpot(vignettes[0], nextLeft);
             if (vignettes[1]) applySpot(vignettes[1], nextRight);
@@ -888,3 +845,240 @@ function createBubbles() {
     }, 12000); // Teleport every 12s (Slower)
 })();
 
+
+
+// =============================================
+// ILLUSTRATIONS SECTION — High-Performance Canvas Engine
+// =============================================
+(function initNebulaEngine() {
+    const canvas = document.getElementById('nebula-canvas');
+    const section = document.querySelector('.gallery-section');
+    if (!canvas || !section) return;
+
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let stars = [];
+    let meteors = [];
+    let gasClouds = [];
+    const cloudColors = ['rgba(124, 58, 237, 0.3)', 'rgba(157, 80, 187, 0.25)', 'rgba(34, 211, 238, 0.2)'];
+
+    function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        width = section.offsetWidth;
+        height = section.offsetHeight;
+        if (width === 0 || height === 0) return;
+
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        initElements();
+    }
+
+    class Star {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            // Optimización de tamaño para visibilidad: 0.5 a 2.5px
+            this.size = Math.random() * 1.8 + 0.5;
+            this.baseOpacity = Math.random() * 0.4 + 0.1;
+            this.opacity = this.baseOpacity;
+            this.twinkleSpeed = Math.random() * 0.008 + 0.003; 
+            this.twinkleDir = 1;
+            this.color = Math.random() > 0.8 ? (Math.random() > 0.5 ? '#a78bfa' : '#bae6fd') : '#ffffff';
+            this.halo = Math.random() > 0.92; // 8% son estrellas protagonistas (Menos coste CPU)
+        }
+        update() {
+            this.opacity += this.twinkleSpeed * this.twinkleDir;
+            if (this.opacity > 1) {
+                this.opacity = 1;
+                this.twinkleDir = -1;
+            } else if (this.opacity < 0.05) { 
+                this.opacity = 0.05;
+                this.twinkleDir = 1;
+                
+                // Quantum Rebirth: Al llegar al punto más oscuro, nace en otro lugar
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 1.8 + 0.5;
+                this.halo = Math.random() > 0.92;
+            }
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = this.color;
+            if (this.halo) {
+                ctx.shadowBlur = 15; // Sombreado ligero para rendimiento
+                ctx.shadowColor = this.color;
+            }
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Efecto Glint (+) — Solo cuando brilla con fuerza para ahorrar recursos
+            if (this.halo && this.opacity > 0.6) {
+                ctx.strokeStyle = this.color;
+                ctx.globalAlpha = this.opacity * 0.4;
+                ctx.lineWidth = 0.5;
+                const flareSize = this.size * 4;
+                ctx.beginPath();
+                ctx.moveTo(this.x - flareSize, this.y);
+                ctx.lineTo(this.x + flareSize, this.y);
+                ctx.moveTo(this.x, this.y - flareSize);
+                ctx.lineTo(this.x, this.y + flareSize);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+
+    class NebulaCore {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            // Núcleos masivos para lavar el fondo de color: 600 a 1400px
+            this.size = Math.random() * 800 + 600;
+            this.hue = Math.random() * 360;
+            this.vx = (Math.random() - 0.5) * 0.15;
+            this.vy = (Math.random() - 0.5) * 0.15;
+        }
+        update() {
+            this.hue = (this.hue + 0.05) % 360; // Cambio de color lento y suave
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < -this.size || this.x > width + this.size) this.vx *= -1;
+            if (this.y < -this.size || this.y > height + this.size) this.vy *= -1;
+        }
+        draw() {
+            const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+            grad.addColorStop(0, `hsla(${this.hue}, 80%, 50%, 0.1)`);
+            grad.addColorStop(1, 'transparent');
+            ctx.save();
+            ctx.globalAlpha = 0.05; // Muy sutil para no saturar
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    class GasCloud {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.size = Math.random() * 350 + 250;
+            // Paleta expandida: Violeta, Cian, Oro, Magenta, Azul Eléctrico
+            const colors = [
+                'rgba(124, 58, 237, 0.2)',  // Violeta
+                'rgba(34, 211, 238, 0.25)', // Cian
+                'rgba(212, 175, 55, 0.15)', // Oro
+                'rgba(244, 114, 182, 0.2)', // Magenta
+                'rgba(59, 130, 246, 0.15)'  // Azul
+            ];
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.opacity = Math.random() * 0.08 + 0.04;
+            this.pulse = Math.random() * 0.005;
+            this.pulseDir = 1;
+            this.vx = (Math.random() - 0.5) * 0.18;
+            this.vy = (Math.random() - 0.5) * 0.18;
+        }
+        update() {
+            // Oscilación de opacidad para que el cielo "respire"
+            this.opacity += this.pulse * this.pulseDir;
+            if (this.opacity > 0.15 || this.opacity < 0.04) this.pulseDir *= -1;
+
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < -this.size || this.x > width + this.size) this.vx *= -1;
+            if (this.y < -this.size || this.y > height + this.size) this.vy *= -1;
+        }
+        draw() {
+            const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+            grad.addColorStop(0, this.color);
+            grad.addColorStop(1, 'transparent');
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    class Meteor {
+        constructor() { this.reset(); }
+        reset() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * (height * 0.85);
+            this.len = Math.random() * 350 + 200;
+            this.speed = Math.random() * 5 + 3;
+            this.opacity = 0;
+            this.active = false;
+            this.wait = Math.random() * 900;
+        }
+        update() {
+            if (!this.active) {
+                this.wait--;
+                if (this.wait <= 0) this.active = true;
+                return;
+            }
+            this.x += this.speed;
+            this.y += this.speed * 0.48;
+            if (this.x > width + 400 || this.y > height + 400) this.reset();
+        }
+        draw() {
+            if (!this.active) return;
+            ctx.save();
+            const grad = ctx.createLinearGradient(this.x, this.y, this.x - this.len, this.y - this.len * 0.48);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x - this.len, this.y - this.len * 0.48);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    let nebulaCores = [];
+    function initElements() {
+        // Rediseño de Economía: 1 estrella por cada 6500px²
+        const starCount = Math.max(300, Math.floor((width * height) / 6500));
+        stars = Array.from({ length: starCount }, () => new Star());
+        
+        // Lavado de color dinámico: 4 núcleos masivos que desplazan el tono
+        nebulaCores = Array.from({ length: 4 }, () => new NebulaCore());
+        
+        // 8 capas de nebulosa multicolor para mayor profundidad
+        gasClouds = Array.from({ length: 8 }, () => new GasCloud());
+
+        // 5 meteoros discretos
+        meteors = Array.from({ length: 5 }, () => new Meteor());
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        nebulaCores.forEach(c => { c.update(); c.draw(); });
+        gasClouds.forEach(g => { g.update(); g.draw(); });
+        stars.forEach(s => { s.update(); s.draw(); });
+        meteors.forEach(m => { m.update(); m.draw(); });
+        requestAnimationFrame(animate);
+    }
+
+    // Ultra-Responsive Tracking
+    const observer = new ResizeObserver(() => {
+        requestAnimationFrame(() => {
+            const currentW = section.offsetWidth;
+            const currentH = section.offsetHeight;
+            if (currentW !== width || currentH !== height) resize();
+        });
+    });
+    observer.observe(section);
+
+    resize();
+    animate();
+})();
