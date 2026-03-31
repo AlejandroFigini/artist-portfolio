@@ -2291,32 +2291,26 @@ input:checked+.slider:before {
     z-index: 0;
 }
 
-/* 3ds Max–style viewport grid with movement */
+/* 3ds Max–style viewport grid with movement (GPU Composited) */
 .viewport-grid {
     position: absolute;
-    inset: 0;
+    top: -100px;
+    left: -100px;
+    right: -100px;
+    bottom: -100px;
     background-image:
-        /* Major grid every 80px */
         linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-        /* Minor grid every 20px */
         linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-    background-size:
-        80px 80px, 80px 80px,
-        20px 20px, 20px 20px;
+    background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
     animation: gridScroll 4s linear infinite;
-    /* Very fast speed viewport */
+    will-change: transform;
 }
 
 @keyframes gridScroll {
-    0% {
-        background-position: 0 0;
-    }
-
-    100% {
-        background-position: 80px 80px;
-    }
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(80px, 80px); }
 }
 
 /* Viewport HUD text */
@@ -3008,6 +3002,7 @@ input:checked+.slider:before {
     opacity: 0.4;
     animation: auroraWave 12s infinite alternate ease-in-out;
     transform-origin: top center;
+    will-change: transform, opacity;
 }
 
 .a1 {
@@ -3170,23 +3165,10 @@ input:checked+.slider:before {
 }
 
 @keyframes cosmic-drift {
-
-    0%,
-    100% {
-        transform: translate(0, 0) rotate(0deg);
-    }
-
-    25% {
-        transform: translate(3px, -3px) rotate(0.1deg);
-    }
-
-    50% {
-        transform: translate(-2px, 2px) rotate(-0.1deg);
-    }
-
-    75% {
-        transform: translate(2px, 1px) rotate(0.1deg);
-    }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    25% { transform: translate3d(3px, -3px, 0) rotate(0.1deg); }
+    50% { transform: translate3d(-2px, 2px, 0) rotate(-0.1deg); }
+    75% { transform: translate3d(2px, 1px, 0) rotate(0.1deg); }
 }
 
 .masonry-gallery {
@@ -3370,6 +3352,7 @@ input:checked+.slider:before {
     font-weight: 700;
     margin-bottom: 1rem;
     background: linear-gradient(90deg, #fff, #94a3b8);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }

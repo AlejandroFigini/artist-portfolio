@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             item.innerHTML = `
                 <div class="drift-wrapper" style="width: 100%; height: 100%; animation: cosmic-drift ${driftDuration} ${driftDelay} infinite ease-in-out;">
-                    <img src="${imgPath}" alt="${file}">
+                    <img src="${imgPath}" alt="${file}" loading="lazy" decoding="async">
                     <div class="gallery-overlay">
                         <button class="expand-btn">
                             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -590,13 +590,13 @@ function createBubbles() {
         }, 13000);
     }
 
-    // Initial batch (30 elements for density)
-    for (let i = 0; i < 30; i++) {
-        setTimeout(() => spawnText(), i * 400);
+    // Initial batch (20 elements for density, staggered)
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => spawnText(), i * 350);
     }
 
-    // Keep spawning frequently (every 1 second)
-    setInterval(spawnText, 500);
+    // Keep spawning frequently (every 800ms)
+    setInterval(spawnText, 800);
 })();
 
 // =============================================
@@ -604,30 +604,25 @@ function createBubbles() {
 // =============================================
 (function initHUDUpdater() {
     const elPoly = document.getElementById('hud-poly');
-    const elGrid = document.getElementById('hud-grid');
     const elFps = document.getElementById('hud-fps');
     const elSnap = document.getElementById('hud-snap');
-
     if (!elPoly) return;
 
     setInterval(() => {
-        // Randomize Poly Count slightly around a base number
         const basePoly = 42500;
         const poly = basePoly + Math.floor(Math.random() * 1200);
         const verts = Math.floor(poly * 0.52);
-        elPoly.innerText = `POLY: ${poly.toLocaleString()} | VERTS: ${verts.toLocaleString()}`;
+        if (elPoly) elPoly.innerText = `POLY: ${poly.toLocaleString()} | VERTS: ${verts.toLocaleString()}`;
 
-        // Randomize FPS slightly (like real software flicker)
-        const fpsBase = Math.random() > 0.9 ? 58 : 60; // Occasionally drop a bit
+        const fpsBase = Math.random() > 0.9 ? 58 : 60;
         const fps = (fpsBase + Math.random() * 2.5).toFixed(1);
-        elFps.innerText = `FPS: ${fps} | RENDER: Scanline`;
+        if (elFps) elFps.innerText = `FPS: ${fps} | RENDER: Scanline`;
 
-        // Occasionally fluctuate angle or snap settings for realism
         if (Math.random() > 0.98) {
             const angle = (Math.random() * 90).toFixed(1);
-            elSnap.innerText = `SNAP: ON | ANGLE: ${angle}°`;
+            if (elSnap) elSnap.innerText = `SNAP: ON | ANGLE: ${angle}°`;
         }
-    }, 150);
+    }, 250);
 })();
 
 // ── Characters Background sanitized for Deep Minimalism ──
@@ -635,79 +630,42 @@ function createBubbles() {
 // =============================================
 // ANIMATIONS SECTION — Morphing Stretchy Blobs (Canvas)
 // =============================================
-(function initAnimationsBackground() {
+function initAnimationsBackground() {
     const canvas = document.getElementById('animBlobCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const container = canvas.closest('.animations-section');
 
     let W, H, paths = [], raf;
-    const PATH_COUNT = 3; /* Even more subtle */
-    const COLORS = [
-        '#8b5cf6', '#7c3aed', '#a78bfa', '#4c1d95', '#6d28d9'
-    ];
+    const PATH_COUNT = 3; 
+    const COLORS = ['#8b5cf6', '#7c3aed', '#a78bfa', '#4c1d95', '#6d28d9'];
 
     class MotionPath {
-        constructor() {
-            this.init();
-        }
-
+        constructor() { this.init(); }
         init() {
-            this.points = [];
-            this.numPoints = 8;
+            this.points = []; this.numPoints = 8;
             this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-            this.offset = Math.random() * 2000;
-            this.baseY = Math.random() * H;
-
-            // Flares that follow this path (8-pointed sophisticated stars)
+            this.offset = Math.random() * 2000; this.baseY = Math.random() * H;
             this.particles = Array.from({ length: 4 }, () => ({
-                pos: Math.random(), // 0 to 1 along path
-                speed: 0.00008 + Math.random() * 0.0002, // SLOWER
-                size: 1.5 + Math.random() * 2.5, // SMALLER
-                twinkle: Math.random() * Math.PI * 2
+                pos: Math.random(), speed: 0.00008 + Math.random() * 0.0002, 
+                size: 1.5 + Math.random() * 2.5, twinkle: Math.random() * Math.PI * 2
             }));
-
             for (let i = 0; i <= this.numPoints; i++) {
-                // Extend beyond width to avoid gaps
                 this.points.push({
-                    x: -200 + (i / this.numPoints) * (W + 400),
-                    y: 0,
+                    x: -200 + (i / this.numPoints) * (W + 400), y: 0,
                     phase: (i / this.numPoints) * Math.PI * 3 + Math.random(),
                     amp: Math.random() * 80 + 40
                 });
             }
         }
-
         update() {
-            this.offset += 0.1; // Much slower, rhythmic morphing
-            this.points.forEach((p, i) => {
-                p.y = this.baseY + Math.sin(this.offset * 0.02 + p.phase) * p.amp;
-            });
-
-            // Move particles and update twinkle
-            this.particles.forEach(p => {
-                p.pos += p.speed;
-                if (p.pos > 1) p.pos = 0;
-                p.twinkle += 0.04; // Twinkle pulse
-            });
+            this.offset += 0.1;
+            this.points.forEach(p => p.y = this.baseY + Math.sin(this.offset * 0.02 + p.phase) * p.amp);
+            this.particles.forEach(p => { p.pos += p.speed; if (p.pos > 1) p.pos = 0; p.twinkle += 0.04; });
         }
-
         draw() {
-            ctx.beginPath();
-            ctx.lineWidth = 1.5;
-            ctx.strokeStyle = this.color;
-            ctx.globalAlpha = 0.35;
-
-            // Draw main path (softer energy line)
-            ctx.beginPath();
-            ctx.lineWidth = 1.8; // Softer
-            ctx.strokeStyle = this.color;
-            ctx.globalAlpha = 0.25; // More transparent
-
-            // Rebalanced GLOW
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = this.color;
-
+            ctx.shadowBlur = 12; ctx.shadowColor = this.color;
+            ctx.beginPath(); ctx.lineWidth = 1.8; ctx.strokeStyle = this.color; ctx.globalAlpha = 0.25;
             ctx.moveTo(this.points[0].x, this.points[0].y);
             for (let i = 0; i < this.points.length - 1; i++) {
                 const xc = (this.points[i].x + this.points[i + 1].x) / 2;
@@ -715,69 +673,31 @@ function createBubbles() {
                 ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, xc, yc);
             }
             ctx.stroke();
-
-            // Draw Flares (Sophisticated Twinkling Stars)
             this.particles.forEach(part => {
                 const index = Math.floor(part.pos * this.numPoints);
-                const p1 = this.points[index];
-                const p2 = this.points[Math.min(index + 1, this.numPoints)];
+                const p1 = this.points[index]; const p2 = this.points[Math.min(index + 1, this.numPoints)];
                 if (!p1 || !p2) return;
-
                 const t = (part.pos * this.numPoints) % 1;
-                const x = p1.x + (p2.x - p1.x) * t;
-                const y = p1.y + (p2.y - p1.y) * t;
-
-                const pulse = (Math.sin(part.twinkle) + 1.2) / 2; // Twinkle alpha/size
-
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.globalAlpha = 0.4 + pulse * 0.5; // Pulsating visibility
-                ctx.fillStyle = this.color;
-                ctx.strokeStyle = this.color;
-
-                // Outer glow shadow
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = this.color;
-
-                // Draw Elaborate 8-pointed Flare (Star)
-                ctx.beginPath();
-                ctx.arc(0, 0, part.size * 0.4 * pulse, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.lineWidth = 0.8;
-                // Main spikes
-                const s1 = part.size * 2.5 * pulse;
-                ctx.moveTo(-s1, 0); ctx.lineTo(s1, 0);
-                ctx.moveTo(0, -s1); ctx.lineTo(0, s1);
-
-                // Diagonal spikes (shorter)
-                const s2 = s1 * 0.5;
-                ctx.rotate(Math.PI / 4);
-                ctx.moveTo(-s2, 0); ctx.lineTo(s2, 0);
-                ctx.moveTo(0, -s2); ctx.lineTo(0, s2);
-
-                ctx.stroke();
-
+                const x = p1.x + (p2.x - p1.x) * t; const y = p1.y + (p2.y - p1.y) * t;
+                const pulse = (Math.sin(part.twinkle) + 1.2) / 2;
+                ctx.save(); ctx.translate(x, y); ctx.globalAlpha = 0.4 + pulse * 0.5;
+                ctx.fillStyle = ctx.strokeStyle = this.color; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.arc(0, 0, part.size * 0.4 * pulse, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.lineWidth = 0.8; const s1 = part.size * 2.5 * pulse;
+                ctx.moveTo(-s1, 0); ctx.lineTo(s1, 0); ctx.moveTo(0, -s1); ctx.lineTo(0, s1);
+                ctx.rotate(Math.PI / 4); const s2 = s1 * 0.5;
+                ctx.moveTo(-s2, 0); ctx.lineTo(s2, 0); ctx.moveTo(0, -s2); ctx.lineTo(0, s2); ctx.stroke();
                 ctx.restore();
             });
         }
     }
 
     function resize() {
-        W = canvas.width = container.offsetWidth;
-        H = canvas.height = container.offsetHeight;
-        if (paths.length === 0) {
-            paths = Array.from({ length: PATH_COUNT }, () => new MotionPath());
-        }
+        W = canvas.width = container.offsetWidth; H = canvas.height = container.offsetHeight;
+        if (paths.length === 0) paths = Array.from({ length: PATH_COUNT }, () => new MotionPath());
     }
-
     function loop() {
-        ctx.clearRect(0, 0, W, H);
-        paths.forEach(p => {
-            p.update();
-            p.draw();
-        });
+        ctx.clearRect(0, 0, W, H); paths.forEach(p => { p.update(); p.draw(); });
         raf = requestAnimationFrame(loop);
     }
 
@@ -786,10 +706,30 @@ function createBubbles() {
         else { cancelAnimationFrame(raf); raf = null; }
     }, { threshold: 0.1 });
     io.observe(container);
+    window.addEventListener('resize', resize); resize();
+}
 
-    window.addEventListener('resize', resize);
-    resize();
-})();
+// ── SMART VIDEO STACK (Auto-play when visible, No-load when hidden) ──
+function initVideoAutoplayEngine() {
+    const vObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const vid = entry.target;
+            if (entry.isIntersecting) {
+                // Prime the video (start fetching since preload=none)
+                if (vid.paused) vid.play().catch(() => {});
+            } else {
+                if (!vid.paused) vid.pause();
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.obs-video, .decor-video').forEach(v => vObserver.observe(v));
+}
+
+// --- STAGGERED INITIALIZATION (Main Thread Optimization) ---
+setTimeout(() => { if (typeof createBubbles === 'function') createBubbles(); }, 1500);
+setTimeout(() => { initAnimationsBackground(); }, 2500);
+setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
 
 
 // --- VIGNETTE TELEPORTATION ENGINE ---

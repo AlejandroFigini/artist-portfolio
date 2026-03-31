@@ -7,13 +7,18 @@
     <title>Lucia Montaña | Portfolio</title>
     <!-- Google Fonts: Raleway (Extremadamente fina, moderna, suave y orientada a portafolios artísticos) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <!-- Google Fonts: Inter (Cuerpo) y Raleway (Logo Hairline/Extra-Light) -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400&family=Raleway:wght@100;200&display=swap"
-        rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Google Fonts: Inter & Raleway -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400&family=Raleway:wght@100;200&display=swap" rel="stylesheet">
+    
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="style.css?v=1.2">
     <script>
         // Aplicar tema guardado inmediatamente para evitar parpadeo blanco
         const savedTheme = localStorage.getItem('theme');
@@ -446,7 +451,7 @@
                                 class="artist-photo-img">
                         </div>
                         <div class="artist-video-wrapper">
-                            <video autoplay loop muted playsinline class="about-video">
+                            <video autoplay loop muted playsinline class="about-video" preload="none">
                                 <source src="assets/images/feed/aboutMe/Alessio te saluda.webm" type="video/webm">
                             </video>
                         </div>
@@ -486,13 +491,13 @@
 
             <!-- Decorative Motion Elements (Z-Index Background Support) -->
             <div class="decor-motion">
-                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                <video autoplay loop muted playsinline class="decor-video" preload="none">
                     <source src="assets/images/feed/animation/HAAI THAR. IDLE (1).webm" type="video/webm">
                 </video>
                 <div class="decor-label">Haai Thar</div>
             </div>
             <div class="decor-motion">
-                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                <video autoplay loop muted playsinline class="decor-video" preload="none">
                     <source src="assets/images/feed/animation/galope.webm" type="video/webm">
                 </video>
                 <div class="decor-label">Galope</div>
@@ -511,7 +516,7 @@
 
                 <!-- Video 1 -->
                 <div class="animation-item video-container">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/Animaci%C3%B3n%20Zorro(2020).webm" type="video/webm">
                     </video>
                     <div class="video-overlay">
@@ -533,7 +538,7 @@
 
                 <!-- Video 2 -->
                 <div class="animation-item video-container">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/Animaci%C3%B3n%20perro(2020).webm" type="video/webm">
                     </video>
                     <div class="video-overlay">
@@ -555,7 +560,7 @@
                 <div class="animation-item video-container" 
                      data-title="Animated Short (Part 1)" 
                      data-desc="Exploring narrative pacing and character weight in a multi-stage animated sequence. Created as part of the diploma at ORT University.">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/Corto%20animado%20primera%20parte%20(2021).webm"
                             type="video/webm">
                     </video>
@@ -579,7 +584,7 @@
                 <div class="animation-item video-container" 
                      data-title="LipSync Study" 
                      data-desc="Focusing on phonetic mouth movements and expressive character acting in sync with audio dialogue. Highlighting facial emotion fluidity.">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/LipSync%20Animaci%C3%B3n%20(2020).webm"
                             type="video/webm">
                     </video>
@@ -602,7 +607,7 @@
                 <div class="animation-item video-container" 
                      data-title="Action Sequence" 
                      data-desc="A study in mechanical movement, anticipation, and follow-through. Analyzing the physics of body motion in a high-intensity character loop.">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/Pr%C3%A1ctica%20de%20animaci%C3%B3n(2020).webm"
                             type="video/webm">
                     </video>
@@ -625,7 +630,7 @@
                 <div class="animation-item video-container" 
                      data-title="Final Project Scene" 
                      data-desc="A cinematic composition from a final production phase. Integrating environment lighting, character rig complexity, and emotional storytelling.">
-                    <video loop muted playsinline class="anim-video" preload="metadata">
+                    <video loop muted playsinline class="anim-video" preload="none">
                         <source src="assets/images/feed/animation/__ANIMACION%201%20TERMINADO.webm" type="video/webm">
                     </video>
                     <div class="video-overlay">
@@ -961,7 +966,7 @@
                     </div>
                     <div class="model-visual-wrapper">
                         <div class="model-video-card">
-                            <video loop muted autoplay playsinline class="obs-video">
+                            <video loop muted autoplay playsinline class="obs-video" preload="none">
                                 <source src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%204.webm"
                                     type="video/webm">
                             </video>
@@ -977,7 +982,7 @@
                 <div class="model-row reverse">
                     <div class="model-visual-grid-wrapper">
                         <div class="model-video-card">
-                            <video loop muted autoplay playsinline class="obs-video">
+                            <video loop muted autoplay playsinline class="obs-video" preload="none">
                                 <source src="assets/images/feed/3dmodels/Screen%20Recording%202024-06-13%20at%201.webm"
                                     type="video/webm">
                             </video>
@@ -988,7 +993,7 @@
                         </div>
                         <div class="video-sub-grid">
                             <div class="model-video-card small-card">
-                                <video loop muted autoplay playsinline class="obs-video">
+                                <video loop muted autoplay playsinline class="obs-video" preload="none">
                                     <source
                                         src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%206.11_1.webm"
                                         type="video/webm">
@@ -999,7 +1004,7 @@
                                 </button>
                             </div>
                             <div class="model-video-card small-card">
-                                <video loop muted autoplay playsinline class="obs-video">
+                                <video loop muted autoplay playsinline class="obs-video" preload="none">
                                     <source
                                         src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-27%20at%2010.41.17%E2%80%AFAM_1.webm"
                                         type="video/webm">
