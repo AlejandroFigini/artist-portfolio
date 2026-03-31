@@ -520,7 +520,8 @@ section {
     line-height: 1.1;
     margin-bottom: 1.5rem;
     letter-spacing: -1px;
-    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    color: rgba(15, 23, 42, 0.82); /* Softer, muted dark for premium integration */
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .hero-overlay p {
@@ -532,6 +533,7 @@ section {
     margin: 1.5rem auto 0;
     text-align: center;
     line-height: 1.6;
+    color: rgba(71, 85, 105, 0.9); /* More muted secondary text to reduce visual weight */
 }
 
 .highlight {
