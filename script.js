@@ -469,14 +469,14 @@ function handleLightboxClick(event, type) {
 function createBubbles() {
     const container = document.getElementById('bubbles-container');
     if (!container) return;
-    const bubbleCount = 20;
+    const bubbleCount = 10; // Optimized for performance (Reduced from 20)
     for (let i = 0; i < bubbleCount; i++) {
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
-        const size = Math.random() * 60 + 20 + 'px';
+        const size = Math.random() * 50 + 15 + 'px'; // Slightly smaller bubbles
         const left = Math.random() * 100 + '%';
-        const delay = Math.random() * 10 + 's';
-        const duration = Math.random() * 5 + 10 + 's';
+        const delay = Math.random() * 8 + 's';
+        const duration = Math.random() * 5 + 12 + 's'; // Slower for less CPU stress
         bubble.style.width = size;
         bubble.style.height = size;
         bubble.style.left = left;
