@@ -181,7 +181,8 @@ header {
 }
 
 .logo span {
-    color: var(--accent);
+    color: #a855f7; /* Electric Violet: High-Saturation pop for branding */
+    font-weight: 500; /* Subtle weight increase for clarity */
 }
 
 .nav-links {
