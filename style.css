@@ -3452,3 +3452,57 @@ input:checked+.slider:before {
     /* Proportionally sized icon */
     height: 24px;
 }
+
+/* ============================================================
+   PERFORMANCE — MODO LIGERO ADAPTATIVO (html.perf-lite)
+   Lo activa la detección de dispositivo o el monitor de FPS
+   (ver el <script> del <head> y script.js). Sacrifica algunos
+   efectos decorativos caros para garantizar fluidez en equipos
+   modestos, móviles y con prefers-reduced-motion.
+   ============================================================ */
+
+/* 1. backdrop-filter (blur de cristal) es de lo más costoso en GPUs
+      débiles. Se elimina por completo; los paneles siguen siendo
+      translúcidos por su background rgba. */
+html.perf-lite,
+html.perf-lite *,
+html.perf-lite *::before,
+html.perf-lite *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 2. Las nebulosas/auroras/blobs combinan filter: blur(100-160px) con
+      animaciones infinitas: cada frame re-renderiza un blur enorme.
+      Al detener la animación, el blur se compone UNA vez (barato) y se
+      mantiene el aspecto atmosférico de fondo. */
+html.perf-lite .aurora,
+html.perf-lite .blob-1,
+html.perf-lite .blob-2,
+html.perf-lite .blob-3,
+html.perf-lite .gallery-bg-animation .blob-1,
+html.perf-lite .gallery-bg-animation .blob-2,
+html.perf-lite .gallery-bg-animation .blob-3 {
+    animation: none !important;
+}
+
+/* 3. cosmic-drift se aplica (inline desde JS) a CADA item de la galería.
+      En modo ligero se desactiva para no animar decenas de wrappers. */
+html.perf-lite .drift-wrapper {
+    animation: none !important;
+}
+
+/* ============================================================
+   prefers-reduced-motion — respeto de accesibilidad
+   Reduce al mínimo cualquier animación/transición decorativa.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

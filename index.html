@@ -22,6 +22,46 @@
         if (savedTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
+
+        // ============================================================
+        // PERFORMANCE TIER DETECTION (sync, before first paint)
+        // Establece window.PERF y la clase perf-lite/perf-full en <html>
+        // para que el CSS adaptativo se aplique desde el primer frame.
+        // ============================================================
+        (function () {
+            const nav = navigator;
+            const mem = nav.deviceMemory || 4;            // GB (heurística)
+            const cores = nav.hardwareConcurrency || 4;   // hilos lógicos
+            const ua = nav.userAgent || '';
+            const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const saveData = nav.connection && nav.connection.saveData;
+
+            // Modo ligero si: el usuario pide menos movimiento, ahorro de datos,
+            // RAM/CPU claramente baja, o cualquier móvil (los efectos pesados
+            // de canvas + blur drenan batería y trabajan mal en la mayoría).
+            const lite = !!(reduced || saveData || mem <= 2 || cores <= 2 || mobile);
+
+            window.PERF = {
+                lite: lite,
+                tier: lite ? 'lite' : 'full',
+                dprCap: lite ? 1 : 2,          // tope de devicePixelRatio en canvas
+                particleScale: lite ? 0.45 : 1, // multiplicador de partículas
+                shadowBlur: !lite,              // shadowBlur de canvas (caro)
+                reduced: reduced,
+                // Forzar modo ligero en caliente (lo usa el monitor de FPS)
+                downgrade: function () {
+                    if (this.lite) return;
+                    this.lite = true; this.tier = 'lite';
+                    this.dprCap = 1; this.particleScale = 0.45; this.shadowBlur = false;
+                    const r = document.documentElement;
+                    r.classList.remove('perf-full');
+                    r.classList.add('perf-lite');
+                    window.dispatchEvent(new CustomEvent('perf:downgrade'));
+                }
+            };
+            document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+        })();
     </script>
 </head>
 

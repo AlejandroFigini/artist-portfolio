@@ -1,3 +1,31 @@
+// =============================================
+// 0. FPS AUTO-DEGRADE MONITOR
+// Mide los FPS reales durante los primeros segundos. Si el equipo no
+// sostiene un framerate fluido, baja a modo ligero (window.PERF.downgrade)
+// para garantizar fluidez independientemente del dispositivo.
+// =============================================
+(function initPerfMonitor() {
+    const PERF = window.PERF;
+    if (!PERF || PERF.lite) return; // ya estamos en modo ligero
+    let frames = 0, last = performance.now(), elapsed = 0, lowStreak = 0;
+    function sample(now) {
+        frames++;
+        const dt = now - last;
+        if (dt >= 1000) {
+            const fps = (frames * 1000) / dt;
+            elapsed += dt;
+            frames = 0;
+            last = now;
+            // 2 segundos seguidos por debajo de 45 FPS → degradar
+            if (fps < 45) lowStreak++; else lowStreak = 0;
+            if (lowStreak >= 2) { PERF.downgrade(); return; }
+            if (elapsed >= 8000) return; // suficiente muestreo, el equipo va bien
+        }
+        requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     // 1. HERO TYPEWRITER ANIMATION (SLOWER)
@@ -484,57 +512,8 @@ function createBubbles() {
         bubble.style.animationDuration = duration;
         container.appendChild(bubble);
     }
-
-    // --- VIGNETTE TELEPORTATION ENGINE ---
-    function initVignetteTeleportation() {
-        const vignettes = document.querySelectorAll('.decor-motion');
-        if (!vignettes.length) return;
-
-        // 6 Safe spots (avoiding the central 3x2 grid)
-        const SPOTS = [
-            { top: '8%', left: '3%', right: 'auto', bottom: 'auto' },
-            { top: '10%', right: '4%', left: 'auto', bottom: 'auto' },
-            { top: '42%', left: '2%', right: 'auto', bottom: 'auto' },
-            { top: '48%', right: '2%', left: 'auto', bottom: 'auto' },
-            { bottom: '15%', left: '4%', right: 'auto', top: 'auto' },
-            { bottom: '12%', right: '3%', left: 'auto', top: 'auto' }
-        ];
-
-        let currentSpots = [0, 5]; // Initial Top-Left / Bottom-Right
-
-        function applySpot(el, spotIdx) {
-            const s = SPOTS[spotIdx];
-            el.style.top = s.top;
-            el.style.left = s.left;
-            el.style.right = s.right;
-            el.style.bottom = s.bottom;
-        }
-
-        // Initial setup
-        applySpot(vignettes[0], currentSpots[0]);
-        applySpot(vignettes[1], currentSpots[1]);
-        vignettes.forEach(v => v.style.opacity = 0.85); // Fully visible-ish but integrated
-
-        setInterval(() => {
-            // Fade out
-            vignettes.forEach(v => v.style.opacity = 0);
-
-            setTimeout(() => {
-                // Shuffle used spots
-                let available = [0, 1, 2, 3, 4, 5];
-                let next1 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-                let next2 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-
-                applySpot(vignettes[0], next1);
-                applySpot(vignettes[1], next2);
-
-                // Fade back in
-                vignettes.forEach(v => v.style.opacity = 0.85);
-            }, 1600); // Wait for CSS transition fade-out (1.5s)
-        }, 15000); // Teleport every 15s
-    }
-
-    initVignetteTeleportation();
+    // El motor de "vignette teleportation" vive en su propio IIFE más abajo;
+    // antes estaba duplicado aquí y corría dos veces sobre los mismos elementos.
 }
 
 // =============================================
@@ -576,27 +555,46 @@ function createBubbles() {
         span.style.animationDelay = (Math.random() * 4) + 's';
         container.appendChild(span);
 
-        // Update value while it exists (Live effect)
-        const updateTimer = setInterval(() => {
-            if (Math.random() > 0.6) { // 40% chance per second to update
-                span.textContent = currentGen();
-            }
-        }, 1200);
+        // Efecto "en vivo": refrescar el valor. Se omite en modo ligero
+        // para evitar reflows/repaints constantes.
+        let updateTimer = null;
+        if (!lite) {
+            updateTimer = setInterval(() => {
+                if (Math.random() > 0.6) { // 40% chance per second to update
+                    span.textContent = currentGen();
+                }
+            }, 1200);
+        }
 
         // Remove after animation ends
         setTimeout(() => {
-            clearInterval(updateTimer);
+            if (updateTimer) clearInterval(updateTimer);
             if (span.parentNode) span.remove();
         }, 13000);
     }
 
-    // Initial batch (20 elements for density, staggered)
-    for (let i = 0; i < 20; i++) {
-        setTimeout(() => spawnText(), i * 350);
-    }
+    const lite = window.PERF && window.PERF.lite;
+    const SPAWN_MS = lite ? 2000 : 800;
+    const SEED_COUNT = lite ? 6 : 20;
 
-    // Keep spawning frequently (every 800ms)
-    setInterval(spawnText, 800);
+    // Solo generar texto mientras la sección está en pantalla, y sembrar
+    // el lote inicial la primera vez que se hace visible.
+    let spawnTimer = null;
+    let seeded = false;
+    const start = () => { if (!spawnTimer) spawnTimer = setInterval(spawnText, SPAWN_MS); };
+    const stop = () => { if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; } };
+
+    new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            if (!seeded) {
+                seeded = true;
+                for (let i = 0; i < SEED_COUNT; i++) setTimeout(spawnText, i * 350);
+            }
+            start();
+        } else {
+            stop();
+        }
+    }, { threshold: 0 }).observe(container);
 })();
 
 // =============================================
@@ -608,7 +606,7 @@ function createBubbles() {
     const elSnap = document.getElementById('hud-snap');
     if (!elPoly) return;
 
-    setInterval(() => {
+    function tick() {
         const basePoly = 42500;
         const poly = basePoly + Math.floor(Math.random() * 1200);
         const verts = Math.floor(poly * 0.52);
@@ -622,7 +620,16 @@ function createBubbles() {
             const angle = (Math.random() * 90).toFixed(1);
             if (elSnap) elSnap.innerText = `SNAP: ON | ANGLE: ${angle}°`;
         }
-    }, 250);
+    }
+
+    // Solo actualizar el HUD cuando la sección está en pantalla.
+    let timer = null;
+    const start = () => { if (!timer) timer = setInterval(tick, 250); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const target = elPoly.closest('section') || elPoly.parentElement;
+    new IntersectionObserver((entries) => {
+        entries[0].isIntersecting ? start() : stop();
+    }, { threshold: 0 }).observe(target);
 })();
 
 // ── Characters Background sanitized for Deep Minimalism ──
@@ -664,7 +671,8 @@ function initAnimationsBackground() {
             this.particles.forEach(p => { p.pos += p.speed; if (p.pos > 1) p.pos = 0; p.twinkle += 0.04; });
         }
         draw() {
-            ctx.shadowBlur = 12; ctx.shadowColor = this.color;
+            const shadowOn = window.PERF ? window.PERF.shadowBlur : true;
+            ctx.shadowBlur = shadowOn ? 12 : 0; ctx.shadowColor = this.color;
             ctx.beginPath(); ctx.lineWidth = 1.8; ctx.strokeStyle = this.color; ctx.globalAlpha = 0.25;
             ctx.moveTo(this.points[0].x, this.points[0].y);
             for (let i = 0; i < this.points.length - 1; i++) {
@@ -681,7 +689,7 @@ function initAnimationsBackground() {
                 const x = p1.x + (p2.x - p1.x) * t; const y = p1.y + (p2.y - p1.y) * t;
                 const pulse = (Math.sin(part.twinkle) + 1.2) / 2;
                 ctx.save(); ctx.translate(x, y); ctx.globalAlpha = 0.4 + pulse * 0.5;
-                ctx.fillStyle = ctx.strokeStyle = this.color; ctx.shadowBlur = 15;
+                ctx.fillStyle = ctx.strokeStyle = this.color; ctx.shadowBlur = shadowOn ? 15 : 0;
                 ctx.beginPath(); ctx.arc(0, 0, part.size * 0.4 * pulse, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.lineWidth = 0.8; const s1 = part.size * 2.5 * pulse;
                 ctx.moveTo(-s1, 0); ctx.lineTo(s1, 0); ctx.moveTo(0, -s1); ctx.lineTo(0, s1);
@@ -802,15 +810,22 @@ setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
     let gasClouds = [];
     const cloudColors = ['rgba(124, 58, 237, 0.3)', 'rgba(157, 80, 187, 0.25)', 'rgba(34, 211, 238, 0.2)'];
 
+    // Ajustes de rendimiento (leídos de window.PERF, con valores por defecto).
+    const perf = () => window.PERF || { dprCap: 2, particleScale: 1, shadowBlur: true };
+    let shadowOn = perf().shadowBlur;
+
     function resize() {
-        const dpr = window.devicePixelRatio || 1;
+        // Tope de DPR: en pantallas retina/4K evita multiplicar los píxeles x4.
+        const dpr = Math.min(window.devicePixelRatio || 1, perf().dprCap);
         width = section.offsetWidth;
         height = section.offsetHeight;
         if (width === 0 || height === 0) return;
 
         canvas.width = width * dpr;
         canvas.height = height * dpr;
-        ctx.scale(dpr, dpr);
+        // setTransform en vez de scale: resetea la matriz para que el factor
+        // DPR NO se acumule en cada resize (bug original que escalaba de más).
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         initElements();
     }
 
@@ -847,7 +862,7 @@ setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
             ctx.save();
             ctx.globalAlpha = this.opacity;
             ctx.fillStyle = this.color;
-            if (this.halo) {
+            if (this.halo && shadowOn) {
                 ctx.shadowBlur = 15; // Sombreado ligero para rendimiento
                 ctx.shadowColor = this.color;
             }
@@ -986,28 +1001,30 @@ setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
 
     let nebulaCores = [];
     function initElements() {
-        // Rediseño de Economía: 1 estrella por cada 6500px²
-        const starCount = Math.max(300, Math.floor((width * height) / 6500));
+        const scale = perf().particleScale;
+        // Densidad de estrellas escalada por el tier (1 por cada ~6500px²).
+        const density = Math.floor((width * height) / 6500);
+        const starCount = Math.round(Math.max(150, density) * scale);
         stars = Array.from({ length: starCount }, () => new Star());
-        
-        // Lavado de color dinámico: 4 núcleos masivos que desplazan el tono
-        nebulaCores = Array.from({ length: 4 }, () => new NebulaCore());
-        
-        // 8 capas de nebulosa multicolor para mayor profundidad
-        gasClouds = Array.from({ length: 8 }, () => new GasCloud());
 
-        // 5 meteoros discretos
-        meteors = Array.from({ length: 5 }, () => new Meteor());
+        // Núcleos de color, capas de gas y meteoros también escalados.
+        nebulaCores = Array.from({ length: Math.max(2, Math.round(4 * scale)) }, () => new NebulaCore());
+        gasClouds = Array.from({ length: Math.max(3, Math.round(8 * scale)) }, () => new GasCloud());
+        meteors = Array.from({ length: Math.max(2, Math.round(5 * scale)) }, () => new Meteor());
     }
 
+    let rafId = null;
+    let running = false;
     function animate() {
         ctx.clearRect(0, 0, width, height);
         nebulaCores.forEach(c => { c.update(); c.draw(); });
         gasClouds.forEach(g => { g.update(); g.draw(); });
         stars.forEach(s => { s.update(); s.draw(); });
         meteors.forEach(m => { m.update(); m.draw(); });
-        requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
     }
+    function start() { if (!running) { running = true; animate(); } }
+    function stop() { running = false; if (rafId) cancelAnimationFrame(rafId); rafId = null; }
 
     // Ultra-Responsive Tracking
     const observer = new ResizeObserver(() => {
@@ -1019,6 +1036,21 @@ setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
     });
     observer.observe(section);
 
+    // Pausar todo el render cuando la galería NO está en pantalla:
+    // este bucle era el mayor consumo de CPU/GPU corriendo siempre.
+    const visObserver = new IntersectionObserver((entries) => {
+        entries[0].isIntersecting ? start() : stop();
+    }, { threshold: 0 });
+    visObserver.observe(section);
+
+    // Si el monitor de FPS degrada el equipo, reconstruir con menos
+    // partículas, sin shadowBlur y con DPR limitado.
+    window.addEventListener('perf:downgrade', () => {
+        shadowOn = false;
+        resize();
+    });
+
     resize();
-    animate();
+    // El arranque del bucle lo decide el IntersectionObserver (si ya es
+    // visible, dispara start() de inmediato).
 })();
