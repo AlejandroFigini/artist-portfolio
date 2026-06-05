@@ -357,6 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const TYPEWRITER_SPEED_NAME = 0.15;
     const TYPEWRITER_SPEED_ROLE = 0.06;
 
+    // =============================================
+    // CHARACTER DESIGN: Acordeón mejorado
+    // =============================================
     const charCards = document.querySelectorAll('.char-card');
 
     charCards.forEach(card => {
@@ -375,20 +378,43 @@ document.addEventListener('DOMContentLoaded', () => {
         d = animateElement(roleEl, roleEl.dataset.text, d, TYPEWRITER_SPEED_ROLE);
     };
 
+    const closeActiveCard = () => {
+        document.querySelectorAll('.char-card.active').forEach(c => c.classList.remove('active'));
+    };
+
     const activateCardIdx = (idx) => {
-        charCards.forEach(c => c.classList.remove('active'));
+        closeActiveCard();
         charCards[idx].classList.add('active');
         triggerCharTypewriter(charCards[idx]);
+        document.body.style.overflow = 'hidden';
     };
 
     let currentIdx = 0;
     charCards.forEach((card, idx) => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
             if (card.classList.contains('active')) return;
             currentIdx = idx;
             activateCardIdx(idx);
             resetRotationTimer();
         });
+    });
+
+    // Cerrar al hacer clic en el overlay (::before)
+    document.addEventListener('click', (e) => {
+        const activeCard = document.querySelector('.char-card.active');
+        if (!activeCard) return;
+        if (e.target === activeCard || (e.target.closest && e.target.closest('.char-card.active'))) return;
+        if (activeCard.contains(e.target)) return;
+        closeActiveCard();
+        document.body.style.overflow = '';
+    });
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeActiveCard();
+            document.body.style.overflow = '';
+        }
     });
 
     let rotationTimer = setInterval(() => {
