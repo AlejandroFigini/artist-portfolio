@@ -13,7 +13,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
+
+    <!-- Precarga de recursos críticos: portada del hero (above-the-fold) y
+         el video de la pantalla de carga, para que aparezcan al instante. -->
+    <link rel="preload" as="image" href="assets/images/portada-1.webp" fetchpriority="high">
+    <link rel="preload" as="video" href="assets/images/feed/animation/galope.webm" type="video/webm">
+
     <link rel="stylesheet" href="style.css">
 
     <script>
@@ -65,11 +70,47 @@
     </script>
 </head>
 
-<body>
+<body class="loading-active">
+    <!-- ============================================================
+         PANTALLA DE CARGA
+         Cubre la página hasta que el contenido está listo (evita ver
+         elementos a medio cargar). A un costado la animación de galope,
+         el nombre de la página y un indicador de progreso.
+         ============================================================ -->
+    <div id="page-loader" class="page-loader">
+        <div class="loader-stage">
+            <!-- Costado: animación de galope -->
+            <div class="loader-media">
+                <video class="loader-gallop" autoplay loop muted playsinline preload="auto"
+                    poster="assets/images/portada-1.webp">
+                    <source src="assets/images/feed/animation/galope.webm" type="video/webm">
+                </video>
+                <div class="loader-media-glow"></div>
+            </div>
+            <!-- Costado: marca + estado de carga -->
+            <div class="loader-info">
+                <h1 class="loader-title">Lucia Montaña <span>| Portfolio</span></h1>
+                <p class="loader-subtitle">Animation &middot; Illustration &middot; 3D Art</p>
+                <div class="loader-status">
+                    <span class="loader-orbit" aria-hidden="true">
+                        <span class="orbit-ring"></span>
+                        <span class="orbit-dot"></span>
+                    </span>
+                    <span class="loader-text">Loading<span class="loader-dots"><i>.</i><i>.</i><i>.</i></span></span>
+                </div>
+                <div class="loader-bar"><span class="loader-bar-fill"></span></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Navegación -->
     <header>
         <div class="nav-container">
             <a href="#" class="logo">Lucia Montaña <span class="highlight">| Portfolio</span></a>
+            <!-- Botón de menú móvil (hamburguesa) -->
+            <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
             <nav class="nav-links">
                 <a href="index.html" data-i18n="nav_feed">Feed</a>
                 <div class="dropdown">
@@ -105,6 +146,8 @@
             </nav>
         </div>
     </header>
+    <!-- Fondo oscuro para cerrar el menú móvil al tocar fuera -->
+    <div class="nav-backdrop" id="nav-backdrop"></div>
 
     <main>
         <!-- Hero / Portada Grande con Slideshow -->

@@ -26,6 +26,45 @@
     requestAnimationFrame(sample);
 })();
 
+// =============================================
+// 0b. PANTALLA DE CARGA
+// Mantiene el splash visible hasta que la página terminó de cargar
+// (evita mostrar elementos a medio renderizar). Con tope de seguridad
+// para que nunca se quede colgado.
+// =============================================
+(function initPageLoader() {
+    const loader = document.getElementById('page-loader');
+    if (!loader) return;
+    let hidden = false;
+    const MIN_DISPLAY_MS = 3000; // Duración mínima de 3 segundos
+    const startTime = Date.now();
+
+    function hide() {
+        if (hidden) return;
+        hidden = true;
+        loader.classList.add('loader-hidden');
+        document.body.classList.remove('loading-active');
+        // Quitar del DOM tras la transición de opacidad (0.7s).
+        setTimeout(() => { if (loader.parentNode) loader.remove(); }, 800);
+    }
+
+    function tryHide() {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+        setTimeout(hide, remaining);
+    }
+
+    if (document.readyState === 'complete') {
+        tryHide();
+    } else {
+        // 'load' espera imágenes/videos/fuentes; respetar mínimo de 3s.
+        window.addEventListener('load', tryHide);
+    }
+
+    // Failsafe: pase lo que pase, no bloquear más de 6 segundos.
+    setTimeout(hide, 6000);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     // 1. HERO TYPEWRITER ANIMATION (SLOWER)
@@ -376,6 +415,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
 
     document.querySelectorAll('.fade-in, .presentation-container, .section-title, .animation-item, .char-accordion, .model-row, .animations-container-inner, .characters-container-inner').forEach(el => observer.observe(el));
+
+    // =============================================
+    // MENÚ MÓVIL (hamburguesa)
+    // =============================================
+    const navToggle = document.getElementById('nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+    const navBackdrop = document.getElementById('nav-backdrop');
+    if (navToggle && navLinks) {
+        const closeNav = () => {
+            document.body.classList.remove('nav-open');
+            navToggle.setAttribute('aria-expanded', 'false');
+        };
+        navToggle.addEventListener('click', () => {
+            const open = document.body.classList.toggle('nav-open');
+            navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        if (navBackdrop) navBackdrop.addEventListener('click', closeNav);
+        // Cerrar al tocar cualquier enlace del drawer.
+        navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', closeNav));
+        // Cerrar con Escape.
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
+    }
+
+    // =============================================
+    // FUNDIDO DE IMÁGENES (anti pop-in)
+    // Añade .img-loaded cuando cada imagen termina de cargar; el CSS
+    // las mantiene en opacity:0 hasta entonces.
+    // =============================================
+    function enhanceImages() {
+        const imgs = document.querySelectorAll('.gallery-item img, .feed-img, .model-media img');
+        imgs.forEach(img => {
+            if (img.complete && img.naturalWidth > 0) {
+                img.classList.add('img-loaded');
+            } else {
+                img.addEventListener('load', () => img.classList.add('img-loaded'), { once: true });
+                img.addEventListener('error', () => img.classList.add('img-loaded'), { once: true });
+            }
+        });
+        // Failsafe: nunca dejar una imagen invisible por un evento perdido.
+        setTimeout(() => imgs.forEach(img => img.classList.add('img-loaded')), 5000);
+    }
+    enhanceImages();
 
     // Handle settings gear interaction
     const settingsToggle = document.getElementById('settings-toggle');
