@@ -734,177 +734,158 @@
 
         <!-- Diseño de Personajes: Deep Minimalist Focus -->
         <section id="personajes" class="characters-section">
+            <div class="cd-blob-1"></div>
+            <div class="cd-blob-2"></div>
+            <div class="cd-blob-3"></div>
             <div class="char-section-spotlight"></div>
             <div class="section-title" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="characters_title">Character Design</h2>
                 <p>Explore the interactive cast of my creations.</p>
             </div>
 
-            <!-- Carrusel formato Acordeón Expansivo -->
-            <div class="char-accordion" data-scroll="reveal">
+            <!-- Showcase: un personaje a la vez + riel de navegación -->
+            <div class="cd-showcase" data-scroll="reveal">
+                <div class="cd-stage">
 
-                <!-- Personaje 1: Alessio -->
-                <div class="char-card" data-index="0">
-                    <div class="bg-carousel">
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/alessio/a1.webp')"></div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/alessio/a2.webp')"></div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/alessio/alessio%204%20patas.webp')">
-                        </div>
-                    </div>
-                    <!-- Main Image (Cubrirá colapsado o irá a la derecha) -->
-                    <div class="char-main-img"
-                        style="background-image: url('assets/images/feed/characterdesign/alessio/main.webp')"></div>
-
-                    <div class="char-card-title-vertical">
-                        <h4>Alessio</h4>
-                    </div>
-                    <div class="char-card-content">
-                        <div class="char-card-info">
-                            <h3 class="char-name">Alessio</h3>
-                            <div class="char-role">Main Design</div>
-                            <p class="char-desc">The design process for this character ranged from initial sketches to
-                                the final 3D rendering. A deep study of proportions, organic texturing, and accessories.
-                            </p>
-                            <div class="img-expand-wrapper">
-                                <img src="assets/images/feed/characterdesign/alessio/main.webp" class="char-info-img"
-                                    alt="Alessio Concept">
-                                <button class="expand-btn"
-                                    onclick="openLightbox('assets/images/feed/characterdesign/alessio/main.webp')">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                                    </svg>
-                                </button>
+                    <!-- Personaje 1: Alessio -->
+                    <article class="cd-panel active" data-index="0">
+                        <div class="cd-media">
+                            <div class="cd-portrait" data-full="assets/images/feed/characterdesign/alessio/main.webp"
+                                style="background-image: url('assets/images/feed/characterdesign/alessio/main.webp')">
+                                <span class="cd-portrait-tag">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                    View
+                                </span>
+                            </div>
+                            <div class="cd-concepts">
+                                <button class="cd-concept" aria-label="Alessio concept 1" data-full="assets/images/feed/characterdesign/alessio/a1.webp" style="background-image: url('assets/images/feed/characterdesign/alessio/a1.webp')"></button>
+                                <button class="cd-concept" aria-label="Alessio concept 2" data-full="assets/images/feed/characterdesign/alessio/a2.webp" style="background-image: url('assets/images/feed/characterdesign/alessio/a2.webp')"></button>
+                                <button class="cd-concept" aria-label="Alessio concept 3" data-full="assets/images/feed/characterdesign/alessio/alessio%204%20patas.webp" style="background-image: url('assets/images/feed/characterdesign/alessio/alessio%204%20patas.webp')"></button>
                             </div>
                         </div>
-                    </div>
-                </div>
+                        <div class="cd-info">
+                            <span class="cd-counter"><b>01</b> / 04</span>
+                            <h3 class="cd-name">Alessio</h3>
+                            <div class="cd-role">Main Design</div>
+                            <p class="cd-desc">The design process for this character ranged from initial sketches to the
+                                final 3D rendering. A deep study of proportions, organic texturing, and accessories.</p>
+                        </div>
+                    </article>
 
-                <!-- Personaje 2: Jaffare -->
-                <div class="char-card" data-index="1">
-                    <div class="bg-carousel">
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/jaffare/Artboard%2033.webp')">
-                        </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/jaffare/Artboard%2038.webp')">
-                        </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/jaffare/jaffare.webp')">
-                        </div>
-                    </div>
-                    <div class="char-main-img"
-                        style="background-image: url('assets/images/feed/characterdesign/jaffare/main.webp')"></div>
-
-                    <div class="char-card-title-vertical">
-                        <h4>Jaffare</h4>
-                    </div>
-                    <div class="char-card-content">
-                        <div class="char-card-info">
-                            <h3 class="char-name">Jaffare</h3>
-                            <div class="char-role">Stylized Design</div>
-                            <p class="char-desc">The development of Jaffare included extensive variations of expressions
-                                and poses. Its modeling required meticulous work to preserve the freshness of the
-                                original 2D concept.</p>
-                            <div class="img-expand-wrapper">
-                                <img src="assets/images/feed/characterdesign/jaffare/main.webp" class="char-info-img"
-                                    alt="Jaffare Concept">
-                                <button class="expand-btn"
-                                    onclick="openLightbox('assets/images/feed/characterdesign/jaffare/main.webp')">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                                    </svg>
-                                </button>
+                    <!-- Personaje 2: Jaffare -->
+                    <article class="cd-panel" data-index="1">
+                        <div class="cd-media">
+                            <div class="cd-portrait" data-full="assets/images/feed/characterdesign/jaffare/main.webp"
+                                style="background-image: url('assets/images/feed/characterdesign/jaffare/main.webp')">
+                                <span class="cd-portrait-tag">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                    View
+                                </span>
+                            </div>
+                            <div class="cd-concepts">
+                                <button class="cd-concept" aria-label="Jaffare concept 1" data-full="assets/images/feed/characterdesign/jaffare/Artboard%2033.webp" style="background-image: url('assets/images/feed/characterdesign/jaffare/Artboard%2033.webp')"></button>
+                                <button class="cd-concept" aria-label="Jaffare concept 2" data-full="assets/images/feed/characterdesign/jaffare/Artboard%2038.webp" style="background-image: url('assets/images/feed/characterdesign/jaffare/Artboard%2038.webp')"></button>
+                                <button class="cd-concept" aria-label="Jaffare concept 3" data-full="assets/images/feed/characterdesign/jaffare/jaffare.webp" style="background-image: url('assets/images/feed/characterdesign/jaffare/jaffare.webp')"></button>
                             </div>
                         </div>
-                    </div>
-                </div>
+                        <div class="cd-info">
+                            <span class="cd-counter"><b>02</b> / 04</span>
+                            <h3 class="cd-name">Jaffare</h3>
+                            <div class="cd-role">Stylized Design</div>
+                            <p class="cd-desc">The development of Jaffare included extensive variations of expressions and
+                                poses. Its modeling required meticulous work to preserve the freshness of the original 2D
+                                concept.</p>
+                        </div>
+                    </article>
 
-                <!-- Personaje 3: King -->
-                <div class="char-card" data-index="2">
-                    <div class="bg-carousel">
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2044.webp')">
+                    <!-- Personaje 3: King -->
+                    <article class="cd-panel" data-index="2">
+                        <div class="cd-media">
+                            <div class="cd-portrait" data-full="assets/images/feed/characterdesign/king/main.jpg"
+                                style="background-image: url('assets/images/feed/characterdesign/king/main.jpg')">
+                                <span class="cd-portrait-tag">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                    View
+                                </span>
+                            </div>
+                            <div class="cd-concepts">
+                                <button class="cd-concept" aria-label="King concept 1" data-full="assets/images/feed/characterdesign/king/Artboard%2044.webp" style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2044.webp')"></button>
+                                <button class="cd-concept" aria-label="King concept 2" data-full="assets/images/feed/characterdesign/king/Artboard%2046.webp" style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2046.webp')"></button>
+                                <button class="cd-concept" aria-label="King concept 3" data-full="assets/images/feed/characterdesign/king/Artboard%2047.webp" style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2047.webp')"></button>
+                            </div>
                         </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2046.webp')">
-                        </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/king/Artboard%2047.webp')">
-                        </div>
-                    </div>
-                    <div class="char-main-img"
-                        style="background-image: url('assets/images/feed/characterdesign/king/main.jpg')"></div>
-
-                    <div class="char-card-title-vertical">
-                        <h4>King</h4>
-                    </div>
-                    <div class="char-card-content">
-                        <div class="char-card-info">
-                            <h3 class="char-name">King</h3>
-                            <div class="char-role">Complex Design</div>
-                            <p class="char-desc">King's process distills an intense work on intertwined hard and organic
+                        <div class="cd-info">
+                            <span class="cd-counter"><b>03</b> / 04</span>
+                            <h3 class="cd-name">King</h3>
+                            <div class="cd-role">Complex Design</div>
+                            <p class="cd-desc">King's process distills an intense work on intertwined hard and organic
                                 shapes. Retopology and render configuration played a crucial role here.</p>
-                            <div class="img-expand-wrapper">
-                                <img src="assets/images/feed/characterdesign/king/main.jpg" class="char-info-img"
-                                    alt="King Concept">
-                                <button class="expand-btn"
-                                    onclick="openLightbox('assets/images/feed/characterdesign/king/main.jpg')">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                                    </svg>
-                                </button>
+                        </div>
+                    </article>
+
+                    <!-- Personaje 4: Leda -->
+                    <article class="cd-panel" data-index="3">
+                        <div class="cd-media">
+                            <div class="cd-portrait" data-full="assets/images/feed/characterdesign/leda/main.jpg"
+                                style="background-image: url('assets/images/feed/characterdesign/leda/main.jpg')">
+                                <span class="cd-portrait-tag">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                    View
+                                </span>
+                            </div>
+                            <div class="cd-concepts">
+                                <button class="cd-concept" aria-label="Leda concept 1" data-full="assets/images/feed/characterdesign/leda/Artboard%2027.webp" style="background-image: url('assets/images/feed/characterdesign/leda/Artboard%2027.webp')"></button>
+                                <button class="cd-concept" aria-label="Leda concept 2" data-full="assets/images/feed/characterdesign/leda/Artboard%2028.webp" style="background-image: url('assets/images/feed/characterdesign/leda/Artboard%2028.webp')"></button>
+                                <button class="cd-concept" aria-label="Leda concept 3" data-full="assets/images/feed/characterdesign/leda/lucia-montana-leda.jpg" style="background-image: url('assets/images/feed/characterdesign/leda/lucia-montana-leda.jpg')"></button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Personaje 4: Leda -->
-                <div class="char-card" data-index="3">
-                    <div class="bg-carousel">
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/leda/Artboard%2027.webp')">
-                        </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/leda/Artboard%2028.webp')">
-                        </div>
-                        <div class="bg-slide"
-                            style="background-image: url('assets/images/feed/characterdesign/leda/lucia-montana-leda.jpg')">
-                        </div>
-                    </div>
-                    <div class="char-main-img"
-                        style="background-image: url('assets/images/feed/characterdesign/leda/main.jpg')"></div>
-
-                    <div class="char-card-title-vertical">
-                        <h4>Leda</h4>
-                    </div>
-                    <div class="char-card-content">
-                        <div class="char-card-info">
-                            <h3 class="char-name">Leda</h3>
-                            <div class="char-role">Fine Attention to Detail</div>
-                            <p class="char-desc">The concept art work for Leda defined the visual tone required by her
+                        <div class="cd-info">
+                            <span class="cd-counter"><b>04</b> / 04</span>
+                            <h3 class="cd-name">Leda</h3>
+                            <div class="cd-role">Fine Attention to Detail</div>
+                            <p class="cd-desc">The concept art work for Leda defined the visual tone required by her
                                 literary background. Every piece of fabric, material, and lighting was selected to evoke
                                 melancholy and intrigue.</p>
-                            <div class="img-expand-wrapper">
-                                <img src="assets/images/feed/characterdesign/leda/main.jpg" class="char-info-img"
-                                    alt="Leda Concept">
-                                <button class="expand-btn"
-                                    onclick="openLightbox('assets/images/feed/characterdesign/leda/main.jpg')">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                                    </svg>
-                                </button>
-                            </div>
                         </div>
-                    </div>
+                    </article>
+
                 </div>
 
+                <!-- Riel de navegación -->
+                <div class="cd-rail" role="tablist" aria-label="Characters">
+                    <button class="cd-rail-item active" data-index="0" role="tab">
+                        <span class="cd-rail-thumb" style="background-image: url('assets/images/feed/characterdesign/alessio/main.webp')"></span>
+                        <span class="cd-rail-meta">
+                            <span class="cd-rail-name">Alessio</span>
+                            <span class="cd-rail-role">Main Design</span>
+                        </span>
+                        <span class="cd-rail-progress"></span>
+                    </button>
+                    <button class="cd-rail-item" data-index="1" role="tab">
+                        <span class="cd-rail-thumb" style="background-image: url('assets/images/feed/characterdesign/jaffare/main.webp')"></span>
+                        <span class="cd-rail-meta">
+                            <span class="cd-rail-name">Jaffare</span>
+                            <span class="cd-rail-role">Stylized</span>
+                        </span>
+                        <span class="cd-rail-progress"></span>
+                    </button>
+                    <button class="cd-rail-item" data-index="2" role="tab">
+                        <span class="cd-rail-thumb" style="background-image: url('assets/images/feed/characterdesign/king/main.jpg')"></span>
+                        <span class="cd-rail-meta">
+                            <span class="cd-rail-name">King</span>
+                            <span class="cd-rail-role">Complex</span>
+                        </span>
+                        <span class="cd-rail-progress"></span>
+                    </button>
+                    <button class="cd-rail-item" data-index="3" role="tab">
+                        <span class="cd-rail-thumb" style="background-image: url('assets/images/feed/characterdesign/leda/main.jpg')"></span>
+                        <span class="cd-rail-meta">
+                            <span class="cd-rail-name">Leda</span>
+                            <span class="cd-rail-role">Detail</span>
+                        </span>
+                        <span class="cd-rail-progress"></span>
+                    </button>
+                </div>
             </div>
         </section>
 

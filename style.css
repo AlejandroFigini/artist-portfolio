@@ -576,14 +576,15 @@ section {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: none;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: waveVertical 4s ease-in-out infinite;
-    /* Flotación un poco más activa */
+    --wave-amp: 9px;
+    animation: iconWaveFloat 3s ease-in-out infinite, iconColorWave 5s ease-in-out infinite;
+    /* Ola vertical desfasada + banda de color violeta que viaja horizontalmente */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     cursor: pointer;
 }
@@ -597,16 +598,47 @@ section {
     transition: all 0.3s ease;
 }
 
-.icon-circle:hover {
-    background: rgba(129, 140, 248, 0.4);
-    /* Violeta traslúcido favorito */
-    transform: scale(1.15) !important;
-    box-shadow: 0 10px 25px rgba(129, 140, 248, 0.15);
+/* Desfase por POSICIÓN real del icono dentro de cada set (10 iconos).
+   Primer valor = ola vertical (offset -0.3s, 10×0.3 = 3s -> 1 longitud de onda por set).
+   Segundo valor = banda de color (offset -0.5s, 10×0.5 = 5s -> la banda recorre 1 set).
+   Ambos cierran de forma continua en la costura entre sets duplicados. */
+.wave-list > a:nth-child(1)  .icon-circle { animation-delay: 0s,    0s; }
+.wave-list > a:nth-child(2)  .icon-circle { animation-delay: -0.3s, -0.5s; }
+.wave-list > a:nth-child(3)  .icon-circle { animation-delay: -0.6s, -1s; }
+.wave-list > a:nth-child(4)  .icon-circle { animation-delay: -0.9s, -1.5s; }
+.wave-list > a:nth-child(5)  .icon-circle { animation-delay: -1.2s, -2s; }
+.wave-list > a:nth-child(6)  .icon-circle { animation-delay: -1.5s, -2.5s; }
+.wave-list > a:nth-child(7)  .icon-circle { animation-delay: -1.8s, -3s; }
+.wave-list > a:nth-child(8)  .icon-circle { animation-delay: -2.1s, -3.5s; }
+.wave-list > a:nth-child(9)  .icon-circle { animation-delay: -2.4s, -4s; }
+.wave-list > a:nth-child(10) .icon-circle { animation-delay: -2.7s, -4.5s; }
+
+/* Hover sin efecto: la animación maneja el color */
+
+/* Ola vertical: cada burbuja sube/baja desfasada -> forma de ola */
+@keyframes iconWaveFloat {
+    0%, 100% { transform: translateY(var(--wave-amp)); }
+    50%      { transform: translateY(calc(-1 * var(--wave-amp))); }
 }
 
-.icon-circle:hover i,
-.icon-circle:hover svg {
-    transform: scale(1.1);
+/* Banda de color: pulso violeta angosto (pocas burbujas a la vez) que
+   transita de un violeta profundo a uno claro -> tonalidades violetas. */
+@keyframes iconColorWave {
+    0%, 65%, 100% {
+        background: rgba(255, 255, 255, 0.10);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    22% {
+        background: rgba(109, 40, 217, 0.32);
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 6px 20px rgba(109, 40, 217, 0.25);
+    }
+    40% {
+        background: rgba(167, 139, 250, 0.42);
+        border-color: rgba(196, 181, 253, 0.65);
+        box-shadow: 0 10px 28px rgba(167, 139, 250, 0.32);
+    }
 }
 
 /* Animaciones de la Ola */
@@ -622,65 +654,42 @@ section {
     /* Movemos exactamente 1 de los 4 sets para el loop perfecto */
 }
 
-@keyframes waveVertical {
-
-    0%,
-    100% {
-        transform: translateY(15px);
+/* Responsive móvil: burbujas más chicas, menos amplitud y separación */
+@media (max-width: 768px) {
+    .icon-wave-container {
+        height: 110px;
     }
 
-    50% {
-        transform: translateY(-15px);
+    .icon-circle {
+        width: 50px;
+        height: 50px;
+        --wave-amp: 6px;
+    }
+
+    .icon-circle i,
+    .icon-circle svg {
+        font-size: 1.2rem;
+        width: 1.2rem;
+        height: 1.2rem;
+    }
+
+    .wave-list {
+        gap: 2.4rem;
+        padding-right: 2.4rem;
     }
 }
 
-/* Desfases para crear la forma de onda */
-.ic1 {
-    animation-delay: 0s;
-}
+@media (max-width: 480px) {
+    .icon-circle {
+        width: 44px;
+        height: 44px;
+        --wave-amp: 5px;
+    }
 
-.ic2 {
-    animation-delay: -0.3s;
-}
-
-.ic3 {
-    animation-delay: -0.6s;
-}
-
-.ic4 {
-    animation-delay: -0.9s;
-}
-
-.ic5 {
-    animation-delay: -1.2s;
-}
-
-.ic6 {
-    animation-delay: -1.5s;
-}
-
-.ic7 {
-    animation-delay: -1.8s;
-}
-
-.ic8 {
-    animation-delay: -2.1s;
-}
-
-.ic9 {
-    animation-delay: -2.4s;
-}
-
-.ic10 {
-    animation-delay: -2.7s;
-}
-
-.ic11 {
-    animation-delay: -3.0s;
-}
-
-.ic12 {
-    animation-delay: -3.3s;
+    .wave-list {
+        gap: 1.8rem;
+        padding-right: 1.8rem;
+    }
 }
 
 /* Presentación Split */
@@ -1460,14 +1469,30 @@ section {
 /* Personajes - Layout Moderno Acordeón */
 .characters-section {
     width: 100%;
-    padding: 8rem 2rem;
+    padding: 4rem 2rem;
     position: relative;
     overflow: hidden;
-    background:
-        radial-gradient(800px 600px at 20% 30%, rgba(124, 58, 237, 0.08), transparent 60%),
-        radial-gradient(600px 400px at 80% 70%, rgba(34, 211, 238, 0.06), transparent 60%),
-        linear-gradient(160deg, #0a0118 0%, #11022b 45%, #1a0535 100%);
+    background: linear-gradient(160deg, #0a0420 0%, #1a0a40 45%, #2a0a60 100%);
     color: #fff;
+}
+
+.characters-section .section-title p {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.characters-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    background:
+        radial-gradient(800px 600px at 20% 30%, rgba(124, 58, 237, 0.15), transparent 60%),
+        radial-gradient(600px 400px at 80% 70%, rgba(88, 28, 135, 0.12), transparent 60%);
 }
 
 .char-section-spotlight {
@@ -1901,7 +1926,7 @@ section {
 
 /* Ilustraciones Masonry */
 .gallery-section {
-    padding: 5rem 0;
+    padding: 4rem 0;
 }
 
 .masonry-gallery {
@@ -2323,7 +2348,7 @@ input:checked+.slider:before {
    ═══════════════════════════════════════════════ */
 
 .models-3d-section {
-    padding: 8rem 0; /* More air — Professional depth */
+    padding: 4rem 0; /* Balanced spacing */
     background: #ececec;
     /* Slightly lighter viewport grey */
     width: 100% !important;
@@ -3608,8 +3633,8 @@ body.loading-active {
 .loader-media {
     position: relative;
     flex: 0 0 auto;
-    width: clamp(220px, 34vw, 380px);
-    aspect-ratio: 1 / 1;
+    width: clamp(280px, 40vw, 480px);
+    aspect-ratio: 16 / 9;
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(124, 58, 237, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -3620,6 +3645,7 @@ body.loading-active {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
     filter: saturate(1.1) contrast(1.05);
 }
@@ -3977,5 +4003,424 @@ body.nav-open .nav-backdrop {
 
     .gallery-section {
         padding: 4rem 0.75rem;
+    }
+}
+
+/* ============================================================
+   CHARACTER DESIGN — Showcase rediseñado (v2)
+   Un personaje a la vez con crossfade suave + riel de miniaturas.
+   Estética violeta/espacio acorde al resto de la página.
+   ============================================================ */
+.cd-showcase {
+    max-width: 1200px;
+    margin: 3.5rem auto 0;
+    position: relative;
+    z-index: 10;
+}
+
+/* Escenario: todos los paneles comparten la MISMA celda del grid, así
+   se superponen y la celda crece al panel más alto (sin saltos de alto). */
+.cd-stage {
+    display: grid;
+}
+
+.cd-panel {
+    grid-area: 1 / 1;
+    display: grid;
+    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 3.5rem);
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(24px) scale(0.99);
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.7s;
+    pointer-events: none;
+}
+
+.cd-panel.active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+}
+
+/* --- Media (retrato + miniaturas de concept) --- */
+.cd-media {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: cdMediaFloat 5s ease-in-out infinite;
+}
+
+.cd-portrait {
+    position: relative;
+    aspect-ratio: 1 / 1.12;
+    border-radius: 24px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center 20%;
+    background-repeat: no-repeat;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(167, 139, 250, 0.15);
+    cursor: zoom-in;
+    animation: cdPortraitParallax 8s ease-in-out infinite;
+}
+
+.cd-portrait::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(10, 1, 24, 0.55));
+    pointer-events: none;
+}
+
+/* Ken-burns lento (paneo de posición con cover, sin letterboxing) */
+.cd-panel.active .cd-portrait {
+    animation: cdKenBurns 18s ease-in-out infinite alternate;
+}
+
+@keyframes cdKenBurns {
+    from { background-position: center 14%; }
+    to   { background-position: center 32%; }
+}
+
+/* Blobs de luz para character design (similar a About Me) */
+.cd-blob-1,
+.cd-blob-2,
+.cd-blob-3 {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    filter: blur(100px);
+    opacity: 0.25;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.cd-blob-1 {
+    background: #a78bfa;
+    top: -300px;
+    left: -200px;
+    animation: cdBlobMorph 4s infinite alternate ease-in-out, cdBlobFloat 5s infinite alternate ease-in-out;
+}
+
+.cd-blob-2 {
+    background: #c4b5fd;
+    bottom: -300px;
+    right: -150px;
+    animation: cdBlobMorph 5s infinite alternate-reverse ease-in-out, cdBlobFloat 6s infinite alternate-reverse ease-in-out;
+}
+
+.cd-blob-3 {
+    background: #b794f6;
+    top: 30%;
+    left: 30%;
+    width: 650px;
+    height: 650px;
+    animation: cdBlobMorph 6s infinite alternate ease-in-out, cdBlobFloat 7s infinite alternate ease-in-out;
+    opacity: 0.35;
+}
+
+@keyframes cdBlobMorph {
+    0% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    50% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+    100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+}
+
+@keyframes cdBlobFloat {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(250px, 150px) scale(1.15);
+    }
+    66% {
+        transform: translate(-150px, 200px) scale(0.85);
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+/* Flotación del contenedor de media */
+@keyframes cdMediaFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-16px); }
+}
+
+/* Parallax interno en el retrato - movimiento más lento */
+@keyframes cdPortraitParallax {
+    0%, 100% { background-position: center 10%; }
+    50% { background-position: center 35%; }
+}
+
+/* Parallax interno en las concepts - movimientos variados */
+@keyframes cdConceptParallax1 {
+    0%, 100% { background-position: center 0%; }
+    50% { background-position: center 50%; }
+}
+
+@keyframes cdConceptParallax2 {
+    0%, 100% { background-position: center 20%; }
+    50% { background-position: center 55%; }
+}
+
+@keyframes cdConceptParallax3 {
+    0%, 100% { background-position: center 5%; }
+    50% { background-position: center 45%; }
+}
+
+.cd-portrait-tag {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font: 600 0.7rem/1 'Fira Code', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #fff;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.4s ease;
+}
+
+.cd-portrait:hover .cd-portrait-tag {
+    opacity: 0.9;
+    transform: translateY(0);
+}
+
+.cd-portrait-tag svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Miniaturas de concept */
+.cd-concepts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+}
+
+.cd-concept {
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    background-size: cover;
+    background-position: center;
+    cursor: zoom-in;
+    opacity: 0.72;
+    transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.cd-concept:nth-child(1) {
+    animation: cdConceptParallax1 7s ease-in-out infinite;
+}
+
+.cd-concept:nth-child(2) {
+    animation: cdConceptParallax2 5s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+.cd-concept:nth-child(3) {
+    animation: cdConceptParallax3 6s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+.cd-concept:hover {
+    opacity: 1;
+    transform: translateY(-4px);
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 12px 28px rgba(124, 58, 237, 0.3);
+}
+
+/* --- Info --- */
+.cd-info {
+    min-width: 0;
+}
+
+.cd-counter {
+    font: 600 0.85rem 'Fira Code', monospace;
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.cd-counter b {
+    color: #a78bfa;
+    font-weight: 700;
+}
+
+.cd-name {
+    font-family: 'Raleway', sans-serif;
+    font-weight: 300;
+    line-height: 1.05;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    margin: 0.6rem 0 0.5rem;
+    color: #fff;
+}
+
+.cd-role {
+    display: inline-block;
+    font: 600 0.78rem 'Fira Code', monospace;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #22d3ee;
+    margin-bottom: 1.6rem;
+}
+
+.cd-desc {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.8);
+    max-width: 46ch;
+}
+
+/* Stagger de entrada del texto (se re-dispara al activarse el panel) */
+.cd-panel .cd-counter,
+.cd-panel .cd-name,
+.cd-panel .cd-role,
+.cd-panel .cd-desc {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cd-panel.active .cd-counter { opacity: 1; transform: none; transition-delay: 0.15s; }
+.cd-panel.active .cd-name    { opacity: 1; transform: none; transition-delay: 0.25s; }
+.cd-panel.active .cd-role    { opacity: 1; transform: none; transition-delay: 0.35s; }
+.cd-panel.active .cd-desc    { opacity: 1; transform: none; transition-delay: 0.45s; }
+
+/* --- Riel de navegación --- */
+.cd-rail {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.cd-rail-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    overflow: hidden;
+    text-align: left;
+    transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+}
+
+.cd-rail-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(167, 139, 250, 0.3);
+    transform: translateY(-2px);
+}
+
+.cd-rail-item.active {
+    background: rgba(124, 58, 237, 0.14);
+    border-color: rgba(167, 139, 250, 0.55);
+    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+}
+
+.cd-rail-thumb {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    filter: grayscale(0.4) brightness(0.8);
+    transition: filter 0.4s ease;
+}
+
+.cd-rail-item.active .cd-rail-thumb {
+    filter: none;
+}
+
+.cd-rail-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.cd-rail-name {
+    font-family: 'Raleway', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cd-rail-role {
+    font: 0.7rem 'Fira Code', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Barra de autoavance */
+.cd-rail-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: linear-gradient(90deg, #7c3aed, #22d3ee);
+}
+
+.cd-rail-progress.run {
+    animation: cdProgress var(--cd-interval, 7s) linear forwards;
+}
+
+@keyframes cdProgress {
+    from { width: 0; }
+    to   { width: 100%; }
+}
+
+/* --- Responsive --- */
+@media (max-width: 860px) {
+    .cd-panel {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    .cd-media {
+        max-width: 440px;
+        width: 100%;
+        margin: 0 auto;
+    }
+    .cd-info {
+        text-align: center;
+    }
+    .cd-desc {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .cd-rail {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .cd-rail {
+        grid-template-columns: 1fr;
+    }
+    .cd-concepts {
+        gap: 0.5rem;
     }
 }

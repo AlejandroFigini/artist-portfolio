@@ -350,97 +350,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =============================================
-    // 5. CHARACTER ACCORDION (SLOWER NAMES, FASTER ROLES)
+    // 5. CHARACTER DESIGN — Showcase (un personaje a la vez)
+    // Crossfade entre paneles + riel de miniaturas con autoavance.
+    // Pausa en hover y cuando la sección no está en pantalla.
     // =============================================
-    const ACCORDION_INTERVAL_MS = 15000;
-    const TYPEWRITER_REPEAT_MS = 25000;
-    const TYPEWRITER_SPEED_NAME = 0.15;
-    const TYPEWRITER_SPEED_ROLE = 0.06;
+    (function initCharShowcase() {
+        const showcase = document.querySelector('.cd-showcase');
+        if (!showcase) return;
+        const panels = Array.from(showcase.querySelectorAll('.cd-panel'));
+        const railItems = Array.from(showcase.querySelectorAll('.cd-rail-item'));
+        if (!panels.length) return;
 
-    // =============================================
-    // CHARACTER DESIGN: Acordeón mejorado
-    // =============================================
-    const charCards = document.querySelectorAll('.char-card');
+        const INTERVAL = 4000;
+        showcase.style.setProperty('--cd-interval', (INTERVAL / 1000) + 's');
 
-    charCards.forEach(card => {
-        const nameEl = card.querySelector('.char-name');
-        const roleEl = card.querySelector('.char-role');
-        if (nameEl) nameEl.dataset.text = nameEl.innerHTML;
-        if (roleEl) roleEl.dataset.text = roleEl.innerHTML;
-    });
+        let idx = 0;
+        let timer = null;
+        let visible = false;
+        let hovering = false;
 
-    const triggerCharTypewriter = (card) => {
-        const nameEl = card.querySelector('.char-name');
-        const roleEl = card.querySelector('.char-role');
-        if (!nameEl || !roleEl) return;
-        let d = 0;
-        d = animateElement(nameEl, nameEl.dataset.text, d, TYPEWRITER_SPEED_NAME);
-        d = animateElement(roleEl, roleEl.dataset.text, d, TYPEWRITER_SPEED_ROLE);
-    };
-
-    const closeActiveCard = () => {
-        document.querySelectorAll('.char-card.active').forEach(c => c.classList.remove('active'));
-    };
-
-    const activateCardIdx = (idx) => {
-        closeActiveCard();
-        charCards[idx].classList.add('active');
-        triggerCharTypewriter(charCards[idx]);
-        document.body.style.overflow = 'hidden';
-    };
-
-    let currentIdx = 0;
-    charCards.forEach((card, idx) => {
-        card.addEventListener('click', (e) => {
-            if (card.classList.contains('active')) return;
-            currentIdx = idx;
-            activateCardIdx(idx);
-            resetRotationTimer();
-        });
-    });
-
-    // Cerrar al hacer clic en el overlay (::before)
-    document.addEventListener('click', (e) => {
-        const activeCard = document.querySelector('.char-card.active');
-        if (!activeCard) return;
-        if (e.target === activeCard || (e.target.closest && e.target.closest('.char-card.active'))) return;
-        if (activeCard.contains(e.target)) return;
-        closeActiveCard();
-        document.body.style.overflow = '';
-    });
-
-    // Cerrar con Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeActiveCard();
-            document.body.style.overflow = '';
+        function runProgress() {
+            railItems.forEach(r => {
+                const bar = r.querySelector('.cd-rail-progress');
+                if (bar) bar.classList.remove('run');
+            });
+            const activeItem = railItems[idx];
+            const bar = activeItem && activeItem.querySelector('.cd-rail-progress');
+            if (bar && visible && !hovering) {
+                void bar.offsetWidth; // reflow para reiniciar la animación
+                bar.classList.add('run');
+            }
         }
-    });
 
-    let rotationTimer = setInterval(() => {
-        currentIdx = (currentIdx + 1) % charCards.length;
-        activateCardIdx(currentIdx);
-    }, ACCORDION_INTERVAL_MS);
+        function schedule() {
+            clearTimeout(timer);
+            if (visible && !hovering) timer = setTimeout(() => setActive(idx + 1), INTERVAL);
+        }
 
-    function resetRotationTimer() {
-        clearInterval(rotationTimer);
-        rotationTimer = setInterval(() => {
-            currentIdx = (currentIdx + 1) % charCards.length;
-            activateCardIdx(currentIdx);
-        }, ACCORDION_INTERVAL_MS);
-    }
+        function setActive(n) {
+            idx = (n + panels.length) % panels.length;
+            panels.forEach((p, i) => p.classList.toggle('active', i === idx));
+            railItems.forEach((r, i) => r.classList.toggle('active', i === idx));
+            runProgress();
+            schedule();
+        }
 
-    setInterval(() => {
-        const activeCard = document.querySelector('.char-card.active');
-        if (activeCard) triggerCharTypewriter(activeCard);
-    }, TYPEWRITER_REPEAT_MS);
+        railItems.forEach((r, i) => r.addEventListener('click', () => setActive(i)));
 
-    setTimeout(() => {
-        const activeAtStart = document.querySelector('.char-card.active');
-        if (activeAtStart) triggerCharTypewriter(activeAtStart);
-    }, 1500);
+        // Abrir lightbox desde el retrato y las miniaturas de concept.
+        showcase.querySelectorAll('[data-full]').forEach(el => {
+            el.addEventListener('click', () => {
+                const full = el.getAttribute('data-full');
+                const panel = el.closest('.cd-panel');
+                const name = panel ? panel.querySelector('.cd-name').textContent : 'Character';
+                const role = panel ? panel.querySelector('.cd-role').textContent : '';
+                if (typeof openLightbox === 'function') openLightbox(full, name, role);
+            });
+        });
 
-    document.querySelectorAll('.fade-in, .presentation-container, .section-title, .animation-item, .char-accordion, .model-row, .animations-container-inner, .characters-container-inner').forEach(el => observer.observe(el));
+        // Pausar autoavance al pasar el cursor.
+        showcase.addEventListener('mouseenter', () => {
+            hovering = true;
+            clearTimeout(timer);
+            const bar = railItems[idx] && railItems[idx].querySelector('.cd-rail-progress');
+            if (bar) bar.classList.remove('run');
+        });
+        showcase.addEventListener('mouseleave', () => {
+            hovering = false;
+            runProgress();
+            schedule();
+        });
+
+        // Solo correr cuando la sección está en pantalla.
+        new IntersectionObserver((entries) => {
+            visible = entries[0].isIntersecting;
+            if (visible) { runProgress(); schedule(); }
+            else clearTimeout(timer);
+        }, { threshold: 0.2 }).observe(showcase);
+
+        setActive(0);
+    })();
+
+    document.querySelectorAll('.fade-in, .presentation-container, .section-title, .animation-item, .cd-showcase, .model-row, .animations-container-inner, .characters-container-inner').forEach(el => observer.observe(el));
 
     // =============================================
     // MENÚ MÓVIL (hamburguesa)
