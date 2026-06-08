@@ -28,6 +28,36 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Auto-initialize PostgreSQL tables
+async function initDb() {
+    try {
+        console.log('Verifying and creating database tables if needed...');
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS cms_data (
+                id SERIAL PRIMARY KEY,
+                key VARCHAR(255) UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                type VARCHAR(50) DEFAULT 'text',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS multimedia (
+                id SERIAL PRIMARY KEY,
+                public_id VARCHAR(255) UNIQUE NOT NULL,
+                url TEXT NOT NULL,
+                format VARCHAR(10),
+                type VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log('Database tables verified/created successfully.');
+    } catch (err) {
+        console.error('Error initializing database tables on startup:', err);
+    }
+}
+initDb();
+
 // --- API ENDPOINTS ---
 
 // GET /api/content
