@@ -4,7 +4,11 @@
   "description": "Lucia Montaña - Artist Portfolio",
   "main": "index.html",
   "scripts": {
-    "dev": "live-server --port=3000 --no-css-inject"
+    "dev": "live-server --port=3000 --no-css-inject",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "live-server": "^1.2.2"
