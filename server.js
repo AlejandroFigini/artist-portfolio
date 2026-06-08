@@ -60,7 +60,7 @@ app.post('/api/login', async (req, res) => {
 
     if (user === validUser && pass === validPass) {
         if (!code) {
-             return res.status(401).json({ success: false, error: 'Código 2FA requerido' });
+             return res.json({ success: true, require2FA: true, message: 'Credenciales válidas, ingrese código 2FA' });
         }
         
         try {

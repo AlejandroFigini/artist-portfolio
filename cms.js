@@ -644,7 +644,7 @@
         refreshRetired(); // empty-slot (admin) vs oculto (visitante)
         renderAuth();
     }
-    function doLogin(u, p, c, overlay) {
+    function doLogin(u, p, c, overlay, formWrap) {
         fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -652,7 +652,16 @@
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
-            if (data.success) {
+            if (data.require2FA) {
+                formWrap.innerHTML = 
+                    '<label class="cms-field"><span>Código 2FA (Google Authenticator)</span><input type="text" id="cms-code" autocomplete="off" placeholder="123456" maxlength="6"></label>' +
+                    '<p class="cms-hint" style="color:var(--color-primary);"><i class="fa-solid fa-shield-halved"></i> Ingresa el código dinámico de tu app.</p>';
+                var codeInp = $('#cms-code', formWrap);
+                codeInp.focus();
+                codeInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') overlay.querySelector('.cms-btn--primary').click(); });
+                var btn = overlay.querySelector('.cms-btn--primary');
+                if (btn) btn.textContent = 'Verificar';
+            } else if (data.success) {
                 setAdmin(true);
                 if (overlay) closeModal(overlay);
                 toast('Sesión iniciada correctamente');
@@ -670,16 +679,25 @@
         w.innerHTML =
             '<label class="cms-field"><span>Usuario</span><input type="text" id="cms-user" autocomplete="off"></label>' +
             '<label class="cms-field"><span>Contraseña</span><input type="password" id="cms-pass"></label>' +
-            '<label class="cms-field"><span>Código 2FA (Google Authenticator)</span><input type="text" id="cms-code" autocomplete="off" placeholder="123456" maxlength="6"></label>' +
-            '<p class="cms-hint">Ingresa tus credenciales para administrar el sitio.</p>';
+            '<p class="cms-hint" style="margin-top: 15px;"><i class="fa-solid fa-lock"></i> Asegurado con Google Authenticator 2FA.</p>';
+        
+        var uVal = '', pVal = '';
+
         var ov = modal('Acceso de administrador', w, [
             { label: 'Cancelar', onClick: closeModal },
             { label: 'Entrar', primary: true, onClick: function (overlay) {
-                doLogin($('#cms-user', w).value.trim(), $('#cms-pass', w).value, $('#cms-code', w).value.trim(), overlay);
+                var codeEl = $('#cms-code', w);
+                if (!codeEl) {
+                    uVal = $('#cms-user', w).value.trim();
+                    pVal = $('#cms-pass', w).value;
+                    doLogin(uVal, pVal, null, overlay, w);
+                } else {
+                    doLogin(uVal, pVal, codeEl.value.trim(), overlay, w);
+                }
             } }
         ]);
-        var codeInp = $('#cms-code', w);
-        if (codeInp) codeInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('.cms-btn--primary').click(); });
+        var pass = $('#cms-pass', w);
+        if (pass) pass.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('.cms-btn--primary').click(); });
     }
     function openExport() {
         var ta = document.createElement('textarea'); ta.className = 'cms-textarea'; ta.readOnly = true; ta.rows = 12;
