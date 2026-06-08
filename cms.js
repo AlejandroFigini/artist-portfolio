@@ -120,7 +120,16 @@
         catch (e) { return def; }
     }
     function persistOverrides() {
-        try { localStorage.setItem(LS_OVERRIDES, JSON.stringify(items)); return true; }
+        try { 
+            localStorage.setItem(LS_OVERRIDES, JSON.stringify(items)); 
+            // Sync with backend API
+            fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: items })
+            }).catch(function(e) { console.error('Error saving to backend', e); });
+            return true; 
+        }
         catch (e) { return false; }
     }
     function persistAudit() {
@@ -855,11 +864,12 @@
         renderAddedIllu();   // ilustraciones agregadas por admin (las ven todos)
         indexEditables();
         refreshRetired();    // ocultar lo retirado (vale para todos los visitantes)
-        fetch('content.json', { cache: 'no-store' })
+        fetch('/api/content', { cache: 'no-store' })
             .then(function (r) { return r.ok ? r.json() : { items: {} }; })
             .catch(function () { return { items: {} }; })
             .then(function (data) {
-                items = Object.assign({}, (data && data.items) || {}, loadJSON(LS_OVERRIDES, {}));
+                // El backend ahora es la fuente de verdad principal
+                items = Object.assign({}, loadJSON(LS_OVERRIDES, {}), (data && data.items) || {});
                 hydrate();
                 refreshRetired();
                 var wasAdmin = false; try { wasAdmin = localStorage.getItem(LS_ADMIN) === '1'; } catch (e) {}
