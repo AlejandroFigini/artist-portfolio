@@ -15,6 +15,17 @@ app.use(cors());
 
 // Configure PostgreSQL
 const dbUrl = process.env.DATABASE_URL || '';
+if (dbUrl) {
+    try {
+        const urlObj = new URL(dbUrl);
+        console.log(`Conectando a la base de datos en: ${urlObj.hostname}:${urlObj.port || 5432}${urlObj.pathname}`);
+    } catch (e) {
+        console.log('DATABASE_URL está definida pero no tiene un formato URL válido.');
+    }
+} else {
+    console.error('CRÍTICO: DATABASE_URL no está definida en las variables de entorno.');
+}
+
 const pool = new Pool({
     connectionString: dbUrl,
     // When deploying to Railway production with a public URL, SSL is required.
