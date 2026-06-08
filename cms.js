@@ -249,7 +249,7 @@
     function recordAudit(entry) {
         audit.push({
             ts: Date.now(),
-            user: MOCK_USER,
+            user: 'Administrador',
             section: entry.section || '',
             label: entry.label || '',
             kind: entry.kind || '',
@@ -698,8 +698,8 @@
         if (isAdmin) {
             var chip = document.createElement('span');
             chip.className = 'cms-user-chip';
-            chip.innerHTML = '<i class="fa-solid fa-user-shield"></i> ' + MOCK_USER;
-            chip.title = 'Sesión iniciada como ' + MOCK_USER;
+            chip.innerHTML = '<i class="fa-solid fa-user-shield"></i> Administrador';
+            chip.title = 'Sesión iniciada como Administrador';
             nav.appendChild(chip);
         }
         var b = document.createElement('button'); b.type = 'button'; b.className = 'cms-navauth-btn';
