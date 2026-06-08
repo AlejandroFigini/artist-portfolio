@@ -11,8 +11,8 @@
 (function () {
     'use strict';
 
-    var MOCK_USER = 'superadmin';
-    var MOCK_PASS = 'lucia2026';
+    // Las credenciales ya no están expuestas en el cliente.
+    // Se validan contra el backend.
 
     var LS_ADMIN = 'cms_admin_v1';
     var LS_OVERRIDES = 'cms_overrides_v1';
@@ -644,21 +644,37 @@
         refreshRetired(); // empty-slot (admin) vs oculto (visitante)
         renderAuth();
     }
-    function doLogin(u, p) {
-        if (u === MOCK_USER && p === MOCK_PASS) { setAdmin(true); return true; }
-        return false;
+    function doLogin(u, p, overlay) {
+        fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: u, pass: p })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                setAdmin(true);
+                if (overlay) closeModal(overlay);
+                toast('Sesión iniciada correctamente');
+            } else {
+                toast('Usuario o contraseña incorrectos', 'error');
+            }
+        })
+        .catch(function(e) {
+            console.error(e);
+            toast('Error de conexión con el servidor', 'error');
+        });
     }
     function openLogin() {
         var w = document.createElement('div'); w.className = 'cms-login-form';
         w.innerHTML =
             '<label class="cms-field"><span>Usuario</span><input type="text" id="cms-user" autocomplete="off"></label>' +
             '<label class="cms-field"><span>Contraseña</span><input type="password" id="cms-pass"></label>' +
-            '<p class="cms-hint">Prototipo: <code>superadmin</code> / <code>lucia2026</code>. La autenticación real será del backend.</p>';
+            '<p class="cms-hint">Ingresa tus credenciales para administrar el sitio.</p>';
         var ov = modal('Acceso de administrador', w, [
             { label: 'Cancelar', onClick: closeModal },
             { label: 'Entrar', primary: true, onClick: function (overlay) {
-                if (doLogin($('#cms-user', w).value.trim(), $('#cms-pass', w).value)) { closeModal(overlay); toast('Sesión iniciada como superadmin'); }
-                else toast('Usuario o contraseña incorrectos', 'error');
+                doLogin($('#cms-user', w).value.trim(), $('#cms-pass', w).value, overlay);
             } }
         ]);
         var pass = $('#cms-pass', w);

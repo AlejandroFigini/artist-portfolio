@@ -46,6 +46,24 @@ app.get('/api/content', async (req, res) => {
     }
 });
 
+// POST /api/login
+// Valida credenciales de administrador (definidas en Railway via variables de entorno)
+app.post('/api/login', (req, res) => {
+    const { user, pass } = req.body;
+    
+    // Configuramos estas variables en Railway, o usamos un fallback temporal para pruebas
+    const validUser = process.env.ADMIN_USER || 'admin';
+    const validPass = process.env.ADMIN_PASS || 'artista2026';
+
+    if (user === validUser && pass === validPass) {
+        // Por ahora mantenemos la sesión en el cliente,
+        // En una API real devolveríamos un JWT (JSON Web Token)
+        res.json({ success: true, message: 'Login exitoso' });
+    } else {
+        res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+    }
+});
+
 // POST /api/content
 // Receives the entire CMS items object and updates the database
 app.post('/api/content', async (req, res) => {
