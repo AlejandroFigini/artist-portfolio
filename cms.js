@@ -654,7 +654,7 @@
         .then(function(data) {
             if (data.require2FA) {
                 formWrap.innerHTML = 
-                    '<label class="cms-field"><span>Código 2FA (Google Authenticator)</span><input type="text" id="cms-code" autocomplete="off" placeholder="123456" maxlength="6"></label>' +
+                    '<label class="cms-field"><span>Código 2FA (Google Authenticator)</span><input type="text" id="cms-code" autocomplete="off" maxlength="6"></label>' +
                     '<p class="cms-hint" style="color:var(--color-primary);"><i class="fa-solid fa-shield-halved"></i> Ingresa el código dinámico de tu app.</p>';
                 var codeInp = $('#cms-code', formWrap);
                 codeInp.focus();
