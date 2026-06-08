@@ -14,11 +14,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 // Configure PostgreSQL
+const dbUrl = process.env.DATABASE_URL || '';
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
     // When deploying to Railway production with a public URL, SSL is required.
-    // We conditionally add it if it's the external URL or use internal.
-    ssl: process.env.DATABASE_URL.includes('railway.internal') ? false : { rejectUnauthorized: false }
+    ssl: dbUrl.includes('railway.internal') ? false : { rejectUnauthorized: false }
 });
 
 // Configure Cloudinary
