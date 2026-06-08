@@ -1,0 +1,137 @@
+/* ============================================================
+   CHARACTERS PAGE — "Character select"
+   Escenario destacado (un personaje a la vez) + roster seleccionable.
+   Theme-aware. Fondo blueprint en el hero.
+   ============================================================ */
+
+.char-page {
+    overflow-x: hidden;
+    /* color de chips/toolbar comunes (gallery-common.css) — violeta→rosa */
+    --g-chip-on: linear-gradient(120deg, var(--accent), #ec4899);
+    --g-accent: var(--accent);
+}
+
+/* ----------------------------- HERO ----------------------------- */
+.char-hero {
+    position: relative;
+    padding: clamp(7.5rem, 16vh, 11rem) clamp(1.25rem, 5vw, 4rem) clamp(2.5rem, 5vw, 4rem);
+    text-align: center;
+    overflow: hidden;
+}
+.char-hero-grid-bg {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+    opacity: 0.6;
+}
+.char-hero-inner { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+.char-eyebrow { font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
+.char-hero-title {
+    font-family: 'Raleway', sans-serif; font-weight: 200; line-height: 1.02; letter-spacing: -0.02em;
+    font-size: clamp(2.6rem, 1.3rem + 5.5vw, 5.5rem); color: var(--text-primary);
+}
+.char-hero-sub { margin: 1.3rem auto 0; max-width: 58ch; color: var(--text-secondary); line-height: 1.75; font-size: clamp(1rem, 0.95rem + 0.4vw, 1.18rem); }
+
+/* ----------------------------- CHARACTER SELECT ----------------------------- */
+.cs-wrap { max-width: 1200px; margin: 0 auto; padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem) clamp(3rem, 8vw, 6rem); }
+
+/* Escenario: paneles superpuestos en la misma celda; solo el activo visible */
+.cs-stage { display: grid; }
+.cs-panel {
+    grid-area: 1 / 1;
+    display: grid;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    opacity: 0; visibility: hidden; transform: translateY(22px) scale(0.99);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.6s;
+    pointer-events: none;
+}
+.cs-panel.active { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+
+.cs-portrait {
+    position: relative; aspect-ratio: 1 / 1.15; border-radius: 24px; overflow: hidden;
+    display: grid; place-items: center; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.5);
+    animation: csFloat 6s ease-in-out infinite;
+}
+@keyframes csFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.cs-portrait .char-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.cs-portrait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.4)); }
+.cs-ph { position: relative; z-index: 1; font-size: clamp(2.5rem, 7vw, 4rem); color: rgba(255, 255, 255, 0.6); }
+
+.cs-info { min-width: 0; }
+.cs-id { font-family: 'Fira Code', monospace; font-size: 0.75rem; letter-spacing: 0.2em; color: var(--accent); }
+.cs-info .cd-name { font-family: 'Raleway', sans-serif; font-weight: 300; line-height: 1.05; margin: 0.3rem 0; color: var(--text-primary); font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem); }
+.cs-role { font-family: 'Fira Code', monospace; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: #22d3ee; }
+.cs-bio { margin-top: 1rem; color: var(--text-secondary); line-height: 1.8; font-size: clamp(0.98rem, 0.94rem + 0.25vw, 1.1rem); max-width: 52ch; }
+.cs-tags { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; margin: 1.2rem 0; }
+.cs-tags li { font-family: 'Fira Code', monospace; font-size: 0.66rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.cs-turn { display: flex; gap: 0.6rem; }
+.turn-thumb {
+    width: 40px; height: 40px; border-radius: 9px; border: 1px dashed var(--border);
+    background: var(--bg-secondary); display: grid; place-items: center;
+}
+.turn-thumb::after { content: '\f03e'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 0.8rem; color: var(--text-secondary); opacity: 0.5; }
+
+/* Roster selector */
+.cs-roster {
+    display: flex; gap: 0.8rem; margin-top: clamp(1.8rem, 4vw, 2.8rem);
+    overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none;
+}
+.cs-roster::-webkit-scrollbar { display: none; }
+.cs-pick {
+    flex: 0 0 auto; width: 88px; display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
+    padding: 0.55rem 0.5rem; border-radius: 16px; border: 1px solid var(--border); background: transparent;
+    cursor: pointer; transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+.cs-pick:hover { transform: translateY(-3px); border-color: var(--accent); }
+.cs-pick.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: 0 12px 26px -14px var(--accent); }
+.cs-pick.is-hidden { display: none; }
+.cs-pick-portrait { width: 60px; height: 60px; border-radius: 13px; display: grid; place-items: center; color: #fff; font-size: 1.2rem; }
+.cs-pick-name { font-family: 'Raleway', sans-serif; font-size: 0.76rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78px; }
+
+/* Galería del personaje: imagen principal + miniaturas que la cambian */
+.cs-gallery { display: flex; flex-direction: column; gap: 0.7rem; }
+.cs-thumbs { display: flex; gap: 0.6rem; }
+.cs-thumb {
+    flex: 1; aspect-ratio: 1 / 1; border-radius: 12px; cursor: pointer;
+    border: 2px solid transparent; display: grid; place-items: center; color: #fff; font-size: 1rem;
+    opacity: 0.6; transition: opacity 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+.cs-thumb:hover { opacity: 1; transform: translateY(-2px); }
+.cs-thumb.active { opacity: 1; border-color: var(--accent); }
+
+/* Stats compactas */
+.cs-stats { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; padding: 0; margin: 1rem 0; }
+.cs-stats li { display: flex; flex-direction: column; }
+.cs-stats li span { font-family: 'Fira Code', monospace; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.cs-stats li b { font-family: 'Raleway', sans-serif; font-weight: 500; color: var(--text-primary); font-size: 1rem; }
+
+/* Paleta */
+.cs-palette { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.cs-palette span { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+
+/* Sección expandible (referencias/notas) */
+.cs-extra { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s ease, opacity 0.4s ease, margin 0.4s ease; }
+.cs-extra.show { max-height: 240px; opacity: 1; margin-top: 0.6rem; }
+.cs-extra p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+.cs-more {
+    display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; padding: 0.2rem 0;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 0.03em; color: var(--accent);
+}
+.cs-more i { font-size: 0.75em; transition: transform 0.3s ease; }
+.cs-more.open i { transform: rotate(180deg); }
+
+/* ----------------------------- RESPONSIVE ----------------------------- */
+@media (max-width: 760px) {
+    .cs-panel { grid-template-columns: 1fr; text-align: center; }
+    .cs-gallery { width: 100%; max-width: 240px; margin: 0 auto; }
+    .cs-bio { margin-left: auto; margin-right: auto; }
+    .cs-stats, .cs-palette, .cs-tags { justify-content: center; }
+    .cs-more { margin-left: auto; margin-right: auto; }
+}

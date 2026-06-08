@@ -13,6 +13,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Flag icons (banderas reales; los emoji de bandera no renderizan en Windows) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 
     <!-- Precarga de recursos críticos: portada del hero (above-the-fold) y
          el video de la pantalla de carga, para que aparezcan al instante. -->
@@ -67,6 +69,14 @@
             };
             document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
         })();
+
+        // Al volver desde la página de gestión (admin.html) no mostrar la
+        // pantalla de carga. Se marca antes del primer paint para evitar parpadeo.
+        try {
+            if (sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1') {
+                document.documentElement.classList.add('skip-loader');
+            }
+        } catch (e) {}
     </script>
 </head>
 
@@ -81,8 +91,7 @@
         <div class="loader-stage">
             <!-- Costado: animación de galope -->
             <div class="loader-media">
-                <video class="loader-gallop" autoplay loop muted playsinline preload="auto"
-                    poster="assets/images/portada-1.webp">
+                <video class="loader-gallop" autoplay loop muted playsinline preload="auto">
                     <source src="assets/images/feed/animation/galope.webm" type="video/webm">
                 </video>
                 <div class="loader-media-glow"></div>
@@ -118,14 +127,14 @@
                             class="fa-solid fa-chevron-down" style="font-size: 0.7em;"></i>
                     </div>
                     <div class="dropdown-content">
-                        <a href="#ilustraciones" data-i18n="nav_illustrations"><i class="fa-solid fa-paintbrush"></i>
+                        <a href="illustrations.html" data-i18n="nav_illustrations"><i class="fa-solid fa-paintbrush"></i>
                             Illustrations</a>
-                        <a href="#animaciones" data-i18n="nav_animations"><i class="fa-solid fa-clapperboard"></i>
+                        <a href="animations.html" data-i18n="nav_animations"><i class="fa-solid fa-clapperboard"></i>
                             Animations</a>
-                        <a href="#personajes" data-i18n="nav_characters"><i class="fa-solid fa-user-astronaut"></i>
+                        <a href="characters.html" data-i18n="nav_characters"><i class="fa-solid fa-user-astronaut"></i>
                             Character Design</a>
-                        <a href="#3dmodels" data-i18n="nav_3d"><i class="fa-solid fa-cube"></i> 3D Models</a>
-                        <a href="#multimedia" data-i18n="nav_multimedia"><i class="fa-solid fa-photo-film"></i>
+                        <a href="models-3d.html" data-i18n="nav_3d"><i class="fa-solid fa-cube"></i> 3D Models</a>
+                        <a href="multimedia.html" data-i18n="nav_multimedia"><i class="fa-solid fa-photo-film"></i>
                             Multimedia</a>
                     </div>
                 </div>
@@ -143,7 +152,30 @@
                 </div>
                 <a href="#presentacion" data-i18n="nav_about">About me</a>
                 <a href="#contacto" data-i18n="nav_contact">Contact</a>
+                <!-- Solo visible para superadmin: página de gestión aparte -->
+                <a href="admin.html" class="admin-only" id="nav-admin-link">Gestión</a>
             </nav>
+            <!-- Acciones de la barra (derecha): CV + login + idioma -->
+            <div class="nav-actions">
+                <button type="button" class="cv-btn" id="cv-download" title="Download CV" aria-label="Download CV">
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                    <span>CV</span>
+                </button>
+                <!-- cms.js renderiza aquí el botón de login / menú de sesión -->
+                <div id="cms-auth-nav"></div>
+                <div class="lang-selector-nav">
+                    <button class="lang-btn" id="lang-toggle-nav" aria-label="Change language" title="Language">
+                        <span class="fi fi-us" id="lang-flag-nav"></span>
+                        <span class="lang-code" id="lang-code-nav">EN</span>
+                    </button>
+                    <div class="lang-dropdown" id="lang-dropdown-nav">
+                        <button class="lang-option" data-lang="en" title="English"><span class="fi fi-us"></span> English</button>
+                        <button class="lang-option" data-lang="es" title="Español"><span class="fi fi-es"></span> Español</button>
+                        <button class="lang-option" data-lang="pt" title="Português"><span class="fi fi-pt"></span> Português</button>
+                        <button class="lang-option" data-lang="fr" title="Français"><span class="fi fi-fr"></span> Français</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
     <!-- Fondo oscuro para cerrar el menú móvil al tocar fuera -->
@@ -531,7 +563,7 @@
                                 class="artist-photo-img" fetchpriority="high">
                         </div>
                         <div class="artist-video-wrapper">
-                            <video autoplay loop muted playsinline class="about-video" preload="metadata">
+                            <video loop muted playsinline class="about-video" preload="metadata">
                                 <source src="assets/images/feed/aboutMe/Alessio te saluda.webm" type="video/webm">
                             </video>
                         </div>
@@ -571,13 +603,13 @@
 
             <!-- Decorative Motion Elements (Z-Index Background Support) -->
             <div class="decor-motion">
-                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                <video loop muted playsinline class="decor-video" preload="none">
                     <source src="assets/images/feed/animation/HAAI THAR. IDLE (1).webm" type="video/webm">
                 </video>
                 <div class="decor-label">Haai Thar</div>
             </div>
             <div class="decor-motion">
-                <video autoplay loop muted playsinline class="decor-video" preload="metadata">
+                <video loop muted playsinline class="decor-video" preload="none">
                     <source src="assets/images/feed/animation/galope.webm" type="video/webm">
                 </video>
                 <div class="decor-label">Galope</div>
@@ -591,11 +623,16 @@
                 <h2 class="section-typewriter" data-i18n="animations_title">Animations</h2>
                 <p class="anim-subtitle">A collection of movement and storytelling. From professional cutscenes to
                     experimental character movements.</p>
+                <a class="see-all-cta" href="animations.html"><span>Explore all animations</span> <i class="fa-solid fa-arrow-right"></i></a>
             </div>
             <div class="animations-grid">
 
                 <!-- Video 1 -->
-                <div class="animation-item video-container">
+                <div class="animation-item video-container"
+                     data-title="Fox Animation"
+                     data-desc="A character animation study exploring fluid quadruped motion and expressive posing."
+                     data-date="2020" data-project="Concept Art"
+                     data-inspiration="Classic 2D animation and natural animal movement.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/Animaci%C3%B3n%20Zorro(2020).webm" type="video/webm">
                     </video>
@@ -617,7 +654,11 @@
                 </div>
 
                 <!-- Video 2 -->
-                <div class="animation-item video-container">
+                <div class="animation-item video-container"
+                     data-title="Dog Run Cycle"
+                     data-desc="A run-cycle study focused on weight, timing and looping mechanics."
+                     data-date="2020" data-project="Motion Study"
+                     data-inspiration="Muybridge's locomotion studies.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/Animaci%C3%B3n%20perro(2020).webm" type="video/webm">
                     </video>
@@ -637,9 +678,11 @@
                 </div>
 
                 <!-- Video 3 -->
-                <div class="animation-item video-container" 
-                     data-title="Animated Short (Part 1)" 
-                     data-desc="Exploring narrative pacing and character weight in a multi-stage animated sequence. Created as part of the diploma at ORT University.">
+                <div class="animation-item video-container"
+                     data-title="Animated Short (Part 1)"
+                     data-desc="Exploring narrative pacing and character weight in a multi-stage animated sequence. Created as part of the diploma at ORT University."
+                     data-date="2021" data-project="Universidad ORT"
+                     data-inspiration="Narrative-driven student films.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/Corto%20animado%20primera%20parte%20(2021).webm"
                             type="video/webm">
@@ -661,9 +704,11 @@
                 </div>
 
                 <!-- Video 4 -->
-                <div class="animation-item video-container" 
-                     data-title="LipSync Study" 
-                     data-desc="Focusing on phonetic mouth movements and expressive character acting in sync with audio dialogue. Highlighting facial emotion fluidity.">
+                <div class="animation-item video-container"
+                     data-title="LipSync Study"
+                     data-desc="Focusing on phonetic mouth movements and expressive character acting in sync with audio dialogue. Highlighting facial emotion fluidity."
+                     data-date="2020" data-project="Dialogue Test"
+                     data-inspiration="Expressive facial acting and phonetics.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/LipSync%20Animaci%C3%B3n%20(2020).webm"
                             type="video/webm">
@@ -684,9 +729,11 @@
                 </div>
 
                 <!-- Video 5 -->
-                <div class="animation-item video-container" 
-                     data-title="Action Sequence" 
-                     data-desc="A study in mechanical movement, anticipation, and follow-through. Analyzing the physics of body motion in a high-intensity character loop.">
+                <div class="animation-item video-container"
+                     data-title="Action Sequence"
+                     data-desc="A study in mechanical movement, anticipation, and follow-through. Analyzing the physics of body motion in a high-intensity character loop."
+                     data-date="2020" data-project="Mechanics"
+                     data-inspiration="Action animation and body mechanics.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/Pr%C3%A1ctica%20de%20animaci%C3%B3n(2020).webm"
                             type="video/webm">
@@ -707,9 +754,11 @@
                 </div>
 
                 <!-- Video 6 -->
-                <div class="animation-item video-container" 
-                     data-title="Final Project Scene" 
-                     data-desc="A cinematic composition from a final production phase. Integrating environment lighting, character rig complexity, and emotional storytelling.">
+                <div class="animation-item video-container"
+                     data-title="Final Project Scene"
+                     data-desc="A cinematic composition from a final production phase. Integrating environment lighting, character rig complexity, and emotional storytelling."
+                     data-date="2021" data-project="Universidad ORT"
+                     data-inspiration="Cinematic storytelling and lighting.">
                     <video loop muted playsinline class="anim-video" preload="metadata">
                         <source src="assets/images/feed/animation/__ANIMACION%201%20TERMINADO.webm" type="video/webm">
                     </video>
@@ -741,6 +790,7 @@
             <div class="section-title" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="characters_title">Character Design</h2>
                 <p>Explore the interactive cast of my creations.</p>
+                <a class="see-all-cta" href="characters.html"><span>Explore all characters</span> <i class="fa-solid fa-arrow-right"></i></a>
             </div>
 
             <!-- Showcase: un personaje a la vez + riel de navegación -->
@@ -748,7 +798,9 @@
                 <div class="cd-stage">
 
                     <!-- Personaje 1: Alessio -->
-                    <article class="cd-panel active" data-index="0">
+                    <article class="cd-panel active" data-index="0"
+                             data-date="2023" data-project="Character Design"
+                             data-inspiration="Expressive animal-based characters and warm storytelling.">
                         <div class="cd-media">
                             <div class="cd-portrait" data-full="assets/images/feed/characterdesign/alessio/main.webp"
                                 style="background-image: url('assets/images/feed/characterdesign/alessio/main.webp')">
@@ -773,7 +825,9 @@
                     </article>
 
                     <!-- Personaje 2: Jaffare -->
-                    <article class="cd-panel" data-index="1">
+                    <article class="cd-panel" data-index="1"
+                             data-date="2023" data-project="Character Design"
+                             data-inspiration="Stylized shapes and bold, readable silhouettes.">
                         <div class="cd-media">
                             <div class="cd-portrait" data-full="assets/images/feed/characterdesign/jaffare/main.webp"
                                 style="background-image: url('assets/images/feed/characterdesign/jaffare/main.webp')">
@@ -799,7 +853,9 @@
                     </article>
 
                     <!-- Personaje 3: King -->
-                    <article class="cd-panel" data-index="2">
+                    <article class="cd-panel" data-index="2"
+                             data-date="2023" data-project="Character Design"
+                             data-inspiration="Hard-surface forms blended with organic anatomy.">
                         <div class="cd-media">
                             <div class="cd-portrait" data-full="assets/images/feed/characterdesign/king/main.jpg"
                                 style="background-image: url('assets/images/feed/characterdesign/king/main.jpg')">
@@ -824,7 +880,9 @@
                     </article>
 
                     <!-- Personaje 4: Leda -->
-                    <article class="cd-panel" data-index="3">
+                    <article class="cd-panel" data-index="3"
+                             data-date="2023" data-project="Character Design"
+                             data-inspiration="Fine detail and refined, harmonious color palettes.">
                         <div class="cd-media">
                             <div class="cd-portrait" data-full="assets/images/feed/characterdesign/leda/main.jpg"
                                 style="background-image: url('assets/images/feed/characterdesign/leda/main.jpg')">
@@ -1008,6 +1066,7 @@
                 <h2 class="section-typewriter" data-i18n="models_3d_title">3D Models</h2>
                 <p class="models-intro">Merging artistic vision with technical precision. Environment assets and
                     high-poly models for animations and environments.</p>
+                <a class="see-all-cta" href="models-3d.html"><span>Explore all 3D models</span> <i class="fa-solid fa-arrow-right"></i></a>
             </div>
 
             <div class="models-container">
@@ -1027,12 +1086,12 @@
                     </div>
                     <div class="model-visual-wrapper">
                         <div class="model-video-card">
-                            <video loop muted autoplay playsinline class="obs-video" preload="metadata">
+                            <video loop muted playsinline class="obs-video" preload="none">
                                 <source src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%204.webm"
                                     type="video/webm">
                             </video>
                             <button class="expand-video-btn"
-                                onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%204.webm')">
+                                onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%204.webm', 'Rest In Paws - Environment Assets', 'Environment assets for the video game Rest In Paws, modeled in 3ds Max, textured in Adobe Substance and lit in Unreal Engine.', {date:'2024', project:'Rest In Paws', inspiration:'Stylized game environments.'})">
                                 <i class="fa-solid fa-expand"></i>
                             </button>
                         </div>
@@ -1043,35 +1102,35 @@
                 <div class="model-row reverse">
                     <div class="model-visual-grid-wrapper">
                         <div class="model-video-card">
-                            <video loop muted autoplay playsinline class="obs-video" preload="metadata">
+                            <video loop muted playsinline class="obs-video" preload="none">
                                 <source src="assets/images/feed/3dmodels/Screen%20Recording%202024-06-13%20at%201.webm"
                                     type="video/webm">
                             </video>
                             <button class="expand-video-btn"
-                                onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-06-13%20at%201.webm')">
+                                onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-06-13%20at%201.webm', 'Translating Soul: 2D to 3D', 'Idle animation for an elderly cat character, conveying slow and tired movement. Created in 3ds Max and exported to Unreal Engine.', {date:'2024', project:'Rest In Paws', inspiration:'Character acting and subtle idle motion.'})">
                                 <i class="fa-solid fa-expand"></i>
                             </button>
                         </div>
                         <div class="video-sub-grid">
                             <div class="model-video-card small-card">
-                                <video loop muted autoplay playsinline class="obs-video" preload="metadata">
+                                <video loop muted playsinline class="obs-video" preload="none">
                                     <source
                                         src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%206.11_1.webm"
                                         type="video/webm">
                                 </video>
                                 <button class="expand-video-btn mini"
-                                    onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%206.11_1.webm')">
+                                    onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-17%20at%206.11_1.webm', 'Rest In Paws - Animation Study', 'Movement study for the Rest In Paws character, refining weight and timing.', {date:'2024', project:'Rest In Paws', inspiration:'Weight and timing in 3D.'})">
                                     <i class="fa-solid fa-expand"></i>
                                 </button>
                             </div>
                             <div class="model-video-card small-card">
-                                <video loop muted autoplay playsinline class="obs-video" preload="metadata">
+                                <video loop muted playsinline class="obs-video" preload="none">
                                     <source
                                         src="assets/images/feed/3dmodels/Screen%20Recording%202024-05-27%20at%2010.41.17%E2%80%AFAM_1.webm"
                                         type="video/webm">
                                 </video>
                                 <button class="expand-video-btn mini"
-                                    onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-27%20at%2010.41.17%E2%80%AFAM_1.webm')">
+                                    onclick="openVideoLightbox('assets/images/feed/3dmodels/Screen%20Recording%202024-05-27%20at%2010.41.17%E2%80%AFAM_1.webm', 'Rest In Paws - Animation Study', 'Additional movement study for the Rest In Paws character.', {date:'2024', project:'Rest In Paws', inspiration:'Subtle secondary motion.'})">
                                     <i class="fa-solid fa-expand"></i>
                                 </button>
                             </div>
@@ -1113,6 +1172,7 @@
             <div class="section-title" data-scroll="reveal">
                 <h2 class="section-typewriter" data-i18n="illustrations_title">Illustrations</h2>
                 <p>Complete gallery and conceptual works.</p>
+                <a class="see-all-cta" href="illustrations.html"><span>Explore all illustrations</span> <i class="fa-solid fa-arrow-right"></i></a>
             </div>
             <div class="masonry-gallery" id="illustrations-container">
                 <!-- Dynamically populated by script.js -->
@@ -1141,11 +1201,12 @@
             <div class="footer-col links-col">
                 <h3 class="footer-label">Exploration</h3>
                 <ul class="footer-links-list">
-                    <li><a href="#about" data-i18n="nav_about">About me</a></li>
-                    <li><a href="#ilustraciones" data-i18n="nav_illustrations">Illustrations</a></li>
-                    <li><a href="#animaciones" data-i18n="nav_animations">Animations</a></li>
-                    <li><a href="#personajes" data-i18n="nav_characters">Characters</a></li>
-                    <li><a href="#modelos3d" data-i18n="nav_3d">3D Models</a></li>
+                    <li><a href="#presentacion" data-i18n="nav_about">About me</a></li>
+                    <li><a href="illustrations.html" data-i18n="nav_illustrations">Illustrations</a></li>
+                    <li><a href="animations.html" data-i18n="nav_animations">Animations</a></li>
+                    <li><a href="characters.html" data-i18n="nav_characters">Characters</a></li>
+                    <li><a href="models-3d.html" data-i18n="nav_3d">3D Models</a></li>
+                    <li><a href="multimedia.html" data-i18n="nav_multimedia">Multimedia</a></li>
                 </ul>
             </div>
 
@@ -1156,6 +1217,9 @@
                 <a href="mailto:lumontana23@gmail.com" class="contact-email">
                     <i class="fa-solid fa-envelope"></i> lumontana23@gmail.com
                 </a>
+                <button type="button" class="cv-btn cv-btn-footer" id="cv-download-footer" title="Download CV" aria-label="Download CV">
+                    <i class="fa-solid fa-file-arrow-down"></i><span>CV</span>
+                </button>
             </div>
         </div>
         
@@ -1178,7 +1242,12 @@
             <div class="lightbox-info-panel hidden">
                 <h3 class="info-title">Project Title</h3>
                 <div class="info-divider"></div>
+                <div class="info-meta">
+                    <span class="info-date hidden"><i class="fa-regular fa-calendar"></i> <span class="val"></span></span>
+                    <span class="info-project hidden"><i class="fa-solid fa-folder-open"></i> <span class="val"></span></span>
+                </div>
                 <p class="info-desc">Detailed production information, techniques, and backstory for this specific piece of art.</p>
+                <p class="info-inspiration hidden"><i class="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span class="val"></span></p>
                 <div class="info-footer">
                     <span><i class="fa-solid fa-palette"></i> Lucia Montaña</span>
                 </div>
@@ -1199,7 +1268,15 @@
             <div class="lightbox-info-panel hidden">
                 <h3 class="info-title">Illustration Title</h3>
                 <div class="info-divider"></div>
+                <div class="info-meta">
+                    <span class="info-date hidden"><i class="fa-regular fa-calendar"></i> <span class="val"></span></span>
+                    <span class="info-project hidden"><i class="fa-solid fa-folder-open"></i> <span class="val"></span></span>
+                </div>
                 <p class="info-desc">Exploration of theme and color. Created using high-fidelity artistic tools.</p>
+                <p class="info-inspiration hidden"><i class="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span class="val"></span></p>
+                <a class="info-link" target="_blank" rel="noopener" style="display:none">
+                    <i class="fa-solid fa-up-right-from-square"></i> Ver publicación original
+                </a>
                 <div class="info-footer">
                     <span><i class="fa-solid fa-palette"></i> Lucia Montaña</span>
                 </div>
@@ -1223,17 +1300,40 @@
             </label>
         </div>
         <div class="setting-item">
+            <span>Pausar animaciones</span>
+            <label class="switch">
+                <input type="checkbox" id="motion-switch">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="setting-item">
             <span>Language</span>
-            <select id="language-select">
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="pt">Português</option>
-                <option value="fr">Français</option>
-            </select>
+            <div class="lang-selector-settings" id="lang-selector-settings">
+                <button class="lang-btn-settings" id="lang-toggle-settings" aria-label="Change language">
+                    <span class="fi fi-us" id="lang-flag-settings"></span>
+                    <span class="lang-code" id="lang-code-settings">EN</span>
+                    <i class="fa-solid fa-chevron-down chev"></i>
+                </button>
+                <div class="lang-dropdown-settings" id="lang-dropdown-settings">
+                    <button class="lang-option" data-lang="en" title="English"><span class="fi fi-us"></span> English</button>
+                    <button class="lang-option" data-lang="es" title="Español"><span class="fi fi-es"></span> Español</button>
+                    <button class="lang-option" data-lang="pt" title="Português"><span class="fi fi-pt"></span> Português</button>
+                    <button class="lang-option" data-lang="fr" title="Français"><span class="fi fi-fr"></span> Français</button>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <span>Curriculum</span>
+            <button type="button" class="cv-btn cv-btn-settings" id="cv-download-settings" title="Download CV">
+                <i class="fa-solid fa-file-arrow-down"></i>
+                <span>Download CV</span>
+            </button>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <!-- CMS (prototipo front-only): login mock + edición de contenido -->
+    <script src="cms.js"></script>
 </body>
 
 </html>

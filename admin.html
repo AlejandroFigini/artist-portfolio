@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión — Lucia Montaña</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Aplicar tema guardado para coherencia visual
+        if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+</head>
+
+<body class="admin-page">
+    <header class="admin-topbar">
+        <a href="index.html" class="logo">Lucia Montaña <span class="highlight">| Gestión</span></a>
+        <div class="admin-topbar-right">
+            <span class="cms-user-chip" id="admin-user-chip"><i class="fa-solid fa-user-shield"></i> superadmin</span>
+            <a href="index.html" class="cms-btn cms-btn--sm"><i class="fa-solid fa-arrow-left"></i> Volver al sitio</a>
+        </div>
+    </header>
+
+    <div class="admin-shell">
+        <!-- Apartado de opciones: despliega las secciones de gestión -->
+        <aside class="admin-sidebar">
+            <nav class="admin-nav" id="admin-nav">
+                <button type="button" class="admin-nav-item active" data-section="resumen">
+                    <i class="fa-solid fa-gauge-high"></i><span>Resumen</span>
+                </button>
+                <button type="button" class="admin-nav-item" data-section="contenidos">
+                    <i class="fa-solid fa-photo-film"></i><span>Contenidos</span>
+                </button>
+                <button type="button" class="admin-nav-item" data-section="usuarios">
+                    <i class="fa-solid fa-users-gear"></i><span>Usuarios</span>
+                </button>
+                <button type="button" class="admin-nav-item" data-section="auditoria">
+                    <i class="fa-solid fa-clipboard-list"></i><span>Auditoría</span>
+                </button>
+                <button type="button" class="admin-nav-item" data-section="ajustes">
+                    <i class="fa-solid fa-sliders"></i><span>Ajustes del sitio</span>
+                </button>
+            </nav>
+        </aside>
+
+        <main id="admin-root" class="admin-root"></main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+
+</html>

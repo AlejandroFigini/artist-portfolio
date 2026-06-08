@@ -35,6 +35,22 @@
 (function initPageLoader() {
     const loader = document.getElementById('page-loader');
     if (!loader) return;
+
+    // Mostrar el loader SOLO la primera vez en la sesión: si venimos de la
+    // página de gestión, o si ya se mostró antes (navegué a otra página y volví),
+    // saltarlo. Se marca 'lm_seen_loader' tras la primera vez.
+    let skip = false;
+    try {
+        skip = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1';
+        sessionStorage.removeItem('cms_skip_loader');
+        sessionStorage.setItem('lm_seen_loader', '1');
+    } catch (e) {}
+    if (skip) {
+        document.body.classList.remove('loading-active');
+        loader.remove();
+        return;
+    }
+
     let hidden = false;
     const MIN_DISPLAY_MS = 3000; // Duración mínima de 3 segundos
     const startTime = Date.now();
@@ -45,7 +61,14 @@
         loader.classList.add('loader-hidden');
         document.body.classList.remove('loading-active');
         // Quitar del DOM tras la transición de opacidad (0.7s).
-        setTimeout(() => { if (loader.parentNode) loader.remove(); }, 800);
+        // Liberar el buffer del video del loader para no mantenerlo en memoria.
+        setTimeout(() => {
+            if (loader.parentNode) {
+                const loaderVid = loader.querySelector('video');
+                if (loaderVid) { loaderVid.pause(); loaderVid.removeAttribute('src'); loaderVid.load(); }
+                loader.remove();
+            }
+        }, 800);
     }
 
     function tryHide() {
@@ -69,6 +92,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     // 1. HERO TYPEWRITER ANIMATION (SLOWER)
     // =============================================
+    // Táctil: en móvil el primer tap sobre una tarjeta revela su overlay
+    // (como el hover en PC) en vez de abrir el lightbox de una.
+    const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    // "Vista móvil": táctil O viewport angosto. En ese caso el primer tap muestra
+    // la info abreviada (overlay) y el segundo abre pantalla completa — así nunca
+    // se entra a pantalla completa de una.
+    const isMobileView = () => isTouch || window.innerWidth <= 768;
+    const clearTouchActive = (except) => {
+        document.querySelectorAll('.touch-active').forEach(x => { if (x !== except) x.classList.remove('touch-active'); });
+    };
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.animation-item, .gallery-item')) clearTouchActive(null);
+    });
+
     const ANIMATION_REPEAT_MS = 25000;
     const TYPEWRITER_SPEED_HERO = 0.1;
     const TYPEWRITER_SPEED_HERO_SUB = 0.04;
@@ -130,10 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let heroInterval = null;
+    let heroVisible = false;
     function startHeroInterval() {
         runHeroAnimation();
         if (heroInterval) clearInterval(heroInterval);
         heroInterval = setInterval(runHeroAnimation, ANIMATION_REPEAT_MS);
+    }
+    function stopHeroInterval() {
+        if (heroInterval) { clearInterval(heroInterval); heroInterval = null; }
     }
 
     setTimeout(startHeroInterval, 1000);
@@ -150,7 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_btn: "Explore gallery",
             about_title: "About Me",
             about_text_1: "<p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong> based in Montevideo, Uruguay.</p><p>I specialize in both design and animation, with a strong passion for creating characters and designs that bring identity and life to my work. I truly love conveying emotions and stories to the audience in the best possible way.</p><p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT University, Uruguay, and have been working as a freelance artist since 2019. I am now looking to broaden my horizons and be part of new projects!</p>",
-            animations_title: "Animations", characters_title: "Character Design", models_3d_title: "3D Models", illustrations_title: "Illustrations"
+            animations_title: "Animations", characters_title: "Character Design", models_3d_title: "3D Models", illustrations_title: "Illustrations",
+            illu_eyebrow: "Selected works · 2D", illu_title: "Illustrations", illu_intro: "A curated gallery of illustrations, concept art and visual development — character pieces, environments and more.", illu_f_all: "All", illu_f_characters: "Characters", illu_f_environments: "Environments", illu_f_concept: "Concept art", illu_f_posters: "Posters", illu_pieces: "pieces", illu_featured: "Featured", illu_spot_title: "The piece of the month", illu_spot_desc: "Highlight a key illustration here — the process, the tools and the idea behind it. Editable from the same system.", illu_meta_medium: "Digital painting", illu_note: "These are empty placeholders. The superadmin uploads the real illustrations through the editing system.", illu_spot_b2: "Process", illu_spot_t2: "From sketch to final", illu_spot_d2: "A general caption for each rotating piece: describe the concept, the palette and the story behind it. Editable from the same system.", illu_spot_m2: "Concept & render", illu_spot_b3: "Latest", illu_spot_t3: "Latest additions", illu_spot_d3: "Rotate through the highlights — each frame keeps its own short text so the gallery always shows image and story together.",
+            anim_eyebrow: "Now playing · Motion reel", anim_title: "Animations", anim_intro: "Cutscenes, loops and motion experiments — character acting, weight and timing.", anim_showreel: "Showreel", anim_f_all: "All", anim_f_cutscenes: "Cutscenes", anim_f_loops: "Loops & cycles", anim_f_experiments: "Experiments", anim_clips: "clips", anim_note: "Empty screens are placeholders — the superadmin uploads the real clips through the editing system.",
+            char_eyebrow: "Cast file · Character design", char_title: "Character Design", char_intro: "The full cast: protagonists, antagonists and the creatures in between. Flip a card to read its dossier.", char_f_all: "All", char_f_protagonists: "Protagonists", char_f_antagonists: "Antagonists", char_f_creatures: "Creatures", char_entries: "entries", char_role_main: "Main character", char_role_support: "Supporting", char_role_antagonist: "Antagonist", char_role_creature: "Creature", char_bio_ph: "Short bio placeholder. The superadmin can edit the name and description from the same editing system.", char_note: "Placeholder dossiers — pick a character from the roster. The superadmin fills in portraits, names and bios.", cs_type: "Type", cs_debut: "Debut", cs_images: "Images", cs_more: "Read more", cs_less: "Read less", char_extra_ph: "References, palette notes and extra design details go here — fully editable from the same system.",
+            m3d_eyebrow: "Realtime · 3D Lab", m3d_title: "3D Models", m3d_intro: "Hard-surface, organic and stylized assets — turntables, wireframes and breakdowns.", m3d_f_all: "All", m3d_f_characters: "Characters", m3d_f_props: "Props", m3d_f_environments: "Environments", m3d_assets: "assets", m3d_note: "Empty viewports are placeholders — the superadmin uploads turntables and breakdowns through the editing system.", see_all: "See full gallery",
+            mm_eyebrow: "Mixed media · Wall", mm_title: "Multimedia", mm_intro: "Everything that doesn't fit a single box: videos, images and embeds living together on one wall.", mm_f_all: "All", mm_f_video: "Video", mm_f_image: "Image", mm_f_embed: "Embeds", mm_items: "items", mm_note: "Empty cards are placeholders — the superadmin uploads images, videos and embeds through the editing system."
         },
         es: {
             nav_feed: "Feed", nav_gallery: "Galería", nav_portfolio: "Portafolio", nav_about: "Acerca de mí", nav_contact: "Contacto",
@@ -160,7 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_btn: "Explorar galería",
             about_title: "Sobre Mí",
             about_text_1: "<p>Mi nombre es <strong>Lucía Montaña</strong> y soy una <strong>artista 2D y 3D</strong> con sede en Montevideo, Uruguay.</p><p>Me especializo tanto en diseño como en animación, con una gran pasión por crear personajes y diseños que brinden identidad y vida a mi trabajo. Realmente amo transmitir emociones e historias a la audiencia de la mejor manera posible.</p><p>Tengo una Licenciatura en <strong>Animación y Diseño de Videojuegos</strong> de la Universidad ORT, Uruguay, y trabajo como artista freelance desde 2019. ¡Ahora busco ampliar mis horizontes y formar parte de nuevos proyectos!</p>",
-            animations_title: "Animaciones", characters_title: "Diseño de Personajes", models_3d_title: "Modelos 3D", illustrations_title: "Ilustraciones"
+            animations_title: "Animaciones", characters_title: "Diseño de Personajes", models_3d_title: "Modelos 3D", illustrations_title: "Ilustraciones",
+            illu_eyebrow: "Obras seleccionadas · 2D", illu_title: "Ilustraciones", illu_intro: "Una galería curada de ilustraciones, concept art y desarrollo visual — personajes, entornos y más.", illu_f_all: "Todas", illu_f_characters: "Personajes", illu_f_environments: "Entornos", illu_f_concept: "Concept art", illu_f_posters: "Afiches", illu_pieces: "piezas", illu_featured: "Destacada", illu_spot_title: "La pieza del mes", illu_spot_desc: "Destacá acá una ilustración clave — el proceso, las herramientas y la idea detrás. Editable desde el mismo sistema.", illu_meta_medium: "Pintura digital", illu_note: "Estos son contenedores vacíos. El superadmin sube las ilustraciones reales desde el sistema de edición.", illu_spot_b2: "Proceso", illu_spot_t2: "Del boceto al final", illu_spot_d2: "Un texto general para cada pieza que rota: describí el concepto, la paleta y la historia detrás. Editable desde el mismo sistema.", illu_spot_m2: "Concepto y render", illu_spot_b3: "Nuevo", illu_spot_t3: "Últimas incorporaciones", illu_spot_d3: "Rotá por los destacados — cada cuadro mantiene su texto, así la galería siempre muestra imagen e historia juntas.",
+            anim_eyebrow: "Reproduciendo · Reel de animación", anim_title: "Animaciones", anim_intro: "Cinemáticas, loops y experimentos de movimiento — actuación, peso y timing.", anim_showreel: "Showreel", anim_f_all: "Todas", anim_f_cutscenes: "Cinemáticas", anim_f_loops: "Loops y ciclos", anim_f_experiments: "Experimentos", anim_clips: "clips", anim_note: "Las pantallas vacías son contenedores — el superadmin sube los clips reales desde el sistema de edición.",
+            char_eyebrow: "Ficha · Diseño de personajes", char_title: "Diseño de Personajes", char_intro: "El elenco completo: protagonistas, antagonistas y las criaturas del medio. Volteá una ficha para leer su dossier.", char_f_all: "Todos", char_f_protagonists: "Protagonistas", char_f_antagonists: "Antagonistas", char_f_creatures: "Criaturas", char_entries: "fichas", char_role_main: "Personaje principal", char_role_support: "Secundario", char_role_antagonist: "Antagonista", char_role_creature: "Criatura", char_bio_ph: "Bio de ejemplo. El superadmin puede editar el nombre y la descripción desde el mismo sistema de edición.", char_note: "Fichas de ejemplo — elegí un personaje del roster. El superadmin completa retratos, nombres y biografías.", cs_type: "Tipo", cs_debut: "Debut", cs_images: "Imágenes", cs_more: "Ver más", cs_less: "Ver menos", char_extra_ph: "Acá van referencias, notas de paleta y detalles extra de diseño — editable desde el mismo sistema.",
+            m3d_eyebrow: "Tiempo real · Lab 3D", m3d_title: "Modelos 3D", m3d_intro: "Assets hard-surface, orgánicos y estilizados — turntables, wireframes y breakdowns.", m3d_f_all: "Todos", m3d_f_characters: "Personajes", m3d_f_props: "Props", m3d_f_environments: "Entornos", m3d_assets: "assets", m3d_note: "Los viewports vacíos son contenedores — el superadmin sube turntables y breakdowns desde el sistema de edición.", see_all: "Ver galería completa",
+            mm_eyebrow: "Medios mixtos · Muro", mm_title: "Multimedia", mm_intro: "Todo lo que no entra en una sola caja: videos, imágenes y embeds conviviendo en un mismo muro.", mm_f_all: "Todos", mm_f_video: "Video", mm_f_image: "Imagen", mm_f_embed: "Embeds", mm_items: "ítems", mm_note: "Las tarjetas vacías son contenedores — el superadmin sube imágenes, videos y embeds desde el sistema de edición."
         },
         pt: {
             nav_feed: "Feed", nav_gallery: "Galeria", nav_portfolio: "Portfólio", nav_about: "Sobre mim", nav_contact: "Contato",
@@ -168,9 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfólio</span>",
             hero_sub: "Bacharel em Animação e Videogames.<br>Ilustradora, designer de personagens/ambientes e generalista 3D",
             hero_btn: "Explorar galeria",
-            about_title: "Olá! Eu sou a autora",
-            about_text_1: "Apaixonada por contar histórias através do design de personagens e mundos 3D. Mesclo tradição e tecnologia para dar vida a visões únicas.",
-            animations_title: "Animações", characters_title: "Design de Personagens", models_3d_title: "Modelos 3D", illustrations_title: "Ilustrações"
+            about_title: "Sobre Mim",
+            about_text_1: "<p>Meu nome é <strong>Lucía Montaña</strong> e sou uma <strong>artista 2D e 3D</strong> baseada em Montevidéu, Uruguai.</p><p>Sou especializada tanto em design quanto em animação, com uma grande paixão por criar personagens e designs que tragam identidade e vida ao meu trabalho. Adoro transmitir emoções e histórias ao público da melhor maneira possível.</p><p>Tenho um bacharelado em <strong>Animação e Design de Videogames</strong> pela Universidade ORT, Uruguai, e trabalho como artista freelance desde 2019. Agora busco ampliar meus horizontes e fazer parte de novos projetos!</p>",
+            animations_title: "Animações", characters_title: "Design de Personagens", models_3d_title: "Modelos 3D", illustrations_title: "Ilustrações",
+            illu_eyebrow: "Trabalhos selecionados · 2D", illu_title: "Ilustrações", illu_intro: "Uma galeria curada de ilustrações, concept art e desenvolvimento visual — personagens, ambientes e mais.", illu_f_all: "Todas", illu_f_characters: "Personagens", illu_f_environments: "Ambientes", illu_f_concept: "Concept art", illu_f_posters: "Pôsteres", illu_pieces: "peças", illu_featured: "Destaque", illu_spot_title: "A peça do mês", illu_spot_desc: "Destaque aqui uma ilustração chave — o processo, as ferramentas e a ideia por trás. Editável pelo mesmo sistema.", illu_meta_medium: "Pintura digital", illu_note: "Estes são espaços vazios. O superadmin envia as ilustrações reais pelo sistema de edição.", illu_spot_b2: "Processo", illu_spot_t2: "Do esboço ao final", illu_spot_d2: "Um texto geral para cada peça que gira: descreva o conceito, a paleta e a história por trás. Editável pelo mesmo sistema.", illu_spot_m2: "Conceito e render", illu_spot_b3: "Novo", illu_spot_t3: "Últimas adições", illu_spot_d3: "Gire pelos destaques — cada quadro mantém seu texto, então a galeria sempre mostra imagem e história juntas.",
+            anim_eyebrow: "Tocando agora · Reel de animação", anim_title: "Animações", anim_intro: "Cutscenes, loops e experimentos de movimento — atuação, peso e timing.", anim_showreel: "Showreel", anim_f_all: "Todas", anim_f_cutscenes: "Cutscenes", anim_f_loops: "Loops e ciclos", anim_f_experiments: "Experimentos", anim_clips: "clipes", anim_note: "As telas vazias são espaços — o superadmin envia os clipes reais pelo sistema de edição.",
+            char_eyebrow: "Ficha · Design de personagens", char_title: "Design de Personagens", char_intro: "O elenco completo: protagonistas, antagonistas e as criaturas no meio. Vire uma carta para ler o dossiê.", char_f_all: "Todos", char_f_protagonists: "Protagonistas", char_f_antagonists: "Antagonistas", char_f_creatures: "Criaturas", char_entries: "fichas", char_role_main: "Personagem principal", char_role_support: "Coadjuvante", char_role_antagonist: "Antagonista", char_role_creature: "Criatura", char_bio_ph: "Bio de exemplo. O superadmin pode editar o nome e a descrição pelo mesmo sistema de edição.", char_note: "Fichas de exemplo — escolha um personagem no elenco. O superadmin preenche retratos, nomes e biografias.", cs_type: "Tipo", cs_debut: "Estreia", cs_images: "Imagens", cs_more: "Ver mais", cs_less: "Ver menos", char_extra_ph: "Aqui vão referências, notas de paleta e detalhes extras de design — editável pelo mesmo sistema.",
+            m3d_eyebrow: "Tempo real · Lab 3D", m3d_title: "Modelos 3D", m3d_intro: "Assets hard-surface, orgânicos e estilizados — turntables, wireframes e breakdowns.", m3d_f_all: "Todos", m3d_f_characters: "Personagens", m3d_f_props: "Props", m3d_f_environments: "Ambientes", m3d_assets: "assets", m3d_note: "Os viewports vazios são espaços — o superadmin envia turntables e breakdowns pelo sistema de edição.", see_all: "Ver galeria completa",
+            mm_eyebrow: "Mídia mista · Mural", mm_title: "Multimídia", mm_intro: "Tudo o que não cabe numa só caixa: vídeos, imagens e embeds juntos num mesmo mural.", mm_f_all: "Todos", mm_f_video: "Vídeo", mm_f_image: "Imagem", mm_f_embed: "Embeds", mm_items: "itens", mm_note: "Os cartões vazios são espaços — o superadmin envia imagens, vídeos e embeds pelo sistema de edição."
         },
         fr: {
             nav_feed: "Flux", nav_gallery: "Galerie", nav_portfolio: "Portfolio", nav_about: "À propos", nav_contact: "Contact",
@@ -178,10 +234,33 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfolio</span>",
             hero_sub: "Diplômée en Animation et Jeux Vidéo.<br>Illustratrice, designer de personnages/environnements et généraliste 3D",
             hero_btn: "Explorer la galerie",
-            about_title: "Bonjour ! Je suis l'auteure",
-            about_text_1: "Passionnée par le storytelling à travers le design de personnages et les mondes 3D. Je fusionne tradition et technologie pour donner vie à des visions uniques.",
-            animations_title: "Animations", characters_title: "Design de Personnages", models_3d_title: "Modèles 3D", illustrations_title: "Ilustrations"
+            about_title: "À propos de moi",
+            about_text_1: "<p>Je m'appelle <strong>Lucía Montaña</strong> et je suis une <strong>artiste 2D et 3D</strong> basée à Montevideo, en Uruguay.</p><p>Je me spécialise à la fois dans le design et l'animation, avec une grande passion pour la création de personnages et de designs qui apportent identité et vie à mon travail. J'aime profondément transmettre des émotions et des histoires au public de la meilleure façon possible.</p><p>Je suis titulaire d'une licence en <strong>Animation et Conception de Jeux Vidéo</strong> de l'Université ORT, en Uruguay, et je travaille en freelance depuis 2019. Je cherche maintenant à élargir mes horizons et à participer à de nouveaux projets !</p>",
+            animations_title: "Animations", characters_title: "Design de Personnages", models_3d_title: "Modèles 3D", illustrations_title: "Illustrations",
+            illu_eyebrow: "Travaux sélectionnés · 2D", illu_title: "Illustrations", illu_intro: "Une galerie d'illustrations, de concept art et de développement visuel — personnages, environnements et plus.", illu_f_all: "Tout", illu_f_characters: "Personnages", illu_f_environments: "Environnements", illu_f_concept: "Concept art", illu_f_posters: "Affiches", illu_pieces: "pièces", illu_featured: "À la une", illu_spot_title: "La pièce du mois", illu_spot_desc: "Mettez en avant une illustration clé — le processus, les outils et l'idée derrière. Modifiable depuis le même système.", illu_meta_medium: "Peinture numérique", illu_note: "Ce sont des espaces vides. Le superadmin téléverse les vraies illustrations via le système d'édition.", illu_spot_b2: "Processus", illu_spot_t2: "Du croquis au final", illu_spot_d2: "Une légende générale pour chaque pièce qui défile : décrivez le concept, la palette et l'histoire. Modifiable depuis le même système.", illu_spot_m2: "Concept & rendu", illu_spot_b3: "Récent", illu_spot_t3: "Derniers ajouts", illu_spot_d3: "Faites défiler les temps forts — chaque cadre garde son texte, la galerie montre toujours image et histoire ensemble.",
+            anim_eyebrow: "Lecture en cours · Bande démo", anim_title: "Animations", anim_intro: "Cinématiques, boucles et expériences de mouvement — jeu d'acteur, poids et timing.", anim_showreel: "Showreel", anim_f_all: "Tout", anim_f_cutscenes: "Cinématiques", anim_f_loops: "Boucles et cycles", anim_f_experiments: "Expériences", anim_clips: "clips", anim_note: "Les écrans vides sont des espaces — le superadmin téléverse les vrais clips via le système d'édition.",
+            char_eyebrow: "Dossier · Design de personnages", char_title: "Design de Personnages", char_intro: "Le casting complet : protagonistes, antagonistes et les créatures entre les deux. Retournez une carte pour lire la fiche.", char_f_all: "Tout", char_f_protagonists: "Protagonistes", char_f_antagonists: "Antagonistes", char_f_creatures: "Créatures", char_entries: "fiches", char_role_main: "Personnage principal", char_role_support: "Secondaire", char_role_antagonist: "Antagoniste", char_role_creature: "Créature", char_bio_ph: "Bio d'exemple. Le superadmin peut modifier le nom et la description depuis le même système d'édition.", char_note: "Fiches d'exemple — choisissez un personnage dans le casting. Le superadmin remplit portraits, noms et bios.", cs_type: "Type", cs_debut: "Début", cs_images: "Images", cs_more: "Voir plus", cs_less: "Voir moins", char_extra_ph: "Références, notes de palette et détails de design ici — modifiable depuis le même système.",
+            m3d_eyebrow: "Temps réel · Lab 3D", m3d_title: "Modèles 3D", m3d_intro: "Assets hard-surface, organiques et stylisés — turntables, wireframes et breakdowns.", m3d_f_all: "Tout", m3d_f_characters: "Personnages", m3d_f_props: "Props", m3d_f_environments: "Environnements", m3d_assets: "assets", m3d_note: "Les viewports vides sont des espaces — le superadmin téléverse turntables et breakdowns via le système d'édition.", see_all: "Voir la galerie complète",
+            mm_eyebrow: "Médias mixtes · Mur", mm_title: "Multimédia", mm_intro: "Tout ce qui n'entre pas dans une seule case : vidéos, images et embeds réunis sur un même mur.", mm_f_all: "Tout", mm_f_video: "Vidéo", mm_f_image: "Image", mm_f_embed: "Embeds", mm_items: "éléments", mm_note: "Les cartes vides sont des espaces — le superadmin téléverse images, vidéos et embeds via le système d'édition."
         }
+    };
+
+    // Mapa idioma -> código ISO de bandera (flag-icons). en usa la bandera USA.
+    const flagMap = {
+        'en': 'us',
+        'es': 'es',
+        'pt': 'pt',
+        'fr': 'fr'
+    };
+    // Sigla mostrada al lado de la bandera seleccionada
+    const codeMap = {
+        'en': 'EN',
+        'es': 'ES',
+        'pt': 'PT',
+        'fr': 'FR'
+    };
+    const setFlag = (el, lang) => {
+        if (el) el.className = 'fi fi-' + (flagMap[lang] || 'us');
     };
 
     const updateLanguage = (lang) => {
@@ -212,15 +291,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+
+        // Update current-language flag + code (sigla) in navbar + settings
+        setFlag(document.getElementById('lang-flag-nav'), lang);
+        setFlag(document.getElementById('lang-flag-settings'), lang);
+        var codeNav = document.getElementById('lang-code-nav');
+        var codeSettings = document.getElementById('lang-code-settings');
+        if (codeNav) codeNav.textContent = codeMap[lang] || 'EN';
+        if (codeSettings) codeSettings.textContent = codeMap[lang] || 'EN';
+
+        // Update active state on all option buttons
+        document.querySelectorAll('.lang-option').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+
         startHeroInterval(); // Restart hero with new language
     };
 
-    const langSelect = document.getElementById('language-select');
     let savedLang = localStorage.getItem('lang') || 'en';
-    if (langSelect) {
-        langSelect.value = savedLang;
-        langSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
+
+    // Dropdown toggles (navbar + settings)
+    const langToggleNav = document.getElementById('lang-toggle-nav');
+    const langDropdownNav = document.getElementById('lang-dropdown-nav');
+    const langToggleSettings = document.getElementById('lang-toggle-settings');
+    const langDropdownSettings = document.getElementById('lang-dropdown-settings');
+
+    const closeLangDropdowns = () => {
+        if (langDropdownNav) langDropdownNav.classList.remove('active');
+        if (langDropdownSettings) langDropdownSettings.classList.remove('active');
+        if (langToggleSettings) langToggleSettings.classList.remove('open');
+    };
+
+    if (langToggleNav && langDropdownNav) {
+        langToggleNav.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen = !langDropdownNav.classList.contains('active');
+            closeLangDropdowns();
+            if (willOpen) langDropdownNav.classList.add('active');
+        });
     }
+
+    if (langToggleSettings && langDropdownSettings) {
+        langToggleSettings.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen = !langDropdownSettings.classList.contains('active');
+            closeLangDropdowns();
+            if (willOpen) {
+                langDropdownSettings.classList.add('active');
+                langToggleSettings.classList.add('open');
+            }
+        });
+    }
+
+    // Close dropdowns when clicking outside either selector
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.lang-selector-nav') || e.target.closest('.lang-selector-settings')) return;
+        closeLangDropdowns();
+    });
+
+    // Language option buttons (both selectors)
+    document.querySelectorAll('.lang-option[data-lang]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            updateLanguage(btn.dataset.lang);
+            closeLangDropdowns();
+        });
+    });
+
     updateLanguage(savedLang);
 
     // =============================================
@@ -232,13 +369,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const slides = document.querySelectorAll('.slide');
     if (slides.length > 0) {
         let currentSlide = 0;
+        let slideshowTimer = null;
         const panClasses = ['pan-tl', 'pan-tr', 'pan-bl', 'pan-br', 'pan-c'];
         slides[0].classList.add(panClasses[Math.floor(Math.random() * panClasses.length)]);
-        setInterval(() => {
+        const advanceSlide = () => {
             slides[currentSlide].classList.remove('slide-active', ...panClasses);
             currentSlide = (currentSlide + 1) % slides.length;
             slides[currentSlide].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
-        }, 7000);
+        };
+        // Solo correr el slideshow y el typewriter del hero mientras la sección es visible.
+        const heroSection = document.getElementById('inicio');
+        if (heroSection) {
+            new IntersectionObserver((entries) => {
+                heroVisible = entries[0].isIntersecting;
+                if (heroVisible) {
+                    if (!slideshowTimer) slideshowTimer = setInterval(advanceSlide, 7000);
+                    if (!heroInterval) startHeroInterval();
+                } else {
+                    if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; }
+                    stopHeroInterval();
+                }
+            }, { threshold: 0 }).observe(heroSection);
+        } else {
+            slideshowTimer = setInterval(advanceSlide, 7000);
+        }
     }
 
     document.querySelectorAll('.video-container').forEach(container => {
@@ -247,6 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const fullscreenBtn = container.querySelector('.fullscreen-btn');
         if (vid) {
             container.addEventListener('mouseenter', () => {
+                // No reproducir si la sección padre está fuera de viewport
+                if (container.closest('.section-inactive')) return;
                 vid.play().then(() => { if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; }).catch(() => { });
             });
             container.addEventListener('mouseleave', () => {
@@ -263,7 +419,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 fullscreenBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const source = vid.querySelector('source');
-                    if (source) openVideoLightbox(source.src);
+                    if (source) openVideoLightbox(source.src, container.dataset.title, container.dataset.desc, {
+                        date: container.dataset.date,
+                        project: container.dataset.project,
+                        inspiration: container.dataset.inspiration
+                    });
                 });
             }
         }
@@ -295,42 +455,33 @@ document.addEventListener('DOMContentLoaded', () => {
         'Ejercicio 5 parte 3.webp', 'Ilustracion de escenario y personaje juntos.webp',
         'Pokemon 9gen.webp', 'Tony terminado.webp', 'afiche (1).webp',
         'concept leda 1.webp', 'fondo_1_con_personajes.webp', 'post menu.webp',
-        'ramen party.webp', 'recuerdo abuelo.webp', 'recuerdo pezca sin borde.webp',
-        'recuerdo11ghft.webp', 'sardins.webp', 'shoashoa.webp', 'ya.webp'
+        'ramen party.webp'
     ];
     if (illustrationsGrid) {
         illustrationsGrid.innerHTML = '';
-        let lastWasBig = false;
+        // Patrón "bento": tamaños variados (big/wide/tall) que, con grid-auto-flow:dense,
+        // rellenan la grilla sin dejar huecos. Da la galería con imágenes de distinto tamaño.
+        const bentoPattern = ['big', '', 'tall', '', '', 'wide', '', 'tall', '', 'big', '', 'wide', '', 'tall'];
         illustrationFiles.forEach((file, index) => {
             const item = document.createElement('div');
-            
-            // Dynamic Artistic Rhythm — Weighted Probability Distribution
-            const rand = Math.random();
-            let bentoClass = '';
-            if (rand < 0.12 && !lastWasBig) {
-                bentoClass = 'big';
-                lastWasBig = true;
-            } else if (rand < 0.30) {
-                bentoClass = 'wide';
-                lastWasBig = false;
-            } else if (rand < 0.48) {
-                bentoClass = 'tall';
-                lastWasBig = false;
-            } else {
-                lastWasBig = false;
-            }
-            
-            item.className = `gallery-item fade-in ${bentoClass}`;
+            const size = bentoPattern[index % bentoPattern.length] || '';
+            item.className = 'gallery-item fade-in' + (size ? ' ' + size : '');
             const imgPath = 'assets/images/feed/ilustrations/' + file;
-            
-            // Clean Title for meta
+
             const cleanTitle = file.split('.')[0].replace(/_/g, ' ').replace(/-/g, ' ');
             const capitalizedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
-            
-            // Randomized organic cosmic drift timing for the WHOLE CONTAINER
+
             const driftDuration = (Math.random() * 16 + 12).toFixed(2) + 's';
             const driftDelay = (Math.random() * -20).toFixed(2) + 's';
-            
+
+            // Info para pantalla completa (editable por superadmin)
+            item.dataset.title = capitalizedTitle;
+            item.dataset.desc = 'Una exploración ilustrativa de Lucía Montaña.';
+            item.dataset.date = '2024';
+            item.dataset.project = 'Illustration';
+            item.dataset.inspiration = 'Color, luz y momentos cotidianos.';
+            item.dataset.link = '';
+
             item.innerHTML = `
                 <div class="drift-wrapper" style="width: 100%; height: 100%; animation: cosmic-drift ${driftDuration} ${driftDelay} infinite ease-in-out;">
                     <img src="${imgPath}" alt="${file}" loading="lazy" decoding="async">
@@ -343,7 +494,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
 
-            item.addEventListener('click', () => openLightbox(imgPath, capitalizedTitle, "A unique illustrative exploration by Lucia Montaña."));
+            // Lee SIEMPRE la imagen e info ACTUALES (corrige el bug de mostrar la vieja al cambiarla)
+            const openThis = () => {
+                const cur = item.querySelector('img');
+                openLightbox(cur ? cur.src : imgPath, item.dataset.title || capitalizedTitle, item.dataset.desc || '', item.dataset.link || '', {
+                    date: item.dataset.date,
+                    project: item.dataset.project,
+                    inspiration: item.dataset.inspiration
+                });
+            };
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.expand-btn')) return; // el botón abre el lightbox
+                if (isMobileView() && !item.classList.contains('touch-active')) {
+                    // Primer tap: revelar overlay (como hover); 2º tap o botón expandir abre.
+                    clearTouchActive(item);
+                    item.classList.add('touch-active');
+                    return;
+                }
+                openThis();
+            });
+            const expandBtn = item.querySelector('.expand-btn');
+            if (expandBtn) expandBtn.addEventListener('click', (e) => { e.stopPropagation(); openThis(); });
             illustrationsGrid.appendChild(item);
             observer.observe(item);
         });
@@ -361,13 +532,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const railItems = Array.from(showcase.querySelectorAll('.cd-rail-item'));
         if (!panels.length) return;
 
-        const INTERVAL = 4000;
+        const INTERVAL = 6000;
         showcase.style.setProperty('--cd-interval', (INTERVAL / 1000) + 's');
 
         let idx = 0;
         let timer = null;
         let visible = false;
-        let hovering = false;
 
         function runProgress() {
             railItems.forEach(r => {
@@ -376,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const activeItem = railItems[idx];
             const bar = activeItem && activeItem.querySelector('.cd-rail-progress');
-            if (bar && visible && !hovering) {
+            if (bar && visible) {
                 void bar.offsetWidth; // reflow para reiniciar la animación
                 bar.classList.add('run');
             }
@@ -384,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function schedule() {
             clearTimeout(timer);
-            if (visible && !hovering) timer = setTimeout(() => setActive(idx + 1), INTERVAL);
+            if (visible) timer = setTimeout(() => setActive(idx + 1), INTERVAL);
         }
 
         function setActive(n) {
@@ -397,29 +567,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         railItems.forEach((r, i) => r.addEventListener('click', () => setActive(i)));
 
-        // Abrir lightbox desde el retrato y las miniaturas de concept.
+        // Abrir lightbox desde el retrato y las miniaturas de concept, con el
+        // mismo sistema de info (fecha, proyecto, inspiración) del resto del feed.
         showcase.querySelectorAll('[data-full]').forEach(el => {
             el.addEventListener('click', () => {
                 const full = el.getAttribute('data-full');
                 const panel = el.closest('.cd-panel');
                 const name = panel ? panel.querySelector('.cd-name').textContent : 'Character';
-                const role = panel ? panel.querySelector('.cd-role').textContent : '';
-                if (typeof openLightbox === 'function') openLightbox(full, name, role);
+                const descEl = panel && panel.querySelector('.cd-desc');
+                const role = panel && panel.querySelector('.cd-role');
+                const desc = descEl ? descEl.textContent.trim() : (role ? role.textContent : '');
+                const meta = panel ? {
+                    date: panel.dataset.date,
+                    project: panel.dataset.project || (role ? role.textContent : ''),
+                    inspiration: panel.dataset.inspiration
+                } : {};
+                if (typeof openLightbox === 'function') openLightbox(full, name, desc, '', meta);
             });
         });
 
-        // Pausar autoavance al pasar el cursor.
-        showcase.addEventListener('mouseenter', () => {
-            hovering = true;
-            clearTimeout(timer);
-            const bar = railItems[idx] && railItems[idx].querySelector('.cd-rail-progress');
-            if (bar) bar.classList.remove('run');
-        });
-        showcase.addEventListener('mouseleave', () => {
-            hovering = false;
-            runProgress();
-            schedule();
-        });
+        // El carrusel NO se pausa al pasar el cursor: corre siempre que la
+        // sección esté en pantalla.
 
         // Solo correr cuando la sección está en pantalla.
         new IntersectionObserver((entries) => {
@@ -431,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setActive(0);
     })();
 
-    document.querySelectorAll('.fade-in, .presentation-container, .section-title, .animation-item, .cd-showcase, .model-row, .animations-container-inner, .characters-container-inner').forEach(el => observer.observe(el));
+    document.querySelectorAll('.fade-in, .presentation-container, .section-title, .animations-grid, .cd-showcase, .model-row, .bio-content, .media-stack, .model-text, .model-visual-wrapper, .model-visual-grid-wrapper').forEach(el => observer.observe(el));
 
     // =============================================
     // MENÚ MÓVIL (hamburguesa)
@@ -439,14 +607,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const navToggle = document.getElementById('nav-toggle');
     const navLinks = document.querySelector('.nav-links');
     const navBackdrop = document.getElementById('nav-backdrop');
+    const navActions = document.querySelector('.nav-actions');
+    const navContainer = document.querySelector('.nav-container');
     if (navToggle && navLinks) {
+        // En móvil, mover CV+login al final del drawer al abrir (y devolverlos
+        // a la barra al cerrar). Así no se ven duplicados y se pueden tocar
+        // desde el menú reusando el login real renderizado por cms.js.
+        const placeActions = (intoDrawer) => {
+            if (!navActions) return;
+            if (intoDrawer) navLinks.appendChild(navActions);
+            else if (navContainer) navContainer.appendChild(navActions);
+        };
         const closeNav = () => {
             document.body.classList.remove('nav-open');
             navToggle.setAttribute('aria-expanded', 'false');
+            placeActions(false);
         };
         navToggle.addEventListener('click', () => {
             const open = document.body.classList.toggle('nav-open');
             navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            placeActions(open);
         });
         if (navBackdrop) navBackdrop.addEventListener('click', closeNav);
         // Cerrar al tocar cualquier enlace del drawer.
@@ -454,6 +634,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cerrar con Escape.
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
     }
+
+    // =============================================
+    // DROPDOWNS abribles por TAP/CLICK (además de hover en desktop)
+    // Necesario en pantallas táctiles (móvil/tablet/laptop touch) donde
+    // el :hover no dispara. Toca el botón → abre; toca afuera/Escape → cierra.
+    // =============================================
+    const navDropdowns = document.querySelectorAll('.nav-links .dropdown');
+    navDropdowns.forEach((dd) => {
+        const btn = dd.querySelector('.dropbtn');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wasOpen = dd.classList.contains('open');
+            navDropdowns.forEach((d) => d.classList.remove('open'));
+            if (!wasOpen) dd.classList.add('open');
+        });
+    });
+    document.addEventListener('click', () => navDropdowns.forEach((d) => d.classList.remove('open')));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') navDropdowns.forEach((d) => d.classList.remove('open')); });
 
     // =============================================
     // FUNDIDO DE IMÁGENES (anti pop-in)
@@ -506,69 +705,183 @@ document.addEventListener('DOMContentLoaded', () => {
     // Updated Animation Click Listeners for Info
     document.querySelectorAll('.animation-item.video-container').forEach(container => {
         container.addEventListener('click', (e) => {
-            if (e.target.closest('.play-pause-btn')) return;
+            if (e.target.closest('.play-pause-btn') || e.target.closest('.fullscreen-btn')) return;
+            if (isMobileView() && !container.classList.contains('touch-active')) {
+                // Primer tap: revelar overlay con la info abreviada (como el hover
+                // en PC) y reproducir. NO abrir pantalla completa todavía.
+                clearTouchActive(container);
+                container.classList.add('touch-active');
+                const v = container.querySelector('video');
+                if (v) { try { v.play(); } catch (err) {} }
+                return;
+            }
+            // Segundo tap (overlay ya visible) o desktop: abrir pantalla completa.
             const source = container.querySelector('source');
-            const title = container.dataset.title;
-            const desc = container.dataset.desc;
-            if (source) openVideoLightbox(source.src, title, desc);
+            if (source) openVideoLightbox(source.src, container.dataset.title, container.dataset.desc, {
+                date: container.dataset.date,
+                project: container.dataset.project,
+                inspiration: container.dataset.inspiration
+            });
         });
     });
+
+    // =============================================
+    // PRODUCTION STACK — click toggle (no hover)
+    // =============================================
+    const softReveal = document.querySelector('.global-soft-reveal');
+    const softHeader = softReveal && softReveal.querySelector('.global-soft-header');
+    if (softHeader) {
+        softHeader.addEventListener('click', (e) => {
+            e.stopPropagation();
+            softReveal.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!softReveal.contains(e.target)) softReveal.classList.remove('open');
+        });
+    }
+
+    // =============================================
+    // AHORRO DE RENDIMIENTO — pausar animaciones de secciones fuera de viewport
+    // Cada sección (y el footer) recibe ".section-inactive" cuando NO está en
+    // pantalla; el CSS pausa sus animaciones (animation-play-state). Así solo
+    // corren las animaciones de las secciones visibles. Los canvas y los videos
+    // ya se gatean por su cuenta. Default sin clase = corriendo (si el JS falla,
+    // todo sigue animando como antes).
+    // =============================================
+    (function initSectionActivity() {
+        const blocks = document.querySelectorAll('main > section, .main-footer');
+        if (!blocks.length) return;
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => e.target.classList.toggle('section-inactive', !e.isIntersecting));
+        }, { rootMargin: '120px 0px', threshold: 0 });
+        blocks.forEach(b => io.observe(b));
+    })();
+
+    // =============================================
+    // 3D MÓVIL — distribución "texto, 2 videos, texto, 2 videos"
+    // En desktop quedan 1 y 3 videos (sin tocar). En móvil se reubica el 3er
+    // video del personaje al bloque 1 para que cada bloque muestre 2 videos.
+    // =============================================
+    (function init3dMobileSplit() {
+        const cont = document.querySelector('.models-container');
+        if (!cont) return;
+        const block1Visual = cont.querySelector('.model-row:not(.reverse) .model-visual-wrapper');
+        const subGrid = cont.querySelector('.model-row.reverse .video-sub-grid');
+        if (!block1Visual || !subGrid) return;
+        const movable = subGrid.lastElementChild; // último video chico del bloque 2
+        if (!movable) return;
+        const mq = window.matchMedia('(max-width: 768px)');
+        const apply = () => {
+            if (mq.matches) {
+                if (movable.parentElement !== block1Visual) block1Visual.appendChild(movable);
+            } else if (movable.parentElement !== subGrid) {
+                subGrid.appendChild(movable);
+            }
+        };
+        apply();
+        mq.addEventListener('change', apply);
+    })();
 });
 
 // Lightbox functions (Global scope)
-function openLightbox(src, title, desc) {
+// Rellena los campos opcionales (fecha, proyecto, inspiración) del panel de
+// info. Cada campo se oculta si no hay dato. `meta` = {date, project, inspiration}.
+function applyLightboxMeta(lb, meta) {
+    meta = meta || {};
+    const setField = (selector, value) => {
+        const el = lb.querySelector(selector);
+        if (!el) return;
+        const valEl = el.querySelector('.val') || el;
+        if (value) { valEl.textContent = value; el.classList.remove('hidden'); }
+        else { el.classList.add('hidden'); }
+    };
+    setField('.info-date', meta.date);
+    setField('.info-project', meta.project);
+    setField('.info-inspiration', meta.inspiration);
+}
+
+function openLightbox(src, title, desc, link, meta) {
     const lb = document.getElementById('image-lightbox');
     const img = document.getElementById('lightbox-img');
     const titleEl = lb.querySelector('.info-title');
     const descEl = lb.querySelector('.info-desc');
+    const linkEl = lb.querySelector('.info-link');
     const panel = lb.querySelector('.lightbox-info-panel');
-    
-    if (lb && img) { 
-        img.src = src; 
+
+    if (lb && img) {
+        img.src = src;
         if (titleEl) titleEl.innerText = title || "Illustration";
         if (descEl) descEl.innerText = desc || "A piece from my collection.";
+        applyLightboxMeta(lb, meta);
+        if (linkEl) {
+            if (link) { linkEl.href = link; linkEl.style.display = ''; }
+            else { linkEl.removeAttribute('href'); linkEl.style.display = 'none'; }
+        }
         if (panel) panel.classList.add('hidden'); // Reset to hidden
-        
-        lb.style.display = 'flex'; 
-        setTimeout(() => lb.style.opacity = '1', 10); 
+        lb.classList.remove('info-open'); // Reset shrink state
+
+        document.body.classList.add('lightbox-open'); // Bloquear scroll de fondo
+        lb.style.display = 'flex';
+        setTimeout(() => lb.style.opacity = '1', 10);
+
+        // Auto-show info panel al abrir — se queda abierto hasta que el usuario lo cierre
+        if (panel) {
+            setTimeout(() => {
+                panel.classList.remove('hidden');
+                lb.classList.add('info-open');
+            }, 650);
+        }
     }
 }
 
 function closeLightbox() {
     const lb = document.getElementById('image-lightbox');
-    if (lb) { 
-        lb.style.opacity = '0'; 
-        setTimeout(() => lb.style.display = 'none', 300); 
+    if (lb) {
+        lb.style.opacity = '0';
+        document.body.classList.remove('lightbox-open'); // Restaurar scroll
+        setTimeout(() => lb.style.display = 'none', 300);
     }
 }
 
-function openVideoLightbox(src, title, desc) {
+function openVideoLightbox(src, title, desc, meta) {
     const lb = document.getElementById('video-lightbox');
     const vid = document.getElementById('lightbox-video');
     const titleEl = lb.querySelector('.info-title');
     const descEl = lb.querySelector('.info-desc');
     const panel = lb.querySelector('.lightbox-info-panel');
-    
-    if (lb && vid) { 
-        vid.src = src; 
+
+    if (lb && vid) {
+        vid.src = src;
         if (titleEl) titleEl.innerText = title || "Animation";
         if (descEl) descEl.innerText = desc || "Action sequence study.";
+        applyLightboxMeta(lb, meta);
         if (panel) panel.classList.add('hidden'); // Reset to hidden
-        
-        lb.style.display = 'flex'; 
-        setTimeout(() => { 
-            lb.style.opacity = '1'; 
-            vid.play(); 
-        }, 10); 
+        lb.classList.remove('info-open'); // Reset shrink state
+
+        document.body.classList.add('lightbox-open'); // Bloquear scroll de fondo
+        lb.style.display = 'flex';
+        setTimeout(() => {
+            lb.style.opacity = '1';
+            vid.play();
+        }, 10);
+
+        // Auto-show info panel al abrir — se queda abierto hasta que el usuario lo cierre
+        if (panel) {
+            setTimeout(() => {
+                panel.classList.remove('hidden');
+                lb.classList.add('info-open');
+            }, 650);
+        }
     }
 }
 
 function closeVideoLightbox() {
     const lb = document.getElementById('video-lightbox');
-    if (lb) { 
-        lb.style.opacity = '0'; 
-        setTimeout(() => { 
-            lb.style.display = 'none'; 
+    if (lb) {
+        lb.style.opacity = '0';
+        document.body.classList.remove('lightbox-open'); // Restaurar scroll
+        setTimeout(() => {
+            lb.style.display = 'none';
             const vid = document.getElementById('lightbox-video'); 
             if (vid) { vid.pause(); vid.src = ''; } 
         }, 300); 
@@ -578,9 +891,13 @@ function closeVideoLightbox() {
 function toggleLightboxInfo(event) {
     event.stopPropagation();
     const btn = event.currentTarget;
+    const lb = btn.closest('.lightbox');
     const panel = btn.parentElement.querySelector('.lightbox-info-panel');
     if (panel) {
+        const willShow = panel.classList.contains('hidden');
         panel.classList.toggle('hidden');
+        // Achicar el contenedor del medio para dejar lugar al panel de info
+        if (lb) lb.classList.toggle('info-open', willShow);
     }
 }
 
@@ -829,66 +1146,91 @@ function initVideoAutoplayEngine() {
         });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.obs-video, .decor-video').forEach(v => vObserver.observe(v));
+    document.querySelectorAll('.obs-video, .decor-video, .about-video').forEach(v => vObserver.observe(v));
+
+    // Las animaciones del feed (.anim-video) se reproducen por hover/tap; aquí
+    // solo se PAUSAN al salir de viewport para no seguir corriendo fuera de vista.
+    const pauseObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting && !entry.target.paused) entry.target.pause();
+        });
+    }, { threshold: 0 });
+    document.querySelectorAll('.anim-video').forEach(v => pauseObserver.observe(v));
 }
 
 // --- STAGGERED INITIALIZATION (Main Thread Optimization) ---
 setTimeout(() => { if (typeof createBubbles === 'function') createBubbles(); }, 1500);
 setTimeout(() => { initAnimationsBackground(); }, 2500);
-setTimeout(() => { initVideoAutoplayEngine(); }, 3500);
+// El motor de video solo crea observers (los videos son preload="none" y se
+// cargan/reproducen al entrar en viewport), así que puede arrancar pronto.
+setTimeout(() => { initVideoAutoplayEngine(); }, 800);
 
 
 // --- VIGNETTE TELEPORTATION ENGINE ---
+// Solo corre el ciclo de aparición/desaparición mientras la sección
+// padre está en viewport. Así no hay timers ni style-changes invisibles.
 (function initVignetteTeleportation() {
     const vignettes = document.querySelectorAll('.decor-motion');
     if (!vignettes.length) return;
 
-    // 6 Safe spots (avoiding the central 3x2 grid)
     const SPOTS = [
-        { top: '8%', left: '3%', right: 'auto', bottom: 'auto' },
-        { top: '10%', right: '4%', left: 'auto', bottom: 'auto' },
-        { top: '42%', left: '2%', right: 'auto', bottom: 'auto' },
-        { top: '48%', right: '2%', left: 'auto', bottom: 'auto' },
-        { bottom: '15%', left: '4%', right: 'auto', top: 'auto' },
-        { bottom: '12%', right: '3%', left: 'auto', top: 'auto' }
+        { top: '8%',    left: '3%',  right: 'auto', bottom: 'auto' },
+        { top: '10%',   right: '4%', left: 'auto',  bottom: 'auto' },
+        { top: '42%',   left: '2%',  right: 'auto', bottom: 'auto' },
+        { top: '48%',   right: '2%', left: 'auto',  bottom: 'auto' },
+        { bottom: '15%',left: '4%',  right: 'auto', top: 'auto'    },
+        { bottom: '12%',right: '3%', left: 'auto',  top: 'auto'    }
     ];
 
-    function applySpot(el, spotIdx) {
-        const s = SPOTS[spotIdx];
+    const PEEK_OPACITY = '0.18';
+    const VISIBLE_MS  = 3000;
+    const CYCLE_MS    = 10000;
+
+    function applySpot(el, idx) {
+        const s = SPOTS[idx];
         if (!s) return;
-        el.style.top = s.top;
-        el.style.left = s.left;
-        el.style.right = s.right;
+        el.style.top    = s.top;
+        el.style.left   = s.left;
+        el.style.right  = s.right;
         el.style.bottom = s.bottom;
-        el.style.opacity = '1';
     }
 
-    // Initial setup
-    if (vignettes.length >= 2) {
-        applySpot(vignettes[0], 0);
-        applySpot(vignettes[1], 5);
-    }
+    function showCycle() {
+        const leftPool  = [0, 2, 4];
+        const rightPool = [1, 3, 5];
+        const nextL = leftPool [Math.floor(Math.random() * leftPool.length)];
+        const nextR = rightPool[Math.floor(Math.random() * rightPool.length)];
 
-    setInterval(() => {
-        // Fade out
-        vignettes.forEach(v => v.style.opacity = '0');
+        if (vignettes[0]) applySpot(vignettes[0], nextL);
+        if (vignettes[1]) applySpot(vignettes[1], nextR);
+
+        vignettes.forEach(v => v.style.opacity = PEEK_OPACITY);
 
         setTimeout(() => {
-            // Pools to ensure NO overlap and balanced layout
-            let leftPool = [0, 2, 4]; // Spots 0, 2, 4 are LEFT
-            let rightPool = [1, 3, 5]; // Spots 1, 3, 5 are RIGHT
+            vignettes.forEach(v => v.style.opacity = '0');
+        }, VISIBLE_MS);
+    }
 
-            let nextLeft = leftPool[Math.floor(Math.random() * leftPool.length)];
-            let nextRight = rightPool[Math.floor(Math.random() * rightPool.length)];
+    vignettes.forEach(v => v.style.opacity = '0');
 
-            // Assign one to each vignette (always one per side)
-            if (vignettes[0]) applySpot(vignettes[0], nextLeft);
-            if (vignettes[1]) applySpot(vignettes[1], nextRight);
+    let cycleTimer = null;
+    let firstShow = null;
+    function startCycle() {
+        if (cycleTimer) return;
+        if (!firstShow) firstShow = setTimeout(showCycle, 2500);
+        cycleTimer = setInterval(showCycle, CYCLE_MS);
+    }
+    function stopCycle() {
+        if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
+        // Ocultar inmediatamente al salir de viewport
+        vignettes.forEach(v => v.style.opacity = '0');
+    }
 
-            // Fade back in
-            vignettes.forEach(v => v.style.opacity = '0.95');
-        }, 900); // Wait for fade-out
-    }, 12000); // Teleport every 12s (Slower)
+    // Observar la sección que contiene las viñetas
+    const section = vignettes[0].closest('section') || vignettes[0].parentElement;
+    new IntersectionObserver((entries) => {
+        entries[0].isIntersecting ? startCycle() : stopCycle();
+    }, { threshold: 0 }).observe(section);
 })();
 
 

@@ -1,0 +1,12 @@
+{
+  "name": "artist-portfolio",
+  "version": "1.0.0",
+  "description": "Lucia Montaña - Artist Portfolio",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=3000 --no-css-inject"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

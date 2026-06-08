@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Design | Lucia Montaña</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="gallery-common.css">
+    <link rel="stylesheet" href="characters.css">
+
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        (function () {
+            const nav = navigator;
+            const mem = nav.deviceMemory || 4, cores = nav.hardwareConcurrency || 4;
+            const ua = nav.userAgent || '';
+            const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const saveData = nav.connection && nav.connection.saveData;
+            const lite = !!(reduced || saveData || mem <= 2 || cores <= 2 || mobile);
+            document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+        })();
+    </script>
+</head>
+
+<body class="gallery-page">
+    <!-- nav + footer + settings + lightboxes los inyecta shared-ui.js -->
+    <main class="char-page">
+        <!-- ============================ HERO ============================ -->
+        <section class="char-hero">
+            <div class="char-hero-grid-bg" aria-hidden="true"></div>
+            <div class="char-hero-inner">
+                <p class="char-eyebrow" data-i18n="char_eyebrow">Cast file · Character design</p>
+                <h1 class="char-hero-title" data-i18n="char_title">Character Design</h1>
+                <p class="char-hero-sub" data-i18n="char_intro">The full cast: protagonists, antagonists and the
+                    creatures in between. Pick anyone from the roster to open their file.</p>
+            </div>
+        </section>
+
+        <!-- ============================ FILTROS ============================ -->
+        <div class="gallery-toolbar">
+            <div class="gallery-filters" role="tablist" aria-label="Filter characters">
+                <button class="gallery-chip active" data-filter="all" data-i18n="char_f_all">All</button>
+                <button class="gallery-chip" data-filter="protagonists" data-i18n="char_f_protagonists">Protagonists</button>
+                <button class="gallery-chip" data-filter="antagonists" data-i18n="char_f_antagonists">Antagonists</button>
+                <button class="gallery-chip" data-filter="creatures" data-i18n="char_f_creatures">Creatures</button>
+            </div>
+            <span class="gallery-count"><b id="char-count-n">6</b> <span data-i18n="char_entries">entries</span></span>
+        </div>
+
+        <!-- ============================ CHARACTER SELECT ============================ -->
+        <!-- CMS: .cd-name (en cada panel) ya es editable. Para retratos/turnarounds: agregar entry de imagen en REGISTRY. -->
+        <section class="cs-wrap">
+            <!-- Escenario: todos los paneles en el DOM, solo el activo visible -->
+            <div class="cs-stage">
+                <article class="cs-panel active" data-faction="protagonists">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-4"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-user-astronaut"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-4 active" data-color="bg-color-4" data-icon="fa-user-astronaut" aria-label="Portrait"><i class="fa-solid fa-user-astronaut"></i></button>
+                            <button class="cs-thumb bg-color-7" data-color="bg-color-7" data-icon="fa-person" aria-label="Turnaround"><i class="fa-solid fa-person"></i></button>
+                            <button class="cs-thumb bg-color-3" data-color="bg-color-3" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#01 / 06</span>
+                        <h2 class="cd-name">Alessio</h2>
+                        <span class="cs-role" data-i18n="char_role_main">Main character</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Protagonist</b></li><li><span data-i18n="cs_debut">Debut</span><b>2021</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#a78bfa"></span><span style="background:#f9a8d4"></span><span style="background:#fcd34d"></span><span style="background:#34d399"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Hero</li><li>Brave</li><li>Lead</li></ul>
+                    </div>
+                </article>
+                <article class="cs-panel" data-faction="protagonists">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-3"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-user-astronaut"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-3 active" data-color="bg-color-3" data-icon="fa-user-astronaut" aria-label="Portrait"><i class="fa-solid fa-user-astronaut"></i></button>
+                            <button class="cs-thumb bg-color-5" data-color="bg-color-5" data-icon="fa-person" aria-label="Turnaround"><i class="fa-solid fa-person"></i></button>
+                            <button class="cs-thumb bg-color-8" data-color="bg-color-8" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#02 / 06</span>
+                        <h2 class="cd-name">Jaffare</h2>
+                        <span class="cs-role" data-i18n="char_role_support">Supporting</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Supporting</b></li><li><span data-i18n="cs_debut">Debut</span><b>2021</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#67e8f9"></span><span style="background:#a78bfa"></span><span style="background:#fda4af"></span><span style="background:#fde68a"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Ally</li><li>Stylized</li></ul>
+                    </div>
+                </article>
+                <article class="cs-panel" data-faction="antagonists">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-6"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-user-astronaut"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-6 active" data-color="bg-color-6" data-icon="fa-user-astronaut" aria-label="Portrait"><i class="fa-solid fa-user-astronaut"></i></button>
+                            <button class="cs-thumb bg-color-1" data-color="bg-color-1" data-icon="fa-person" aria-label="Turnaround"><i class="fa-solid fa-person"></i></button>
+                            <button class="cs-thumb bg-color-2" data-color="bg-color-2" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#03 / 06</span>
+                        <h2 class="cd-name">Villain</h2>
+                        <span class="cs-role" data-i18n="char_role_antagonist">Antagonist</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Antagonist</b></li><li><span data-i18n="cs_debut">Debut</span><b>2022</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#7c3aed"></span><span style="background:#ef4444"></span><span style="background:#1f2937"></span><span style="background:#f59e0b"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Antagonist</li><li>Dark</li></ul>
+                    </div>
+                </article>
+                <article class="cs-panel" data-faction="creatures">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-5"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-dragon"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-5 active" data-color="bg-color-5" data-icon="fa-dragon" aria-label="Render"><i class="fa-solid fa-dragon"></i></button>
+                            <button class="cs-thumb bg-color-3" data-color="bg-color-3" data-icon="fa-paw" aria-label="Turnaround"><i class="fa-solid fa-paw"></i></button>
+                            <button class="cs-thumb bg-color-7" data-color="bg-color-7" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#04 / 06</span>
+                        <h2 class="cd-name">Creature</h2>
+                        <span class="cs-role" data-i18n="char_role_creature">Creature</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Creature</b></li><li><span data-i18n="cs_debut">Debut</span><b>2022</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#34d399"></span><span style="background:#10b981"></span><span style="background:#065f46"></span><span style="background:#fcd34d"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Beast</li><li>Concept</li></ul>
+                    </div>
+                </article>
+                <article class="cs-panel" data-faction="creatures">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-7"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-dragon"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-7 active" data-color="bg-color-7" data-icon="fa-dragon" aria-label="Render"><i class="fa-solid fa-dragon"></i></button>
+                            <button class="cs-thumb bg-color-4" data-color="bg-color-4" data-icon="fa-paw" aria-label="Turnaround"><i class="fa-solid fa-paw"></i></button>
+                            <button class="cs-thumb bg-color-1" data-color="bg-color-1" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#05 / 06</span>
+                        <h2 class="cd-name">Companion</h2>
+                        <span class="cs-role" data-i18n="char_role_creature">Creature</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Creature</b></li><li><span data-i18n="cs_debut">Debut</span><b>2023</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#fda4af"></span><span style="background:#fdba74"></span><span style="background:#fcd34d"></span><span style="background:#a7f3d0"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Sidekick</li><li>Cute</li></ul>
+                    </div>
+                </article>
+                <article class="cs-panel" data-faction="protagonists">
+                    <div class="cs-gallery">
+                        <div class="cs-portrait bg-color-1"><img class="char-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="cs-ph"><i class="fa-solid fa-user-astronaut"></i></span></div>
+                        <div class="cs-thumbs">
+                            <button class="cs-thumb bg-color-1 active" data-color="bg-color-1" data-icon="fa-user-astronaut" aria-label="Portrait"><i class="fa-solid fa-user-astronaut"></i></button>
+                            <button class="cs-thumb bg-color-6" data-color="bg-color-6" data-icon="fa-person" aria-label="Turnaround"><i class="fa-solid fa-person"></i></button>
+                            <button class="cs-thumb bg-color-4" data-color="bg-color-4" data-icon="fa-palette" aria-label="Concept"><i class="fa-solid fa-palette"></i></button>
+                        </div>
+                    </div>
+                    <div class="cs-info">
+                        <span class="cs-id">#06 / 06</span>
+                        <h2 class="cd-name">Hero</h2>
+                        <span class="cs-role" data-i18n="char_role_main">Main character</span>
+                        <ul class="cs-stats"><li><span data-i18n="cs_type">Type</span><b>Protagonist</b></li><li><span data-i18n="cs_debut">Debut</span><b>2020</b></li><li><span data-i18n="cs_images">Images</span><b>3</b></li></ul>
+                        <div class="cs-palette" aria-hidden="true"><span style="background:#60a5fa"></span><span style="background:#a78bfa"></span><span style="background:#f472b6"></span><span style="background:#fcd34d"></span></div>
+                        <p class="cs-bio" data-i18n="char_bio_ph">Short bio placeholder. The superadmin can edit the name and description from the same editing system.</p>
+                        <div class="cs-extra"><p data-i18n="char_extra_ph">References, palette notes and extra design details go here — fully editable from the same system.</p></div>
+                        <button class="cs-more" type="button"><span data-i18n="cs_more">Read more</span> <i class="fa-solid fa-chevron-down"></i></button>
+                        <ul class="cs-tags"><li>Hero</li><li>Lead</li></ul>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Roster: selector de personajes -->
+            <div class="cs-roster" id="cs-roster">
+                <button class="cs-pick active" data-index="0" data-faction="protagonists"><span class="cs-pick-portrait bg-color-4"><i class="fa-solid fa-user-astronaut"></i></span><span class="cs-pick-name">Alessio</span></button>
+                <button class="cs-pick" data-index="1" data-faction="protagonists"><span class="cs-pick-portrait bg-color-3"><i class="fa-solid fa-user-astronaut"></i></span><span class="cs-pick-name">Jaffare</span></button>
+                <button class="cs-pick" data-index="2" data-faction="antagonists"><span class="cs-pick-portrait bg-color-6"><i class="fa-solid fa-user-astronaut"></i></span><span class="cs-pick-name">Villain</span></button>
+                <button class="cs-pick" data-index="3" data-faction="creatures"><span class="cs-pick-portrait bg-color-5"><i class="fa-solid fa-dragon"></i></span><span class="cs-pick-name">Creature</span></button>
+                <button class="cs-pick" data-index="4" data-faction="creatures"><span class="cs-pick-portrait bg-color-7"><i class="fa-solid fa-dragon"></i></span><span class="cs-pick-name">Companion</span></button>
+                <button class="cs-pick" data-index="5" data-faction="protagonists"><span class="cs-pick-portrait bg-color-1"><i class="fa-solid fa-user-astronaut"></i></span><span class="cs-pick-name">Hero</span></button>
+            </div>
+            <p class="gallery-empty-note" data-i18n="char_note">Placeholder dossiers — pick a character from the roster.
+                The superadmin fills in portraits, names and bios through the editing system.</p>
+        </section>
+    </main>
+
+    <script src="shared-ui.js"></script>
+    <script src="script.js"></script>
+    <script src="cms.js"></script>
+    <script src="gallery-common.js"></script>
+    <script src="characters.page.js"></script>
+</body>
+
+</html>

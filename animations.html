@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animations | Lucia Montaña</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="gallery-common.css">
+    <link rel="stylesheet" href="animations.css">
+
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        (function () {
+            const nav = navigator;
+            const mem = nav.deviceMemory || 4, cores = nav.hardwareConcurrency || 4;
+            const ua = nav.userAgent || '';
+            const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const saveData = nav.connection && nav.connection.saveData;
+            const lite = !!(reduced || saveData || mem <= 2 || cores <= 2 || mobile);
+            document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+        })();
+    </script>
+</head>
+
+<body class="gallery-page">
+    <!-- nav + footer + settings + lightboxes los inyecta shared-ui.js -->
+    <main class="anim-page">
+        <!-- ============================ HERO / SHOWREEL ============================ -->
+        <section class="anim-hero">
+            <div class="film-strip top" aria-hidden="true"></div>
+            <div class="anim-hero-inner">
+                <div class="anim-hero-text">
+                    <p class="anim-eyebrow"><span class="rec-dot"></span> <span data-i18n="anim_eyebrow">Now playing · Motion reel</span></p>
+                    <h1 class="anim-hero-title" data-i18n="anim_title">Animations</h1>
+                    <p class="anim-hero-sub" data-i18n="anim_intro">Cutscenes, loops and motion experiments. Character
+                        acting, weight and timing — the moving side of the portfolio. Press play and let it run.</p>
+                </div>
+                <figure class="anim-showreel reveal" data-title="Showreel 2024" data-desc="Demo reel placeholder." data-category="reel">
+                    <div class="anim-screen big">
+                        <video class="anim-video" muted loop playsinline preload="none"></video>
+                        <span class="anim-ph"><i class="fa-solid fa-film"></i></span>
+                        <button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
+                        <span class="anim-screen-label"><span data-i18n="anim_showreel">Showreel</span> · 2024</span>
+                    </div>
+                </figure>
+            </div>
+            <div class="film-strip bottom" aria-hidden="true"></div>
+        </section>
+
+        <!-- ============================ FILTROS ============================ -->
+        <div class="gallery-toolbar">
+            <div class="gallery-filters" role="tablist" aria-label="Filter animations">
+                <button class="gallery-chip active" data-filter="all" data-i18n="anim_f_all">All</button>
+                <button class="gallery-chip" data-filter="cutscenes" data-i18n="anim_f_cutscenes">Cutscenes</button>
+                <button class="gallery-chip" data-filter="loops" data-i18n="anim_f_loops">Loops &amp; cycles</button>
+                <button class="gallery-chip" data-filter="experiments" data-i18n="anim_f_experiments">Experiments</button>
+            </div>
+            <span class="gallery-count"><b id="anim-count-n">6</b> <span data-i18n="anim_clips">clips</span></span>
+        </div>
+
+        <!-- ============================ GRID DE CLIPS ============================ -->
+        <!-- CMS: agregar entry en REGISTRY (cms.js) para .anim-page .anim-video (.video-title/.video-date/.video-project + data-desc) -->
+        <section class="anim-grid-wrap">
+            <div class="anim-reel">
+                <button class="anim-arrow prev" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="anim-grid" id="anim-grid">
+                <article class="anim-card reveal" data-category="cutscenes" data-title="Untitled clip #1" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_cutscenes">Cutscenes</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Cutscene</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2024</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Project</span></div></div>
+                </article>
+                <article class="anim-card reveal" data-category="loops" data-title="Untitled clip #2" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_loops">Loops</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Walk cycle</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2024</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Motion study</span></div></div>
+                </article>
+                <article class="anim-card reveal" data-category="experiments" data-title="Untitled clip #3" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_experiments">Experiment</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Motion experiment</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2023</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Personal</span></div></div>
+                </article>
+                <article class="anim-card reveal" data-category="cutscenes" data-title="Untitled clip #4" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_cutscenes">Cutscenes</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Cutscene</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2023</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Project</span></div></div>
+                </article>
+                <article class="anim-card reveal" data-category="loops" data-title="Untitled clip #5" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_loops">Loops</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Run cycle</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2022</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Motion study</span></div></div>
+                </article>
+                <article class="anim-card reveal" data-category="experiments" data-title="Untitled clip #6" data-desc="">
+                    <div class="anim-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="anim-ph"><i class="fa-solid fa-film"></i></span><button class="anim-play" aria-label="Play"><i class="fa-solid fa-play"></i></button><span class="anim-cat-tag" data-i18n="anim_f_experiments">Experiment</span></div>
+                    <div class="anim-meta"><h3 class="video-title">Effects test</h3><div class="video-meta"><span class="video-date"><i class="fa-regular fa-calendar"></i> 2022</span><span class="video-project"><i class="fa-solid fa-folder-open"></i> Personal</span></div></div>
+                </article>
+                </div>
+                <button class="anim-arrow next" aria-label="Siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <p class="gallery-empty-note" data-i18n="anim_note">Empty screens are placeholders — the superadmin uploads the
+                real clips through the editing system.</p>
+        </section>
+    </main>
+
+    <script src="shared-ui.js"></script>
+    <script src="script.js"></script>
+    <script src="cms.js"></script>
+    <script src="gallery-common.js"></script>
+    <script src="animations.page.js"></script>
+</body>
+
+</html>

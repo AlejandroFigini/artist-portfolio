@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Models | Lucia Montaña</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="gallery-common.css">
+    <link rel="stylesheet" href="models-3d.css">
+
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        (function () {
+            const nav = navigator;
+            const mem = nav.deviceMemory || 4, cores = nav.hardwareConcurrency || 4;
+            const ua = nav.userAgent || '';
+            const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const saveData = nav.connection && nav.connection.saveData;
+            const lite = !!(reduced || saveData || mem <= 2 || cores <= 2 || mobile);
+            document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+        })();
+    </script>
+</head>
+
+<body class="gallery-page">
+    <!-- nav + footer + settings + lightboxes los inyecta shared-ui.js -->
+    <main class="m3d-page">
+        <!-- ============================ HERO ============================ -->
+        <section class="m3d-hero">
+            <div class="m3d-grid-floor" aria-hidden="true"></div>
+            <div class="m3d-blobs" aria-hidden="true"><span class="m3d-blob b1"></span><span class="m3d-blob b2"></span></div>
+            <div class="m3d-hero-inner">
+                <div class="m3d-hero-text">
+                    <p class="m3d-eyebrow" data-i18n="m3d_eyebrow">Realtime · 3D Lab</p>
+                    <h1 class="m3d-hero-title" data-i18n="m3d_title">3D Models</h1>
+                    <p class="m3d-hero-sub" data-i18n="m3d_intro">Hard-surface, organic and stylized assets — turntables,
+                        wireframes and breakdowns. The dimensional side of the work, built for realtime and render.</p>
+                </div>
+                <div class="m3d-cube-stage" aria-hidden="true">
+                    <div class="m3d-cube">
+                        <span class="cube-face cf-front"></span>
+                        <span class="cube-face cf-back"></span>
+                        <span class="cube-face cf-right"></span>
+                        <span class="cube-face cf-left"></span>
+                        <span class="cube-face cf-top"></span>
+                        <span class="cube-face cf-bottom"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================ FILTROS ============================ -->
+        <div class="gallery-toolbar">
+            <div class="gallery-filters" role="tablist" aria-label="Filter models">
+                <button class="gallery-chip active" data-filter="all" data-i18n="m3d_f_all">All</button>
+                <button class="gallery-chip" data-filter="characters" data-i18n="m3d_f_characters">Characters</button>
+                <button class="gallery-chip" data-filter="props" data-i18n="m3d_f_props">Props</button>
+                <button class="gallery-chip" data-filter="environments" data-i18n="m3d_f_environments">Environments</button>
+            </div>
+            <span class="gallery-count"><b id="m3d-count-n">6</b> <span data-i18n="m3d_assets">assets</span></span>
+        </div>
+
+        <!-- ============================ GRID DE MODELOS ============================ -->
+        <!-- CMS: agregar entry en REGISTRY (cms.js) para .m3d-card .obs-video (turntable) y nombres .m3d-name -->
+        <section class="m3d-grid-wrap">
+            <div class="m3d-grid" id="m3d-grid">
+                <article class="m3d-card reveal" data-cat="characters" data-title="Asset #1" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-cube"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Stylized character</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_characters">Characters</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>PBR</b></li><li><span>Rig</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>Blender</span><span>ZBrush</span><span>Substance</span></div>
+                    </div>
+                </article>
+                <article class="m3d-card reveal" data-cat="props" data-title="Asset #2" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-cubes"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Hard-surface prop</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_props">Props</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>PBR</b></li><li><span>LODs</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>Blender</span><span>Substance</span></div>
+                    </div>
+                </article>
+                <article class="m3d-card reveal" data-cat="environments" data-title="Asset #3" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-mountain-sun"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Environment set</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_environments">Environments</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>PBR</b></li><li><span>Tileset</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>Blender</span><span>Unreal</span></div>
+                    </div>
+                </article>
+                <article class="m3d-card reveal" data-cat="props" data-title="Asset #4" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-gem"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Stylized prop</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_props">Props</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>Hand</b></li><li><span>LODs</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>Blender</span><span>3D-Coat</span></div>
+                    </div>
+                </article>
+                <article class="m3d-card reveal" data-cat="characters" data-title="Asset #5" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-dragon"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Creature</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_characters">Characters</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>PBR</b></li><li><span>Rig</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>ZBrush</span><span>Maya</span></div>
+                    </div>
+                </article>
+                <article class="m3d-card reveal" data-cat="environments" data-title="Asset #6" data-desc="">
+                    <div class="m3d-viewport mode-wire">
+                        <video class="obs-video" muted loop playsinline preload="none"></video>
+                        <span class="m3d-ph"><i class="fa-solid fa-tree"></i></span>
+                        <span class="m3d-wire-grid"></span>
+                        <div class="m3d-modes"><button data-mode="wire" class="active">Wire</button><button data-mode="clay">Clay</button><button data-mode="render">Render</button></div>
+                        <button class="m3d-spin" type="button"><i class="fa-solid fa-arrows-rotate"></i> 360°</button>
+                    </div>
+                    <div class="m3d-info">
+                        <h3 class="m3d-name">Foliage pack</h3>
+                        <span class="m3d-type" data-i18n="m3d_f_environments">Environments</span>
+                        <ul class="m3d-specs"><li><span>Tris</span><b>—</b></li><li><span>Maps</span><b>Atlas</b></li><li><span>Wind</span><b>—</b></li></ul>
+                        <div class="m3d-soft"><span>Blender</span><span>Unreal</span></div>
+                    </div>
+                </article>
+            </div>
+            <p class="gallery-empty-note" data-i18n="m3d_note">Empty viewports are placeholders — the superadmin uploads
+                turntables and breakdowns through the editing system.</p>
+        </section>
+    </main>
+
+    <script src="shared-ui.js"></script>
+    <script src="script.js"></script>
+    <script src="cms.js"></script>
+    <script src="gallery-common.js"></script>
+    <script src="models-3d.page.js"></script>
+</body>
+
+</html>

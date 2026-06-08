@@ -19,14 +19,19 @@
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Gutter lateral consistente para que el contenido respete los bordes
+       y no se vea apretado en cualquier ancho (laptop ↔ wide). */
+    --page-gutter: clamp(1rem, 5vw, 4rem);
+    --maxw-feed: 1200px;
 }
 
 [data-theme="dark"] {
     /* Tema Oscuro */
     --bg-primary: #0f172a;
     --bg-secondary: #1e293b;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+    --text-primary: #ffffff;
+    --text-secondary: #cbd5e1;
     --accent: #7c3aed; /* Deep, rich violet */
     --accent-hover: #6d28d9;
     --border: #334155;
@@ -60,7 +65,6 @@
     scrollbar-width: thin;
     scrollbar-color: var(--accent) var(--bg-primary);
 }
-
 
 /* Colores Placeholders pastel y suaves (se ven bien en ambos temas) */
 .bg-color-1 {
@@ -122,6 +126,11 @@
 html {
     scroll-behavior: smooth;
     font-family: var(--font);
+    /* Root font-size fluido: escala TODO lo que está en rem (nav, logo,
+       títulos, paddings) con el tamaño de pantalla. En wide queda en 16px
+       (no cambia), y en laptop 15"/móvil baja a ~14px para que el texto y
+       los contenedores guarden la proporción correcta y no se vean enormes. */
+    font-size: clamp(14px, 9px + 0.36vw, 16px);
     -webkit-font-smoothing: antialiased;
     /* Adelgaza el renderizado en pantalla */
     -moz-osx-font-smoothing: grayscale;
@@ -178,6 +187,9 @@ header {
     letter-spacing: 0.1em;
     color: var(--text-primary);
     text-decoration: none;
+    flex: 1 1 0;
+    /* Zona izquierda: empuja el menú al centro */
+    white-space: nowrap;
 }
 
 .logo span {
@@ -189,6 +201,9 @@ header {
     display: flex;
     gap: 2rem;
     /* Espaciado reducido a 2rem */
+    align-items: center;
+    justify-content: center;
+    /* Zona central */
 }
 
 /* Base de los enlaces principales de navegacion */
@@ -350,7 +365,16 @@ header {
     /* Rellena el ancho considerando los 1.2rem de lado a lado */
 }
 
-
+/* Dropdown abierto por tap/click (táctil) — replica los estados de :hover
+   para que funcione en pantallas sin hover (móvil/tablet/laptop táctil). */
+.dropdown.open .dropbtn i { transform: rotate(-180deg); }
+.dropdown.open .dropdown-content { opacity: 1; visibility: visible; }
+.dropdown.open .dropdown-content a { opacity: 1; transform: translateY(0); }
+.dropdown.open .dropdown-content a:nth-child(1) { transition-delay: 0.05s; }
+.dropdown.open .dropdown-content a:nth-child(2) { transition-delay: 0.10s; }
+.dropdown.open .dropdown-content a:nth-child(3) { transition-delay: 0.15s; }
+.dropdown.open .dropdown-content a:nth-child(4) { transition-delay: 0.20s; }
+.dropdown.open .dropdown-content a:nth-child(5) { transition-delay: 0.25s; }
 
 /* Contenedor General */
 main {
@@ -360,7 +384,7 @@ main {
 }
 
 section {
-    padding: 6rem 0;
+    padding: clamp(3.5rem, 8vw, 6rem) 0;
     width: 100%;
     margin: 0;
     position: relative;
@@ -369,11 +393,11 @@ section {
 
 .section-title {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: clamp(2rem, 5vw, 4rem);
 }
 
 .section-title h2 {
-    font-size: 2.5rem;
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
     font-weight: 300;
     margin-bottom: 1rem;
     letter-spacing: -0.5px;
@@ -383,9 +407,54 @@ section {
 
 .section-title p {
     color: var(--text-secondary);
-    font-size: 1.125rem;
+    font-size: clamp(0.95rem, 2vw, 1.125rem);
     max-width: 600px;
     margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* CTA "ver galería completa": discreto, en la esquina superior derecha de la sección */
+.see-all-cta {
+    position: absolute;
+    top: clamp(1.1rem, 2.5vw, 1.9rem);
+    right: clamp(1rem, 4vw, 2.75rem);
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    opacity: 1;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    transition: background 0.3s ease, border-color 0.3s ease, gap 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.see-all-cta:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    gap: 0.7rem;
+    box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.see-all-cta i {
+    font-size: 0.8em;
+    transition: transform 0.3s ease;
+}
+
+.see-all-cta:hover i {
+    transform: translateX(3px);
+}
+
+/* En móvil: solo la flecha + "ver" corto para no chocar con el título */
+@media (max-width: 560px) {
+    .see-all-cta { font-size: 0.78rem; top: 0.9rem; }
 }
 
 /* Hero Slideshow Full Width */
@@ -395,6 +464,12 @@ section {
     max-width: 100%;
     width: 100%;
     height: 100vh;
+    /* svh: altura estable en móvil (no salta con las barras dinámicas del
+       navegador, que es lo que dejaba huecos / recortes al hacer scroll). */
+    height: 100svh;
+    /* Piso para pantallas muy bajas o en landscape: el hero deja de
+       comprimirse y la página scrollea en vez de recortar el contenido. */
+    min-height: 560px;
     position: relative;
     overflow: hidden;
 }
@@ -432,6 +507,12 @@ section {
     background: rgba(255, 255, 255, 0.65);
     /* Efecto de transparencia/velo blanco */
     z-index: 1;
+    transition: background 0.5s ease;
+}
+
+/* Modo oscuro: velo oscuro sobre la portada en vez del velo blanco */
+[data-theme="dark"] .slide::after {
+    background: rgba(8, 4, 20, 0.55);
 }
 
 .slide.slide-active {
@@ -464,17 +545,9 @@ section {
 /* Animación letra por letra */
 .hero-overlay h1 .letter,
 .hero-overlay p .letter,
-.char-name .letter,
-.char-role .letter,
 .section-typewriter .letter {
     opacity: 0;
     transform: translateY(15px);
-    display: inline-block;
-}
-
-.char-card-title-vertical h4 .letter {
-    opacity: 1 !important;
-    transform: none !important;
     display: inline-block;
 }
 
@@ -694,8 +767,8 @@ section {
 
 /* Presentación Split */
 .presentation-section {
-    padding-top: 7rem;
-    padding-bottom: 7rem;
+    padding-top: clamp(4rem, 8vw, 7rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
     position: relative;
     overflow: hidden;
     background-color: var(--bg-primary);
@@ -790,10 +863,9 @@ section {
 
 .presentation-container {
     display: flex;
-    gap: 8rem;
+    gap: clamp(2rem, 6vw, 8rem);
     align-items: center;
-    max-width: 1400px;
-    width: 95%;
+    width: min(100% - 2 * var(--page-gutter), var(--maxw-feed));
     margin: 0 auto;
     position: relative;
     z-index: 2;
@@ -810,7 +882,7 @@ section {
 }
 
 .artist-bio h2 {
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 5vw, 3.5rem);
     margin: 0;
     color: var(--accent);
     letter-spacing: -2px;
@@ -818,7 +890,7 @@ section {
 }
 
 .bio-content p {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
     line-height: 1.8;
@@ -854,17 +926,6 @@ section {
     max-width: 500px;
     /* Increased width */
     padding: 2rem;
-}
-
-.artist-video-wrapper {
-    position: relative;
-    width: 100%;
-    background: var(--bg-primary);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-    z-index: 5;
-    transition: var(--transition);
 }
 
 /* Remarco decorativo / Decorative Frame */
@@ -938,13 +999,6 @@ section {
     object-fit: cover;
 }
 
-.artist-photo-img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-}
-
 .artist-photo-wrapper:hover {
     transform: scale(1.1) rotate(-3deg);
     z-index: 20;
@@ -954,7 +1008,7 @@ section {
 @media (max-width: 1024px) {
     .presentation-container {
         flex-direction: column;
-        gap: 6rem;
+        gap: clamp(2.5rem, 6vw, 4rem);
         text-align: center;
     }
 
@@ -976,9 +1030,10 @@ section {
     }
 
     .artist-photo-wrapper {
-        width: 100px;
-        bottom: -20px;
+        width: clamp(140px, 38vw, 180px);
+        bottom: -24px;
         left: 0;
+        border-width: 8px;
     }
 }
 
@@ -986,7 +1041,7 @@ section {
 .animations-section {
     background-color: var(--bg-secondary);
     width: 100%;
-    padding: 8rem 0 11rem 0;
+    padding: clamp(4rem, 9vw, 8rem) 0 clamp(5rem, 11vw, 11rem) 0;
     position: relative;
     overflow: hidden;
 }
@@ -1041,22 +1096,6 @@ section {
 
 /* All SVG/Canvas behavior now handled in script.js */
 
-/* El cuadro blanco interno */
-.animations-container-inner,
-.characters-container-inner {
-    max-width: 1400px;
-    width: 95%;
-    margin: 0 auto;
-    background-color: #ffffff;
-    /* Cuadro blanco para destacar */
-    border-radius: 3.5rem;
-    padding: 5rem 4rem;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.05);
-}
-
-
-
 .anim-title-container {
     max-width: 1200px;
     /* Mas largo ocupando menos renglones */
@@ -1082,24 +1121,19 @@ section {
 /* Decorative Corner Portals (Haai Thar & Galope) */
 .decor-motion {
     position: absolute;
-    width: 24rem;
-    /* Balanced size */
+    width: 15rem;
     aspect-ratio: 16/9;
-    background: rgba(91, 33, 182, 0.1);
+    background: transparent;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    opacity: 1;
-    transition: all 0.5s ease;
-    z-index: 5;
+    opacity: 0;                         /* empieza oculto; JS controla la opacidad */
+    filter: saturate(0.7);
+    z-index: 2;
     pointer-events: none;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    /* Sober shadow */
-    border: 3px solid rgba(91, 33, 182, 0.5);
-    /* Muted violet */
+    border: 2px solid rgba(91, 33, 182, 0.3);
     animation: decorFloat 15s ease-in-out infinite;
-    /* Slower, more complex */
-    transition: opacity 0.8s ease-in-out;
-    /* Snappier teleport fade */
+    transition: opacity 1s ease-in-out; /* fade suave */
 }
 
 .decor-video {
@@ -1109,6 +1143,8 @@ section {
 }
 
 .decor-label {
+    display: none;
+    /* Ocultas: las decor-motion ahora son fondo integrado, sin etiqueta-tarjeta */
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -1206,7 +1242,8 @@ section {
     pointer-events: auto; /* Re-enable for buttons and info to be interactive */
 }
 
-.animation-item:hover .video-overlay {
+.animation-item:hover .video-overlay,
+.animation-item.touch-active .video-overlay {
     opacity: 1;
     transform: translateY(0);
 }
@@ -1221,6 +1258,11 @@ section {
     flex-direction: column;
     align-items: flex-end;
     gap: 0.5rem;
+    pointer-events: none; /* el contenedor no bloquea clicks/hover de elementos detrás */
+}
+.global-soft-header,
+.global-soft-reveal.open .global-soft-icons {
+    pointer-events: auto; /* solo el badge y el panel abierto son interactivos */
 }
 
 .global-soft-header {
@@ -1261,13 +1303,13 @@ section {
     min-width: 19rem;
 }
 
-.global-soft-reveal:hover .global-soft-icons {
+.global-soft-reveal.open .global-soft-icons {
     transform: translateY(0);
     opacity: 1;
     pointer-events: all;
 }
 
-.global-soft-reveal:hover .global-soft-header {
+.global-soft-reveal.open .global-soft-header {
     background: #6d28d9;
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
@@ -1350,13 +1392,6 @@ section {
     background: #00005b;
     color: #ea77ff;
     border-color: #ea77ff44;
-}
-
-/* Brand Colors */
-.soft-badge.ma {
-    background: #000000;
-    color: #37d1ff;
-    border-color: #37d1ff44;
 }
 
 .soft-badge.ae {
@@ -1469,10 +1504,10 @@ section {
 /* Personajes - Layout Moderno Acordeón */
 .characters-section {
     width: 100%;
-    padding: 4rem 2rem;
+    padding: clamp(3rem, 7vw, 4rem) clamp(1rem, 4vw, 2rem);
     position: relative;
     overflow: hidden;
-    background: linear-gradient(160deg, #0a0420 0%, #1a0a40 45%, #2a0a60 100%);
+    background: linear-gradient(160deg, #07021a 0%, #12063a 50%, #1c0852 100%);
     color: #fff;
 }
 
@@ -1480,435 +1515,239 @@ section {
     color: rgba(255, 255, 255, 0.8);
 }
 
+/* Fondo: grid blueprint sutil con degradado radial para darle profundidad */
 .characters-section::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     z-index: 1;
     pointer-events: none;
-    overflow: hidden;
-    background:
-        radial-gradient(800px 600px at 20% 30%, rgba(124, 58, 237, 0.15), transparent 60%),
-        radial-gradient(600px 400px at 80% 70%, rgba(88, 28, 135, 0.12), transparent 60%);
+    background-image:
+        linear-gradient(rgba(139, 92, 246, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 92, 246, 0.07) 1px, transparent 1px);
+    background-size: 54px 54px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 20%, transparent 80%);
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 20%, transparent 80%);
 }
 
+/* Spotlight central suave */
 .char-section-spotlight {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 70%);
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 50%, rgba(139, 92, 246, 0.12) 0%, transparent 65%),
+        radial-gradient(ellipse 30% 25% at 25% 35%, rgba(88, 28, 135, 0.08) 0%, transparent 60%);
     pointer-events: none;
     z-index: 1;
 }
 
-/* Acordeón: 4 tarjetas en grid compacto */
-.char-accordion {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.2rem;
-    max-width: 1600px;
-    width: 100%;
-    margin: 0 auto;
-    position: relative;
-    z-index: 10;
+/* Ocultar los cd-blobs (reemplazados por el grid blueprint) */
+.cd-blob-1, .cd-blob-2, .cd-blob-3 { display: none; }
+
+/* ============ Language Selectors (flag-icons) ============ */
+/* Tamaño base de bandera; .fi mantiene proporción 4:3 */
+.lang-btn .fi,
+.lang-btn-settings .fi,
+.lang-option .fi {
+    font-size: 1.35rem;
+    border-radius: 3px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-/* Tarjeta colapsada: thumbnail + overlay + nombre */
-.char-card {
-    position: relative;
-    aspect-ratio: 1 / 1.15;
-    border-radius: 20px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-    transform: scale(1);
-    opacity: 0.75;
-    filter: brightness(0.85);
-}
-
-/* Estado activo: expandir a pantalla completa */
-.char-card.active {
-    position: fixed;
-    inset: 0;
-    aspect-ratio: auto;
-    border-radius: 0;
-    grid-column: unset;
-    z-index: 2000;
-    opacity: 1;
-    filter: none;
-    transform: scale(1);
-}
-
-/* Fondo Carrusel — visible en tarjeta colapsada y en expandida */
-.bg-carousel {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    background: #0a0118;
-}
-
-.bg-slide {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    opacity: 0;
-    filter: brightness(0.5) contrast(1.05);
-    transition: opacity 0.8s ease-in-out, filter 0.8s ease;
-}
-
-/* Tarjeta colapsada: mostrar la primera imagen */
-.char-card:not(.active) .bg-slide:nth-child(1) {
-    opacity: 1;
-    filter: brightness(0.6) grayscale(30%);
-}
-
-/* Expandida: animar entre 3 imágenes */
-.char-card.active .bg-slide {
-    filter: brightness(0.7) contrast(1.05);
-}
-
-.char-card.active .bg-slide:nth-child(1) {
-    animation: bgFade 15s infinite 0s, panMove1 12s infinite alternate linear;
-    opacity: 0;
-}
-
-.char-card.active .bg-slide:nth-child(2) {
-    animation: bgFade 15s infinite 5s, panMove2 14s infinite alternate linear;
-    opacity: 0;
-}
-
-.char-card.active .bg-slide:nth-child(3) {
-    animation: bgFade 15s infinite 10s, panMove3 16s infinite alternate linear;
-    opacity: 0;
-}
-
-@keyframes bgFade {
-    0% {
-        opacity: 0;
-    }
-
-    5% {
-        opacity: 1;
-    }
-
-    33% {
-        opacity: 1;
-    }
-
-    38% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 0;
-    }
-}
-
-@keyframes panMove1 {
-    0% {
-        transform: scale(1.1) translate(0, 0);
-    }
-
-    100% {
-        transform: scale(1.3) translate(-5%, 5%);
-    }
-}
-
-@keyframes panMove2 {
-    0% {
-        transform: scale(1.1) translate(0, 0);
-    }
-
-    100% {
-        transform: scale(1.25) translate(5%, 3%);
-    }
-}
-
-@keyframes panMove3 {
-    0% {
-        transform: scale(1.1) translate(0, 0);
-    }
-
-    100% {
-        transform: scale(1.35) translate(3%, -5%);
-    }
-}
-
-/* Imagen Principal — solo en colapsadas */
-.char-main-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    background-size: cover;
-    background-position: center 20%;
-    background-repeat: no-repeat;
-    opacity: 1;
-    transition: opacity 0.6s ease;
-}
-
-.char-card.active .char-main-img {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Título en tarjeta colapsada — superpuesto en la base */
-.char-card-title-vertical {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 3;
-    text-align: center;
-    padding: 1.5rem 1rem 2rem;
-    background: linear-gradient(180deg, transparent, rgba(10, 1, 24, 0.95));
-    transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-    display: flex;
-    flex-direction: column;
+/* Botón de descarga de CV (navbar + settings) */
+.cv-btn {
+    display: inline-flex;
     align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cv-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+}
+
+.cv-btn i {
+    font-size: 0.95rem;
+}
+
+/* En settings ocupa el ancho disponible a la derecha */
+.cv-btn-settings {
+    padding: 0.5rem 1.1rem;
+}
+
+/* Sigla del idioma seleccionado, al lado de la bandera */
+.lang-code {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+/* CV + bandera: contenedor fuera del nav, pegado al borde derecho */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1 1 0;
     justify-content: flex-end;
-    min-height: 130px;
+    /* Zona derecha: CV + login + idioma, pegados al borde */
 }
 
-.char-card:not(.active):hover .char-card-title-vertical {
-    background: linear-gradient(180deg, transparent, rgba(10, 1, 24, 0.99));
-    padding-bottom: 2.5rem;
+/* Opción de nav solo para superadmin */
+.admin-only {
+    display: none !important;
 }
 
-.char-card-title-vertical h4 {
-    font-size: 1.8rem;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #fff;
-    margin: 0;
-    writing-mode: horizontal-tb;
-    transform: none;
+body.is-admin .admin-only {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--accent);
+    font-weight: 500;
 }
 
-.char-card-title-vertical span {
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 0.4rem;
+body.is-admin .admin-only::before {
+    content: "\f013";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.85em;
 }
 
-.char-card.active .char-card-title-vertical {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Contenido Expandido — layout lado a lado */
-.char-card-content {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
+/* Área de login en la navbar (botón que renderiza cms.js) */
+#cms-auth-nav {
     display: flex;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.6s ease 0.3s, visibility 0.6s 0.3s;
+    align-items: center;
 }
 
-.char-card.active .char-card-content {
-    opacity: 1;
-    visibility: visible;
-}
-
-.img-expand-wrapper {
+/* --- Navegación: bandera del idioma actual pegada al borde derecho --- */
+.lang-selector-nav {
     position: relative;
-    width: 320px;
-    max-width: 90%;
-    margin-top: auto;
-}
-
-.char-info-img {
-    width: 100%;
-    height: auto;
-    border-radius: 16px;
-    box-shadow:
-        0 20px 50px rgba(139, 92, 246, 0.25),
-        0 0 1px rgba(255, 255, 255, 0.1) inset;
-    border: 1px solid rgba(167, 139, 250, 0.2);
-    opacity: 1;
-    display: block;
-    animation: floatingMain 5s ease-in-out infinite alternate;
-    transition: all 0.3s ease;
-}
-
-.char-card.active .char-info-img:hover {
-    transform: translateY(-8px);
-    box-shadow:
-        0 25px 60px rgba(139, 92, 246, 0.35),
-        0 0 1px rgba(255, 255, 255, 0.15) inset;
-}
-
-@keyframes floatingMain {
-    0% {
-        transform: translate(0, 0) rotate(0deg);
-    }
-
-    50% {
-        transform: translate(6px, -16px) rotate(2deg);
-    }
-
-    100% {
-        transform: translate(-4px, -6px) rotate(-1deg);
-    }
-}
-
-/* Overlay oscuro cuando se expande */
-.char-card.active::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(10, 1, 24, 0.7);
-    z-index: 1999;
-    animation: fadeInOverlay 0.6s ease;
-}
-
-@keyframes fadeInOverlay {
-    from { background-color: rgba(10, 1, 24, 0); }
-    to { background-color: rgba(10, 1, 24, 0.7); }
-}
-
-/* Responsive: grid en tablet/móvil */
-@media (max-width: 1200px) {
-    .char-accordion {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .characters-section {
-        padding: 6rem 1.5rem;
-    }
-
-    .char-accordion {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.8rem;
-    }
-
-    .char-card.active .char-card-info {
-        flex: 0 0 60%;
-        padding: 2rem;
-    }
-
-    .char-name {
-        font-size: 2.2rem;
-    }
-
-    .char-desc {
-        font-size: 0.95rem;
-    }
-
-    .img-expand-wrapper {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .char-accordion {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .char-card.active .char-card-info {
-        flex: 0 0 100%;
-        height: auto;
-        padding: 2.5rem 1.5rem;
-    }
-
-    .char-card.active {
-        border-radius: 24px;
-        margin: 2rem auto;
-        width: 95vw;
-        height: auto;
-        max-height: 90vh;
-        overflow-y: auto;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    .char-card.active::before {
-        display: none;
-    }
-
-    .char-name {
-        font-size: 1.8rem;
-    }
-}
-
-.char-card-info {
-    flex: 0 0 45%;
-    max-width: 550px;
-    height: 100%;
-    padding: 4rem 3rem;
     display: flex;
+    align-items: center;
+}
+
+.lang-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1;
+}
+
+.lang-btn:hover {
+    background: rgba(124, 58, 237, 0.15);
+    transform: scale(1.08);
+}
+
+.lang-dropdown,
+.lang-dropdown-settings {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 12px;
+    min-width: 170px;
+    display: none;
     flex-direction: column;
-    justify-content: center;
-    background:
-        linear-gradient(135deg, rgba(17, 12, 34, 0.95), rgba(31, 10, 56, 0.95)),
-        radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.1), transparent 50%);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    border-right: 1px solid rgba(167, 139, 250, 0.15);
-    overflow-y: auto;
-    z-index: 5;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    padding: 4px;
 }
 
-[data-theme="light"] .char-card-info {
-    background:
-        linear-gradient(135deg, rgba(17, 12, 34, 0.95), rgba(31, 10, 56, 0.95)),
-        radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.1), transparent 50%);
+/* En settings el panel está abajo-izquierda: el menú se abre HACIA ARRIBA
+   y alineado a la izquierda, para no quedar cortado por la pantalla. */
+.lang-dropdown-settings {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 8px);
+    left: 0;
 }
 
-/* Info Elements */
-.char-name {
-    font-size: 3.2rem;
-    font-weight: 300;
-    margin-bottom: 0.8rem;
-    color: #fff;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+.lang-dropdown.active,
+.lang-dropdown-settings.active {
+    display: flex;
 }
 
-.char-role {
-    font-size: 0.85rem;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: #a78bfa;
-    margin-bottom: 1.5rem;
+.lang-option {
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    cursor: pointer;
+    color: var(--text-primary);
+    text-align: left;
+    transition: background 0.2s ease;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.lang-option:hover {
+    background: rgba(124, 58, 237, 0.18);
+}
+
+.lang-option.active {
+    background: rgba(124, 58, 237, 0.28);
     font-weight: 600;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s;
 }
 
-.char-desc {
-    font-size: 1rem;
-    line-height: 1.8;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 2.5rem;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s;
+/* --- Settings: selector colapsado que se despliega al click --- */
+.lang-selector-settings {
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
-.char-card.active .char-name,
-.char-card.active .char-role,
-.char-card.active .char-desc {
-    transform: translateY(0);
-    opacity: 1;
+.lang-btn-settings {
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+}
+
+.lang-btn-settings:hover {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: rgba(124, 58, 237, 0.55);
+}
+
+.lang-btn-settings .chev {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    transition: transform 0.3s ease;
+}
+
+.lang-btn-settings.open .chev {
+    transform: rotate(180deg);
 }
 
 /* Utilities Personajes Placeholders */
@@ -1924,27 +1763,14 @@ section {
     background: linear-gradient(135deg, #1c1917, #d97706);
 }
 
-/* Ilustraciones Masonry */
-.gallery-section {
-    padding: 4rem 0;
-}
-
+/* Ilustraciones Masonry (contenedor; el layout grid se define más abajo) */
 .masonry-gallery {
-    column-count: 3;
-    column-gap: 2rem;
-    max-width: 1400px;
-    margin: 4rem auto 0;
-    padding: 3rem;
     background: var(--bg-secondary);
-    /* Color secundario más suave y discreto */
     border-radius: 2rem;
     border: none;
-    /* Eliminar borde por completo */
 }
 
-
 /* Legacy Gallery Styles Removed in favor of Cosmic Floating Exhibits */
-
 
 /* Modal y Botón de Expansión de Personajes */
 .expand-btn {
@@ -1975,29 +1801,9 @@ section {
     filter: drop-shadow(0 6px 10px rgba(139, 92, 246, 0.6));
 }
 
-.lightbox {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(10px);
-}
-
-.lightbox-content {
-    margin: auto;
-    display: block;
-    max-width: 90%;
-    max-height: 90%;
-    position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-    border-radius: 12px;
-}
+/* (Reglas legacy de .lightbox/.lightbox-content removidas: causaban
+   un translateY(-50%) que descentraba la imagen. El bloque nuevo
+   basado en .lightbox-wrapper maneja el centrado.) */
 
 .lightbox-close {
     position: absolute;
@@ -2016,14 +1822,6 @@ section {
     color: #8b5cf6;
     text-decoration: none;
     cursor: pointer;
-}
-
-.item-tall {
-    min-height: 350px;
-}
-
-.item-wide {
-    min-height: 250px;
 }
 
 /* Modal */
@@ -2046,45 +1844,6 @@ section {
 .modal.hidden {
     opacity: 0;
     pointer-events: none;
-}
-
-.modal-content {
-    background: var(--bg-primary);
-    padding: 2rem;
-    border-radius: var(--radius);
-    width: 90%;
-    max-width: 1000px;
-    position: relative;
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    flex-direction: column;
-}
-
-.close-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1.5rem;
-    font-size: 2.5rem;
-    cursor: pointer;
-    color: var(--text-primary);
-    line-height: 1;
-    transition: color 0.2s;
-}
-
-.close-btn:hover {
-    color: var(--accent);
-}
-
-.modal-media-placeholder {
-    width: 100%;
-    aspect-ratio: 16/9;
-    border-radius: var(--radius-sm);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-top: 1rem;
 }
 
 /* Footer */
@@ -2116,19 +1875,11 @@ footer {
     .char-gallery {
         justify-content: center;
     }
-
-    .masonry-gallery {
-        column-count: 2;
-    }
 }
 
 @media (max-width: 768px) {
     /* La navegación móvil (drawer) se define en el bloque responsive
        consolidado al final del archivo. */
-    .masonry-gallery {
-        column-count: 1;
-    }
-
     .animations-grid {
         grid-template-columns: 1fr;
     }
@@ -2146,73 +1897,50 @@ footer {
     transform: translateY(0);
 }
 
-/* Asistente Alessio (Cualquier lugar de la página) */
-.alessio-container {
-    position: fixed;
-    bottom: -50px;
-    /* Tucking it gently into the corner */
-    right: -50px;
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    pointer-events: none;
-    overflow: visible;
-    /* Asegurar que el globo no se corte */
-}
-
-.alessio-avatar {
-    width: 450px;
-    height: 450px;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-    pointer-events: auto;
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    background: transparent !important;
-}
-
-.alessio-avatar:hover {
-    transform: scale(1.05);
-}
-
-.alessio-bubble {
-    background: white;
-    padding: 1.2rem;
-    border-radius: 1.5rem 1.5rem 0 1.5rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    margin-bottom: -10px;
-    /* Ajuste para que el globo flote sobre el avatar gigante */
-    margin-right: 120px;
-    /* Empujar el globo a la izquierda para que no se oculte al estar tan esquinado */
-    max-width: 280px;
+/* ============ Scroll Reveal: contenedores de imagen y texto ============
+   El IntersectionObserver ya agrega .visible al entrar en viewport. */
+/* Reveal estándar (3D — el usuario lo aprobó tal cual) */
+.section-title,
+.model-text,
+.model-visual-wrapper,
+.model-visual-grid-wrapper {
     opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.4s ease;
-    pointer-events: auto;
+    transform: translateY(34px);
+    transition: opacity 0.85s ease, transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity, transform;
 }
 
-.alessio-bubble.show {
+.section-title.visible,
+.model-text.visible,
+.model-visual-wrapper.visible,
+.model-visual-grid-wrapper.visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
 }
 
-.alessio-bubble p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #333;
-    line-height: 1.4;
-    font-family: var(--font);
+/* Reveal reforzado (About, Animations, Character Design): más distancia y
+   duración para que el movimiento se note claramente al hacer scroll. */
+.bio-content,
+.media-stack,
+.cd-showcase,
+.animations-grid {
+    opacity: 0;
+    transform: translateY(72px);
+    transition: opacity 1s ease, transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity, transform;
 }
 
-[data-theme="dark"] .alessio-bubble {
-    background: #1e293b;
-    color: #f8fafc;
+.bio-content.visible,
+.media-stack.visible,
+.cd-showcase.visible,
+.animations-grid.visible {
+    opacity: 1;
+    transform: none;
 }
 
-[data-theme="dark"] .alessio-bubble p {
-    color: #f8fafc;
+/* Leve cascada: la imagen del About entra un poco después del texto */
+.media-stack {
+    transition-delay: 0.12s;
 }
 
 /* Botón Configuración (Tuerca) - Esquina inferior opuesta */
@@ -2254,8 +1982,9 @@ footer {
     padding: 1.5rem;
     border-radius: 1rem;
     box-shadow: var(--shadow-lg);
-    width: 250px;
-    transition: all 0.3s ease;
+    width: 280px;
+    min-width: 280px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .settings-panel.hidden {
@@ -2275,6 +2004,7 @@ footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1.5rem;
     margin-bottom: 1rem;
 }
 
@@ -2348,14 +2078,39 @@ input:checked+.slider:before {
    ═══════════════════════════════════════════════ */
 
 .models-3d-section {
-    padding: 4rem 0; /* Balanced spacing */
-    background: #ececec;
-    /* Slightly lighter viewport grey */
+    padding: clamp(3rem, 7vw, 4rem) 0; /* Balanced spacing */
+    background: #e4e8ed;
+    /* Light grey for light mode */
     width: 100% !important;
     position: relative;
     overflow: hidden;
     color: #1f2937;
     border-top: none;
+}
+
+/* Dark mode: mucho más oscuro */
+[data-theme="dark"] .models-3d-section {
+    background: #1a2332;
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .coord-marker {
+    color: #94a3b8;
+    opacity: 0.8;
+}
+
+[data-theme="dark"] .viewport-grid {
+    background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .random-text-area span {
+    color: #64748b;
+}
+
+[data-theme="dark"] .cube .face {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(148, 163, 184, 0.12);
 }
 
 .models-3d-bg {
@@ -2721,9 +2476,9 @@ input:checked+.slider:before {
     margin: 4rem auto 0;
     display: flex;
     flex-direction: column;
-    gap: 4rem;
+    gap: clamp(2rem, 5vw, 4rem);
     /* Reducido de 8rem */
-    padding: 0 2rem;
+    padding: 0 clamp(1rem, 4vw, 2rem);
 }
 
 .model-row {
@@ -2739,7 +2494,7 @@ input:checked+.slider:before {
 .model-text {
     flex: 1;
     background: var(--bg-primary);
-    padding: 3rem;
+    padding: clamp(1.5rem, 4vw, 3rem);
     border-radius: var(--radius);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border);
@@ -2752,7 +2507,7 @@ input:checked+.slider:before {
 }
 
 .model-text h3 {
-    font-size: 1.75rem;
+    font-size: clamp(1.4rem, 3vw, 1.75rem);
     color: var(--accent);
     margin-bottom: 1.5rem;
 }
@@ -2867,9 +2622,16 @@ input:checked+.slider:before {
 
 @media (max-width: 992px) {
 
-    .model-row,
-    .model-row.reverse {
+    .model-row {
         flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* En móvil queremos SIEMPRE: bloque de texto arriba y luego los videos.
+       La fila "reverse" tiene el texto al final en el DOM, así que con
+       column-reverse el texto sube y los videos quedan debajo. */
+    .model-row.reverse {
+        flex-direction: column-reverse;
         gap: 2rem;
     }
 
@@ -2888,7 +2650,7 @@ input:checked+.slider:before {
 .main-footer {
     background-color: #12141c; /* Obsidian Graphite — Premium material */
     color: #ffffff;
-    padding: 6rem 2rem 3rem;
+    padding: clamp(3.5rem, 8vw, 6rem) clamp(1.5rem, 4vw, 2rem) 3rem;
     border-top: 1px solid rgba(139, 92, 246, 0.15); /* Energy Energy Divider */
     position: relative;
 }
@@ -3006,6 +2768,20 @@ input:checked+.slider:before {
     text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
 }
 
+/* Botón de descargar CV en el footer — compacto con texto corto */
+.cv-btn-footer {
+    margin-top: 1rem;
+    display: inline-flex;
+    /* El .footer-col es flex column (align-items:stretch por defecto): sin esto
+       el botón se estiraba a TODO el ancho de la columna en desktop. */
+    align-self: flex-start;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.8rem;
+    opacity: 0.85;
+}
+.cv-btn-footer:hover { opacity: 1; }
+.footer-col .cv-btn-footer span { display: inline; }
+
 .footer-bottom-bar {
     max-width: 1200px;
     margin: 4rem auto 0;
@@ -3033,7 +2809,9 @@ input:checked+.slider:before {
     .footer-col {
         align-items: center;
     }
-    
+    /* En móvil el footer está centrado: el CV vuelve a centrarse. */
+    .cv-btn-footer { align-self: center; }
+
     .footer-bottom-bar {
         flex-direction: column;
         gap: 1rem;
@@ -3043,8 +2821,8 @@ input:checked+.slider:before {
 
 .gallery-section {
     position: relative;
-    padding: 10rem 0;
-    /* More air */
+    padding: clamp(2rem, 4vw, 2.5rem) clamp(1.5rem, 5vw, 4rem) clamp(4.5rem, 10vw, 9rem);
+    /* Márgenes laterales para que las estrellas del fondo sean visibles */
     overflow: hidden;
     background: linear-gradient(160deg, #05010e 0%, #0a0118 40%, #15002b 100%);
     /* DEEP SPACE BASE */
@@ -3118,57 +2896,8 @@ input:checked+.slider:before {
     }
 }
 
-.gallery-section {
-    position: relative;
-    padding: 10rem 0;
-    /* More air */
-    overflow: hidden;
-    background: linear-gradient(160deg, #05010e 0%, #0a0118 40%, #15002b 100%);
-    /* DEEP SPACE BASE */
-    color: #fff;
-}
-
-.gallery-bg-animation {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-}
-
-/* Aurora Borealis Effect */
-.aurora-container {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    overflow: hidden;
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-.aurora {
-    position: absolute;
-    width: 60%;
-    height: 100%;
-    filter: blur(120px);
-    opacity: 0.4;
-    animation: auroraWave 12s infinite alternate ease-in-out;
-    transform-origin: top center;
-}
-
-.a1 {
-    background: linear-gradient(180deg, transparent, #7c3aed 20%, #22d3ee 80%, transparent);
-    left: -15%;
-    animation-duration: 25s;
-}
-
-.a2 {
-    background: linear-gradient(180deg, transparent, #9d50bb 30%, #6e48aa 70%, transparent);
-    right: -10%;
-    animation-duration: 30s;
-    animation-delay: -5s;
-}
-
+/* (Bloque duplicado de .gallery-section/aurora removido: ya está definido más
+   arriba, con .a3 + @keyframes auroraWave. Aquí continúa el contenido único.) */
 .gallery-bg-animation .blob-1,
 .gallery-bg-animation .blob-2,
 .gallery-bg-animation .blob-3 {
@@ -3248,14 +2977,20 @@ input:checked+.slider:before {
 
 .masonry-gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    grid-auto-rows: 220px;
+    /* min(100%, 280px) evita que una columna fuerce overflow en pantallas
+       muy angostas; por lo demás se comporta como minmax(280px, 1fr). */
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    /* Alto de fila fluido: antes era fijo (220px), así que al ensancharse
+       las columnas las celdas quedaban cada vez más "letterbox"/grandes.
+       Ahora la proporción se adapta y en móvil las imágenes recortan menos. */
+    grid-auto-rows: clamp(160px, 15vw, 230px);
     grid-auto-flow: dense;
-    gap: 2rem;
-    max-width: 1540px;
+    /* Gap fluido: en móvil evita los huecos enormes entre imágenes apiladas. */
+    gap: clamp(0.85rem, 2vw, 2rem);
+    width: min(100% - 2 * var(--page-gutter), var(--maxw-feed));
     margin: 1.2rem auto 0;
     /* High-Density Entrance — Direct Art Exposure */
-    padding: 1.5rem;
+    padding: clamp(1rem, 2.5vw, 2rem);
 }
 
 /* Bento Hierarchy Still Active */
@@ -3294,7 +3029,10 @@ input:checked+.slider:before {
     -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    /* drop-shadow (no box-shadow) sigue la forma redondeada incluso con
+       el transform de la animación; box-shadow se renderizaba cuadrado. */
+    filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.3));
+    transition: filter 0.5s ease, border-color 0.5s ease;
     /* animation injected from JS directly on this wrapper */
 }
 
@@ -3302,17 +3040,18 @@ input:checked+.slider:before {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 28px; /* Coincide con el contenedor: esquinas redondeadas siempre, incluso al hacer zoom */
     transition: transform 1.2s cubic-bezier(0.1, 0.8, 0.2, 1), filter 0.8s ease;
 }
 
 .gallery-item:hover {
     z-index: 100;
-    transform: scale(1.04); /* Focus pop of the WHOLE floating frame */
+    transform: scale(1.015); /* Pop sutil del marco completo */
 }
 
 .gallery-item:hover .drift-wrapper {
     border-color: rgba(139, 92, 246, 0.2);
-    box-shadow: 0 25px 35px rgba(0, 0, 0, 0.35); /* Elegant, minimalist lift */
+    filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.35)); /* Elegant, minimalist lift */
 }
 
 /* Lightbox System Refresh */
@@ -3340,14 +3079,38 @@ input:checked+.slider:before {
     justify-content: center;
     align-items: center;
     pointer-events: none;
+    transition: padding 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lightbox-content {
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     border-radius: 12px;
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 50px rgba(139, 92, 246, 0.1);
     pointer-events: auto;
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), max-width 0.5s ease, max-height 0.5s ease;
+}
+
+/* Al abrir el panel de info: reservamos espacio con padding en el wrapper,
+   así el medio se re-centra en el área libre (sin taparse, a cualquier tamaño)
+   y le sumamos un leve achicado. */
+.lightbox.info-open .lightbox-wrapper {
+    padding-right: 360px;
+}
+
+.lightbox.info-open .lightbox-content {
+    transform: scale(0.97);
+}
+
+@media (max-width: 768px) {
+    /* En móvil el panel va abajo: reservamos espacio inferior */
+    .lightbox.info-open .lightbox-wrapper {
+        padding-right: 0;
+        padding-bottom: 240px;
+    }
 }
 
 .lightbox-close {
@@ -3435,7 +3198,7 @@ input:checked+.slider:before {
 .info-divider {
     width: 40px;
     height: 3px;
-    background: var(--accent);
+    background: #a78bfa;
     margin-bottom: 1.5rem;
     border-radius: 10px;
 }
@@ -3452,24 +3215,100 @@ input:checked+.slider:before {
     align-items: center;
     gap: 0.8rem;
     font-size: 0.8rem;
-    color: var(--accent);
+    color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 600;
 }
 
-/* Light Mode Overrides for Lightbox (Always Dark) */
+/* Meta del panel (fecha + proyecto) y línea de inspiración */
+.info-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.8rem;
+    color: #a78bfa;
+    letter-spacing: 0.04em;
+}
+.info-meta span > i { margin-right: 0.35rem; }
+
+.info-inspiration {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+.info-inspiration i { color: #a78bfa; margin-right: 0.4rem; }
+.info-inspiration b { color: #e2e8f0; }
+
+/* Campos opcionales: ocultos si no hay dato */
+.info-date.hidden,
+.info-project.hidden,
+.info-inspiration.hidden { display: none; }
+
+[data-theme="light"] .info-meta { color: #6d28d9; }
+[data-theme="light"] .info-inspiration { color: #475569; }
+[data-theme="light"] .info-inspiration i { color: #6d28d9; }
+[data-theme="light"] .info-inspiration b { color: #1e1b4b; }
+
+/* Botón de info en estado abierto → violeta (al abrirse o togglear) */
+.lightbox.info-open .info-toggle-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.45);
+}
+
+/* Bloquear el scroll del fondo mientras el lightbox está abierto */
+body.lightbox-open { overflow: hidden; }
+
+/* El fondo del lightbox se mantiene oscuro siempre (para resaltar la obra) */
 [data-theme="light"] .lightbox {
     background: rgba(4, 4, 10, 0.96);
 }
 
+/* Pero el PANEL de info respeta el tema: claro en modo claro, oscuro en oscuro */
+[data-theme="light"] .lightbox-info-panel {
+    background: rgba(248, 250, 252, 0.96);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #0f172a;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .info-title {
+    background: linear-gradient(90deg, #1e1b4b, #6d28d9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .info-desc {
+    color: #475569;
+}
+
+[data-theme="light"] .info-footer {
+    color: #6d28d9;
+}
+
+[data-theme="light"] .info-divider {
+    background: #6d28d9;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 768px) {
+    /* Panel más compacto: se superpone un poco al contenido sin ocupar tanto. */
     .lightbox-info-panel {
-        width: 85%;
-        right: 7.5%;
-        bottom: 7rem;
+        width: min(74%, 300px);
+        right: 4%;
+        bottom: 5.5rem;
+        padding: 1.1rem 1.25rem;
     }
+    .lightbox-info-panel .info-title { font-size: 1.15rem; margin-bottom: 0.6rem; }
+    .lightbox-info-panel .info-divider { margin-bottom: 0.85rem; }
+    .lightbox-info-panel .info-meta { margin-bottom: 0.75rem; }
+    .lightbox-info-panel .info-desc { font-size: 0.85rem; margin-bottom: 0.85rem; }
+    .lightbox-info-panel .info-inspiration { font-size: 0.8rem; margin-bottom: 0.85rem; }
     .info-toggle-btn {
         bottom: 2rem;
         right: 2rem;
@@ -3477,7 +3316,7 @@ input:checked+.slider:before {
 }
 
 .gallery-item:hover img {
-    transform: scale(1.02); /* Minimal internal zoom to protect art composition */
+    transform: scale(1.008); /* Zoom interno mínimo, muy sutil */
 }
 
 .gallery-overlay {
@@ -3492,7 +3331,8 @@ input:checked+.slider:before {
     transition: opacity 0.5s ease;
 }
 
-.gallery-item:hover .gallery-overlay {
+.gallery-item:hover .gallery-overlay,
+.gallery-item.touch-active .gallery-overlay {
     opacity: 1;
 }
 
@@ -3513,7 +3353,8 @@ input:checked+.slider:before {
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.gallery-item:hover .expand-btn {
+.gallery-item:hover .expand-btn,
+.gallery-item.touch-active .expand-btn {
     transform: scale(1);
 }
 
@@ -3589,6 +3430,12 @@ html.perf-lite .drift-wrapper {
 body.loading-active {
     overflow: hidden;
 }
+
+/* Saltar la pantalla de carga al volver desde la página de gestión.
+   El script del <head> marca <html class="skip-loader"> según un flag de
+   sessionStorage, antes del primer paint, para que no haya parpadeo. */
+html.skip-loader .page-loader { display: none !important; }
+html.skip-loader body.loading-active { overflow: auto !important; }
 
 .page-loader {
     position: fixed;
@@ -3799,6 +3646,9 @@ body.loading-active {
    ============================================================ */
 .gallery-item {
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.10), rgba(34, 211, 238, 0.06));
+    /* Mismo radio que el .drift-wrapper para que el placeholder/fondo no
+       asome con esquinas puntiagudas detrás de la imagen redondeada. */
+    border-radius: 28px;
 }
 
 .gallery-item img,
@@ -3855,7 +3705,11 @@ body.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    z-index: 1400;
+    /* Debajo del header (z-index 1000) para que el drawer —que vive dentro
+       del header— quede POR ENCIMA y reciba los toques. Antes (1400) el
+       backdrop tapaba el drawer y al tocar un ítem se cerraba el menú en
+       vez de navegar (ese era el "menú no funciona en móvil"). */
+    z-index: 999;
 }
 
 body.nav-open .nav-backdrop {
@@ -3877,9 +3731,21 @@ body.nav-open .nav-backdrop {
 }
 
 @media (max-width: 768px) {
-    /* Mostrar hamburguesa y convertir la nav en drawer lateral */
+    /* El selector de idioma del top bar es redundante en móvil (hay otro en
+       el panel de Ajustes). Se oculta para liberar ancho. */
+    .lang-selector-nav { display: none; }
+
+    /* Layout móvil (flujo normal, sin order ni absolute). El margin-right:auto
+       va en el LOGO (primer ítem): empuja el resto a la derecha y los ítems se
+       acomodan hacia el borde sin desbordar. Orden DOM: logo, hamburguesa,
+       acciones → [logo] ... [☰ CV login]. */
+    /* Barra: logo a la izquierda; orden a la derecha = CV/login, luego hamburguesa */
+    .logo { margin-right: auto; flex: 0 0 auto; order: 0; }
+
     .nav-toggle {
         display: flex;
+        margin-right: 0;
+        order: 3;
     }
 
     .nav-links {
@@ -3902,9 +3768,37 @@ body.nav-open .nav-backdrop {
         z-index: 1500;
     }
 
+    /* Acciones (CV + login): a la derecha del logo, antes de la hamburguesa. */
+    .nav-actions {
+        flex: 0 0 auto;
+        gap: 0.4rem;
+        z-index: 1600;
+        order: 2;
+        margin-right: 0.5rem;
+    }
+
     body.nav-open .nav-links {
         transform: translateX(0);
     }
+
+    /* Con el menú abierto: bloquear scroll del body. */
+    body.nav-open { overflow: hidden; }
+
+    /* CV + login se mueven (por JS) al final del drawer cuando el menú abre. */
+    .nav-links .nav-actions {
+        order: 5;
+        width: 100%;
+        margin: auto 0 0;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        justify-content: flex-start;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+    .nav-links .cv-btn span { display: inline; }
+    .nav-links .cv-btn { padding: 0.5rem 1rem; }
+    .nav-links .cms-navauth-btn { font-size: 0.95rem; padding: 0.5rem 1rem; }
+    .nav-links .cms-navauth-btn i { font-size: 1rem; }
 
     /* Dropdowns: mostrar su contenido plano dentro del drawer */
     .nav-links .dropdown {
@@ -3946,11 +3840,32 @@ body.nav-open .nav-backdrop {
 
     /* Reducir aire vertical de secciones en móvil */
     .gallery-section {
-        padding: 5rem 1rem;
+        padding: 5rem 1.5rem;
     }
 
     .animations-section {
-        padding: 4rem 0 5rem;
+        padding: 4rem 1.25rem 5rem;
+    }
+
+    /* Hero: título más chico en móvil para que "| Portfolio" no se corte */
+    .hero-overlay h1 {
+        font-size: clamp(1.9rem, 9vw, 3rem);
+        line-height: 1.15;
+    }
+    /* "| Portfolio" como bloque indivisible: salta entero a la línea
+       siguiente en vez de partir la palabra ("Portf / olio"). */
+    .hero-overlay h1 .highlight {
+        white-space: nowrap;
+    }
+
+    /* See-all: en móvil va en flujo (no en esquina) para no chocar con el
+       widget "Production Stack" ni el título. */
+    .see-all-cta {
+        position: static;
+        display: inline-flex;
+        margin: 0.7rem auto 0;
+        font-size: 0.8rem;
+        opacity: 0.85;
     }
 
     .main-footer {
@@ -3958,51 +3873,8 @@ body.nav-open .nav-backdrop {
     }
 
     /* Asistente Alessio: demasiado grande para móvil */
-    .alessio-avatar {
-        width: 240px;
-        height: 240px;
-    }
-
-    .alessio-bubble {
-        max-width: 200px;
-        margin-right: 70px;
-        font-size: 0.8rem;
-    }
-
-    /* Botón de configuración y panel: que no se salgan */
-    .settings-panel {
-        right: 1rem;
-        left: auto;
-        width: calc(100vw - 2rem);
-        max-width: 300px;
-    }
-
-    /* Lightbox: usar casi todo el alto disponible */
-    .lightbox-content {
-        max-width: 94vw;
-        max-height: 80vh;
-    }
-}
-
-/* Teléfonos chicos */
-@media (max-width: 480px) {
-    .logo {
-        font-size: 1.15rem;
-        letter-spacing: 0.05em;
-    }
-
-    .alessio-avatar {
-        width: 180px;
-        height: 180px;
-    }
-
-    .alessio-container {
-        bottom: -30px;
-        right: -30px;
-    }
-
     .gallery-section {
-        padding: 4rem 0.75rem;
+        padding: 4rem 1.25rem;
     }
 }
 
@@ -4012,8 +3884,10 @@ body.nav-open .nav-backdrop {
    Estética violeta/espacio acorde al resto de la página.
    ============================================================ */
 .cd-showcase {
-    max-width: 1200px;
-    margin: 3.5rem auto 0;
+    max-width: 920px;
+    /* Separación superior fluida: en móvil reduce el hueco entre el título
+       de la sección y el showcase (antes 3.5rem fijo). */
+    margin: clamp(1.5rem, 4vw, 3.5rem) auto 0;
     position: relative;
     z-index: 10;
 }
@@ -4027,7 +3901,7 @@ body.nav-open .nav-backdrop {
 .cd-panel {
     grid-area: 1 / 1;
     display: grid;
-    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
     gap: clamp(2rem, 4vw, 3.5rem);
     align-items: center;
     opacity: 0;
@@ -4262,7 +4136,9 @@ body.nav-open .nav-backdrop {
     font-family: 'Raleway', sans-serif;
     font-weight: 300;
     line-height: 1.05;
-    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    /* Escala más contenida: antes llegaba a 3.8rem (~61px) y se veía
+       desproporcionado frente al rol/descripción; ahora ~30px→51px. */
+    font-size: clamp(1.9rem, 1.1rem + 3vw, 3.2rem);
     margin: 0.6rem 0 0.5rem;
     color: #fff;
 }
@@ -4423,4 +4299,1026 @@ body.nav-open .nav-backdrop {
     .cd-concepts {
         gap: 0.5rem;
     }
+}
+
+/* ============================================================================
+   CMS — Prototipo de edición (login mock + botones de editar + modales)
+   ============================================================================ */
+
+/* Botones de edición sobre cada elemento: ocultos salvo en modo admin */
+.cms-edit-btn { display: none; }
+
+body.is-admin .cms-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(124, 58, 237, 0.95);
+    color: #fff;
+    font-size: 0.78rem;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 60;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    opacity: 0.9;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+body.is-admin .cms-edit-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Barra de herramientas por contenido (editar info / reemplazar / mover) */
+.cms-tools { display: none; }
+body.is-admin .cms-tools {
+    display: flex;
+    gap: 6px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 60;
+}
+/* Los botones dentro de la barra van en fila (no absolutos individualmente) */
+body.is-admin .cms-tools .cms-edit-btn {
+    position: static;
+    top: auto;
+    right: auto;
+}
+body.is-admin .cms-tool-replace { background: rgba(16, 185, 129, 0.95); }  /* verde: subir */
+body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* ámbar: mover */
+
+/* Contenido retirado (movido a "no usados"): oculto para visitantes */
+.cms-retired { display: none !important; }
+
+/* Slot vacío (admin): se conserva el contenedor con un botón para subir */
+.cms-empty-slot > *:not(.cms-empty-overlay) { visibility: hidden !important; }
+.cms-empty-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 2px dashed var(--accent);
+    border-radius: 28px;
+    background: rgba(124, 58, 237, 0.06);
+    color: var(--accent);
+    cursor: pointer;
+    z-index: 65;
+    transition: background 0.2s ease;
+}
+.cms-empty-overlay:hover { background: rgba(124, 58, 237, 0.14); }
+.cms-empty-overlay i { font-size: 1.8rem; }
+.cms-empty-overlay span { font-size: 0.85rem; font-weight: 600; }
+
+/* Aviso sutil de elemento editable en modo admin */
+body.is-admin .cms-mount {
+    outline: 1px dashed rgba(124, 58, 237, 0.45);
+    outline-offset: 3px;
+}
+
+/* Botones genéricos del CMS (settings, modales) */
+.cms-btn {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.cms-btn:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.cms-btn--primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+.cms-btn--primary:hover {
+    background: var(--accent-hover);
+}
+
+.cms-btn--sm {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+}
+
+/* Modales del CMS */
+.cms-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(4, 4, 12, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.cms-modal-overlay.show { opacity: 1; }
+
+.cms-modal {
+    width: min(560px, 100%);
+    max-height: 86vh;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.6rem;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cms-modal-overlay.show .cms-modal { transform: none; }
+
+.cms-modal-title {
+    margin: 0 0 1.1rem;
+    font-size: 1.15rem;
+    color: var(--accent);
+}
+
+.cms-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+}
+
+.cms-textarea {
+    width: 100%;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    resize: vertical;
+}
+
+/* Formulario de login */
+.cms-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.cms-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.cms-field input {
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.cms-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.cms-hint code {
+    background: rgba(124, 58, 237, 0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* Toasts */
+.cms-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 16px);
+    z-index: 100001;
+    padding: 0.7rem 1.1rem;
+    border-radius: 10px;
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.85rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 90vw;
+    text-align: center;
+}
+
+.cms-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.cms-toast--error {
+    background: #7f1d1d;
+}
+
+/* ============================================================================
+   AHORRO DE RENDIMIENTO — pausar animaciones de secciones fuera de pantalla
+   El JS marca ".section-inactive" en las secciones que no están en viewport;
+   acá se pausan TODAS sus animaciones CSS (blobs, auroras, floats, drifts,
+   cubos/cilindros 3D, etc.). Solo corren las de las secciones visibles.
+   ============================================================================ */
+.section-inactive,
+.section-inactive *,
+.section-inactive *::before,
+.section-inactive *::after {
+    animation-play-state: paused !important;
+}
+
+/* ============================================================================
+   PAUSAR MOVIMIENTO (motion-off)
+   ============================================================================ */
+html.motion-off *,
+html.motion-off *::before,
+html.motion-off *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+}
+
+/* Asegura que el contenido con reveal quede visible (no atrapado en opacity:0) */
+html.motion-off .section-title,
+html.motion-off .bio-content,
+html.motion-off .media-stack,
+html.motion-off .cd-showcase,
+html.motion-off .animations-grid,
+html.motion-off .model-text,
+html.motion-off .model-visual-wrapper,
+html.motion-off .model-visual-grid-wrapper,
+html.motion-off .fade-in,
+html.motion-off .cd-panel,
+html.motion-off .animation-item.video-container {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+}
+
+/* Las letras del hero y de los títulos por-letra (.letter) arrancan en
+   opacity:0 y sólo se revelan con la animación fadeLetter; al pausar el
+   movimiento la animación se anula, así que las forzamos visibles para que
+   el título del hero, los nombres y los roles de personaje no desaparezcan. */
+html.motion-off .letter {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Oculta los canvas animados de fondo (loops de JS que el CSS no frena) */
+html.motion-off #nebula-canvas,
+html.motion-off #animBlobCanvas {
+    display: none !important;
+}
+
+/* ============================================================================
+   Enlace "Contact" destacado en la barra de navegación
+   ============================================================================ */
+.nav-links > a[data-i18n="nav_contact"] {
+    color: var(--accent);
+    font-weight: 700;
+}
+.nav-links > a[data-i18n="nav_contact"]:hover {
+    color: var(--accent-hover, var(--accent));
+}
+
+/* ============================================================================
+   Botón de login en la navbar
+   ============================================================================ */
+#cms-auth-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Chip con el usuario logueado, al lado del botón de la barra. */
+.cms-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    background: rgba(124, 58, 237, 0.12);
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.cms-navauth-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cms-navauth-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+}
+
+/* Sesión iniciada: estilo lleno para diferenciar */
+body.is-admin .cms-navauth-btn {
+    background: rgba(124, 58, 237, 0.12);
+}
+
+/* ============================================================================
+   Modal de subida enriquecido
+   ============================================================================ */
+/* Bloquear el scroll de fondo mientras hay un modal del CMS abierto (login, etc.). */
+body.cms-modal-open { overflow: hidden; }
+
+.cms-modal--wide { width: min(680px, 100%); }
+
+.cms-meta-line {
+    margin: 0 0 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.cms-meta-line strong { color: var(--text-primary); }
+
+.cms-up-head {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.cms-up-accept { margin-bottom: 0; }
+
+.cms-up-preview {
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    margin-bottom: 0.8rem;
+}
+
+.cms-up-preview img,
+.cms-up-preview video {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 8px;
+    display: block;
+}
+
+.cms-up-empty { color: var(--text-secondary); font-size: 0.9rem; }
+
+.cms-up-fileinfo {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.8rem;
+    min-height: 1em;
+}
+
+.cms-up-fileinfo strong { color: var(--text-primary); }
+
+.cms-up-fields {
+    margin-top: 1rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.cms-fields-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+}
+
+.cms-up-fields .cms-field input,
+.cms-up-fields .cms-field textarea {
+    padding: 0.5rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: 'Raleway', sans-serif;
+    resize: vertical;
+}
+
+/* ============================================================================
+   Página de gestión / auditoría (overlay solo superadmin)
+   ============================================================================ */
+.cms-admin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(4, 4, 12, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.cms-admin-overlay.show { opacity: 1; }
+
+.cms-admin-panel {
+    width: min(1100px, 100%);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.6rem 1.8rem;
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5);
+}
+
+.cms-admin-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cms-admin-head h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cms-admin-head-actions { display: flex; gap: 0.5rem; }
+
+.cms-admin-sub {
+    margin: 0.4rem 0 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.cms-audit-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.cms-audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+
+.cms-audit-table th,
+.cms-audit-table td {
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.cms-audit-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 700;
+    z-index: 1;
+}
+
+.cms-audit-table tbody tr:hover { background: rgba(124, 58, 237, 0.06); }
+
+.cms-audit-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem !important;
+}
+
+/* Link al repositorio en el panel de info del lightbox */
+.info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a78bfa;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.info-link:hover { color: #c4b5fd; text-decoration: underline; }
+[data-theme="light"] .info-link { color: #6d28d9; }
+
+/* Slot para agregar ilustración (solo admin) */
+.cms-add-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 200px;
+    border: 2px dashed rgba(124, 58, 237, 0.5);
+    border-radius: 16px;
+    background: rgba(124, 58, 237, 0.05);
+    color: var(--accent);
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.25s ease;
+}
+
+.cms-add-slot i { font-size: 1.6rem; }
+
+.cms-add-slot:hover {
+    background: rgba(124, 58, 237, 0.12);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+/* ============================================================================
+   PÁGINA DE GESTIÓN (admin.html)
+   ============================================================================ */
+.admin-page {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 2rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.admin-root {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.admin-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem 1.7rem;
+    box-shadow: var(--shadow);
+}
+
+.admin-card h2 {
+    margin: 0 0 1rem;
+    font-size: 1.15rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.admin-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.admin-card-head h2 { margin: 0; }
+
+.admin-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--accent);
+}
+
+.admin-badge--warn { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
+
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.admin-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.admin-stat-num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.admin-stat--warn .admin-stat-num { color: #dc2626; }
+
+.cms-mlib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.cms-mlib-item {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+}
+
+.cms-mlib-item img,
+.cms-mlib-noimg {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    color: var(--accent);
+    font-size: 1.3rem;
+}
+
+.cms-mlib-info { min-width: 0; flex: 1; }
+
+.cms-mlib-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cms-mlib-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.cms-mlib-del { color: #dc2626; border-color: rgba(220, 38, 38, 0.5); }
+.cms-mlib-del:hover { background: #dc2626; color: #fff; }
+
+/* Sub-pestañas de Contenidos (usado / no usado) */
+.admin-subtabs {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+}
+.admin-subtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    border-radius: 999px;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.admin-subtab:hover { color: var(--text-primary); border-color: var(--accent); }
+.admin-subtab.active {
+    background: rgba(124, 58, 237, 0.12);
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* Acciones y botones dentro de las tarjetas de medios */
+.cms-mlib-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+.cms-mlib-restore { color: var(--accent); border-color: rgba(124, 58, 237, 0.5); }
+.cms-mlib-restore:hover { background: var(--accent); color: #fff; }
+
+/* Aviso destacado dentro de un modal de confirmación */
+.cms-confirm-body { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5; }
+.cms-confirm-body strong { color: var(--text-primary); }
+.cms-confirm-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #b45309;
+}
+.cms-confirm-warn strong { color: #92400e; }
+
+.admin-denied {
+    text-align: center;
+    padding: 3rem;
+}
+
+.admin-denied h2 { justify-content: center; }
+.admin-denied p { color: var(--text-secondary); margin-bottom: 1.2rem; }
+
+/* ----- Dashboard: topbar derecha + shell con sidebar ----- */
+.admin-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.admin-shell {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+}
+
+/* Dentro del shell, la columna principal ocupa el resto del ancho. */
+.admin-shell .admin-root {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 84px;
+}
+
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0.6rem;
+    box-shadow: var(--shadow);
+}
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin-nav-item i { width: 1.1rem; text-align: center; }
+.admin-nav-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+.admin-nav-item.active {
+    background: rgba(124, 58, 237, 0.12);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Vista de acceso restringido: ocultar el menú y el chip de usuario. */
+body.admin-locked .admin-sidebar,
+body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
+
+/* ----- Grupos por sección dentro de Contenidos ----- */
+.admin-group { margin-top: 1.2rem; }
+.admin-group:first-of-type { margin-top: 0.5rem; }
+
+.admin-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.admin-group-head h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.admin-card-head-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.admin-quick { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+
+/* Etiquetas (original / subido / estado) */
+.cms-tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+.cms-tag--up { background: rgba(124, 58, 237, 0.14); color: var(--accent); }
+
+/* Acciones de fila (placeholder usuarios) */
+.admin-row-actions { display: flex; gap: 0.4rem; }
+.icon-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.icon-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Badge "Próximamente" para secciones de sólo-distribución */
+.admin-soon {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.15);
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+}
+
+.admin-mock-setting { opacity: 0.7; }
+
+@media (max-width: 820px) {
+    .admin-shell { flex-direction: column; padding: 1rem; }
+    .admin-sidebar { width: 100%; position: static; }
+    .admin-nav { flex-direction: row; flex-wrap: wrap; }
+    .admin-nav-item { width: auto; }
+}
+
+/* ============================================================
+   RESPONSIVE — Cambios estructurales (columnas, decoración).
+   El espaciado y la tipografía escalan solos vía clamp() en las
+   reglas base, así que aquí sólo quedan los cambios de layout que
+   clamp() no puede resolver.
+   ============================================================ */
+
+/* Grilla de animaciones: 2 columnas en tablet (≤1200px) */
+@media (max-width: 1200px) {
+    .animations-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+}
+
+/* Móvil general (≤ 768px) */
+@media (max-width: 768px) {
+    /* Animaciones: una sola columna, más compacta y centrada (no a borde) */
+    .animations-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        max-width: 440px;
+        padding: 2rem 0;
+    }
+
+    /* En móvil el tap NO debe agrandar la tarjeta (el :hover se "pega" al
+       tocar): solo se revela la info (overlay), sin scale ni lift. */
+    .animation-item.video-container:hover,
+    .animation-item.video-container.touch-active {
+        transform: none;
+    }
+
+    /* Portales decorativos: ocultar en móvil (24rem de ancho, desborda) */
+    .decor-motion { display: none; }
+
+    /* Panel de software: reposicionar y limitar ancho del desplegable */
+    .global-soft-reveal { top: 0.8rem; right: 0.8rem; }
+    .global-soft-icons { min-width: min(88vw, 260px); }
+    /* Badge "Production Stack" más chico en móvil */
+    .global-soft-header { padding: 0.35rem 0.75rem; font-size: 0.58rem; letter-spacing: 0.08em; }
+    .global-soft-header i { font-size: 0.9em; }
+
+    /* --- Navbar: descongestionar para que el logo no choque con las acciones --- */
+    /* El logo muestra "Lucia Montaña | Portfolio" completo (con fuente reducida). */
+
+    /* CV y login pasan a sólo-ícono en la barra (sus etiquetas se ocultan) */
+    .cv-btn span { display: none; }
+    .cv-btn { padding: 0.5rem; }
+
+    /* El texto del botón de login es un nodo suelto: font-size:0 lo oculta
+       y se restaura el tamaño del ícono. */
+    .cms-navauth-btn { font-size: 0; padding: 0.5rem; }
+    .cms-navauth-btn i { font-size: 1rem; }
+
+    /* El chip "superadmin" ocupa demasiado en móvil */
+    #cms-auth-nav .cms-user-chip { display: none; }
+}
+
+/* Galería de ilustraciones (feed) en móvil/tablet:
+   El patrón "bento" (big/wide/tall) deja celdas muy finas/altas en pantallas
+   chicas. Se neutralizan los spans de FILA para que ninguna imagen quede
+   estrecha y todas conserven una proporción correcta. */
+@media (max-width: 768px) {
+    /* 2 columnas EXACTAS e iguales: evita la columna sobrante estrecha que
+       generaban los items "big"/"wide" (span 2) y que dejaba a los vecinos
+       muy finos. Los span 2 pasan a ocupar el ancho completo de la fila. */
+    .masonry-gallery { grid-template-columns: repeat(2, 1fr); grid-auto-rows: clamp(180px, 44vw, 240px); }
+    .gallery-item.tall,
+    .gallery-item.big { grid-row: auto; }
+
+    /* 3D: cada bloque muestra sus 2 videos apilados a ancho completo (el 3er
+       video del bloque 2 se reubica al bloque 1 por JS → 2 y 2). */
+    .model-visual-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
+    .video-sub-grid { grid-template-columns: 1fr; }
+}
+
+/* Teléfonos pequeños (≤ 480px) */
+@media (max-width: 480px) {
+    /* Una sola columna: cada ilustración a ancho completo, sin slivers. */
+    .masonry-gallery { grid-template-columns: 1fr; }
+    .gallery-item.big,
+    .gallery-item.wide { grid-column: auto; }
 }

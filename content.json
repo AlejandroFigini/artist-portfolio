@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "_note": "Fuente de datos del CMS (stand-in de la futura base SQLite). El backend en C#/ASP.NET Core servira esto via GET /api/content y guardara los cambios via PUT/POST. Por ahora (sin backend) el CMS lo carga al iniciar y guarda los cambios en localStorage; el boton 'Exportar' del modo admin muestra el JSON resultante que el backend persistiria.",
+  "items": {}
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimedia | Lucia Montaña</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="gallery-common.css">
+    <link rel="stylesheet" href="multimedia.css">
+
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        (function () {
+            const nav = navigator;
+            const mem = nav.deviceMemory || 4, cores = nav.hardwareConcurrency || 4;
+            const ua = nav.userAgent || '';
+            const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const saveData = nav.connection && nav.connection.saveData;
+            const lite = !!(reduced || saveData || mem <= 2 || cores <= 2 || mobile);
+            document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+        })();
+    </script>
+</head>
+
+<body class="gallery-page">
+    <!-- nav + footer + settings + lightboxes los inyecta shared-ui.js -->
+    <main class="mm-page">
+        <!-- ============================ HERO ============================ -->
+        <section class="mm-hero">
+            <div class="mm-hero-mosaic" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="mm-hero-inner">
+                <p class="mm-eyebrow" data-i18n="mm_eyebrow">Mixed media · Wall</p>
+                <h1 class="mm-hero-title" data-i18n="mm_title">Multimedia</h1>
+                <p class="mm-hero-sub" data-i18n="mm_intro">Everything that doesn't fit a single box: videos, images and
+                    embeds living together on one wall. A mixed feed of formats and experiments.</p>
+            </div>
+        </section>
+
+        <!-- ============================ FILTROS ============================ -->
+        <div class="gallery-toolbar">
+            <div class="gallery-filters" role="tablist" aria-label="Filter media">
+                <button class="gallery-chip active" data-filter="all" data-i18n="mm_f_all">All</button>
+                <button class="gallery-chip" data-filter="video" data-i18n="mm_f_video">Video</button>
+                <button class="gallery-chip" data-filter="image" data-i18n="mm_f_image">Image</button>
+                <button class="gallery-chip" data-filter="embed" data-i18n="mm_f_embed">Embeds</button>
+            </div>
+            <span class="gallery-count"><b id="mm-count-n">9</b> <span data-i18n="mm_items">items</span></span>
+        </div>
+
+        <!-- ============================ MURO MIXTO ============================ -->
+        <!-- CMS: agregar entries en REGISTRY (cms.js) para .mm-card img (imagen) y .mm-card .anim-video (video) -->
+        <section class="mm-wall-wrap">
+            <div class="mm-wall" id="mm-wall">
+                <article class="mm-card gallery-item reveal tall" data-type="image" data-title="Untitled image" data-desc="" data-link="">
+                    <div class="mm-media bg-color-4"><img class="illu-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="mm-ph"><i class="fa-solid fa-image"></i></span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_image">Image</span>
+                </article>
+                <article class="mm-card reveal" data-type="video" data-title="Untitled video" data-desc="">
+                    <div class="mm-media mm-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="mm-ph"><i class="fa-solid fa-film"></i></span><button class="mm-play" aria-label="Play"><i class="fa-solid fa-play"></i></button></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_video">Video</span>
+                </article>
+                <article class="mm-card reveal" data-type="embed" data-title="Embed">
+                    <div class="mm-media mm-embed"><span class="mm-ph"><i class="fa-solid fa-code"></i></span><span class="mm-embed-label">Sketchfab / YouTube / Spotify</span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_embed">Embed</span>
+                </article>
+                <article class="mm-card reveal wide" data-type="image" data-title="Untitled image" data-desc="" data-link="">
+                    <div class="mm-media bg-color-6"><img class="illu-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="mm-ph"><i class="fa-solid fa-image"></i></span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_image">Image</span>
+                </article>
+                <article class="mm-card reveal tall" data-type="video" data-title="Untitled video" data-desc="">
+                    <div class="mm-media mm-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="mm-ph"><i class="fa-solid fa-film"></i></span><button class="mm-play" aria-label="Play"><i class="fa-solid fa-play"></i></button></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_video">Video</span>
+                </article>
+                <article class="mm-card reveal" data-type="embed" data-title="Embed">
+                    <div class="mm-media mm-embed"><span class="mm-ph"><i class="fa-solid fa-code"></i></span><span class="mm-embed-label">Sketchfab / YouTube / Spotify</span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_embed">Embed</span>
+                </article>
+                <article class="mm-card reveal" data-type="image" data-title="Untitled image" data-desc="" data-link="">
+                    <div class="mm-media bg-color-3"><img class="illu-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="mm-ph"><i class="fa-solid fa-image"></i></span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_image">Image</span>
+                </article>
+                <article class="mm-card reveal wide" data-type="video" data-title="Untitled video" data-desc="">
+                    <div class="mm-media mm-screen"><video class="anim-video" muted loop playsinline preload="none"></video><span class="mm-ph"><i class="fa-solid fa-film"></i></span><button class="mm-play" aria-label="Play"><i class="fa-solid fa-play"></i></button></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_video">Video</span>
+                </article>
+                <article class="mm-card reveal" data-type="image" data-title="Untitled image" data-desc="" data-link="">
+                    <div class="mm-media bg-color-7"><img class="illu-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><span class="mm-ph"><i class="fa-solid fa-image"></i></span></div>
+                    <span class="mm-type-tag" data-i18n="mm_f_image">Image</span>
+                </article>
+            </div>
+            <p class="gallery-empty-note" data-i18n="mm_note">Empty cards are placeholders — the superadmin uploads images,
+                videos and embeds through the editing system.</p>
+        </section>
+    </main>
+
+    <script src="shared-ui.js"></script>
+    <script src="script.js"></script>
+    <script src="cms.js"></script>
+    <script src="gallery-common.js"></script>
+    <script src="multimedia.page.js"></script>
+</body>
+
+</html>
