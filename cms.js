@@ -127,7 +127,18 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items: items })
-            }).catch(function(e) { console.error('Error saving to backend', e); });
+            }).then(function(r) {
+                if (!r.ok) {
+                    r.json().then(function(err) {
+                        toast('Error al sincronizar con el servidor: ' + (err.error || r.statusText), 'error');
+                    }).catch(function() {
+                        toast('Error al sincronizar con el servidor (' + r.status + ')', 'error');
+                    });
+                }
+            }).catch(function(e) {
+                console.error('Error saving to backend', e);
+                toast('Error de red al sincronizar con el servidor', 'error');
+            });
             return true; 
         }
         catch (e) { return false; }
