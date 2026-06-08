@@ -46,19 +46,34 @@ app.get('/api/content', async (req, res) => {
     }
 });
 
+const { verify } = require('otplib');
+
 // POST /api/login
-// Valida credenciales de administrador (definidas en Railway via variables de entorno)
-app.post('/api/login', (req, res) => {
-    const { user, pass } = req.body;
+// Valida credenciales de administrador y código 2FA (TOTP)
+app.post('/api/login', async (req, res) => {
+    const { user, pass, code } = req.body;
     
-    // Configuramos estas variables en Railway, o usamos un fallback temporal para pruebas
+    // Configuramos estas variables en Railway
     const validUser = process.env.ADMIN_USER || 'admin';
     const validPass = process.env.ADMIN_PASS || 'artista2026';
+    const secret = process.env.ADMIN_2FA_SECRET || 'RCS2JNYCF3CMDNOGRSHKSDEALFR3U527';
 
     if (user === validUser && pass === validPass) {
-        // Por ahora mantenemos la sesión en el cliente,
-        // En una API real devolveríamos un JWT (JSON Web Token)
-        res.json({ success: true, message: 'Login exitoso' });
+        if (!code) {
+             return res.status(401).json({ success: false, error: 'Código 2FA requerido' });
+        }
+        
+        try {
+            const result = await verify({ token: code, secret: secret });
+            if (result.valid) {
+                res.json({ success: true, message: 'Login exitoso' });
+            } else {
+                res.status(401).json({ success: false, error: 'Código 2FA incorrecto' });
+            }
+        } catch (err) {
+            console.error('Error verificando 2FA:', err);
+            res.status(500).json({ success: false, error: 'Error interno verificando código' });
+        }
     } else {
         res.status(401).json({ success: false, error: 'Credenciales inválidas' });
     }

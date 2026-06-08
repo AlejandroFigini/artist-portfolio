@@ -12,7 +12,9 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
-    "pg": "^8.21.0"
+    "otplib": "^13.4.1",
+    "pg": "^8.21.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "live-server": "^1.2.2"

@@ -644,11 +644,11 @@
         refreshRetired(); // empty-slot (admin) vs oculto (visitante)
         renderAuth();
     }
-    function doLogin(u, p, overlay) {
+    function doLogin(u, p, c, overlay) {
         fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: u, pass: p })
+            body: JSON.stringify({ user: u, pass: p, code: c })
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -657,7 +657,7 @@
                 if (overlay) closeModal(overlay);
                 toast('Sesión iniciada correctamente');
             } else {
-                toast('Usuario o contraseña incorrectos', 'error');
+                toast(data.error || 'Usuario o contraseña incorrectos', 'error');
             }
         })
         .catch(function(e) {
@@ -670,15 +670,16 @@
         w.innerHTML =
             '<label class="cms-field"><span>Usuario</span><input type="text" id="cms-user" autocomplete="off"></label>' +
             '<label class="cms-field"><span>Contraseña</span><input type="password" id="cms-pass"></label>' +
+            '<label class="cms-field"><span>Código 2FA (Google Authenticator)</span><input type="text" id="cms-code" autocomplete="off" placeholder="123456" maxlength="6"></label>' +
             '<p class="cms-hint">Ingresa tus credenciales para administrar el sitio.</p>';
         var ov = modal('Acceso de administrador', w, [
             { label: 'Cancelar', onClick: closeModal },
             { label: 'Entrar', primary: true, onClick: function (overlay) {
-                doLogin($('#cms-user', w).value.trim(), $('#cms-pass', w).value, overlay);
+                doLogin($('#cms-user', w).value.trim(), $('#cms-pass', w).value, $('#cms-code', w).value.trim(), overlay);
             } }
         ]);
-        var pass = $('#cms-pass', w);
-        if (pass) pass.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('.cms-btn--primary').click(); });
+        var codeInp = $('#cms-code', w);
+        if (codeInp) codeInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('.cms-btn--primary').click(); });
     }
     function openExport() {
         var ta = document.createElement('textarea'); ta.className = 'cms-textarea'; ta.readOnly = true; ta.rows = 12;
