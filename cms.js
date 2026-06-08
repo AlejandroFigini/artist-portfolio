@@ -506,10 +506,11 @@
                             anyChange = true;
                         }
                     });
-                    persistOverrides();
+                    var ok = persistOverrides();
                     if (pending.objUrl) URL.revokeObjectURL(pending.objUrl);
                     closeModal(ov);
                     if (anyChange) toast('Contenido actualizado'); else toast('Sin cambios');
+                    if (pending.file && !ok) toast('Media aplicada solo en esta sesión (archivo grande).', 'error');
                 };
                 if (pending.file) {
                     fileToDataURL(pending.file).then(function (dataUrl) {
@@ -533,12 +534,10 @@
                         // Si el slot estaba retirado (vacío), restaurarlo con el contenido nuevo.
                         var ri = retired.indexOf(key); if (ri >= 0) { retired.splice(ri, 1); persistRetired(); }
                         clearEmptySlot(key);
-                        var ok = persistOverrides();
                         recordAudit({ section: meta.section, label: meta.label, kind: (accept === 'webp' ? 'imagen' : 'video'),
                             summary: (accept === 'webp' ? 'Imagen' : 'Video') + ' reemplazado',
                             file: { name: pending.file.name, size: pending.file.size, type: pending.file.type } });
                         anyChange = true;
-                        if (!ok) toast('Media aplicada solo en esta sesión (archivo grande).', 'error');
                         finish();
                     });
                 } else { finish(); }
