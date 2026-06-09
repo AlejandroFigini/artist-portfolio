@@ -11,7 +11,7 @@
     <!-- Google Fonts Restoration -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@200..800&family=Syne:wght@400..800&family=Fira+Code:wght@400;500&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Flag icons (banderas reales; los emoji de bandera no renderizan en Windows) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
@@ -81,6 +81,14 @@
 </head>
 
 <body class="loading-active">
+    <!-- Custom Cursor Follower -->
+    <div class="custom-cursor" id="custom-cursor">
+        <span class="cursor-dot"></span>
+        <span class="cursor-label"></span>
+    </div>
+
+    <!-- Film Grain Overlay -->
+    <div class="film-grain-overlay"></div>
     <!-- ============================================================
          PANTALLA DE CARGA
          Cubre la página hasta que el contenido está listo (evita ver
@@ -178,397 +186,145 @@
             </div>
         </div>
     </header>
-    <!-- Fondo oscuro para cerrar el menú móvil al tocar fuera -->
     <div class="nav-backdrop" id="nav-backdrop"></div>
 
     <main>
-        <!-- Hero / Portada Grande con Slideshow -->
-        <section id="inicio" class="hero-slideshow">
-            <div class="slideshow-container">
-                <!-- Imágenes de Portada (Slideshow dinámico) -->
-                <div class="slide slide-active"
-                    style="background-image: url(''); background-size: cover; background-position: center;">
-                </div>
-                <div class="slide"
-                    style="background-image: url(''); background-size: cover; background-position: center;">
-                </div>
-                <div class="slide"
-                    style="background-image: url(''); background-size: cover; background-position: center;">
-                </div>
+        <!-- Hero / Portada Grande: Editorial Split Grid -->
+        <section id="inicio" class="hero-premium-grid">
+            <div class="hero-identity-card">
                 <div class="hero-overlay">
-                    <h1 class="hero-hidden" data-i18n="hero_title" data-cms-key="hero.title">Lucia Montaña <span class="highlight">|
-                            Portfolio</span></h1>
-                    <p class="hero-hidden" data-i18n="hero_sub" data-cms-key="hero.sub">Bachelor's degree on Animation and
-                        Videogames.<br>Illustrator, Character / environment design and 3D generalist</p>
-                </div> <!-- Dynamic Icon Wave (Perfect Circles) -->
-                <!-- Dynamic Icon Wave (High-Fidelity Official Logos) -->
-                <div class="icon-wave-container">
-                    <div class="wave-content">
-                        <!-- Set 1 -->
-                        <div class="wave-list">
-                            <a href="https://www.zbrush.com" target="_blank">
-                                <div class="icon-circle ic1" title="ZBrush"><svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.016 19.344h-13.43l13.43-13.116v-2.228h-20.032v4.204h13.4l-13.4 13.111v2.228h20.032v-4.204z"
-                                            fill="#211F1F" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.blender.org" target="_blank">
-                                <div class="icon-circle ic2" title="Blender"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626"
-                                            fill="#E87D0D" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://unity.com" target="_blank">
-                                <div class="icon-circle ic3" title="Unity"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="m12.9288 4.2939 3.7997 2.1929c.1366.077.1415.2905 0 .3675l-4.515 2.6076a.4192.4192 0 0 1-.4246 0L7.274 6.8543c-.139-.0745-.1415-.293 0-.3675l3.7972-2.193V0L1.3758 5.5977V16.793l3.7177-2.1456v-4.3858c-.0025-.1565.1813-.2682.318-.1838l4.5148 2.6076a.4252.4252 0 0 1 .2136.3676v5.2127c.0025.1565-.1813.2682-.3179.1838l-3.7996-2.1929-3.7178 2.1457L12 24l9.6954-5.5977-3.7178-2.1457-3.7996 2.1929c-.1341.082-.3229-.0248-.3179-.1838V13.053c0-.1565.087-.2956.2136-.3676l4.5149-2.6076c.134-.082.3228.0224.3179.1838v4.3858l3.7177 2.1456V5.5977L12.9288 0Z"
-                                            fill="#000000" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.autodesk.com/products/maya" target="_blank">
-                                <div class="icon-circle ic4" title="Maya"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M4.348 0 .69 2.203v16.875l3.657-2.203h17.297V1.219c0-.67-.551-1.219-1.22-1.219H4.349zm18.297 3.75v14.125H4.627l-1.943 1.17v3.736c0 .67.55 1.219 1.218 1.219H23.31V3.75h-.664zm-14.471.025h2.937l1.885 7.508 1.977-7.48-.012-.028h2.857v9.354h-2.216v-6.04l-1.565 6.026v.014h-2.203l-1.656-6.28v6.28H8.174V3.775zm1.33 14.762h1.18l1.068 3.543h-.902l-.217-.773H9.568l-.197.773h-.88l1.013-3.543zm1.918 0h.932l.648 1.494.643-1.494h.894l-1.113 2.133v1.41h-.887v-1.406l-1.117-2.137zm3.826 0h1.18l1.068 3.543h-.9l-.217-.773h-1.065l-.197.773h-.88l1.011-3.543zm-5.156.582-.362 1.53h.73l-.368-1.53zm5.744 0-.36 1.53h.73l-.37-1.53z"
-                                            fill="#37A5CC" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/animate.html" target="_blank">
-                                <div class="icon-circle ic6" title="Adobe Animate"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#4A002A" /><text x="12" y="17"
-                                            fill="#FF0A59" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">An</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/premiere.html" target="_blank">
-                                <div class="icon-circle ic7" title="Premiere Pro"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#EA77FF" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pr</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/aftereffects.html" target="_blank">
-                                <div class="icon-circle ic8" title="After Effects"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#CF96FD" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ae</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/illustrator.html" target="_blank">
-                                <div class="icon-circle ic10" title="Illustrator"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#330000" /><text x="12" y="17"
-                                            fill="#FF9A00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ai</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-painter.html" target="_blank">
-                                <div class="icon-circle ic11" title="Substance 3D Painter"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#1D352F" /><text x="12" y="17"
-                                            fill="#4BE192" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pt</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-designer.html" target="_blank">
-                                <div class="icon-circle ic12" title="Substance 3D Designer"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#3D291C" /><text x="12" y="17"
-                                            fill="#FF8F00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ds</text>
-                                    </svg></div>
-                            </a>
+                    <div class="hero-meta-badge">
+                        <span class="meta-label">Est. 2019</span>
+                        <span class="meta-separator">//</span>
+                        <span class="meta-label" id="live-mvd-clock">MVD // --:--:-- UTC-3</span>
+                        <span class="meta-separator">//</span>
+                        <span class="meta-label" data-i18n="hero_sub_badge">Visual Art Portfolio</span>
+                    </div>
+                    
+                    <h1 data-cms-key="hero.title">
+                        <span class="title-serif">Lucia</span> 
+                        <span class="title-sans">Montaña</span>
+                    </h1>
+                    
+                    <p class="hero-description" data-i18n="hero_sub" data-cms-key="hero.sub">
+                        Bachelor's degree on Animation and Videogames.<br>Illustrator, Character / environment design and 3D generalist.
+                    </p>
+                </div>
+
+                <div class="hero-coordinates">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>MONTEVIDEO, UY — 34.9011° S, 56.1641° W</span>
+                </div>
+
+                <div class="hero-cta-group">
+                    <a href="#presentacion" class="btn-premium">
+                        <span data-i18n="hero_cta">Discover Essence</span>
+                        <div class="btn-icon-wrapper">
+                            <i class="fa-solid fa-arrow-down"></i>
                         </div>
-                        <!-- Set 2 -->
-                        <div class="wave-list">
-                            <a href="https://www.zbrush.com" target="_blank">
-                                <div class="icon-circle ic1" title="ZBrush"><svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.016 19.344h-13.43l13.43-13.116v-2.228h-20.032v4.204h13.4l-13.4 13.111v2.228h20.032v-4.204z"
-                                            fill="#211F1F" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.blender.org" target="_blank">
-                                <div class="icon-circle ic2" title="Blender"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626"
-                                            fill="#E87D0D" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://unity.com" target="_blank">
-                                <div class="icon-circle ic3" title="Unity"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="m12.9288 4.2939 3.7997 2.1929c.1366.077.1415.2905 0 .3675l-4.515 2.6076a.4192.4192 0 0 1-.4246 0L7.274 6.8543c-.139-.0745-.1415-.293 0-.3675l3.7972-2.193V0L1.3758 5.5977V16.793l3.7177-2.1456v-4.3858c-.0025-.1565.1813-.2682.318-.1838l4.5148 2.6076a.4252.4252 0 0 1 .2136.3676v5.2127c.0025.1565-.1813.2682-.3179.1838l-3.7996-2.1929-3.7178 2.1457L12 24l9.6954-5.5977-3.7178-2.1457-3.7996 2.1929c-.1341.082-.3229-.0248-.3179-.1838V13.053c0-.1565.087-.2956.2136-.3676l4.5149-2.6076c.134-.082.3228.0224.3179.1838v4.3858l3.7177 2.1456V5.5977L12.9288 0Z"
-                                            fill="#000000" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.autodesk.com/products/maya" target="_blank">
-                                <div class="icon-circle ic4" title="Maya"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M4.348 0 .69 2.203v16.875l3.657-2.203h17.297V1.219c0-.67-.551-1.219-1.22-1.219H4.349zm18.297 3.75v14.125H4.627l-1.943 1.17v3.736c0 .67.55 1.219 1.218 1.219H23.31V3.75h-.664zm-14.471.025h2.937l1.885 7.508 1.977-7.48-.012-.028h2.857v9.354h-2.216v-6.04l-1.565 6.026v.014h-2.203l-1.656-6.28v6.28H8.174V3.775zm1.33 14.762h1.18l1.068 3.543h-.902l-.217-.773H9.568l-.197.773h-.88l1.013-3.543zm1.918 0h.932l.648 1.494.643-1.494h.894l-1.113 2.133v1.41h-.887v-1.406l-1.117-2.137zm3.826 0h1.18l1.068 3.543h-.9l-.217-.773h-1.065l-.197.773h-.88l1.011-3.543zm-5.156.582-.362 1.53h.73l-.368-1.53zm5.744 0-.36 1.53h.73l-.37-1.53z"
-                                            fill="#37A5CC" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/animate.html" target="_blank">
-                                <div class="icon-circle ic6" title="Adobe Animate"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#4A002A" /><text x="12" y="17"
-                                            fill="#FF0A59" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">An</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/premiere.html" target="_blank">
-                                <div class="icon-circle ic7" title="Premiere Pro"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#EA77FF" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pr</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/aftereffects.html" target="_blank">
-                                <div class="icon-circle ic8" title="After Effects"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#CF96FD" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ae</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/illustrator.html" target="_blank">
-                                <div class="icon-circle ic10" title="Illustrator"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#330000" /><text x="12" y="17"
-                                            fill="#FF9A00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ai</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-painter.html" target="_blank">
-                                <div class="icon-circle ic11" title="Substance 3D Painter"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#1D352F" /><text x="12" y="17"
-                                            fill="#4BE192" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pt</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-designer.html" target="_blank">
-                                <div class="icon-circle ic12" title="Substance 3D Designer"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#3D291C" /><text x="12" y="17"
-                                            fill="#FF8F00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ds</text>
-                                    </svg></div>
-                            </a>
-                        </div>
-                        <!-- Set 3 -->
-                        <div class="wave-list">
-                            <a href="https://www.zbrush.com" target="_blank">
-                                <div class="icon-circle ic1" title="ZBrush"><svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.016 19.344h-13.43l13.43-13.116v-2.228h-20.032v4.204h13.4l-13.4 13.111v2.228h20.032v-4.204z"
-                                            fill="#211F1F" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.blender.org" target="_blank">
-                                <div class="icon-circle ic2" title="Blender"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626"
-                                            fill="#E87D0D" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://unity.com" target="_blank">
-                                <div class="icon-circle ic3" title="Unity"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="m12.9288 4.2939 3.7997 2.1929c.1366.077.1415.2905 0 .3675l-4.515 2.6076a.4192.4192 0 0 1-.4246 0L7.274 6.8543c-.139-.0745-.1415-.293 0-.3675l3.7972-2.193V0L1.3758 5.5977V16.793l3.7177-2.1456v-4.3858c-.0025-.1565.1813-.2682.318-.1838l4.5148 2.6076a.4252.4252 0 0 1 .2136.3676v5.2127c.0025.1565-.1813.2682-.3179.1838l-3.7996-2.1929-3.7178 2.1457L12 24l9.6954-5.5977-3.7178-2.1457-3.7996 2.1929c-.1341.082-.3229-.0248-.3179-.1838V13.053c0-.1565.087-.2956.2136-.3676l4.5149-2.6076c.134-.082.3228.0224.3179.1838v4.3858l3.7177 2.1456V5.5977L12.9288 0Z"
-                                            fill="#000000" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.autodesk.com/products/maya" target="_blank">
-                                <div class="icon-circle ic4" title="Maya"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M4.348 0 .69 2.203v16.875l3.657-2.203h17.297V1.219c0-.67-.551-1.219-1.22-1.219H4.349zm18.297 3.75v14.125H4.627l-1.943 1.17v3.736c0 .67.55 1.219 1.218 1.219H23.31V3.75h-.664zm-14.471.025h2.937l1.885 7.508 1.977-7.48-.012-.028h2.857v9.354h-2.216v-6.04l-1.565 6.026v.014h-2.203l-1.656-6.28v6.28H8.174V3.775zm1.33 14.762h1.18l1.068 3.543h-.902l-.217-.773H9.568l-.197.773h-.88l1.013-3.543zm1.918 0h.932l.648 1.494.643-1.494h.894l-1.113 2.133v1.41h-.887v-1.406l-1.117-2.137zm3.826 0h1.18l1.068 3.543h-.9l-.217-.773h-1.065l-.197.773h-.88l1.011-3.543zm-5.156.582-.362 1.53h.73l-.368-1.53zm5.744 0-.36 1.53h.73l-.37-1.53z"
-                                            fill="#37A5CC" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/animate.html" target="_blank">
-                                <div class="icon-circle ic6" title="Adobe Animate"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#4A002A" /><text x="12" y="17"
-                                            fill="#FF0A59" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">An</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/premiere.html" target="_blank">
-                                <div class="icon-circle ic7" title="Premiere Pro"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#EA77FF" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pr</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/aftereffects.html" target="_blank">
-                                <div class="icon-circle ic8" title="After Effects"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#CF96FD" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ae</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/illustrator.html" target="_blank">
-                                <div class="icon-circle ic10" title="Illustrator"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#330000" /><text x="12" y="17"
-                                            fill="#FF9A00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ai</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-painter.html" target="_blank">
-                                <div class="icon-circle ic11" title="Substance 3D Painter"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#1D352F" /><text x="12" y="17"
-                                            fill="#4BE192" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pt</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-designer.html" target="_blank">
-                                <div class="icon-circle ic12" title="Substance 3D Designer"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#3D291C" /><text x="12" y="17"
-                                            fill="#FF8F00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ds</text>
-                                    </svg></div>
-                            </a>
-                        </div>
-                        <!-- Set 4 -->
-                        <div class="wave-list">
-                            <a href="https://www.zbrush.com" target="_blank">
-                                <div class="icon-circle ic1" title="ZBrush"><svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.016 19.344h-13.43l13.43-13.116v-2.228h-20.032v4.204h13.4l-13.4 13.111v2.228h20.032v-4.204z"
-                                            fill="#211F1F" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.blender.org" target="_blank">
-                                <div class="icon-circle ic2" title="Blender"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626"
-                                            fill="#E87D0D" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://unity.com" target="_blank">
-                                <div class="icon-circle ic3" title="Unity"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="m12.9288 4.2939 3.7997 2.1929c.1366.077.1415.2905 0 .3675l-4.515 2.6076a.4192.4192 0 0 1-.4246 0L7.274 6.8543c-.139-.0745-.1415-.293 0-.3675l3.7972-2.193V0L1.3758 5.5977V16.793l3.7177-2.1456v-4.3858c-.0025-.1565.1813-.2682.318-.1838l4.5148 2.6076a.4252.4252 0 0 1 .2136.3676v5.2127c.0025.1565-.1813.2682-.3179.1838l-3.7996-2.1929-3.7178 2.1457L12 24l9.6954-5.5977-3.7178-2.1457-3.7996 2.1929c-.1341.082-.3229-.0248-.3179-.1838V13.053c0-.1565.087-.2956.2136-.3676l4.5149-2.6076c.134-.082.3228.0224.3179.1838v4.3858l3.7177 2.1456V5.5977L12.9288 0Z"
-                                            fill="#000000" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.autodesk.com/products/maya" target="_blank">
-                                <div class="icon-circle ic4" title="Maya"><svg viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M4.348 0 .69 2.203v16.875l3.657-2.203h17.297V1.219c0-.67-.551-1.219-1.22-1.219H4.349zm18.297 3.75v14.125H4.627l-1.943 1.17v3.736c0 .67.55 1.219 1.218 1.219H23.31V3.75h-.664zm-14.471.025h2.937l1.885 7.508 1.977-7.48-.012-.028h2.857v9.354h-2.216v-6.04l-1.565 6.026v.014h-2.203l-1.656-6.28v6.28H8.174V3.775zm1.33 14.762h1.18l1.068 3.543h-.902l-.217-.773H9.568l-.197.773h-.88l1.013-3.543zm1.918 0h.932l.648 1.494.643-1.494h.894l-1.113 2.133v1.41h-.887v-1.406l-1.117-2.137zm3.826 0h1.18l1.068 3.543h-.9l-.217-.773h-1.065l-.197.773h-.88l1.011-3.543zm-5.156.582-.362 1.53h.73l-.368-1.53zm5.744 0-.36 1.53h.73l-.37-1.53z"
-                                            fill="#37A5CC" />
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/animate.html" target="_blank">
-                                <div class="icon-circle ic6" title="Adobe Animate"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#4A002A" /><text x="12" y="17"
-                                            fill="#FF0A59" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">An</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/premiere.html" target="_blank">
-                                <div class="icon-circle ic7" title="Premiere Pro"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#EA77FF" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pr</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/aftereffects.html" target="_blank">
-                                <div class="icon-circle ic8" title="After Effects"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#00005B" /><text x="12" y="17"
-                                            fill="#CF96FD" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ae</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/illustrator.html" target="_blank">
-                                <div class="icon-circle ic10" title="Illustrator"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#330000" /><text x="12" y="17"
-                                            fill="#FF9A00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ai</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-painter.html" target="_blank">
-                                <div class="icon-circle ic11" title="Substance 3D Painter"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#1D352F" /><text x="12" y="17"
-                                            fill="#4BE192" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Pt</text>
-                                    </svg></div>
-                            </a>
-                            <a href="https://www.adobe.com/products/substance3d-designer.html" target="_blank">
-                                <div class="icon-circle ic12" title="Substance 3D Designer"><svg viewBox="0 0 24 24">
-                                        <rect width="24" height="24" rx="3" fill="#3D291C" /><text x="12" y="17"
-                                            fill="#FF8F00" font-size="13" font-family="Arial, sans-serif"
-                                            font-weight="900" text-anchor="middle">Ds</text>
-                                    </svg></div>
-                            </a>
-                        </div>
+                    </a>
+                </div>
+
+                <!-- Software tags stacked elegantly on the left -->
+                <div class="hero-software-tags">
+                    <span class="tag-title" data-i18n="hero_tags_title">Tooling Stack:</span>
+                    <div class="tags-wrapper">
+                        <span class="soft-pill" title="Blender">Blender</span>
+                        <span class="soft-pill" title="ZBrush">ZBrush</span>
+                        <span class="soft-pill" title="Maya">Maya</span>
+                        <span class="soft-pill" title="Unity">Unity</span>
+                        <span class="soft-pill" title="After Effects">After Effects</span>
+                        <span class="soft-pill" title="Photoshop">Photoshop</span>
                     </div>
                 </div>
             </div>
+
+            <div class="hero-gallery-frame">
+                <!-- Outer double-bezel wrapper -->
+                <div class="bezel-outer">
+                    <div class="bezel-inner">
+                        <div class="slideshow-container">
+                            <!-- Imágenes de Portada (Slideshow dinámico) -->
+                            <div class="slide slide-active" style="background-image: url(''); background-size: cover; background-position: center;"></div>
+                            <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
+                            <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
+                        </div>
+                        <div class="gallery-metadata">
+                            <span>EXHIBITION SLOT [01]</span>
+                            <span>AUTO_PLAY ACTIVE</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Sección de Presentación / About Me -->
-        <section id="presentacion" class="presentation-section">
-            <div class="about-bg-animation">
-                <div class="blob-1"></div>
-                <div class="blob-2"></div>
-                <div class="blob-3"></div>
+        <!-- Sección de Presentación / About Me (Premium Editorial Cascade) -->
+        <section id="presentacion" class="about-premium-section">
+            <div class="about-premium-grid">
+                <!-- Left Panel: The portrait & stats -->
+                <div class="about-visuals-panel">
+                    <div class="about-portrait-bezel">
+                        <div class="bezel-outer">
+                            <div class="bezel-inner">
+                                <div class="artist-photo-wrapper">
+                                    <img src="" alt="Lucía Montaña" class="artist-photo-img" fetchpriority="high">
+                                </div>
+                                <div class="portrait-stamp">COORD // MVD_UY</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Grid (Editorial layout) -->
+                    <div class="about-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label" data-i18n="about_stat_role">Role</span>
+                            <span class="stat-val">3D Generalist / Animator</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" data-i18n="about_stat_edu">Education</span>
+                            <span class="stat-val">B.A. Animation & Videogames</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" data-i18n="about_stat_exp">Experience</span>
+                            <span class="stat-val">Freelancer Est. 2019</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Narrative, socials & video -->
+                <div class="about-narrative-panel">
+                    <div class="narrative-eyebrow" data-i18n="about_eyebrow">[01] // PHILOSOPHY</div>
+                    <h2 data-i18n="about_title">About Me</h2>
+                    
+                    <div class="bio-content" data-i18n="about_text_1">
+                        <p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong> based in Montevideo, Uruguay.</p>
+                        <p>I specialize in both design and animation, with a strong passion for creating characters and designs that bring identity and life to my work. I truly love conveying emotions and stories to the audience in the best possible way.</p>
+                        <p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT University, Uruguay, and have been working as a freelance artist since 2019. I am now looking to broaden my horizons and be part of new projects!</p>
+                    </div>
+
+                    <!-- Clean text-based socials -->
+                    <div class="about-socials-premium">
+                        <a href="https://www.instagram.com/" target="_blank" class="social-link-premium">Instagram ↗</a>
+                        <a href="https://www.linkedin.com/" target="_blank" class="social-link-premium">LinkedIn ↗</a>
+                        <a href="https://www.artstation.com/" target="_blank" class="social-link-premium">ArtStation ↗</a>
+                        <a href="https://vimeo.com/" target="_blank" class="social-link-premium">Vimeo ↗</a>
+                    </div>
+
+                    <!-- Video Bezel positioned with an offset -->
+                    <div class="about-video-bezel">
+                        <div class="bezel-outer">
+                            <div class="bezel-inner">
+                                <div class="artist-video-wrapper">
+                                    <video loop muted playsinline class="about-video" preload="metadata">
+                                        <source src="" type="video/webm">
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="presentation-container" data-scroll="reveal">
-                <div class="presentation-artist">
-                    <div class="artist-bio">
-                        <div class="bio-header">
-                            <h2 class="section-typewriter" data-i18n="about_title">About Me</h2>
-                        </div>
-                        <div class="bio-content" data-i18n="about_text_1">
-                            <p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong>
-                                based in Montevideo, Uruguay.</p>
-                            <p>I specialize in both design and animation, with a strong passion for creating characters
-                                and designs that bring identity and life to my work. I truly love conveying emotions and
-                                stories to the audience in the best possible way.</p>
-                            <p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT
-                                University, Uruguay, and have been working as a freelance artist since 2019. I am now
-                                looking to broaden my horizons and be part of new projects!</p>
-                        </div>
-
-                        <!-- Redes Sociales en About Me -->
-                        <div class="about-socials">
-                            <a href="https://www.instagram.com/" target="_blank" title="Instagram"><i
-                                    class="fa-brands fa-instagram"></i></a>
-                            <a href="https://www.linkedin.com/" target="_blank" title="LinkedIn"><i
-                                    class="fa-brands fa-linkedin"></i></a>
-                            <a href="https://www.artstation.com/" target="_blank" title="ArtStation"><i
-                                    class="fa-brands fa-artstation"></i></a>
-                            <a href="https://vimeo.com/" target="_blank" title="Vimeo"><i
-                                    class="fa-brands fa-vimeo-v"></i></a>
-                            <a href="https://www.youtube.com/" target="_blank" title="YouTube"><i
-                                    class="fa-brands fa-youtube"></i></a>
-                            <a href="https://www.behance.net/" target="_blank" title="Behance"><i
-                                    class="fa-brands fa-behance"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="presentation-media">
-                    <div class="media-stack">
-                        <div class="artist-photo-wrapper">
-                            <img src="" alt="Lucía Montaña"
-                                class="artist-photo-img" fetchpriority="high">
-                        </div>
-                        <div class="artist-video-wrapper">
-                            <video loop muted playsinline class="about-video" preload="metadata">
-                                <source src="" type="video/webm">
-                            </video>
-                        </div>
-                    </div>
-                </div>
+        </section></div>
             </div>
         </section>
 
@@ -1334,6 +1090,12 @@
     <script src="script.js?v=2.1"></script>
     <!-- CMS (prototipo front-only): login mock + edición de contenido -->
     <script src="cms.js?v=2.5"></script>
+    <!-- GSAP & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <!-- Novel Interactions -->
+    <script src="interactions.js?v=1.0"></script>
 </body>
 
 </html>
