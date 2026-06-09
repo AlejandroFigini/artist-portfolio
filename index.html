@@ -11,17 +11,20 @@
     <!-- Google Fonts Restoration -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@200..800&family=Syne:wght@400..800&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@200..800&family=Syne:wght@400..800&family=Raleway:wght@200;300;400;500&family=Fira+Code:wght@400;500&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Flag icons (banderas reales; los emoji de bandera no renderizan en Windows) -->
+    <!-- Flag icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 
-    <!-- Precarga de recursos críticos: portada del hero (above-the-fold) y
-         el video de la pantalla de carga, para que aparezcan al instante. -->
+    <!-- GSAP & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <!-- Precarga de recursos críticos -->
     <link rel="preload" as="image" href="" fetchpriority="high">
     <link rel="preload" as="video" href="" type="video/webm">
 
-    <link rel="stylesheet" href="style.css?v=2.2">
+    <link rel="stylesheet" href="style.css?v=3.4">
 
     <script>
         // Aplicar tema guardado inmediatamente para evitar parpadeo blanco
@@ -188,84 +191,114 @@
     </header>
     <div class="nav-backdrop" id="nav-backdrop"></div>
 
+    <!-- Hero Background Carousel -->
+    <div class="hero-bg-carousel">
+        <div class="carousel-slide" style="background-image: url('images/portada-1.webp');"></div>
+        <div class="carousel-slide" style="background-image: url('images/portada-2.webp');"></div>
+        <div class="carousel-slide" style="background-image: url('images/portada-3.webp');"></div>
+        <div class="carousel-overlay"></div>
+    </div>
+
     <main>
-        <!-- Hero / Portada Grande: Editorial Split Grid -->
-        <section id="inicio" class="hero-premium-grid">
-            <div class="hero-identity-card">
-                <div class="hero-overlay">
-                    <div class="hero-meta-badge">
-                        <span class="meta-label">Est. 2019</span>
-                        <span class="meta-separator">//</span>
-                        <span class="meta-label" id="live-mvd-clock">MVD // --:--:-- UTC-3</span>
-                        <span class="meta-separator">//</span>
-                        <span class="meta-label" data-i18n="hero_sub_badge">Visual Art Portfolio</span>
-                    </div>
-                    
-                    <h1 data-cms-key="hero.title">
-                        <span class="title-serif">Lucia</span> 
-                        <span class="title-sans">Montaña</span>
+        <!-- Hero Section -->
+        <section id="presentacion" class="hero">
+            <div class="hero-grid">
+                
+                <div class="hero-content">
+                    <div class="badge" data-cms-key="hero_badge">Visual Art Portfolio</div>
+                    <h1 class="hero-title" data-cms-key="hero_title">
+                        <span class="line-wrap"><span class="line">Lucia</span></span>
+                        <span class="line-wrap"><span class="line">Montaña</span></span>
                     </h1>
-                    
-                    <p class="hero-description" data-i18n="hero_sub" data-cms-key="hero.sub">
-                        Bachelor's degree on Animation and Videogames.<br>Illustrator, Character / environment design and 3D generalist.
+                    <p class="hero-subtitle" data-cms-key="hero_desc">
+                        Bachelor's degree on Animation and Videogames. <br>
+                        Illustrator, Character / environment design and 3D generalist.
                     </p>
-                </div>
-
-                <div class="hero-coordinates">
-                    <i class="fa-solid fa-location-dot"></i>
-                    <span>MONTEVIDEO, UY — 34.9011° S, 56.1641° W</span>
-                </div>
-
-                <div class="hero-cta-group">
-                    <a href="#presentacion" class="btn-premium">
-                        <span data-i18n="hero_cta">Discover Essence</span>
-                        <div class="btn-icon-wrapper">
-                            <i class="fa-solid fa-arrow-down"></i>
+                    <div class="scroll-indicator">
+                        <div class="mouse">
+                            <div class="wheel"></div>
                         </div>
-                    </a>
-                </div>
-
-                <!-- Software tags stacked elegantly on the left -->
-                <div class="hero-software-tags">
-                    <span class="tag-title" data-i18n="hero_tags_title">Tooling Stack:</span>
-                    <div class="tags-wrapper">
-                        <span class="soft-pill" title="Blender"><i class="fa-solid fa-cube"></i> Bl. Blender</span>
-                        <span class="soft-pill" title="ZBrush"><i class="fa-solid fa-paintbrush"></i> Zb. ZBrush</span>
-                        <span class="soft-pill" title="Maya"><i class="fa-solid fa-bezier-curve"></i> My. Maya</span>
-                        <span class="soft-pill" title="Unity"><i class="fa-brands fa-unity"></i> Un. Unity</span>
-                        <span class="soft-pill" title="After Effects"><i class="fa-solid fa-clapperboard"></i> Ae. After Effects</span>
-                        <span class="soft-pill" title="Photoshop"><i class="fa-solid fa-image"></i> Ps. Photoshop</span>
+                        <span data-i18n="hero_cta">Discover Essence</span>
                     </div>
                 </div>
+
+                <!-- Media Container Layer -->
+                <div class="hero-media-wrapper">
+                    <!-- Floating Container 1 -->
+                    <div class="media-container hero-primary float-anim" data-container-id="hero-main">
+                        <div class="container-overlay"></div>
+                        <img src="images/portada-2.webp" alt="Hero Art" class="cms-media">
+                    </div>
+                    
+                    <!-- Floating Container 2 -->
+                    <div class="media-container hero-secondary float-anim-delayed" data-container-id="hero-sub">
+                        <div class="container-overlay"></div>
+                        <img src="images/portada-3.webp" alt="Secondary Art" class="cms-media">
+                    </div>
+                </div>
+
             </div>
 
-            <div class="hero-gallery-frame">
-                <!-- Outer double-bezel wrapper -->
-                <div class="bezel-outer">
-                    <div class="bezel-inner">
-                        <div class="bezel-glare"></div>
-                        <div class="slideshow-container">
-                            <!-- Imágenes de Portada (Slideshow dinámico) -->
-                            <div class="slide slide-active" style="background-image: url(''); background-size: cover; background-position: center;"></div>
-                            <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
-                            <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
-                        </div>
-                        <div class="slide-progress-container">
-                            <div class="slide-progress-bar" id="slide-progress-bar"></div>
-                        </div>
-                        <div class="slideshow-indicators" id="slideshow-indicators">
-                            <span class="indicator-dot active" data-slide="0">01</span>
-                            <span class="indicator-dot" data-slide="1">02</span>
-                            <span class="indicator-dot" data-slide="2">03</span>
-                        </div>
-                        <div class="gallery-metadata">
-                            <span>EXHIBITION SLOT [01]</span>
-                            <span>AUTO_PLAY ACTIVE</span>
-                        </div>
+            <!-- Productivity Software Wave (Infinite Marquee) -->
+            <div class="hero-software-wave">
+                <div class="wave-track">
+                    <div class="wave-group">
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeillustrator/FF9A00" class="wave-icon" alt="Ai"><span class="wave-text">Illustrator</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobephotoshop/31A8FF" class="wave-icon" alt="Ps"><span class="wave-text">Photoshop</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeaftereffects/9999FF" class="wave-icon" alt="Ae"><span class="wave-text">After Effects</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobepremierepro/EA77FF" class="wave-icon" alt="Pr"><span class="wave-text">Premiere</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/blender/F5792A" class="wave-icon" alt="Blender"><span class="wave-text">Blender</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="3ds Max"><span class="wave-text">3ds Max</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/unity/000000" class="wave-icon" alt="Unity"><span class="wave-text">Unity</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/epicgames/FFFFFF" class="wave-icon" alt="Unreal"><span class="wave-text">Unreal Engine</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/maxon/FFFFFF" class="wave-icon" alt="ZBrush"><span class="wave-text">ZBrush</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="Maya"><span class="wave-text">Maya</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobe/FFFFFF" class="wave-icon" alt="Substance"><span class="wave-text">Substance</span></div>
+                    </div>
+                    <!-- Duplicates for infinite scroll loop on ultrawide monitors -->
+                    <div class="wave-group" aria-hidden="true">
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeillustrator/FF9A00" class="wave-icon" alt="Ai"><span class="wave-text">Illustrator</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobephotoshop/31A8FF" class="wave-icon" alt="Ps"><span class="wave-text">Photoshop</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeaftereffects/9999FF" class="wave-icon" alt="Ae"><span class="wave-text">After Effects</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobepremierepro/EA77FF" class="wave-icon" alt="Pr"><span class="wave-text">Premiere</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/blender/F5792A" class="wave-icon" alt="Blender"><span class="wave-text">Blender</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="3ds Max"><span class="wave-text">3ds Max</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/unity/000000" class="wave-icon" alt="Unity"><span class="wave-text">Unity</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/epicgames/FFFFFF" class="wave-icon" alt="Unreal"><span class="wave-text">Unreal Engine</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/maxon/FFFFFF" class="wave-icon" alt="ZBrush"><span class="wave-text">ZBrush</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="Maya"><span class="wave-text">Maya</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobe/FFFFFF" class="wave-icon" alt="Substance"><span class="wave-text">Substance</span></div>
+                    </div>
+                    <div class="wave-group" aria-hidden="true">
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeillustrator/FF9A00" class="wave-icon" alt="Ai"><span class="wave-text">Illustrator</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobephotoshop/31A8FF" class="wave-icon" alt="Ps"><span class="wave-text">Photoshop</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeaftereffects/9999FF" class="wave-icon" alt="Ae"><span class="wave-text">After Effects</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobepremierepro/EA77FF" class="wave-icon" alt="Pr"><span class="wave-text">Premiere</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/blender/F5792A" class="wave-icon" alt="Blender"><span class="wave-text">Blender</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="3ds Max"><span class="wave-text">3ds Max</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/unity/000000" class="wave-icon" alt="Unity"><span class="wave-text">Unity</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/epicgames/FFFFFF" class="wave-icon" alt="Unreal"><span class="wave-text">Unreal Engine</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/maxon/FFFFFF" class="wave-icon" alt="ZBrush"><span class="wave-text">ZBrush</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="Maya"><span class="wave-text">Maya</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobe/FFFFFF" class="wave-icon" alt="Substance"><span class="wave-text">Substance</span></div>
+                    </div>
+                    <div class="wave-group" aria-hidden="true">
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeillustrator/FF9A00" class="wave-icon" alt="Ai"><span class="wave-text">Illustrator</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobephotoshop/31A8FF" class="wave-icon" alt="Ps"><span class="wave-text">Photoshop</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobeaftereffects/9999FF" class="wave-icon" alt="Ae"><span class="wave-text">After Effects</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobepremierepro/EA77FF" class="wave-icon" alt="Pr"><span class="wave-text">Premiere</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/blender/F5792A" class="wave-icon" alt="Blender"><span class="wave-text">Blender</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="3ds Max"><span class="wave-text">3ds Max</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/unity/000000" class="wave-icon" alt="Unity"><span class="wave-text">Unity</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/epicgames/FFFFFF" class="wave-icon" alt="Unreal"><span class="wave-text">Unreal Engine</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/maxon/FFFFFF" class="wave-icon" alt="ZBrush"><span class="wave-text">ZBrush</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/autodesk/0696D7" class="wave-icon" alt="Maya"><span class="wave-text">Maya</span></div>
+                        <div class="wave-item"><img src="https://cdn.simpleicons.org/adobe/FFFFFF" class="wave-icon" alt="Substance"><span class="wave-text">Substance</span></div>
                     </div>
                 </div>
             </div>
         </section>
+
 
         <!-- Sección de Presentación / About Me (Premium Editorial Cascade) -->
         <section id="presentacion" class="about-premium-section">
@@ -1098,12 +1131,9 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.1"></script>
+    <script src="script.js?v=3.0"></script>
     <!-- CMS (prototipo front-only): login mock + edición de contenido -->
-    <script src="cms.js?v=2.5"></script>
-    <!-- GSAP & ScrollTrigger -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="cms.js?v=3.1"></script>
     
     <!-- Novel Interactions -->
     <script src="interactions.js?v=1.0"></script>

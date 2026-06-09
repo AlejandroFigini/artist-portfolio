@@ -78,12 +78,21 @@
         };
     }
 
+    // Campos para las herramientas de la wave (texto + imagen)
+    var WAVE_FIELDS = [
+        { key: 'text', label: 'Nombre de la Herramienta',
+          get: function (c) { return txt(c.querySelector('.wave-text')); },
+          set: function (c, v) { var e = c.querySelector('.wave-text'); if (e) e.textContent = v; } }
+    ];
+
     // Registro de elementos editables: cobertura de toda la página
     var REGISTRY = [
         // Portada
         { base: 'hero.title', sel: '.hero-overlay h1', kind: 'text', mount: 'parent', section: 'Portada', label: 'Título Principal' },
         { base: 'hero.sub', sel: '.hero-overlay p', kind: 'text', mount: 'parent', section: 'Portada', label: 'Subtítulo' },
         { base: 'hero.slide', sel: '.slideshow-container .slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada', label: function (el, i) { return 'Imagen Carrusel #' + (i + 1); } },
+        { base: 'hero.wave', sel: '.hero-software-wave .wave-track .wave-item img.wave-icon', kind: 'image', accept: 'webp,png,svg', mount: 'parent', section: 'Portada', container: '.wave-item', fields: WAVE_FIELDS, label: function (el, i) { return 'Herramienta Wave #' + (i + 1); } },
+        
         // Production Stack
         { base: 'soft.hero', sel: '.icon-wave-container .icon-circle', kind: 'image', accept: 'webp', mount: 'self', section: 'Portada', label: function (el, i) { return 'Logo Stack Portada #' + (i + 1); } },
         { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animaciones', label: function (el, i) { return 'Logo Stack Animaciones #' + (i + 1); } },
@@ -371,9 +380,13 @@
         var containerNames = loadJSON(LS_CONTAINER_NAMES, {});
         REGISTRY.forEach(function (entry) {
             document.querySelectorAll(entry.sel).forEach(function (el, i) {
-                if (el.getAttribute('data-cms-key')) return; // ya indexado
-                var key = entry.base + '#' + i;
-                el.setAttribute('data-cms-key', key);
+                var key = el.getAttribute('data-cms-key');
+                if (!key) {
+                    key = entry.base + '#' + i;
+                    el.setAttribute('data-cms-key', key);
+                }
+                if (elementsByKey[key]) return; // ya procesado en esta sesin
+
                 elementsByKey[key] = el;
                 typeByKey[key] = entry.kind === 'image' ? 'media' : (entry.kind === 'video' ? 'media' : 'text');
                 var defLabel = resolveLabel(entry, el, i);
