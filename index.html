@@ -243,11 +243,20 @@
                 <!-- Outer double-bezel wrapper -->
                 <div class="bezel-outer">
                     <div class="bezel-inner">
+                        <div class="bezel-glare"></div>
                         <div class="slideshow-container">
                             <!-- Imágenes de Portada (Slideshow dinámico) -->
                             <div class="slide slide-active" style="background-image: url(''); background-size: cover; background-position: center;"></div>
                             <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
                             <div class="slide" style="background-image: url(''); background-size: cover; background-position: center;"></div>
+                        </div>
+                        <div class="slide-progress-container">
+                            <div class="slide-progress-bar" id="slide-progress-bar"></div>
+                        </div>
+                        <div class="slideshow-indicators" id="slideshow-indicators">
+                            <span class="indicator-dot active" data-slide="0">01</span>
+                            <span class="indicator-dot" data-slide="1">02</span>
+                            <span class="indicator-dot" data-slide="2">03</span>
                         </div>
                         <div class="gallery-metadata">
                             <span>EXHIBITION SLOT [01]</span>
@@ -266,6 +275,7 @@
                     <div class="about-portrait-bezel">
                         <div class="bezel-outer">
                             <div class="bezel-inner">
+                                <div class="bezel-glare"></div>
                                 <div class="artist-photo-wrapper">
                                     <img src="" alt="Lucía Montaña" class="artist-photo-img" fetchpriority="high">
                                 </div>
@@ -314,6 +324,7 @@
                     <div class="about-video-bezel">
                         <div class="bezel-outer">
                             <div class="bezel-inner">
+                                <div class="bezel-glare"></div>
                                 <div class="artist-video-wrapper">
                                     <video loop muted playsinline class="about-video" preload="metadata">
                                         <source src="" type="video/webm">

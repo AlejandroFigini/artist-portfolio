@@ -16,6 +16,14 @@ document.addEventListener("DOMContentLoaded", () => {
     initScrollReveals();
     init3DTiltEffects();
     initLiveClock();
+    initCustomCursor();
+    initBezelGlareFollower();
+    
+    // Override window slideshow initialization from script.js
+    window.initHeroSlideshow = function() {
+        initHeroSlideshowOverride();
+    };
+    window.initHeroSlideshow();
 });
 
 /**
@@ -237,4 +245,186 @@ function initLiveClock() {
     
     updateClock();
     setInterval(updateClock, 1000);
+}
+
+/**
+ * Custom cursor tracking and interactive sizing
+ */
+function initCustomCursor() {
+    const cursor = document.getElementById("custom-cursor");
+    const cursorDot = cursor?.querySelector(".cursor-dot");
+    const cursorLabel = cursor?.querySelector(".cursor-label");
+    
+    if (!cursor) return;
+    
+    // Hide cursor initially until first move
+    gsap.set(cursor, { opacity: 0 });
+    
+    const xTo = gsap.quickTo(cursor, "x", { duration: 0.08, ease: "power3.out" });
+    const yTo = gsap.quickTo(cursor, "y", { duration: 0.08, ease: "power3.out" });
+    
+    window.addEventListener("mousemove", (e) => {
+        gsap.set(cursor, { opacity: 1 });
+        xTo(e.clientX);
+        yTo(e.clientY);
+    });
+    
+    document.addEventListener("mouseleave", () => {
+        gsap.to(cursor, { opacity: 0, duration: 0.3 });
+    });
+    
+    // Expand states for specific bezels/frames
+    const hoverContainers = [
+        { selector: ".hero-gallery-frame", label: "VIEW" },
+        { selector: ".about-portrait-bezel", label: "PORTRAIT" },
+        { selector: ".about-video-bezel", label: "PLAY" }
+    ];
+    
+    hoverContainers.forEach(target => {
+        const containers = document.querySelectorAll(target.selector);
+        containers.forEach(container => {
+            container.addEventListener("mouseenter", () => {
+                cursor.classList.add("expand");
+                if (cursorLabel) {
+                    cursorLabel.innerText = `[ ${target.label} ]`;
+                }
+            });
+            container.addEventListener("mouseleave", () => {
+                cursor.classList.remove("expand");
+            });
+        });
+    });
+    
+    // Sizing overrides for standard interactive links/buttons
+    const interactiveElements = document.querySelectorAll("a, button, .soft-pill, .indicator-dot");
+    interactiveElements.forEach(el => {
+        el.addEventListener("mouseenter", () => {
+            if (!cursor.classList.contains("expand")) {
+                cursor.classList.add("expand");
+                if (cursorLabel) cursorLabel.innerText = "";
+            }
+        });
+        el.addEventListener("mouseleave", () => {
+            let insideBezel = false;
+            hoverContainers.forEach(t => {
+                if (el.closest(t.selector)) insideBezel = true;
+            });
+            if (!insideBezel) {
+                cursor.classList.remove("expand");
+            }
+        });
+    });
+}
+
+/**
+ * Tactile glass glare light angle tracker
+ */
+function initBezelGlareFollower() {
+    const bezels = document.querySelectorAll(".bezel-outer");
+    
+    bezels.forEach(bezel => {
+        const glare = bezel.querySelector(".bezel-glare");
+        if (!glare) return;
+        
+        bezel.addEventListener("mousemove", (e) => {
+            const rect = bezel.getBoundingClientRect();
+            const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+            const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            gsap.to(glare, {
+                xPercent: xPercent - 50,
+                yPercent: yPercent - 50,
+                duration: 0.2,
+                ease: "power2.out"
+            });
+        });
+        
+        bezel.addEventListener("mouseleave", () => {
+            gsap.to(glare, {
+                xPercent: 0,
+                yPercent: 0,
+                duration: 0.5,
+                ease: "power2.out"
+            });
+        });
+    });
+}
+
+/**
+ * GSAP Timeline Slideshow with Progress Indicator & Dot Overrides
+ */
+function initHeroSlideshowOverride() {
+    // Clean up old script.js intervals or observers if active
+    if (window.heroSlideshowTimer) {
+        clearInterval(window.heroSlideshowTimer);
+        window.heroSlideshowTimer = null;
+    }
+    if (window.heroSlideshowObserver) {
+        window.heroSlideshowObserver.disconnect();
+        window.heroSlideshowObserver = null;
+    }
+    
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('slide-progress-bar');
+    const dots = document.querySelectorAll('.indicator-dot');
+    
+    if (slides.length === 0) return;
+    
+    let currentSlide = 0;
+    const duration = window.CMS_HERO_DURATION || 7000;
+    const panClasses = ['pan-tl', 'pan-tr', 'pan-bl', 'pan-br', 'pan-c'];
+    let progressTween = null;
+    
+    function showSlide(index) {
+        // Remove active class from current slide and dots
+        slides[currentSlide].classList.remove('slide-active', ...panClasses);
+        if (dots[currentSlide]) dots[currentSlide].classList.remove('active');
+        
+        currentSlide = index;
+        
+        // Add active class and random panning motion to new slide
+        const randomPan = panClasses[Math.floor(Math.random() * panClasses.length)];
+        slides[currentSlide].classList.add('slide-active', randomPan);
+        if (dots[currentSlide]) dots[currentSlide].classList.add('active');
+        
+        // Reset and restart the progress bar tween
+        if (progressTween) progressTween.kill();
+        
+        gsap.set(progressBar, { width: '0%' });
+        
+        progressTween = gsap.to(progressBar, {
+            width: '100%',
+            duration: duration / 1000,
+            ease: 'linear',
+            onComplete: advanceSlide
+        });
+    }
+    
+    function advanceSlide() {
+        let nextSlide = (currentSlide + 1) % slides.length;
+        showSlide(nextSlide);
+    }
+    
+    // Wire up manual indicator dot clicks
+    dots.forEach((dot, idx) => {
+        dot.addEventListener('click', () => {
+            showSlide(idx);
+        });
+    });
+    
+    // Start slideshow initially
+    showSlide(0);
+    
+    // Handle viewport changes to pause slideshow when tab/page is hidden
+    const heroSection = document.getElementById('inicio');
+    if (heroSection && 'IntersectionObserver' in window) {
+        window.heroSlideshowObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                if (progressTween) progressTween.resume();
+            } else {
+                if (progressTween) progressTween.pause();
+            }
+        }, { threshold: 0 });
+        window.heroSlideshowObserver.observe(heroSection);
+    }
 }
