@@ -9,6 +9,11 @@
     --accent-hover: #5b21b6;
     --border: #e2e8f0;
     --header-bg: #f2f2f2;
+    --c-uso: #10b981;
+    --c-nouso: #f59e0b;
+    --c-repo: #3b82f6;
+    --c-basurero: #ef4444;
+    --c-subir: #8b5cf6;
 
     /* Variables generales */
     --font: 'Raleway', sans-serif;
@@ -2976,16 +2981,8 @@ input:checked+.slider:before {
 }
 
 .masonry-gallery {
-    display: grid;
-    /* min(100%, 280px) evita que una columna fuerce overflow en pantallas
-       muy angostas; por lo demás se comporta como minmax(280px, 1fr). */
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-    /* Alto de fila fluido: antes era fijo (220px), así que al ensancharse
-       las columnas las celdas quedaban cada vez más "letterbox"/grandes.
-       Ahora la proporción se adapta y en móvil las imágenes recortan menos. */
-    grid-auto-rows: clamp(160px, 15vw, 230px);
-    grid-auto-flow: dense;
-    /* Gap fluido: en móvil evita los huecos enormes entre imágenes apiladas. */
+    display: flex;
+    flex-wrap: wrap;
     gap: clamp(0.85rem, 2vw, 2rem);
     width: min(100% - 2 * var(--page-gutter), var(--maxw-feed));
     margin: 1.2rem auto 0;
@@ -2993,29 +2990,31 @@ input:checked+.slider:before {
     padding: clamp(1rem, 2.5vw, 2rem);
 }
 
-/* Bento Hierarchy Still Active */
-.gallery-item.big {
-    grid-column: span 2;
-    grid-row: span 2;
-}
-
-.gallery-item.wide {
-    grid-column: span 2;
-}
-
-.gallery-item.tall {
-    grid-row: span 2;
-}
-
+/* Bento Hierarchy Translated to Flex */
 .gallery-item {
     position: relative;
-    /* GRID ANCLA — Now transparent to allow child to float outside borders */
     overflow: visible; 
     cursor: pointer;
     background: transparent;
     z-index: 1;
     transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    flex: 1 1 280px;
+    height: clamp(160px, 15vw, 250px);
 }
+
+.gallery-item.big {
+    flex: 2 1 400px;
+    height: clamp(280px, 25vw, 400px);
+}
+
+.gallery-item.wide {
+    flex: 2 1 400px;
+}
+
+.gallery-item.tall {
+    height: clamp(280px, 25vw, 400px);
+}
+
 
 /* THE FLOATING OBJECT — The actual Frame */
 .drift-wrapper {
@@ -4360,6 +4359,7 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
 
 /* Slot vacío (admin): se conserva el contenedor con un botón para subir */
 .cms-empty-slot > *:not(.cms-empty-overlay) { visibility: hidden !important; }
+
 .cms-empty-overlay {
     position: absolute;
     inset: 0;
@@ -4380,6 +4380,267 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
 .cms-empty-overlay i { font-size: 1.8rem; }
 .cms-empty-overlay span { font-size: 0.85rem; font-weight: 600; }
 
+/* ---- Content Picker: modal con 2 opciones grandes ---- */
+.cms-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+.cms-picker-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 2rem 1.2rem;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cms-picker-option:hover {
+    border-color: var(--accent);
+    background: rgba(124, 58, 237, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.18);
+}
+.cms-picker-option i {
+    font-size: 2.2rem;
+    color: var(--accent);
+}
+.cms-picker-option .cms-picker-title {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+}
+.cms-picker-option .cms-picker-desc {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    opacity: 0.85;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ---- Repo Browser: grilla de miniaturas seleccionables ---- */
+.cms-repo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.7rem;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+.cms-repo-thumb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg-secondary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.cms-repo-thumb:hover {
+    border-color: rgba(124, 58, 237, 0.5);
+    transform: translateY(-2px);
+}
+.cms-repo-thumb.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25), 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+.cms-repo-thumb.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    z-index: 2;
+}
+.cms-repo-thumb-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    background: var(--bg-primary);
+}
+.cms-repo-thumb-icon {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    color: var(--accent);
+    font-size: 1.8rem;
+}
+.cms-repo-thumb-info {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cms-repo-thumb-info strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.cms-repo-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+    font-size: 0.9rem;
+}
+.cms-repo-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+.cms-repo-filter-bar span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.cms-repo-filter-bar select {
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: 'Raleway', sans-serif;
+}
+
+/* ---- Repo Filter Buttons (styled like Gestión tabs) ---- */
+.cms-repo-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'Raleway', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.cms-repo-filter-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+.cms-repo-filter-btn.active { color: #fff; }
+.cms-filter-repo.active { background: var(--accent); border-color: var(--accent); }
+.cms-filter-used.active { background: rgba(16, 185, 129, 0.9); border-color: rgba(16, 185, 129, 0.9); }
+.cms-filter-unused.active { background: rgba(180, 83, 9, 0.9); border-color: rgba(180, 83, 9, 0.9); }
+.cms-repo-filter-btn i { font-size: 0.75rem; }
+
+/* ---- Global Hero Carousel Gear ---- */
+.cms-hero-gear {
+    position: absolute;
+    top: 100px;
+    right: 40px;
+    z-index: 1100;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+body.is-admin .cms-hero-gear {
+    display: flex;
+}
+.cms-hero-gear:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* ---- Container rename inline (pencil button) ---- */
+.cms-container-editable {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.cms-rename-pencil {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(124, 58, 237, 0.12);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: background 0.2s ease;
+}
+.cms-rename-pencil:hover { background: rgba(124, 58, 237, 0.25); }
+.cms-rename-inline {
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    border: 1.5px solid var(--accent);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 120px;
+}
+.cms-rename-confirm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.2s ease;
+}
+.cms-rename-confirm:hover { background: #6d28d9; }
+
+/* ---- 3D Model Software Icon Wrapper ---- */
+.soft-icon-wrap {
+    position: relative;
+    display: inline-block;
+}
+.soft-icon-wrap .cms-tools {
+    top: -30px;
+    right: -4px;
+}
+
 /* Aviso sutil de elemento editable en modo admin */
 body.is-admin .cms-mount {
     outline: 1px dashed rgba(124, 58, 237, 0.45);
@@ -4398,6 +4659,11 @@ body.is-admin .cms-mount {
     color: var(--accent);
     cursor: pointer;
     transition: all 0.25s ease;
+}
+
+.cms-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .cms-btn:hover {
@@ -4806,7 +5072,8 @@ body.cms-modal-open { overflow: hidden; }
 .cms-admin-sub {
     margin: 0.4rem 0 1rem;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    opacity: 0.85; /* Mayor visibilidad que --text-secondary, respetando el tema claro/oscuro */
 }
 
 .cms-audit-table-wrap {
@@ -4953,6 +5220,7 @@ body.cms-modal-open { overflow: hidden; }
     border-radius: 999px;
     background: rgba(124, 58, 237, 0.15);
     color: var(--accent);
+    font-family: 'Fira Code', monospace;
 }
 
 .admin-badge--warn { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
@@ -4979,30 +5247,45 @@ body.cms-modal-open { overflow: hidden; }
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
+    font-family: 'Fira Code', monospace;
 }
 
 .admin-stat--warn .admin-stat-num { color: #dc2626; }
 
 .cms-mlib-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1rem;
 }
 
 .cms-mlib-item {
+    position: relative;
     display: flex;
-    gap: 0.8rem;
-    align-items: center;
-    padding: 0.7rem;
+    flex-direction: row;
+    align-items: center; /* centrado verticalmente */
+    gap: 1rem;
+    padding: 1rem;
     border: 1px solid var(--border);
     border-radius: 12px;
     background: var(--bg-secondary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+.cms-mlib-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.cms-mlib-item .cms-mlib-thumb-wrap {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
 }
 
 .cms-mlib-item img,
 .cms-mlib-noimg {
-    width: 64px;
-    height: 64px;
+    width: 100%;
+    height: 100%;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
@@ -5011,24 +5294,45 @@ body.cms-modal-open { overflow: hidden; }
     justify-content: center;
     background: var(--bg-primary);
     color: var(--accent);
-    font-size: 1.3rem;
+    font-size: 2rem;
 }
 
 .cms-mlib-info { min-width: 0; flex: 1; }
 
 .cms-mlib-label {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    font-family: 'Raleway', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+    padding-right: 40px; /* espacio para el botón de opciones, incrementado de 24px */
+    line-height: 1.2;
 }
 
 .cms-mlib-meta {
+    font-family: 'Inter', sans-serif;
+    font-variant-numeric: lining-nums;
     font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-top: 0.2rem;
+    color: var(--text-primary);
+    opacity: 0.85; /* Mayor contraste respetando el tema */
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.cms-mlib-meta div {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+.cms-mlib-meta strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .cms-mlib-del { color: #dc2626; border-color: rgba(220, 38, 38, 0.5); }
@@ -5065,7 +5369,86 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* Acciones y botones dentro de las tarjetas de medios */
-.cms-mlib-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.cms-mlib-actions { 
+    position: absolute; 
+    top: 0.15rem; 
+    right: 0.2rem; 
+    z-index: 10;
+}
+
+.cms-iconbtn {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.cms-iconbtn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* Dropdown Menu CSS */
+.cms-dropdown { position: relative; display: inline-block; }
+.cms-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px); /* abre hacia abajo */
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    padding: 0.5rem 0;
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 50;
+    pointer-events: none;
+}
+/* Área invisible para no perder el hover al mover el mouse */
+.cms-dropdown::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 100%;
+    height: 10px;
+}
+.cms-dropdown:hover .cms-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.cms-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.6rem 1.2rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cms-dropdown-item:hover { background: var(--bg-secondary); }
+.cms-dropdown-item i { width: 16px; text-align: center; color: var(--text-secondary); }
+.cms-dropdown-item[style*="color"] i { color: inherit; }
+
 
 .cms-mlib-restore { color: var(--accent); border-color: rgba(124, 58, 237, 0.5); }
 .cms-mlib-restore:hover { background: var(--accent); color: #fff; }
@@ -5105,9 +5488,9 @@ body.cms-modal-open { overflow: hidden; }
     display: flex;
     align-items: flex-start;
     gap: 1.5rem;
-    max-width: 1320px;
+    max-width: 98%;
     margin: 0 auto;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 1rem;
 }
 
 /* Dentro del shell, la columna principal ocupa el resto del ancho. */
@@ -5120,7 +5503,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 .admin-sidebar {
-    width: 240px;
+    width: 270px;
     flex-shrink: 0;
     position: sticky;
     top: 84px;
@@ -5164,6 +5547,60 @@ body.cms-modal-open { overflow: hidden; }
     font-weight: 600;
 }
 
+.admin-nav-group {
+    display: flex;
+    flex-direction: column;
+}
+.admin-nav-sub {
+    display: none;
+    flex-direction: column;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--border);
+    margin-left: 1.1rem;
+    margin-top: 0.3rem;
+    gap: 0.2rem;
+}
+.admin-nav-sub.open {
+    display: flex;
+}
+.admin-nav-item i.c-uso { color: var(--c-uso); }
+.admin-nav-item i.c-nouso { color: var(--c-nouso); }
+.admin-nav-item i.c-repo { color: var(--c-repo); }
+.admin-nav-item i.c-basurero { color: var(--c-basurero); }
+.admin-nav-item i.c-subir { color: var(--c-subir); }
+
+/* Alineación precisa de estadísticas en el menú lateral */
+.admin-nav-badge-label {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-nav-badge-stats {
+    font-size: 0.8em;
+    opacity: 0.8;
+    font-weight: 600;
+    font-family: 'Fira Code', monospace;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2ch;
+}
+
+.admin-nav-badge-stats .badge-count {
+    display: inline-block;
+    width: 3ch;
+    text-align: right;
+}
+
+.admin-nav-badge-stats .badge-size {
+    display: inline-block;
+    width: 9ch;
+    text-align: right;
+}
+
+
 /* Vista de acceso restringido: ocultar el menú y el chip de usuario. */
 body.admin-locked .admin-sidebar,
 body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
@@ -5205,6 +5642,55 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
     vertical-align: middle;
 }
 .cms-tag--up { background: rgba(124, 58, 237, 0.14); color: var(--accent); }
+.cms-tag--uso { background: rgba(16, 185, 129, 0.15); color: var(--c-uso); }
+.cms-tag--nouso { background: rgba(245, 158, 11, 0.15); color: var(--c-nouso); }
+.cms-tag--repo { background: rgba(59, 130, 246, 0.15); color: var(--c-repo); }
+.cms-tag--basurero { background: rgba(239, 68, 68, 0.15); color: var(--c-basurero); }
+
+.cms-iconbtn {
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+.cms-iconbtn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+.cms-iconbtn--move:hover {
+    background: var(--c-nouso);
+    border-color: var(--c-nouso);
+}
+
+.cms-mlib-thumb-wrap {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.cms-mlib-thumb-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: #fff;
+    font-size: 1.5rem;
+    z-index: 2;
+}
+.cms-mlib-item:hover .cms-mlib-thumb-overlay {
+    opacity: 1;
+}
 
 /* Acciones de fila (placeholder usuarios) */
 .admin-row-actions { display: flex; gap: 0.4rem; }
@@ -5321,4 +5807,46 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
     .masonry-gallery { grid-template-columns: 1fr; }
     .gallery-item.big,
     .gallery-item.wide { grid-column: auto; }
+}
+
+/* Multi-selection */
+.cms-multi-check {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    accent-color: var(--accent);
+    transform: scale(1.2);
+    box-shadow: 0 0 5px rgba(0,0,0,0.8);
+}
+.cms-multi-mode .cms-multi-check {
+    display: block;
+}
+.cms-multi-mode .cms-mlib-item {
+    border-color: var(--accent);
+    box-shadow: 0 0 5px rgba(168,85,247,0.3);
+}
+.cms-batch-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg-secondary);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+.cms-batch-bar-hidden {
+    display: none !important;
+}
+.cms-mlib-item {
+    position: relative; /* Ensure the checkbox anchors properly */
 }

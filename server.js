@@ -171,6 +171,82 @@ app.post('/api/content', async (req, res) => {
     }
 });
 
+// POST /api/delete-media
+// Deletes an asset from Cloudinary given its secure_url
+app.post('/api/delete-media', async (req, res) => {
+    const { url } = req.body;
+    if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) {
+        return res.status(400).json({ error: 'Invalid Cloudinary URL' });
+    }
+
+    try {
+        // Extract public_id from Cloudinary URL
+        // Example: https://res.cloudinary.com/.../upload/v1234567890/portfolio/test/image.webp
+        // public_id is "portfolio/test/image"
+        const match = url.match(/\/v\d+\/(.+)\.[a-zA-Z0-9]+$/);
+        if (!match) {
+            return res.status(400).json({ error: 'Could not extract public_id' });
+        }
+        
+        const public_id = match[1];
+        const isVideo = url.match(/\.(mp4|webm|mov)$/i);
+        const resource_type = isVideo ? 'video' : 'image';
+
+        console.log(`Deleting ${resource_type} from Cloudinary: ${public_id}`);
+        const result = await cloudinary.uploader.destroy(public_id, { resource_type });
+        
+        res.json({ success: true, result });
+    } catch (err) {
+        console.error('Error deleting media from Cloudinary:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// POST /api/upload-test
+// Receives a base64 string and uploads it to Cloudinary to test optimization.
+// Returns original and final size/format details.
+app.post('/api/upload-test', async (req, res) => {
+    const { base64Data, originalSize, originalName } = req.body;
+    if (!base64Data || typeof base64Data !== 'string') {
+        return res.status(400).json({ error: 'Invalid payload' });
+    }
+
+    try {
+        let uploadRes;
+        if (base64Data.startsWith('data:image')) {
+            console.log(`Testing image upload for ${originalName}...`);
+            uploadRes = await cloudinary.uploader.upload(base64Data, {
+                folder: 'portfolio/test',
+                format: 'webp',
+                quality: 'auto'
+            });
+        } else if (base64Data.startsWith('data:video')) {
+            console.log(`Testing video upload for ${originalName}...`);
+            uploadRes = await cloudinary.uploader.upload(base64Data, {
+                resource_type: 'video',
+                folder: 'portfolio/test',
+                format: 'webm',
+                quality: 'auto'
+            });
+        } else {
+             return res.status(400).json({ error: 'Unsupported file type' });
+        }
+
+        res.json({
+            success: true,
+            secure_url: uploadRes.secure_url,
+            final_bytes: uploadRes.bytes,
+            final_format: uploadRes.format,
+            original_size: originalSize,
+            original_name: originalName,
+            asset_id: uploadRes.asset_id
+        });
+    } catch (err) {
+        console.error('Error during upload test:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // --- STATIC FILES ---
 app.use(express.static(path.join(__dirname)));
 

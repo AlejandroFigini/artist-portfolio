@@ -366,34 +366,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    const slides = document.querySelectorAll('.slide');
-    if (slides.length > 0) {
-        let currentSlide = 0;
-        let slideshowTimer = null;
-        const panClasses = ['pan-tl', 'pan-tr', 'pan-bl', 'pan-br', 'pan-c'];
-        slides[0].classList.add(panClasses[Math.floor(Math.random() * panClasses.length)]);
-        const advanceSlide = () => {
-            slides[currentSlide].classList.remove('slide-active', ...panClasses);
-            currentSlide = (currentSlide + 1) % slides.length;
-            slides[currentSlide].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
-        };
-        // Solo correr el slideshow y el typewriter del hero mientras la sección es visible.
-        const heroSection = document.getElementById('inicio');
-        if (heroSection) {
-            new IntersectionObserver((entries) => {
-                heroVisible = entries[0].isIntersecting;
-                if (heroVisible) {
-                    if (!slideshowTimer) slideshowTimer = setInterval(advanceSlide, 7000);
-                    if (!heroInterval) startHeroInterval();
-                } else {
-                    if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; }
-                    stopHeroInterval();
-                }
-            }, { threshold: 0 }).observe(heroSection);
-        } else {
-            slideshowTimer = setInterval(advanceSlide, 7000);
+    window.initHeroSlideshow = function() {
+        if (window.heroSlideshowTimer) { clearInterval(window.heroSlideshowTimer); window.heroSlideshowTimer = null; }
+        if (window.heroSlideshowObserver) { window.heroSlideshowObserver.disconnect(); }
+
+        const slides = document.querySelectorAll('.slide');
+        if (slides.length > 0) {
+            let currentSlide = 0;
+            const panClasses = ['pan-tl', 'pan-tr', 'pan-bl', 'pan-br', 'pan-c'];
+            // Reset state
+            slides.forEach(s => s.classList.remove('slide-active', ...panClasses));
+            slides[0].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
+
+            const advanceSlide = () => {
+                slides[currentSlide].classList.remove('slide-active', ...panClasses);
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
+            };
+
+            const duration = window.CMS_HERO_DURATION || 7000;
+            
+            // Solo correr el slideshow y el typewriter del hero mientras la sección es visible.
+            const heroSection = document.getElementById('inicio');
+            if (heroSection) {
+                window.heroSlideshowObserver = new IntersectionObserver((entries) => {
+                    heroVisible = entries[0].isIntersecting;
+                    if (heroVisible) {
+                        if (!window.heroSlideshowTimer) window.heroSlideshowTimer = setInterval(advanceSlide, duration);
+                        if (!heroInterval) startHeroInterval();
+                    } else {
+                        if (window.heroSlideshowTimer) { clearInterval(window.heroSlideshowTimer); window.heroSlideshowTimer = null; }
+                        stopHeroInterval();
+                    }
+                }, { threshold: 0 });
+                window.heroSlideshowObserver.observe(heroSection);
+            } else {
+                window.heroSlideshowTimer = setInterval(advanceSlide, duration);
+            }
         }
-    }
+    };
+    window.initHeroSlideshow();
 
     document.querySelectorAll('.video-container').forEach(container => {
         const vid = container.querySelector('video');
