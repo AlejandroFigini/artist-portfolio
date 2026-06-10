@@ -1216,14 +1216,14 @@ section {
     border-radius: var(--radius-sm);
     overflow: hidden;
     position: relative;
-    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), 0 5px 15px -5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.08), 0 5px 15px -5px rgba(0, 0, 0, 0.04);
     transition: var(--transition);
-    background: #000;
+    background: #fff;
 }
 
 .animation-item.video-container:hover {
     transform: translateY(-10px) scale(1.05);
-    box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.6), 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 30px 60px -10px rgba(139, 92, 246, 0.25), 0 10px 20px -5px rgba(139, 92, 246, 0.15);
 }
 
 .anim-video {
@@ -1239,10 +1239,10 @@ section {
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(139, 92, 246, 0.15);
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -1525,12 +1525,12 @@ section {
     padding: clamp(3rem, 7vw, 4rem) clamp(1rem, 4vw, 2rem);
     position: relative;
     overflow: hidden;
-    background: linear-gradient(160deg, #07021a 0%, #12063a 50%, #1c0852 100%);
-    color: #fff;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .characters-section .section-title p {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--text-secondary);
 }
 
 /* Fondo: grid blueprint sutil con degradado radial para darle profundidad */
@@ -2096,13 +2096,12 @@ input:checked+.slider:before {
    ═══════════════════════════════════════════════ */
 
 .models-3d-section {
-    padding: clamp(3rem, 7vw, 4rem) 0; /* Balanced spacing */
-    background: #e4e8ed;
-    /* Light grey for light mode */
+    padding: clamp(3rem, 7vw, 4rem) 0;
+    background: var(--bg-primary);
     width: 100% !important;
     position: relative;
     overflow: hidden;
-    color: #1f2937;
+    color: var(--text-primary);
     border-top: none;
 }
 
@@ -2147,10 +2146,10 @@ input:checked+.slider:before {
     right: -100px;
     bottom: -100px;
     background-image:
-        linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(139, 92, 246, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 92, 246, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
     background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
     animation: gridScroll 4s linear infinite;
     will-change: transform;
@@ -2546,9 +2545,9 @@ input:checked+.slider:before {
     position: relative;
     border-radius: 2rem;
     overflow: hidden;
-    border: 1px solid rgba(129, 140, 248, 0.2);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    background: #000;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.08), 0 5px 15px -5px rgba(0, 0, 0, 0.04);
+    background: #fff;
     animation: floatingModel 6s ease-in-out infinite;
 }
 
@@ -2842,9 +2841,8 @@ input:checked+.slider:before {
     padding: clamp(2rem, 4vw, 2.5rem) clamp(1.5rem, 5vw, 4rem) clamp(4.5rem, 10vw, 9rem);
     /* Márgenes laterales para que las estrellas del fondo sean visibles */
     overflow: hidden;
-    background: linear-gradient(160deg, #05010e 0%, #0a0118 40%, #15002b 100%);
-    /* DEEP SPACE BASE */
-    color: #fff;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .gallery-bg-animation {
@@ -3946,7 +3944,7 @@ body.nav-open .nav-backdrop {
     background-size: cover;
     background-position: center 20%;
     background-repeat: no-repeat;
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(167, 139, 250, 0.15);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(167, 139, 250, 0.25);
     cursor: zoom-in;
     animation: cdPortraitParallax 8s ease-in-out infinite;
 }
@@ -3955,7 +3953,7 @@ body.nav-open .nav-backdrop {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 55%, rgba(10, 1, 24, 0.55));
+    background: linear-gradient(180deg, transparent 55%, rgba(255, 255, 255, 0.8));
     pointer-events: none;
 }
 
@@ -6928,4 +6926,17 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
 .soft-badge.ae { background: #9999FF; }
 .soft-badge.pr { background: #EA77FF; }
 .soft-badge.an { background: #FF3366; }
+
+/* ============================================================================
+   OCULTAR EDICIÓN (MODO ESPECTADOR)
+   ============================================================================ */
+body.hide-cms-controls .cms-edit-btn,
+body.hide-cms-controls .cms-hero-gear,
+body.hide-cms-controls .cms-panel-delete,
+body.hide-cms-controls .cms-add-slot,
+body.hide-cms-controls .cms-add-illu,
+body.hide-cms-controls .cms-carousel-controls,
+body.hide-cms-controls .cms-tool-btn {
+    display: none !important;
+}
 

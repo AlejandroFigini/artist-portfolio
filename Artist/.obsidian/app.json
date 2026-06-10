@@ -1,0 +1,13 @@
+{
+  "spellcheck": false,
+  "spellcheckLanguages": [
+    "es"
+  ],
+  "defaultViewMode": "source",
+  "livePreview": true,
+  "showFrontmatter": false,
+  "newFileLocation": "current",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "04 Recursos/Adjuntos"
+}

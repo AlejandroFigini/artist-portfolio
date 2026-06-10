@@ -91,7 +91,7 @@
         { base: 'hero.title', sel: '.hero-overlay h1', kind: 'text', mount: 'parent', section: 'Portada', label: 'Título Principal' },
         { base: 'hero.sub', sel: '.hero-overlay p', kind: 'text', mount: 'parent', section: 'Portada', label: 'Subtítulo' },
         { base: 'hero.slide', sel: '.slideshow-container .slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada', label: function (el, i) { return 'Imagen Carrusel #' + (i + 1); } },
-        { base: 'hero.wave', sel: '.hero-software-wave .wave-track .wave-item img.wave-icon', kind: 'image', accept: 'webp,png,svg', mount: 'parent', section: 'Portada', container: '.wave-item', fields: WAVE_FIELDS, label: function (el, i) { return 'Herramienta Wave #' + (i + 1); } },
+        { base: 'hero.wave', sel: '.hero-software-wave .wave-track .wave-group:first-child .wave-item img.wave-icon', kind: 'image', accept: 'webp,png,svg', mount: 'parent', section: 'Portada', container: '.wave-item', fields: WAVE_FIELDS, label: function (el, i) { return 'Herramienta Wave #' + (i + 1); } },
         
         // Production Stack
         { base: 'soft.hero', sel: '.icon-wave-container .icon-circle', kind: 'image', accept: 'webp', mount: 'self', section: 'Portada', label: function (el, i) { return 'Logo Stack Portada #' + (i + 1); } },
@@ -1852,6 +1852,26 @@
     function init() {
         var sw = document.getElementById('motion-switch');
         var saved = false; try { saved = localStorage.getItem(LS_MOTION) === '1'; } catch (e) {}
+        if (sw) { sw.checked = saved; sw.addEventListener('change', function () { apply(sw.checked); }); }
+        if (saved) apply(true);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+})();
+
+/* ============================================================================
+   OCULTAR EDICIÓN (MODO ESPECTADOR) — Oculta botones de CMS estando logueado
+   ============================================================================ */
+(function () {
+    'use strict';
+    var LS_HIDE_CMS = 'cms_hide_controls_v1';
+    function apply(hide) {
+        document.body.classList.toggle('hide-cms-controls', hide);
+        try { localStorage.setItem(LS_HIDE_CMS, hide ? '1' : '0'); } catch (e) {}
+    }
+    function init() {
+        var sw = document.getElementById('hide-cms-switch');
+        var saved = false; try { saved = localStorage.getItem(LS_HIDE_CMS) === '1'; } catch (e) {}
         if (sw) { sw.checked = saved; sw.addEventListener('change', function () { apply(sw.checked); }); }
         if (saved) apply(true);
     }

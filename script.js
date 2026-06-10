@@ -161,9 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function runHeroAnimation() {
-        let d = 0;
-        d = animateElement(heroH1, heroTitleHTML, d, TYPEWRITER_SPEED_HERO);
-        d = animateElement(heroP, heroSubHTML, d, TYPEWRITER_SPEED_HERO_SUB);
+        // Disabled typewriter animation on Hero to preserve new premium layout structure and allow GSAP to handle it.
+        // let d = 0;
+        // d = animateElement(heroH1, heroTitleHTML, d, TYPEWRITER_SPEED_HERO);
+        // d = animateElement(heroP, heroSubHTML, d, TYPEWRITER_SPEED_HERO_SUB);
     }
 
     let heroInterval = null;
@@ -180,6 +181,36 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(startHeroInterval, 1000);
 
     // =============================================
+    // 1b. CMS DOM Sync for Wave Groups
+    // =============================================
+    function syncWaveGroups() {
+        const track = document.querySelector('.wave-track');
+        if (!track) return;
+        const groups = track.querySelectorAll('.wave-group');
+        if (groups.length <= 1) return;
+        const original = groups[0];
+        const content = original.innerHTML;
+        for (let i = 1; i < groups.length; i++) {
+            groups[i].innerHTML = content;
+            // Clean up CMS artifacts from clones
+            groups[i].querySelectorAll('.cms-edit-btn, .cms-empty-overlay').forEach(el => el.remove());
+            groups[i].querySelectorAll('[data-cms-key]').forEach(el => el.removeAttribute('data-cms-key'));
+        }
+    }
+    
+    // Initial sync
+    syncWaveGroups();
+    
+    // Observe the first wave-group for changes (e.g. CMS edits)
+    const firstWaveGroup = document.querySelector('.wave-group');
+    if (firstWaveGroup) {
+        const observer = new MutationObserver(() => {
+            syncWaveGroups();
+        });
+        observer.observe(firstWaveGroup, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['src', 'style', 'class'] });
+    }
+
+    // =============================================
     // 2. INTERNATIONALIZATION
     // =============================================
     const translations = {
@@ -189,6 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfolio</span>",
             hero_sub: "Bachelor's degree on Animation and Videogames.<br>Illustrator, Character / environment design and 3D generalist",
             hero_btn: "Explore gallery",
+            hero_sub_badge: "Visual Art Portfolio",
+            hero_cta: "Discover Essence",
+            hero_tags_title: "Tooling Stack:",
+            about_stat_role: "Role",
+            about_stat_edu: "Education",
+            about_stat_exp: "Experience",
+            about_eyebrow: "[01] // PHILOSOPHY",
             about_title: "About Me",
             about_text_1: "<p>My name is <strong>Lucía Montaña</strong>, and I am a <strong>2D and 3D artist</strong> based in Montevideo, Uruguay.</p><p>I specialize in both design and animation, with a strong passion for creating characters and designs that bring identity and life to my work. I truly love conveying emotions and stories to the audience in the best possible way.</p><p>I hold a Bachelor's degree in <strong>Animation and Video Game Design</strong> from ORT University, Uruguay, and have been working as a freelance artist since 2019. I am now looking to broaden my horizons and be part of new projects!</p>",
             animations_title: "Animations", characters_title: "Character Design", models_3d_title: "3D Models", illustrations_title: "Illustrations",
@@ -204,6 +242,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portafolio</span>",
             hero_sub: "Licenciada en Animación y Videojuegos.<br>Ilustradora, diseñadora de personajes/entornos y generalista 3D",
             hero_btn: "Explorar galería",
+            hero_sub_badge: "Portafolio de Arte Visual",
+            hero_cta: "Descubrir Esencia",
+            hero_tags_title: "Herramientas:",
+            about_stat_role: "Rol",
+            about_stat_edu: "Educación",
+            about_stat_exp: "Experiencia",
+            about_eyebrow: "[01] // FILOSOFÍA",
             about_title: "Sobre Mí",
             about_text_1: "<p>Mi nombre es <strong>Lucía Montaña</strong> y soy una <strong>artista 2D y 3D</strong> con sede en Montevideo, Uruguay.</p><p>Me especializo tanto en diseño como en animación, con una gran pasión por crear personajes y diseños que brinden identidad y vida a mi trabajo. Realmente amo transmitir emociones e historias a la audiencia de la mejor manera posible.</p><p>Tengo una Licenciatura en <strong>Animación y Diseño de Videojuegos</strong> de la Universidad ORT, Uruguay, y trabajo como artista freelance desde 2019. ¡Ahora busco ampliar mis horizontes y formar parte de nuevos proyectos!</p>",
             animations_title: "Animaciones", characters_title: "Diseño de Personajes", models_3d_title: "Modelos 3D", illustrations_title: "Ilustraciones",
@@ -219,6 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfólio</span>",
             hero_sub: "Bacharel em Animação e Videogames.<br>Ilustradora, designer de personagens/ambientes e generalista 3D",
             hero_btn: "Explorar galeria",
+            hero_sub_badge: "Portfólio de Arte Visual",
+            hero_cta: "Descobrir Essência",
+            hero_tags_title: "Ferramentas:",
+            about_stat_role: "Função",
+            about_stat_edu: "Educação",
+            about_stat_exp: "Experiência",
+            about_eyebrow: "[01] // FILOSOFIA",
             about_title: "Sobre Mim",
             about_text_1: "<p>Meu nome é <strong>Lucía Montaña</strong> e sou uma <strong>artista 2D e 3D</strong> baseada em Montevidéu, Uruguai.</p><p>Sou especializada tanto em design quanto em animação, com uma grande paixão por criar personagens e designs que tragam identidade e vida ao meu trabalho. Adoro transmitir emoções e histórias ao público da melhor maneira possível.</p><p>Tenho um bacharelado em <strong>Animação e Design de Videogames</strong> pela Universidade ORT, Uruguai, e trabalho como artista freelance desde 2019. Agora busco ampliar meus horizontes e fazer parte de novos projetos!</p>",
             animations_title: "Animações", characters_title: "Design de Personagens", models_3d_title: "Modelos 3D", illustrations_title: "Ilustrações",
@@ -234,6 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hero_title: "Lucia Montaña <span class='highlight'>| Portfolio</span>",
             hero_sub: "Diplômée en Animation et Jeux Vidéo.<br>Illustratrice, designer de personnages/environnements et généraliste 3D",
             hero_btn: "Explorer la galerie",
+            hero_sub_badge: "Portfolio d'art visuel",
+            hero_cta: "Découvrir l'essence",
+            hero_tags_title: "Outils :",
+            about_stat_role: "Rôle",
+            about_stat_edu: "Éducation",
+            about_stat_exp: "Expérience",
+            about_eyebrow: "[01] // PHILOSOPHIE",
             about_title: "À propos de moi",
             about_text_1: "<p>Je m'appelle <strong>Lucía Montaña</strong> et je suis une <strong>artiste 2D et 3D</strong> basée à Montevideo, en Uruguay.</p><p>Je me spécialise à la fois dans le design et l'animation, avec une grande passion pour la création de personnages et de designs qui apportent identité et vie à mon travail. J'aime profondément transmettre des émotions et des histoires au public de la meilleure façon possible.</p><p>Je suis titulaire d'une licence en <strong>Animation et Conception de Jeux Vidéo</strong> de l'Université ORT, en Uruguay, et je travaille en freelance depuis 2019. Je cherche maintenant à élargir mes horizons et à participer à de nouveaux projets !</p>",
             animations_title: "Animations", characters_title: "Design de Personnages", models_3d_title: "Modèles 3D", illustrations_title: "Illustrations",
@@ -282,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (key === 'hero_title') heroTitleHTML = translation;
                 if (key === 'hero_sub') heroSubHTML = translation;
                 // Hero animation will pick it up on next cycle or we trigger it
+                el.innerHTML = translation;
             } else {
                 if (el.querySelector('i')) {
                     const icon = el.querySelector('i').outerHTML;
@@ -367,44 +427,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     window.initHeroSlideshow = function() {
-        if (window.heroSlideshowTimer) { clearInterval(window.heroSlideshowTimer); window.heroSlideshowTimer = null; }
-        if (window.heroSlideshowObserver) { window.heroSlideshowObserver.disconnect(); }
+        const slides = document.querySelectorAll(".carousel-slide");
+        if(slides.length === 0) return;
+        let current = 0;
+        gsap.set(slides[0], { opacity: 1 });
+        
+        setInterval(() => {
+            let next = (current + 1) % slides.length;
+            gsap.fromTo(slides[next], { scale: 1, opacity: 0 }, { scale: 1.05, opacity: 1, duration: 3, ease: "power1.inOut" });
+            gsap.to(slides[current], { opacity: 0, duration: 3, ease: "power1.inOut" });
+            current = next;
+        }, 6000);
+    };
 
-        const slides = document.querySelectorAll('.slide');
-        if (slides.length > 0) {
-            let currentSlide = 0;
-            const panClasses = ['pan-tl', 'pan-tr', 'pan-bl', 'pan-br', 'pan-c'];
-            // Reset state
-            slides.forEach(s => s.classList.remove('slide-active', ...panClasses));
-            slides[0].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
+    gsap.registerPlugin(ScrollTrigger);
 
-            const advanceSlide = () => {
-                slides[currentSlide].classList.remove('slide-active', ...panClasses);
-                currentSlide = (currentSlide + 1) % slides.length;
-                slides[currentSlide].classList.add('slide-active', panClasses[Math.floor(Math.random() * panClasses.length)]);
-            };
+    // Constant "Life" floating animations
+    gsap.to(".float-anim", { y: "-=15", duration: 4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.to(".float-anim-delayed", { y: "+=12", x: "+=5", duration: 3.5, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1 });
 
-            const duration = window.CMS_HERO_DURATION || 7000;
-            
-            // Solo correr el slideshow y el typewriter del hero mientras la sección es visible.
-            const heroSection = document.getElementById('inicio');
-            if (heroSection) {
-                window.heroSlideshowObserver = new IntersectionObserver((entries) => {
-                    heroVisible = entries[0].isIntersecting;
-                    if (heroVisible) {
-                        if (!window.heroSlideshowTimer) window.heroSlideshowTimer = setInterval(advanceSlide, duration);
-                        if (!heroInterval) startHeroInterval();
-                    } else {
-                        if (window.heroSlideshowTimer) { clearInterval(window.heroSlideshowTimer); window.heroSlideshowTimer = null; }
-                        stopHeroInterval();
-                    }
-                }, { threshold: 0 });
-                window.heroSlideshowObserver.observe(heroSection);
-            } else {
-                window.heroSlideshowTimer = setInterval(advanceSlide, duration);
+    // Scroll Animations
+    gsap.to(".hero-primary .cms-media", {
+        yPercent: 15, ease: "none",
+        scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true }
+    });
+
+    ScrollTrigger.create({
+        start: "top -50",
+        onUpdate: (self) => {
+            const header = document.querySelector('header');
+            if(header) {
+                if (self.scroll() > 50) header.classList.add('scrolled');
+                else header.classList.remove('scrolled');
             }
         }
-    };
+    });
+
     window.initHeroSlideshow();
 
     document.querySelectorAll('.video-container').forEach(container => {
