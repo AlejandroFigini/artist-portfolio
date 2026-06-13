@@ -1,0 +1,26 @@
+'use client'
+
+/* Command bus del CMS — reemplaza el rol de despachador que tenía
+   toast() en cms.js:L457 (llamaba a 13 funciones). Los componentes y
+   el engine despachan comandos; CmsRoot renderiza el modal que toca. */
+
+import { createContext, useContext } from 'react'
+
+export type Command =
+  | { type: 'login' }
+  | { type: 'editText'; key: string }
+  | { type: 'editMedia'; key: string }
+  | { type: 'editInfo'; key: string }
+  | { type: 'contentPicker'; key: string }
+  | { type: 'repoPicker'; key: string }
+  | { type: 'confirmMove'; key: string }
+  | { type: 'carouselManager' }
+  | { type: 'auditPage' }
+  | { type: 'addIllustration' }
+  | { type: 'export' }
+
+export type Dispatch = (cmd: Command) => void
+
+export const CommandContext = createContext<Dispatch>(() => {})
+
+export const useCommand = () => useContext(CommandContext)

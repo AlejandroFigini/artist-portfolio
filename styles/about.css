@@ -1,0 +1,258 @@
+/* ============================================================
+   ABOUT — ficha técnica blueprint (SUBJECT FILE). Rediseño
+   completo: fondo de plano con grilla fina + glow de acento,
+   riel-cota vertical que se llena con el scroll (GSAP scrub,
+   AboutSection.tsx), retrato 3/4 con marcas de registro FIG.,
+   specs como tabla técnica y statement display con el trazo
+   del hero. Clases funcionales CMS/HomeFx intactas:
+   .bio-content, .artist-photo-wrapper/-img, .artist-video-
+   wrapper, .about-video, h2[data-i18n=about_title].
+   ============================================================ */
+
+.about-tech {
+  position: relative;
+  padding: clamp(6rem, 12vh, 11rem) 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-hairline);
+  overflow: clip;
+}
+
+/* fondo: grilla de plano (cruz fina) + glow de acento arriba-derecha */
+.about-tech::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(640px 420px at 84% 12%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    repeating-linear-gradient(0deg, transparent 0 79px, var(--container-border) 79px 80px),
+    repeating-linear-gradient(90deg, transparent 0 79px, var(--container-border) 79px 80px);
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.about-tech-frame {
+  position: relative;
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+
+/* --- Riel-cota vertical: graduación + relleno scrubbed --- */
+.about-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.about-rail-track {
+  position: relative;
+  flex: 1;
+  width: 3px;
+  /* graduación de regla (ticks horizontales) */
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 39px,
+    var(--container-border) 39px 40px
+  );
+}
+.about-rail-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--accent), #22d3ee);
+  transform: scaleY(0); /* GSAP scrub lo llena */
+  transform-origin: top center;
+}
+.about-rail-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+}
+
+/* --- Grid principal: copy | media --- */
+.about-tech-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(3rem, 6vw, 6rem);
+  align-items: start;
+}
+
+/* --- Copy --- */
+.about-tech h2[data-i18n='about_title'] {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.6rem;
+}
+
+.about-statement {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.6vw, 3.3rem);
+  font-weight: 500;
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  margin-bottom: 2.2rem;
+  max-width: 16em;
+}
+.about-statement .line-wrap { display: block; overflow: hidden; }
+.about-statement .line { display: block; }
+/* palabras clave con el trazo-contorno del hero (sistema, no adorno) */
+.about-statement em {
+  font-style: normal;
+  color: transparent;
+  -webkit-text-stroke: 1.2px var(--accent);
+  text-stroke: 1.2px var(--accent);
+}
+
+.about-tech .bio-content { max-width: 56ch; }
+
+/* --- Specs: tabla técnica de ficha --- */
+.about-specs {
+  margin: 2.4rem 0 0;
+  max-width: 30rem;
+  border-top: 1px solid var(--container-border);
+}
+.about-specs .spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px dashed var(--container-border);
+}
+.about-specs dt {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+.about-specs dd {
+  margin: 0;
+  font-size: 0.88rem;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* --- Links de texto fino con subrayado que se dibuja --- */
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6rem;
+  margin-top: 1.6rem;
+}
+.about-links .about-link {
+  padding: 0.2rem 0;
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  color: var(--text-primary);
+  opacity: 0.78;
+  position: relative;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+.about-links .about-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.about-links .about-link:hover { opacity: 1; color: var(--accent); }
+.about-links .about-link:hover::after { transform: scaleX(1); }
+
+/* --- Media: retrato 3/4 + reel, marcas de registro FIG. --- */
+.about-media {
+  display: flex;
+  flex-direction: column;
+  gap: 2.6rem;
+}
+
+.about-portrait,
+.about-reel {
+  position: relative;
+  margin: 0; /* reset del figure del browser */
+  border: 1px solid var(--container-border);
+  background: var(--bg-secondary);
+}
+.about-portrait { aspect-ratio: 3 / 4; max-width: 460px; width: 100%; }
+.about-reel { aspect-ratio: 16 / 9; width: min(100%, 520px); align-self: flex-end; }
+
+.about-portrait .artist-photo-wrapper,
+.about-reel .artist-video-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.about-portrait .artist-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.about-portrait:hover .artist-photo-img { transform: scale(1.04); }
+
+/* metadatos bajo el frame (FIG + reloj), tono de plano técnico */
+.about-portrait-meta,
+.about-reel-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.bp-fig-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+.about-stamp {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+/* --- Responsive --- */
+@media (max-width: 1024px) {
+  .about-tech-grid { grid-template-columns: 1fr; gap: 4.5rem; }
+  .about-media { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .about-portrait { max-width: 380px; }
+  .about-reel { align-self: auto; }
+}
+@media (max-width: 768px) {
+  .about-tech-frame { grid-template-columns: 1fr; }
+  .about-rail { display: none; }
+  .about-statement { max-width: 100%; }
+  .about-media { flex-direction: column; }
+  .about-portrait { max-width: 100%; }
+  .about-specs dd { font-size: 0.82rem; }
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .about-links .about-link::after { transition: none; }
+  .about-portrait .artist-photo-img { transition: none; }
+}

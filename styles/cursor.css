@@ -1,0 +1,56 @@
+/* ============================================================
+   CURSOR — rediseño delicado (override del legacy).
+   Antes: globo relleno de 76px con etiqueta — violento.
+   Ahora: punto firme + anillo fino que respira apenas al pasar
+   sobre algo interactivo. Sin relleno, sin texto, sin saltos.
+   ============================================================ */
+
+.custom-cursor {
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in oklab, var(--accent) 55%, transparent);
+  mix-blend-mode: normal;
+  transition:
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.45s ease,
+    opacity 0.3s ease;
+}
+
+.cursor-dot {
+  width: 3px;
+  height: 3px;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+
+/* la etiqueta del legacy desaparece del sistema */
+.cursor-label { display: none !important; }
+
+/* Interactivo: el anillo se abre con calma y sube de presencia;
+   el punto se queda — el cursor nunca "desaparece" bajo un globo */
+.custom-cursor.expand {
+  width: 44px;
+  height: 44px;
+  background-color: transparent;
+  border-color: var(--accent);
+  mix-blend-mode: normal;
+}
+.custom-cursor.expand .cursor-dot {
+  transform: scale(1);
+  opacity: 0.9;
+}
+.custom-cursor.expand .cursor-label { display: none !important; }
+
+/* Sobre media grande (bezels del hero/about): el anillo se afina y
+   agranda un poco más — invitación a mirar, sin gritar */
+.custom-cursor.peek {
+  width: 58px;
+  height: 58px;
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.custom-cursor.peek .cursor-dot { opacity: 0.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-cursor,
+  .cursor-dot { transition: none; }
+}

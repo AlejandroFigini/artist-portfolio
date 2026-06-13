@@ -1,0 +1,143 @@
+/* ============================================================
+   3D MODELS PAGE — "Lab abstracto 3D"
+   Personalidad: técnica/futurista. Cubo wireframe, grid-floor neón
+   en perspectiva, viewports con wireframe y toggle wire/clay/render.
+   ============================================================ */
+
+.m3d-page {
+    /* color de chips/toolbar comunes (gallery-common.css) — cian→violeta */
+    --g-bar-bg: rgba(5, 6, 13, 0.72);
+    --g-border: rgba(255, 255, 255, 0.12);
+    --g-muted: #aab6cc;
+    --g-chip-hover: #fff;
+    --g-accent: #67e8f9;
+    --g-chip-on: linear-gradient(120deg, #22d3ee, #7c3aed);
+    --g-chip-on-color: #03121a;
+    --g-menu-bg: #0b0e1a;
+    --g-menu-text: #e6ecf5;
+    background:
+        radial-gradient(800px 500px at 85% 0%, rgba(34, 211, 238, 0.14), transparent 60%),
+        radial-gradient(700px 500px at 5% 5%, rgba(124, 58, 237, 0.18), transparent 55%),
+        linear-gradient(180deg, #080a14, #05060d 65%);
+    color: #e6ecf5;
+    overflow-x: hidden;
+}
+
+/* ----------------------------- HERO ----------------------------- */
+.m3d-hero { position: relative; overflow: hidden; padding-top: clamp(6rem, 13vh, 8.5rem); }
+.m3d-grid-floor {
+    position: absolute; left: -25%; right: -25%; bottom: -10px; height: 55%; z-index: 0; pointer-events: none;
+    background-image:
+        linear-gradient(rgba(34, 211, 238, 0.28) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.28) 1px, transparent 1px);
+    background-size: 46px 46px;
+    transform: perspective(420px) rotateX(62deg);
+    transform-origin: bottom center;
+    -webkit-mask-image: linear-gradient(transparent, #000 70%);
+    mask-image: linear-gradient(transparent, #000 70%);
+    opacity: 0.45; animation: floorMove 5s linear infinite;
+}
+@keyframes floorMove { to { background-position: 0 46px; } }
+
+.m3d-blobs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.m3d-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; }
+.m3d-blob.b1 { width: 32vw; height: 32vw; right: 4vw; top: -4vw; background: #22d3ee; }
+.m3d-blob.b2 { width: 28vw; height: 28vw; left: -4vw; top: 6vw; background: #7c3aed; }
+
+.m3d-hero-inner {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center;
+    max-width: 1240px; margin: 0 auto; padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 3rem);
+}
+.m3d-eyebrow { font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.28em; text-transform: uppercase; color: #67e8f9; margin-bottom: 1rem; }
+.m3d-hero-title {
+    font-family: 'Raleway', sans-serif; font-weight: 200; line-height: 1; letter-spacing: -0.02em;
+    font-size: clamp(2.8rem, 1.4rem + 6vw, 6rem); color: #fff;
+    text-shadow: 0 0 36px rgba(34, 211, 238, 0.4);
+}
+.m3d-hero-sub { margin-top: 1.3rem; max-width: 50ch; color: #aab6cc; line-height: 1.75; font-size: clamp(1rem, 0.95rem + 0.4vw, 1.18rem); }
+
+/* Cubo wireframe 3D */
+.m3d-cube-stage { --cs: clamp(96px, 15vw, 150px); perspective: 900px; display: grid; place-items: center; min-height: var(--cs); }
+.m3d-cube { position: relative; width: var(--cs); height: var(--cs); transform-style: preserve-3d; animation: cubeSpin 16s linear infinite; }
+.cube-face {
+    position: absolute; width: var(--cs); height: var(--cs);
+    border: 1.5px solid rgba(34, 211, 238, 0.7);
+    background: rgba(34, 211, 238, 0.04);
+    box-shadow: inset 0 0 32px rgba(124, 58, 237, 0.3);
+}
+.cf-front { transform: translateZ(calc(var(--cs) / 2)); }
+.cf-back { transform: rotateY(180deg) translateZ(calc(var(--cs) / 2)); }
+.cf-right { transform: rotateY(90deg) translateZ(calc(var(--cs) / 2)); }
+.cf-left { transform: rotateY(-90deg) translateZ(calc(var(--cs) / 2)); }
+.cf-top { transform: rotateX(90deg) translateZ(calc(var(--cs) / 2)); }
+.cf-bottom { transform: rotateX(-90deg) translateZ(calc(var(--cs) / 2)); }
+@keyframes cubeSpin {
+    from { transform: rotateX(-24deg) rotateY(0deg); }
+    to   { transform: rotateX(-24deg) rotateY(360deg); }
+}
+/* Mientras se arrastra (orbit-drag), se detiene el giro automático */
+.m3d-cube.grabbed { animation: none; }
+
+/* ----------------------------- GRID DE MODELOS ----------------------------- */
+.m3d-grid-wrap { max-width: 1240px; margin: 0 auto; padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem) clamp(3rem, 8vw, 6rem); }
+.m3d-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: clamp(1.2rem, 2.5vw, 2rem); }
+.m3d-card {
+    border-radius: 16px; overflow: hidden;
+    background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.m3d-card:hover { transform: translateY(-6px); border-color: rgba(34, 211, 238, 0.45); box-shadow: 0 26px 55px -26px rgba(34, 211, 238, 0.4); }
+.m3d-card.is-hidden { display: none; }
+
+.m3d-viewport {
+    position: relative; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden;
+    background: radial-gradient(circle at 50% 42%, #16213c, #080a14 78%);
+    cursor: pointer; transition: background 0.4s ease;
+}
+.m3d-viewport video.obs-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.m3d-ph { position: relative; z-index: 1; font-size: clamp(1.8rem, 6vw, 3rem); color: rgba(103, 232, 249, 0.4); }
+.m3d-wire-grid {
+    position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+    background-image: linear-gradient(rgba(34, 211, 238, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.16) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+.m3d-viewport.mode-wire .m3d-wire-grid { opacity: 1; }
+.m3d-viewport.mode-clay { background: radial-gradient(circle at 50% 40%, #3b3b46, #16161d 78%); }
+.m3d-viewport.mode-render { background: radial-gradient(circle at 50% 38%, #2a1745, #0a0612 78%); }
+
+.m3d-modes { position: absolute; z-index: 4; top: 10px; left: 10px; display: flex; gap: 0.25rem; }
+.m3d-modes button {
+    font-family: 'Fira Code', monospace; font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.25rem 0.5rem; border-radius: 6px; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(0, 0, 0, 0.4); color: #cfe6ff; transition: all 0.25s ease;
+}
+.m3d-modes button.active { background: rgba(34, 211, 238, 0.85); color: #03121a; border-color: transparent; }
+.m3d-spin {
+    position: absolute; z-index: 4; bottom: 10px; right: 10px;
+    font-family: 'Fira Code', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
+    padding: 0.3rem 0.6rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(34, 211, 238, 0.4); background: rgba(0, 0, 0, 0.45); color: #67e8f9;
+}
+.m3d-spin i { margin-right: 0.25rem; }
+
+.m3d-info { padding: 1rem 1.1rem 1.2rem; }
+.m3d-name { font-family: 'Raleway', sans-serif; font-weight: 500; color: #fff; font-size: 1.1rem; }
+.m3d-type { font-family: 'Fira Code', monospace; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: #67e8f9; }
+.m3d-specs { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; padding: 0; margin: 0.8rem 0; }
+.m3d-specs li { display: flex; flex-direction: column; font-family: 'Fira Code', monospace; }
+.m3d-specs li span { font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: #7f8fab; }
+.m3d-specs li b { font-size: 0.85rem; color: #e6ecf5; font-weight: 500; }
+.m3d-soft { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.m3d-soft span {
+    font-family: 'Fira Code', monospace; font-size: 0.6rem; letter-spacing: 0.04em;
+    padding: 0.22rem 0.55rem; border-radius: 999px; background: rgba(124, 58, 237, 0.18); color: #c4b5fd;
+}
+
+/* ----------------------------- RESPONSIVE ----------------------------- */
+@media (max-width: 860px) {
+    .m3d-hero-inner { grid-template-columns: 1fr; text-align: center; }
+    .m3d-hero-sub { margin-left: auto; margin-right: auto; }
+    .m3d-cube-stage { order: -1; margin-bottom: 1rem; }
+}

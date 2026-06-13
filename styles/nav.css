@@ -1,0 +1,196 @@
+/* ============================================================
+   NAV — capa de mejora blueprint (rediseño sobre la estructura
+   existente; styles/legacy/style.css intacto).
+   Instrumentos: visor de corchetes que enmarca el link activo
+   (HUD viewfinder, ref. selectores de menú tipo Lusion/Active
+   Theory en Awwwards), regla de progreso de lectura con ticks,
+   y encuadre del header al scrollear. GSAP mueve el visor
+   (Nav.tsx); sin JS el nav funciona igual que siempre.
+   ============================================================ */
+
+/* --- Visor: dos corchetes que enmarcan el link seleccionado --- */
+.nav-viewfinder {
+  position: absolute;
+  top: -4px;
+  height: calc(100% + 2px);
+  width: 60px;
+  left: 0;
+  opacity: 0; /* GSAP la controla */
+  pointer-events: none;
+}
+.nav-viewfinder::before,
+.nav-viewfinder::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 100%;
+  border: 0 solid var(--accent);
+}
+.nav-viewfinder::before { left: 0; border-left-width: 1.5px; border-top-width: 1.5px; border-bottom-width: 1.5px; }
+.nav-viewfinder::after { right: 0; border-right-width: 1.5px; border-top-width: 1.5px; border-bottom-width: 1.5px; }
+
+/* En desktop el visor ES el indicador: el subrayado legacy se apaga */
+@media (min-width: 993px) {
+  .nav-links { position: relative; }
+  .nav-links > a::after,
+  .nav-links .dropbtn::after { display: none; }
+}
+/* En drawer móvil el visor no existe; vuelve el subrayado */
+@media (max-width: 992px) {
+  .nav-viewfinder { display: none; }
+}
+
+/* --- Regla de progreso de lectura bajo el header --- */
+.nav-progress {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 3px;
+  pointer-events: none;
+}
+/* track de ticks (graduación de regla, visible solo al scrollear) */
+.nav-progress::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 39px,
+    var(--container-border) 39px 40px
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+header.scrolled .nav-progress::before { opacity: 0.6; }
+.nav-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  background: linear-gradient(90deg, var(--accent), #22d3ee);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* --- Encuadre del header al compactarse (marcas de registro) --- */
+header::before,
+header::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  border: 0 solid var(--accent);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+header::before { left: 10px; border-top-width: 1.5px; border-left-width: 1.5px; }
+header::after { right: 10px; border-top-width: 1.5px; border-right-width: 1.5px; }
+header.scrolled::before,
+header.scrolled::after { opacity: 0.75; }
+
+/* --- Drawer móvil: los links entran en cascada --- */
+@media (max-width: 992px) {
+  .nav-links > * {
+    opacity: 0;
+    transform: translateX(-14px);
+    transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  body.nav-open .nav-links > * { opacity: 1; transform: translateX(0); }
+  body.nav-open .nav-links > *:nth-child(1) { transition-delay: 0.06s; }
+  body.nav-open .nav-links > *:nth-child(2) { transition-delay: 0.11s; }
+  body.nav-open .nav-links > *:nth-child(3) { transition-delay: 0.16s; }
+  body.nav-open .nav-links > *:nth-child(4) { transition-delay: 0.21s; }
+  body.nav-open .nav-links > *:nth-child(5) { transition-delay: 0.26s; }
+  body.nav-open .nav-links > *:nth-child(6) { transition-delay: 0.31s; }
+  body.nav-open .nav-links > *:nth-child(7) { transition-delay: 0.36s; }
+}
+
+/* ============================================================
+   BOTONES CV / SESIÓN — acabado premium silencioso.
+   CV: única superficie sólida de la barra (acción primaria),
+   keyline interior y lift suave. Sesión: texto puro con
+   subrayado que se dibuja — cero caja, cero ruido.
+   ============================================================ */
+
+.cv-btn {
+  border: none;
+  border-radius: 9px;
+  padding: 0.5rem 1.05rem;
+  background: var(--accent);
+  color: #fff;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  /* keyline interior: acabado de pieza, no de pill plana */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 1px 2px rgba(76, 29, 149, 0.18);
+  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cv-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 8px 22px rgba(124, 58, 237, 0.28);
+}
+.cv-btn i { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+.cv-btn:hover i { transform: translateY(1.5px); }
+
+/* Sesión: botón-visor — corchetes HUD (la misma voz del nav-viewfinder)
+   que enmarcan la etiqueta en monospace técnico; al hover los corchetes
+   se ciñen y el texto toma el acento. Cero caja sólida, identidad blueprint. */
+.cms-navauth-btn {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.45rem 0.95rem !important;
+  position: relative;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-primary);
+  opacity: 0.8;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+.cms-navauth-btn::before,
+.cms-navauth-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 100%;
+  border: 0 solid var(--accent);
+  opacity: 0.55;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+.cms-navauth-btn::before { left: 0; border-left-width: 1.5px; border-top-width: 1.5px; border-bottom-width: 1.5px; }
+.cms-navauth-btn::after { right: 0; border-right-width: 1.5px; border-top-width: 1.5px; border-bottom-width: 1.5px; }
+.cms-navauth-btn i {
+  color: var(--accent);
+  font-size: 0.85em;
+  margin-right: 0.35rem;
+}
+.cms-navauth-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+  background: transparent !important;
+}
+.cms-navauth-btn:hover::before { transform: translateX(3px); opacity: 1; }
+.cms-navauth-btn:hover::after { transform: translateX(-3px); opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-btn, .cv-btn i, .cms-navauth-btn::before, .cms-navauth-btn::after { transition: none; }
+}
+
+/* --- Reduced motion / pausa del sitio --- */
+@media (prefers-reduced-motion: reduce) {
+  .nav-links > * { transition: none !important; transform: none !important; opacity: 1 !important; }
+  .nav-progress-fill { transition: none; }
+}
+.motion-off .nav-links > * { transition: none !important; }

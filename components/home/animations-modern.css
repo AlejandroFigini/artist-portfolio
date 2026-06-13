@@ -1,0 +1,241 @@
+/* ============================================================
+   ANIMATIONS (home) — REDISEÑO MODERNO "MOTION REEL"
+   Importado desde AnimationsShowcase.tsx (bundle por componente,
+   fuera del @import central). Override scopeado en
+   .animations-section.anim-modern → gana por especificidad,
+   sin importar el orden de inyección.
+
+   Lenguaje: lienzo oscuro + malla de auroras en movimiento +
+   grilla bento de tiles glass con un tile destacado. Hooks CMS
+   intactos: .animations-grid > .animation-item.video-container >
+   .anim-video, .video-overlay, .decor-motion .decor-video.
+   Ref. visual: secciones reel modernas con gradient-mesh animado
+   (Linear / Awwwards).
+   ============================================================ */
+
+.animations-section.anim-modern {
+  --am-ink: #0a0a13;
+  --am-accent: #a78bfa;
+  --am-accent-2: #22d3ee;
+  --am-line: rgba(167, 139, 250, 0.14);
+  --am-glass: rgba(255, 255, 255, 0.03);
+  background: var(--am-ink);
+  color: #ece9fb;
+  isolation: isolate;
+}
+
+/* ---------- Fondo en movimiento: malla de auroras ---------- */
+.anim-modern .am-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(135% 115% at 50% 25%, #000 58%, transparent 100%);
+  mask-image: radial-gradient(135% 115% at 50% 25%, #000 58%, transparent 100%);
+}
+.anim-modern .am-aurora {
+  position: absolute;
+  width: 58vw;
+  height: 58vw;
+  max-width: 780px;
+  max-height: 780px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.anim-modern .am-a1 {
+  top: -16%; left: -8%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.85), transparent 62%);
+  animation: am-drift-1 28s ease-in-out infinite;
+}
+.anim-modern .am-a2 {
+  top: 6%; right: -12%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.5), transparent 62%);
+  animation: am-drift-2 34s ease-in-out infinite;
+}
+.anim-modern .am-a3 {
+  bottom: -24%; left: 30%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.6), transparent 64%);
+  animation: am-drift-3 40s ease-in-out infinite;
+}
+@keyframes am-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15vw, 10vh) scale(1.18); }
+}
+@keyframes am-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1.06); }
+  50% { transform: translate(-13vw, 13vh) scale(0.88); }
+}
+@keyframes am-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-11vw, -15vh) scale(1.2); }
+}
+
+/* barrido de luz lento en diagonal */
+.anim-modern .am-beam {
+  position: absolute;
+  top: -40%; left: -25%;
+  width: 34%; height: 180%;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.10), transparent);
+  transform: rotate(16deg);
+  will-change: transform;
+  animation: am-beam 13s linear infinite;
+}
+@keyframes am-beam {
+  0% { transform: rotate(16deg) translateX(-30%); opacity: 0; }
+  14% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { transform: rotate(16deg) translateX(440%); opacity: 0; }
+}
+
+/* grid blueprint legacy → casi imperceptible (sólo textura) */
+.anim-modern .motion-grid {
+  opacity: 0.16;
+  background-image:
+    linear-gradient(rgba(167, 139, 250, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.12) 1px, transparent 1px);
+  background-size: 70px 70px;
+}
+.anim-modern .anim-bg-animation { z-index: 1; opacity: 0.55; }
+
+/* ---------- Cabecera ---------- */
+.anim-modern .anim-title-container { z-index: 10; }
+.anim-modern .section-title h2 {
+  color: #fff;
+  text-shadow: 0 0 44px rgba(124, 58, 237, 0.4);
+}
+.anim-modern .anim-subtitle { color: #b8b5d2; }
+.anim-modern .see-all-cta { color: var(--am-accent); }
+
+/* ---------- Grilla bento ---------- */
+.anim-modern .animations-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 178px;
+  gap: 1rem;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem clamp(1rem, 4vw, 2rem) 0;
+  z-index: 10;
+}
+/* tile destacado + reparto bento de 6 piezas */
+.anim-modern .animation-item.video-container:nth-child(1) { grid-column: span 3; grid-row: span 2; }
+.anim-modern .animation-item.video-container:nth-child(2) { grid-column: span 3; }
+.anim-modern .animation-item.video-container:nth-child(3) { grid-column: span 3; }
+.anim-modern .animation-item.video-container:nth-child(4) { grid-column: span 2; }
+.anim-modern .animation-item.video-container:nth-child(5) { grid-column: span 2; }
+.anim-modern .animation-item.video-container:nth-child(6) { grid-column: span 2; }
+
+/* tile = tarjeta glass moderna */
+.anim-modern .animation-item.video-container {
+  aspect-ratio: auto;
+  height: 100%;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(167, 139, 250, 0.08), transparent 60%),
+    var(--am-glass);
+  border: 1px solid var(--am-line);
+  box-shadow: 0 24px 50px -30px rgba(0, 0, 0, 0.85);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.anim-modern .animation-item.video-container:hover {
+  transform: translateY(-6px);
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 40px 80px -32px rgba(124, 58, 237, 0.55);
+}
+.anim-modern .animation-item.video-container .anim-video {
+  border-radius: inherit;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.anim-modern .animation-item.video-container:hover .anim-video { transform: scale(1.04); }
+
+/* placeholder elegante cuando no hay media (video sin src) */
+.anim-modern .animation-item.video-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(167, 139, 250, 0.14), transparent 64%);
+  opacity: 1;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.anim-modern .animation-item.video-container:has(.anim-video[src]:not([src=""]))::before { opacity: 0; }
+
+/* esquina de registro en hover (acento blueprint moderno) */
+.anim-modern .animation-item.video-container::after {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  top: 12px; right: 12px;
+  width: 14px; height: 14px;
+  border-top: 1.5px solid var(--am-accent);
+  border-right: 1.5px solid var(--am-accent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.anim-modern .animation-item.video-container:hover::after { opacity: 0.9; }
+
+/* ---------- Overlay de info: barra glass oscura ---------- */
+.anim-modern .video-overlay {
+  background: linear-gradient(180deg, transparent, rgba(10, 10, 19, 0.94) 60%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--am-line);
+  padding: 1.6rem 1.1rem 0.95rem;
+  align-items: flex-end;
+  border-radius: 0 0 18px 18px;
+}
+.anim-modern .video-overlay .video-title {
+  font-family: 'Raleway', sans-serif;
+  font-weight: 600;
+  color: #fff;
+  font-size: 1.02rem;
+}
+.anim-modern .video-overlay .video-date,
+.anim-modern .video-overlay .video-project {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  color: #9d9abd;
+}
+.anim-modern .video-overlay i { color: var(--am-accent); }
+
+.anim-modern .video-controls .control-btn {
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  color: #fff;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.anim-modern .video-controls .control-btn:hover {
+  background: var(--am-accent);
+  transform: translateY(-2px);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .anim-modern .animations-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 150px; }
+  .anim-modern .animation-item.video-container:nth-child(1) { grid-column: span 4; grid-row: span 2; }
+  .anim-modern .animation-item.video-container:nth-child(2),
+  .anim-modern .animation-item.video-container:nth-child(3) { grid-column: span 2; grid-row: span 1; }
+  .anim-modern .animation-item.video-container:nth-child(n+4) { grid-column: span 2; }
+}
+@media (max-width: 560px) {
+  .anim-modern .animations-grid { grid-template-columns: 1fr; grid-auto-rows: 200px; max-width: 420px; }
+  .anim-modern .animation-item.video-container,
+  .anim-modern .animation-item.video-container:nth-child(n) { grid-column: span 1; grid-row: span 1; }
+  .anim-modern .am-aurora { filter: blur(64px); }
+}
+
+/* ---------- Reduced motion / pausa del sitio ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .anim-modern .am-aurora,
+  .anim-modern .am-beam { animation: none; }
+}
+.motion-off .anim-modern .am-aurora,
+.motion-off .anim-modern .am-beam { animation: none; }

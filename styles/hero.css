@@ -1,0 +1,157 @@
+/* ============================================================
+   HERO — capa de mejora blueprint-cinematic (Sesión de diseño)
+   Extiende styles/legacy/style.css sin tocarlo. Los estados
+   iniciales de la coreografía los setea GSAP (Hero.tsx): sin JS
+   o con prefers-reduced-motion todo es visible por defecto.
+   Referencia visual: line-mask reveals tipo Lusion/Locomotive
+   (Awwwards) + instrumentación de plano técnico (cotas, FIG.).
+   ============================================================ */
+
+/* --- Título: segunda línea como trazo de borrador (draft stroke) --- */
+.hero-title .line-wrap:nth-child(2) .line {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--accent);
+  text-stroke: 1.5px var(--accent);
+}
+
+/* --- Vida continua del título: deriva vertical lenta por línea
+   (sobre .line-wrap; GSAP anima .line, sin conflicto) + respiración
+   del trazo-contorno. Solo transform/opacity (GPU). --- */
+@keyframes hero-line-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.hero-title .line-wrap {
+  animation: hero-line-drift 7s ease-in-out infinite;
+}
+.hero-title .line-wrap:nth-child(2) {
+  animation-duration: 8.5s;
+  animation-delay: -3.5s;
+}
+@keyframes hero-stroke-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
+}
+.hero-title .line-wrap:nth-child(2) .line {
+  animation: hero-stroke-breathe 5.5s ease-in-out infinite;
+}
+
+/* --- Contraste: el subtítulo sobre el velo claro quedaba <4.5:1 --- */
+.hero-subtitle {
+  color: var(--text-primary);
+  opacity: 0.78;
+}
+.scroll-indicator {
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+/* --- Cota técnica bajo el título (dimension line) --- */
+.bp-measure {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: -0.6rem 0 1.6rem;
+  max-width: 80%;
+}
+.bp-measure svg {
+  flex: 1;
+  height: 14px;
+  overflow: visible;
+}
+.bp-measure line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.65;
+}
+.bp-measure .bp-measure-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* --- Badge: punto de estado en vivo --- */
+.badge .badge-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 1px;
+  animation: bp-dot-pulse 2.4s ease-in-out infinite;
+}
+@keyframes bp-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.72); }
+}
+
+/* --- Marcos de registro sobre los media containers --- */
+.bp-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  z-index: 6;
+  pointer-events: none;
+  border: 0 solid var(--accent);
+}
+.bp-corner.tl { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; }
+.bp-corner.tr { top: 10px; right: 10px; border-top-width: 2px; border-right-width: 2px; }
+.bp-corner.bl { bottom: 10px; left: 10px; border-bottom-width: 2px; border-left-width: 2px; }
+.bp-corner.br { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.bp-fig {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 6;
+  pointer-events: none;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Scanline: barrido técnico dentro del media principal --- */
+.bp-scanline {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 1px;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  animation: bp-scan 8s linear infinite;
+  animation-delay: 3s;
+}
+@keyframes bp-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  4% { opacity: 0.4; }
+  30% { transform: translateY(70vh); opacity: 0.4; }
+  34%, 100% { transform: translateY(72vh); opacity: 0; }
+}
+
+/* --- Responsive: instrumentos fuera en pantallas chicas --- */
+@media (max-width: 768px) {
+  .bp-measure { max-width: 100%; }
+  .bp-fig { font-size: 0.55rem; }
+}
+@media (max-width: 430px) {
+  .bp-measure svg { display: none; }
+}
+
+/* --- Reduced motion: vida continua apagada, todo visible --- */
+@media (prefers-reduced-motion: reduce) {
+  .badge .badge-dot { animation: none; }
+  .bp-scanline { display: none; }
+  .hero-title .line-wrap, .hero-title .line { animation: none; }
+}
+/* El switch "Pausar animaciones" del sitio también las frena */
+.motion-off .badge .badge-dot { animation: none; }
+.motion-off .bp-scanline { display: none; }
+.motion-off .hero-title .line-wrap, .motion-off .hero-title .line { animation: none; }

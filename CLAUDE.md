@@ -1,5 +1,11 @@
 # Artist Portfolio — Lucia Montaña
 
+## ⚠️ Next.js 16 Breaking Changes
+
+This project uses **Next.js 16.2.9** which has breaking changes from your training data. Before writing code, consult `node_modules/next/dist/docs/` for API changes, deprecations, and new conventions.
+
+---
+
 ## Behavioral Guidelines
 
 > Estas reglas aplican a cualquier tarea en este proyecto. Priorizan la cautela sobre la velocidad.
@@ -92,7 +98,7 @@ Activar `/caveman ultra` al inicio de cada sesión. Respuestas terse: sin filler
 - Si una tarea requiere investigación web, análisis de código, generación de UI, o revisión de seguridad — invocar el skill correspondiente en lugar de aproximar la respuesta desde memoria.
 - No ignorar herramientas por comodidad. El criterio de selección es cuál produce el resultado más correcto y completo, no cuál es más rápida de invocar.
 
-### 10. Performance
+### 11. Performance
 
 - Usar Core Web Vitals como criterio de aceptación: LCP < 2.5s, CLS < 0.1, INP < 200ms.
 - Lazy loading por defecto en imágenes y componentes pesados.
@@ -103,31 +109,18 @@ Activar `/caveman ultra` al inicio de cada sesión. Respuestas terse: sin filler
 
 ---
 
-## Stack objetivo
+## Stack actual
 
-Este proyecto está migrando a **Next.js 15 (App Router) + Tailwind CSS v4 + TypeScript**.
+**Next.js 15 (App Router) + Tailwind CSS v4 + TypeScript**
 
-Cualquier trabajo nuevo debe hacerse en ese stack. No agregar código nuevo en HTML/CSS/JS vanilla.
-
-## Stack actual (legado — no extender)
-
-- Vanilla HTML/CSS/JS
-- Express + PostgreSQL + Cloudinary
-- GSAP para animaciones
-
-El backend Express se mantiene sin cambios.
-
-## Plan de migración
-
-Ver `docs/migration-react-nextjs.md` — tiene el plan completo dividido en 3 sesiones con prompts listos para ejecutar.
+Backend separado: Express + PostgreSQL + Cloudinary (no cambiar)
 
 ## Reglas
 
 ### Stack y frameworks
 
-- Nuevos componentes → React + Tailwind
-- Nuevas páginas → Next.js App Router (`app/`)
-- Animaciones de UI y transiciones entre páginas → Framer Motion
+- React 19 + Next.js 16 App Router (`app/`)
+- Animaciones de UI y transiciones entre páginas → Framer Motion (cuando sea necesario)
 - Animaciones complejas (cursor, canvas, SVG, secuencias) → GSAP con `useEffect` + cleanup
 - Estilos → Tailwind utility classes + variables CSS para la estética blueprint
 - El backend Express no se toca
@@ -144,7 +137,6 @@ Ver `docs/migration-react-nextjs.md` — tiene el plan completo dividido en 3 se
 ### Animaciones — reglas técnicas
 
 - GSAP: cursor custom, canvas, SVG, starfield, secuencias cronometradas complejas.
-- Framer Motion: transiciones de ruta (`AnimatePresence`), micro-interacciones, reveals on-scroll con `whileInView`.
 - Usar `IntersectionObserver` o `ScrollTrigger` para disparar animaciones on-scroll — nunca animar elementos que el usuario no puede ver.
 - Todas las animaciones deben respetar `prefers-reduced-motion`. Wrappear con:
   ```tsx

@@ -1,0 +1,23 @@
+/* ============================================================
+   GLOBALS — Tailwind v4 + CSS legacy blueprint (paridad visual exacta).
+   Preflight de Tailwind omitido a propósito: el CSS legacy fue escrito
+   contra defaults del browser; el reset alteraría la identidad visual.
+   ============================================================ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* CSS legacy portado verbatim (Sesión 1). Cada archivo de página está
+   scoped por prefijo de clase (.anim-, .char-, .illu-, .m3d-, .mm-). */
+@import "./legacy/style.css";
+@import "./hero.css"; /* capa de mejora del hero (instrumentos blueprint) */
+@import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
+@import "./about.css"; /* about rediseñado: ficha técnica blueprint */
+@import "./cursor.css"; /* cursor delicado (punto + anillo fino) */
+@import "./scroll-fx.css"; /* reglas-cota de progreso ligadas al scroll */
+@import "./legacy/gallery-common.css";
+@import "./legacy/animations.css";
+@import "./legacy/characters.css";
+@import "./legacy/illustrations.css";
+@import "./legacy/models-3d.css";
+@import "./legacy/multimedia.css";
