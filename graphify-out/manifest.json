@@ -3533,5 +3533,325 @@
     "mtime": 1780981389.1924982,
     "ast_hash": "76fa4e59833949802dcc568487d3e37f",
     "semantic_hash": "76fa4e59833949802dcc568487d3e37f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\animations\\page.tsx": {
+    "mtime": 1781130550.9219303,
+    "ast_hash": "292b038da36b69c18aa9aaf4b9c262e4",
+    "semantic_hash": "292b038da36b69c18aa9aaf4b9c262e4"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\characters\\page.tsx": {
+    "mtime": 1781130584.8729267,
+    "ast_hash": "35ab998a305bfdef39bcac62518d7161",
+    "semantic_hash": "35ab998a305bfdef39bcac62518d7161"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\illustrations\\page.tsx": {
+    "mtime": 1781130623.9611917,
+    "ast_hash": "66fa8c9a24778386a49f9628f28da612",
+    "semantic_hash": "66fa8c9a24778386a49f9628f28da612"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\layout.tsx": {
+    "mtime": 1781168746.2764118,
+    "ast_hash": "b5627a00940199ef85bbb8259d32b385",
+    "semantic_hash": "b5627a00940199ef85bbb8259d32b385"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\models-3d\\page.tsx": {
+    "mtime": 1781130646.006682,
+    "ast_hash": "741cb534071d5b629495f5599603ec3f",
+    "semantic_hash": "741cb534071d5b629495f5599603ec3f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\multimedia\\page.tsx": {
+    "mtime": 1781130662.9991443,
+    "ast_hash": "b88a6ff37d010f95298e594d54281b91",
+    "semantic_hash": "b88a6ff37d010f95298e594d54281b91"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\(site)\\page.tsx": {
+    "mtime": 1781168786.2341194,
+    "ast_hash": "9c1304e2a945ee23dba9c26742e23a3f",
+    "semantic_hash": "9c1304e2a945ee23dba9c26742e23a3f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\admin\\page.tsx": {
+    "mtime": 1781169134.1226223,
+    "ast_hash": "503ab3a4386489d9fd05a3d26e5c4164",
+    "semantic_hash": "503ab3a4386489d9fd05a3d26e5c4164"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\app\\layout.tsx": {
+    "mtime": 1781348513.1741276,
+    "ast_hash": "b1dbd734656b8db3f3c2927a492c9ddd",
+    "semantic_hash": "b1dbd734656b8db3f3c2927a492c9ddd"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\admin\\AdminDashboard.tsx": {
+    "mtime": 1781169237.024255,
+    "ast_hash": "649e08f72d4a944adb8c3ef997cf342f",
+    "semantic_hash": "649e08f72d4a944adb8c3ef997cf342f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\admin\\ContentSections.tsx": {
+    "mtime": 1781169067.0754945,
+    "ast_hash": "95bdb45a480313a6af490f4e0578a8ab",
+    "semantic_hash": "95bdb45a480313a6af490f4e0578a8ab"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\admin\\actions.ts": {
+    "mtime": 1781168892.2290962,
+    "ast_hash": "c3676e9a68c1b953ec08352513f6b253",
+    "semantic_hash": "c3676e9a68c1b953ec08352513f6b253"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\admin\\cards.tsx": {
+    "mtime": 1781208178.0938768,
+    "ast_hash": "268298d626f961d1efdf604f77b30d9d",
+    "semantic_hash": "268298d626f961d1efdf604f77b30d9d"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\admin\\modals.tsx": {
+    "mtime": 1781208203.4961956,
+    "ast_hash": "1b78acbe625b2351ebdf6546ef6648f5",
+    "semantic_hash": "1b78acbe625b2351ebdf6546ef6648f5"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\AddIllustrationModal.tsx": {
+    "mtime": 1781168615.9933846,
+    "ast_hash": "e58bff3baeea95ae5fb0e8a4bda49135",
+    "semantic_hash": "e58bff3baeea95ae5fb0e8a4bda49135"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\AuditOverlay.tsx": {
+    "mtime": 1781168599.3330474,
+    "ast_hash": "79dfa11df4ce419e6e0ab4594d6f6b75",
+    "semantic_hash": "79dfa11df4ce419e6e0ab4594d6f6b75"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\CarouselManager.tsx": {
+    "mtime": 1781168580.7803266,
+    "ast_hash": "de53d03656a838ed5d59f4c61b4e46e8",
+    "semantic_hash": "de53d03656a838ed5d59f4c61b4e46e8"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\CmsRoot.tsx": {
+    "mtime": 1781208410.665234,
+    "ast_hash": "7782326a2c08759762539369436639ab",
+    "semantic_hash": "7782326a2c08759762539369436639ab"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\LoginModal.tsx": {
+    "mtime": 1781208224.6902292,
+    "ast_hash": "57e752d1db5f906b9097a2f7525d2625",
+    "semantic_hash": "57e752d1db5f906b9097a2f7525d2625"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\PickerModals.tsx": {
+    "mtime": 1781200586.1775217,
+    "ast_hash": "dfb7f4839e67cab75be58f6a5b4c4b2c",
+    "semantic_hash": "dfb7f4839e67cab75be58f6a5b4c4b2c"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\TextModals.tsx": {
+    "mtime": 1781168440.4121041,
+    "ast_hash": "f49259af723250033a7ea5712d6361db",
+    "semantic_hash": "f49259af723250033a7ea5712d6361db"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\UploadModal.tsx": {
+    "mtime": 1781208248.7734742,
+    "ast_hash": "4a06f32e3d818e6a5c377d07a4959bcd",
+    "semantic_hash": "4a06f32e3d818e6a5c377d07a4959bcd"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\engine.ts": {
+    "mtime": 1781200571.6006832,
+    "ast_hash": "8b770a672db901e79c2a653ff15d3200",
+    "semantic_hash": "8b770a672db901e79c2a653ff15d3200"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\cms\\gallery.ts": {
+    "mtime": 1781168388.944844,
+    "ast_hash": "9ceb5f3bbc4f6a7b59fdbf249e22eb5c",
+    "semantic_hash": "9ceb5f3bbc4f6a7b59fdbf249e22eb5c"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\AnimationsGallery.tsx": {
+    "mtime": 1781149973.6220992,
+    "ast_hash": "a1cdb92b393fa21f7a8814931bd99bc1",
+    "semantic_hash": "a1cdb92b393fa21f7a8814931bd99bc1"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\CharactersGallery.tsx": {
+    "mtime": 1781150124.719202,
+    "ast_hash": "c50655ff3557968ef0ec90d94a889cf5",
+    "semantic_hash": "c50655ff3557968ef0ec90d94a889cf5"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\GalleryToolbar.tsx": {
+    "mtime": 1781130495.7320635,
+    "ast_hash": "3ccbf9da53456e07f511ea0d2ea5c76c",
+    "semantic_hash": "3ccbf9da53456e07f511ea0d2ea5c76c"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\IllustrationsGallery.tsx": {
+    "mtime": 1781150008.3658757,
+    "ast_hash": "57090a2561a7d4d0aa720bc6d6b1bb6e",
+    "semantic_hash": "57090a2561a7d4d0aa720bc6d6b1bb6e"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\Models3DGallery.tsx": {
+    "mtime": 1781150049.3122404,
+    "ast_hash": "06db46482f337c184255d22f9df37a94",
+    "semantic_hash": "06db46482f337c184255d22f9df37a94"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\gallery\\MultimediaGallery.tsx": {
+    "mtime": 1781150073.2175462,
+    "ast_hash": "37296cff90697d194cf451d9d259ecaa",
+    "semantic_hash": "37296cff90697d194cf451d9d259ecaa"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\AboutSection.tsx": {
+    "mtime": 1781297692.279988,
+    "ast_hash": "28d8b63aee387fea196d7686a13d4cc9",
+    "semantic_hash": "28d8b63aee387fea196d7686a13d4cc9"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\AnimBlobCanvas.tsx": {
+    "mtime": 1781149704.487393,
+    "ast_hash": "2143c27454664b3ecdb3ddd942f93355",
+    "semantic_hash": "2143c27454664b3ecdb3ddd942f93355"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\AnimationsShowcase.tsx": {
+    "mtime": 1781327253.8554182,
+    "ast_hash": "4a12a2f4ffa755f0eaa698e789b76382",
+    "semantic_hash": "4a12a2f4ffa755f0eaa698e789b76382"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\CharactersShowcase.tsx": {
+    "mtime": 1781342634.9559424,
+    "ast_hash": "2f99db24029ecf647d6825e597f5fc10",
+    "semantic_hash": "2f99db24029ecf647d6825e597f5fc10"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\Hero.tsx": {
+    "mtime": 1781298470.1241217,
+    "ast_hash": "d9b04a6d3899175725da36c7c6679a07",
+    "semantic_hash": "d9b04a6d3899175725da36c7c6679a07"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\HomeFx.tsx": {
+    "mtime": 1781297841.4486814,
+    "ast_hash": "4ee6fcfcc1d4d4379c29b4650cf70120",
+    "semantic_hash": "4ee6fcfcc1d4d4379c29b4650cf70120"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\IllustrationsSection.tsx": {
+    "mtime": 1781344233.8615324,
+    "ast_hash": "800b193af5b20b340fc6afbad7b1f68e",
+    "semantic_hash": "800b193af5b20b340fc6afbad7b1f68e"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\Models3DSection.tsx": {
+    "mtime": 1781297810.790193,
+    "ast_hash": "3cac2102d847649c90f4fd1b9dc9831a",
+    "semantic_hash": "3cac2102d847649c90f4fd1b9dc9831a"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\NebulaCanvas.tsx": {
+    "mtime": 1781150173.2321231,
+    "ast_hash": "54dd297a37e25c06a86bbe8b61885478",
+    "semantic_hash": "54dd297a37e25c06a86bbe8b61885478"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\Slideshow.tsx": {
+    "mtime": 1781168839.4385514,
+    "ast_hash": "70e90119ca13c4aa4140d7a6947df352",
+    "semantic_hash": "70e90119ca13c4aa4140d7a6947df352"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\home\\WaveMarquee.tsx": {
+    "mtime": 1781130704.5193768,
+    "ast_hash": "428fe1692e1483d2781659592d991ef8",
+    "semantic_hash": "428fe1692e1483d2781659592d991ef8"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Cursor.tsx": {
+    "mtime": 1781297759.770401,
+    "ast_hash": "8649a6b520f42e9e6b2dfcae4ac55424",
+    "semantic_hash": "8649a6b520f42e9e6b2dfcae4ac55424"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Footer.tsx": {
+    "mtime": 1781130449.0556326,
+    "ast_hash": "ed2798b5a424852c78893a7cfeeab661",
+    "semantic_hash": "ed2798b5a424852c78893a7cfeeab661"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Lightboxes.tsx": {
+    "mtime": 1781149566.6377046,
+    "ast_hash": "f675c88a113b260cfdd712d019b6d715",
+    "semantic_hash": "f675c88a113b260cfdd712d019b6d715"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\LiveClock.tsx": {
+    "mtime": 1781149553.0189724,
+    "ast_hash": "e0d7e08d9507a84975c248e55ec1faba",
+    "semantic_hash": "e0d7e08d9507a84975c248e55ec1faba"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Modal.tsx": {
+    "mtime": 1781168364.4383,
+    "ast_hash": "b0c584d916cdfbf7e663425efe48bc5f",
+    "semantic_hash": "b0c584d916cdfbf7e663425efe48bc5f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Nav.tsx": {
+    "mtime": 1781297491.764333,
+    "ast_hash": "58ec108cf19bd3d590c54dbaeb08cc2e",
+    "semantic_hash": "58ec108cf19bd3d590c54dbaeb08cc2e"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\PageLoader.tsx": {
+    "mtime": 1781131135.693397,
+    "ast_hash": "63dcb680a7e041562b4a3567ab144aaa",
+    "semantic_hash": "63dcb680a7e041562b4a3567ab144aaa"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Providers.tsx": {
+    "mtime": 1781168737.9422562,
+    "ast_hash": "2a3d31ee7104be0aa3d814117e914c35",
+    "semantic_hash": "2a3d31ee7104be0aa3d814117e914c35"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\SettingsPanel.tsx": {
+    "mtime": 1781200606.489566,
+    "ast_hash": "d3cfdd92ba1926a697fe23ccda98b525",
+    "semantic_hash": "d3cfdd92ba1926a697fe23ccda98b525"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\Toast.tsx": {
+    "mtime": 1781168058.2405417,
+    "ast_hash": "b81a419680af46e234b9b5df64fe8f7f",
+    "semantic_hash": "b81a419680af46e234b9b5df64fe8f7f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\circular-gallery.tsx": {
+    "mtime": 1781344974.628528,
+    "ast_hash": "a3c5af0c66d4860726418bb8a843e642",
+    "semantic_hash": "a3c5af0c66d4860726418bb8a843e642"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\components\\ui\\lightbox.ts": {
+    "mtime": 1781149492.235202,
+    "ast_hash": "ded72df1a1fcd62044a20e7bc23b30a4",
+    "semantic_hash": "ded72df1a1fcd62044a20e7bc23b30a4"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\api.ts": {
+    "mtime": 1781168102.531538,
+    "ast_hash": "ac3c4d4897662a06768edcf32e9ab15f",
+    "semantic_hash": "ac3c4d4897662a06768edcf32e9ab15f"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\cms\\store.ts": {
+    "mtime": 1781169219.7139015,
+    "ast_hash": "8a48b0d75851d9ae3a2785e095d1c535",
+    "semantic_hash": "8a48b0d75851d9ae3a2785e095d1c535"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\commands.tsx": {
+    "mtime": 1781168221.3571813,
+    "ast_hash": "f0bc43ef78315b8673138bdc4f5b0251",
+    "semantic_hash": "f0bc43ef78315b8673138bdc4f5b0251"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\media.ts": {
+    "mtime": 1781168216.9907546,
+    "ast_hash": "bccea9e64f6953bfdfc022f88203e48b",
+    "semantic_hash": "bccea9e64f6953bfdfc022f88203e48b"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\perf.ts": {
+    "mtime": 1781149686.545034,
+    "ast_hash": "d8c027ab98f6968b616f69e69e11f963",
+    "semantic_hash": "d8c027ab98f6968b616f69e69e11f963"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\lib\\utils.ts": {
+    "mtime": 1781168035.943887,
+    "ast_hash": "8170848f673791954a93a78f0b88c501",
+    "semantic_hash": "8170848f673791954a93a78f0b88c501"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\hooks\\useDragScroll.ts": {
+    "mtime": 1781149498.856679,
+    "ast_hash": "2edd3c1f11740977168414bd280accf2",
+    "semantic_hash": "2edd3c1f11740977168414bd280accf2"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\hooks\\useGSAP.ts": {
+    "mtime": 1781149458.6850643,
+    "ast_hash": "a498672c752f91c9b1e37a280563ff80",
+    "semantic_hash": "a498672c752f91c9b1e37a280563ff80"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\hooks\\useKeyHandler.ts": {
+    "mtime": 1781168039.0389452,
+    "ast_hash": "bcd80481184a450aa9e5429140f2e3f8",
+    "semantic_hash": "bcd80481184a450aa9e5429140f2e3f8"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\hooks\\useReveal.ts": {
+    "mtime": 1781130486.6253684,
+    "ast_hash": "173783ea5cd6cf5a2c7b22372f2442b9",
+    "semantic_hash": "173783ea5cd6cf5a2c7b22372f2442b9"
+  },
+  "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio\\hooks\\useTilt.ts": {
+    "mtime": 1781150176.183005,
+    "ast_hash": "683a716c8dfc67cdfd8bfe436fd8e216",
+    "semantic_hash": "683a716c8dfc67cdfd8bfe436fd8e216"
   }
 }
