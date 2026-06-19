@@ -25,6 +25,7 @@ const PORTFOLIO_LINKS = [
   { icon: 'fa-youtube', label: 'Youtube' },
   { icon: 'fa-instagram', label: 'Instagram' },
   { icon: 'fa-behance', label: 'Behance' },
+  { icon: 'fa-linkedin-in', label: 'LinkedIn' },
 ]
 
 const LANGS = [
@@ -225,13 +226,12 @@ export default function Nav() {
             </div>
             <Link href="/#presentacion" data-i18n="nav_about" onClick={closeNav}>About me</Link>
             <Link href="/#contacto" data-i18n="nav_contact" onClick={closeNav}>Contact</Link>
-            {/* Solo visible para superadmin (cms.js, Sesión 3) */}
-            <a href="/admin" className="admin-only" id="nav-admin-link">Gestión</a>
+            {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
             {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
             <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
           </nav>
           <div className="nav-actions">
-            <button type="button" className="cv-btn" id="cv-download" title="Download CV" aria-label="Download CV">
+            <button type="button" className="cv-min-btn" id="cv-download" title="Download CV" aria-label="Download CV">
               <i className="fa-solid fa-file-arrow-down"></i>
               <span>CV</span>
             </button>

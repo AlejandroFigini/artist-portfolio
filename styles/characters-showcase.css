@@ -1,0 +1,536 @@
+/* ============================================================
+   CHARACTER DESIGN SHOWCASE — featured stage + carousel rail.
+   Mismo lenguaje visual que Animations: fondo claro con trama,
+   esquinas blueprint, FIG monospace, typewriter, lightbox.
+   ============================================================ */
+
+.char-showcase {
+  position: relative;
+  padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
+  background: #f6f5fb;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Detalle sutil: trama de puntos violeta apenas visible */
+.char-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1px at center, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+}
+
+/* --- Rail vertical decorativo --- */
+.char-showcase__rail {
+  position: absolute;
+  top: clamp(4rem, 8vw, 6rem);
+  bottom: clamp(4rem, 8vw, 6rem);
+  left: clamp(0.9rem, 2vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.char-showcase__rail-fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.6;
+}
+.char-showcase__rail-fig--end { opacity: 0.4; }
+.char-showcase__rail-track {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.char-showcase__rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+/* --- Frame --- */
+.char-showcase__frame {
+  position: relative;
+  z-index: 3;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Header --- */
+.char-showcase__header {
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+.char-showcase__fig {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  padding-left: 1.4rem;
+}
+.char-showcase__fig::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+.char-showcase__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(2.8rem, 7vw, 6.2rem);
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.char-showcase__title .line-wrap {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.char-showcase__title .line {
+  display: block;
+  transform-origin: left center;
+}
+.char-showcase__desc {
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 60ch;
+  margin: 1.2rem 0 0;
+}
+
+/* --- Stage (panel destacado, crossfade) --- */
+.cd-stage {
+  position: relative;
+  display: grid;
+}
+.cd-panel {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(1.2rem, 3vw, 2.5rem);
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 0.6s ease, transform 0.6s ease, visibility 0.6s;
+  pointer-events: none;
+}
+.cd-panel.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* --- Media: retrato grande + concepts --- */
+.cd-media {
+  display: grid;
+  grid-template-columns: 2.4fr 1fr;
+  gap: 0.8rem;
+  height: clamp(320px, 46vw, 520px);
+}
+.cd-portrait {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #15131f;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  box-shadow:
+    0 8px 30px -8px rgba(0, 0, 0, 0.25),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  transition: box-shadow 0.4s ease, scale 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cd-portrait:hover {
+  box-shadow:
+    0 16px 44px -10px rgba(124, 58, 237, 0.3),
+    0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.cd-concepts {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.8rem;
+}
+.cd-concept {
+  position: relative;
+  border: none;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #15131f;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+  transition: box-shadow 0.35s ease, scale 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cd-concept:hover {
+  scale: 1.04;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* placeholder cuando no hay imagen */
+.cd-ph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: linear-gradient(135deg, #1c1a2e 0%, #16142a 50%, #110f1c 100%);
+}
+.cd-portrait .cd-ph { font-size: 2.6rem; }
+.cd-concept .cd-ph { font-size: 1.2rem; }
+.has-media .cd-ph { display: none; }
+
+.cd-portrait-tag {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(13, 13, 18, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.cd-portrait:hover .cd-portrait-tag { opacity: 1; transform: translateY(0); }
+
+/* --- Info --- */
+.cd-info {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.cd-ghost {
+  position: absolute;
+  top: -0.35em;
+  right: 0;
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(5rem, 12vw, 9rem);
+  font-weight: 200;
+  line-height: 1;
+  color: color-mix(in srgb, var(--accent) 9%, transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+.cd-counter {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin-bottom: 0.8rem;
+  z-index: 1;
+}
+.cd-counter b { font-weight: 600; }
+.cd-name {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
+  font-weight: 500;
+  line-height: 1.05;
+  color: var(--text-primary);
+  margin: 0 0 0.3rem;
+  z-index: 1;
+}
+.cd-role {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.1rem;
+  z-index: 1;
+}
+.cd-desc {
+  font-size: clamp(0.92rem, 1.2vw, 1.05rem);
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 42ch;
+  z-index: 1;
+}
+
+/* --- Rail carrusel inferior --- */
+.cd-rail {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.6rem, 1.5vw, 1rem);
+  margin-top: clamp(2rem, 4vw, 3.5rem);
+}
+.cd-rail-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+  transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease;
+}
+.cd-rail-item:hover { transform: translateY(-3px); }
+.cd-rail-item.active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: #fff;
+  box-shadow: 0 8px 24px -10px rgba(124, 58, 237, 0.3);
+}
+.cd-rail-thumb {
+  flex-shrink: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 8px;
+  background: #15131f;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+.cd-rail-thumb .cd-ph { font-size: 0.9rem; }
+.cd-rail-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cd-rail-name {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-rail-role {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cd-rail-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--accent);
+}
+.cd-rail-item.active .cd-rail-progress.run {
+  animation: cd-rail-fill var(--cd-interval, 6s) linear forwards;
+}
+@keyframes cd-rail-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* --- Responsive --- */
+@media (max-width: 960px) {
+  .char-showcase__rail { display: none; }
+  .cd-panel { grid-template-columns: 1fr; }
+  .cd-media { height: clamp(300px, 70vw, 460px); }
+  .cd-ghost { display: none; }
+}
+@media (max-width: 640px) {
+  .cd-rail { grid-template-columns: repeat(2, 1fr); }
+  .cd-media { grid-template-columns: 2fr 0.8fr; }
+}
+
+/* --- Lightbox (reusa lenguaje de anim-lightbox) --- */
+.cd-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06060a;
+  animation: cd-lb-fadein 0.4s ease;
+}
+@keyframes cd-lb-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+.cd-lightbox__close {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 10001;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(13, 13, 18, 0.6);
+  color: #fff;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.cd-lightbox__close:hover { background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+
+.cd-lightbox__media {
+  position: relative;
+  display: inline-flex;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cd-lightbox__media.is-shifted { transform: translateX(-180px); }
+.cd-lightbox__img {
+  width: min(84vw, 1100px);
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+  box-shadow: 0 30px 90px -20px rgba(0, 0, 0, 0.8);
+  animation: cd-lb-scalein 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes cd-lb-scalein {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.cd-lightbox__info-btn {
+  position: absolute;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 3;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: rgba(13, 13, 18, 0.75);
+  color: var(--accent);
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+.cd-lightbox__info-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.cd-lightbox__info-panel {
+  position: absolute;
+  left: calc(100% + 0.6rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: rgba(13, 13, 18, 0.9);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  width: min(300px, 28vw);
+  backdrop-filter: blur(16px);
+  animation: cd-info-slidein 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes cd-info-slidein {
+  from { opacity: 0; transform: translate(-18px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+.cd-lightbox__info-panel h3 {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+.cd-lightbox__meta { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cd-lightbox__meta > div { display: flex; align-items: baseline; gap: 0.5rem; }
+.cd-lightbox__meta dt {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+  flex-shrink: 0;
+}
+.cd-lightbox__meta dd { font-size: 0.85rem; font-weight: 300; color: rgba(255, 255, 255, 0.88); margin: 0; }
+.cd-lightbox__meta-block {
+  flex-direction: column;
+  gap: 0.25rem !important;
+  margin-top: 0.3rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cd-lightbox__meta-block dd { line-height: 1.5; color: rgba(255, 255, 255, 0.72); }
+
+@media (max-width: 900px) {
+  .cd-lightbox__img { width: min(94vw, 1000px); border-radius: 6px; }
+  .cd-lightbox__media.is-shifted { transform: none; }
+  .cd-lightbox__info-btn { right: 0.8rem; top: 0.8rem; bottom: auto; }
+  .cd-lightbox__info-panel {
+    left: 50%;
+    top: auto;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    width: min(340px, 90%);
+    animation: cd-info-slideup 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes cd-info-slideup {
+    from { opacity: 0; transform: translate(-50%, 16px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .cd-lightbox__close { top: 0.6rem; right: 0.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-panel { transition: opacity 0.3s ease; transform: none; }
+  .cd-rail-item:hover { transform: none; }
+  .cd-concept:hover { scale: 1; }
+  .cd-rail-item.active .cd-rail-progress.run { animation: none; }
+}
+
+/* --- CMS empty state --- */
+.char-showcase .cms-empty-overlay {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: rgba(124, 58, 237, 0.45);
+  background: #fff;
+  color: var(--accent);
+  border-radius: 10px;
+  z-index: 6;
+}

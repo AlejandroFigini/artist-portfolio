@@ -1,6 +1,14 @@
 /* Utilidades compartidas CMS/Admin — unifica las copias duplicadas de
    cms.js (L145, L1571) y admin.js (L29-L57). */
 
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+/* cn — merge de clases Tailwind (shadcn convention). */
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs))
+}
+
 export function fmtBytes(n?: number | null): string {
   if (n == null) return '—'
   if (n < 1024) return n + ' B'

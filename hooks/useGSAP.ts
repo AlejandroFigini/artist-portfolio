@@ -32,4 +32,36 @@ export function useGSAP(setup: () => void, deps: unknown[] = []) {
   }, deps)
 }
 
+export function typewriterLoop(lineEl: HTMLElement, intervalSec = 8) {
+  const text = lineEl.textContent || ''
+  if (!text) return null
+  lineEl.innerHTML = text
+    .split('')
+    .map((c) => `<span class="tw-char" style="display:inline-block">${c === ' ' ? '&nbsp;' : c}</span>`)
+    .join('')
+  const chars = lineEl.querySelectorAll<HTMLElement>('.tw-char')
+  const tl = gsap.timeline({ repeat: -1, delay: intervalSec })
+  tl.set(chars, { autoAlpha: 0 })
+    .to(chars, { autoAlpha: 1, duration: 0.04, stagger: 0.07, ease: 'none' })
+    .set({}, {}, `+=${intervalSec}`)
+  return tl
+}
+
+// Reveal por palabras en loop — pensado para párrafos (más fluido que el
+// typewriter char-by-char). Cada intervalSec re-revela el texto en cascada.
+export function wordRevealLoop(el: HTMLElement, intervalSec = 8) {
+  const text = (el.textContent || '').trim()
+  if (!text) return null
+  el.innerHTML = text
+    .split(/(\s+)/)
+    .map((w) => (/^\s+$/.test(w) ? w : `<span class="tw-word" style="display:inline-block">${w}</span>`))
+    .join('')
+  const words = el.querySelectorAll<HTMLElement>('.tw-word')
+  const tl = gsap.timeline({ repeat: -1, delay: intervalSec })
+  tl.set(words, { autoAlpha: 0, y: 8 })
+    .to(words, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.045, ease: 'power2.out' })
+    .set({}, {}, `+=${intervalSec}`)
+  return tl
+}
+
 export { gsap, ScrollTrigger }

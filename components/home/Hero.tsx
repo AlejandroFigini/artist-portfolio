@@ -9,6 +9,7 @@
 
 import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
+import HeroMediaCarousel from './HeroMediaCarousel'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const MEASURE_LABEL = 'W // 12-COL · REV.03'
@@ -57,7 +58,7 @@ export default function Hero() {
       // estados iniciales (solo cuando la animación va a correr)
       gsap.set('.hero-title .line', { yPercent: 115, skewY: 4 })
       gsap.set('.badge', { autoAlpha: 0, y: 14 })
-      gsap.set('.hero-subtitle, .scroll-indicator', { autoAlpha: 0, y: 18 })
+      gsap.set('.hero-subtitle', { autoAlpha: 0, y: 18 })
       gsap.set('.bp-line-h', { strokeDasharray: 600, strokeDashoffset: 600 })
       gsap.set('.bp-measure-label, .bp-fig, .bp-tick', { autoAlpha: 0 })
       gsap.set('.hero-media-wrapper .media-container', { autoAlpha: 0, clipPath: 'inset(0% 0% 100% 0%)' })
@@ -76,7 +77,6 @@ export default function Hero() {
         .to('.bp-corner', { autoAlpha: 1, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out' }, '-=0.9')
         .to('.bp-fig', { autoAlpha: 0.85, duration: 0.5 }, '-=0.5')
         .to('.hero-software-wave', { autoAlpha: 1, y: 0, duration: 0.9 }, '-=0.7')
-        .to('.scroll-indicator', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.55')
 
       const cancelWait = whenLoaderDone(() => tl.play())
       return () => cancelWait()
@@ -117,16 +117,65 @@ export default function Hero() {
     }
   }, [])
 
+  // Reveal sutil del título cada ~9s: cada letra hace fade + desenfoque en
+  // su lugar (chars en spans inline-block → sin reflow, el texto no se mueve).
+  // Arranca tras el reveal inicial; re-lee el texto ya hidratado por CMS.
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    const title = sectionRef.current?.querySelector('.hero-title')
+    if (!title) return
+    const lines = Array.from(title.querySelectorAll<HTMLElement>('.line'))
+    if (!lines.length) return
+
+    let intervalId: ReturnType<typeof setInterval> | undefined
+    let charIndex = 0
+
+    const splitLine = (line: HTMLElement): HTMLElement[] => {
+      const text = line.textContent || ''
+      line.textContent = ''
+      return [...text].map((ch) => {
+        const s = document.createElement('span')
+        s.className = 'hero-char'
+        s.style.animationDelay = `${charIndex++ * 0.045}s`
+        s.textContent = ch === ' ' ? ' ' : ch
+        s.style.display = 'inline-block'
+        s.style.willChange = 'opacity, filter, transform'
+        line.appendChild(s)
+        return s
+      })
+    }
+
+    // replay: quita la clase, fuerza reflow y la re-agrega → reinicia el CSS anim
+    const replay = () => {
+      title.classList.remove('anim-in')
+      void (title as HTMLElement).offsetWidth
+      title.classList.add('anim-in')
+    }
+
+    const start = setTimeout(() => {
+      const fulls = lines.map((l) => l.textContent || '')
+      if (fulls.every((f) => !f)) return
+      lines.forEach(splitLine)
+      replay()
+      intervalId = setInterval(replay, 9000)
+    }, 3200)
+
+    return () => {
+      clearTimeout(start)
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [])
+
   // "Vida" constante de los containers flotantes la da el CSS (.float-anim)
 
   return (
     <section id="presentacion" className="hero" ref={sectionRef}>
       <div className="hero-grid">
         <div className="hero-content">
-          <div className="badge" data-cms-key="hero_badge">
+          <div className="badge">
             <span className="badge-dot" aria-hidden="true"></span>Visual Art Portfolio
           </div>
-          <h1 className="hero-title" data-cms-key="hero_title">
+          <h1 className="hero-title">
             <span className="line-wrap"><span className="line">Lucia</span></span>
             <span className="line-wrap"><span className="line">Montaña</span></span>
           </h1>
@@ -139,33 +188,25 @@ export default function Hero() {
             </svg>
             <span className="bp-measure-label">{MEASURE_LABEL}</span>
           </div>
-          <p className="hero-subtitle" data-cms-key="hero_desc">
+          <p className="hero-subtitle">
             Bachelor&apos;s degree on Animation and Videogames. <br />
             Illustrator, Character / environment design and 3D generalist.
           </p>
-          <div className="scroll-indicator">
-            <div className="mouse">
-              <div className="wheel"></div>
-            </div>
-            <span data-i18n="hero_cta">Discover Essence</span>
-          </div>
         </div>
 
         <div className="hero-media-wrapper">
           <div className="media-container hero-primary float-anim" data-container-id="hero-main">
-            <div className="container-overlay"></div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/portada-2.webp" alt="Hero Art" className="cms-media" />
-            <span className="bp-scanline" aria-hidden="true"></span>
+            <div className="container-overlay" style={{ zIndex: 10 }}></div>
+            <HeroMediaCarousel prefix="hero-main" defaultSlides={['/images/portada-2.webp', '/images/portada-1.webp']} />
+            <span className="bp-scanline" aria-hidden="true" style={{ zIndex: 10 }}></span>
             <Corners />
-            <span className="bp-fig">FIG.01 — KEYFRAME_A</span>
+            <span className="bp-fig" style={{ zIndex: 10 }}>FIG.01 — KEYFRAME_A</span>
           </div>
           <div className="media-container hero-secondary float-anim-delayed" data-container-id="hero-sub">
-            <div className="container-overlay"></div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/portada-3.webp" alt="Secondary Art" className="cms-media" />
+            <div className="container-overlay" style={{ zIndex: 10 }}></div>
+            <HeroMediaCarousel prefix="hero-sub" defaultSlides={['/images/portada-3.webp', '/images/portada-4.webp']} />
             <Corners />
-            <span className="bp-fig">FIG.02 — DETAIL</span>
+            <span className="bp-fig" style={{ zIndex: 10 }}>FIG.02 — DETAIL</span>
           </div>
         </div>
       </div>

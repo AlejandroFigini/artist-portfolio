@@ -10,8 +10,9 @@
     {
       "name": "next",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "C:\\Users\\figin\\OneDrive\\Desktop\\artist-portfolio-next", "run", "dev"],
-      "port": 3000
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

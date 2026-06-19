@@ -6787,14 +6787,14 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
 
 /* Hero from demo */
 .hero { min-height: 100vh; padding: 8rem 4rem 4rem 4rem; display: flex; align-items: center; }
-.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; width: 100%; height: 100%; align-items: center; }
+.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10rem; width: 100%; max-width: 1480px; margin: 0 auto; height: 100%; align-items: center; position: relative; z-index: 30; }
 .badge {
     display: inline-block; padding: 0.5rem 1.5rem; border: 1px solid var(--container-border);
     border-radius: 50px; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 2rem; color: var(--accent);
 }
 .hero-title {
-    font-family: var(--font-display); font-size: clamp(3rem, 7vw, 6.5rem); font-weight: 400;
-    line-height: 1.1; margin-bottom: 2rem; text-transform: uppercase; text-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    font-family: var(--font); font-size: clamp(1.9rem, 4vw, 3.8rem); font-weight: 300;
+    line-height: 1.14; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.04em; text-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 .line-wrap { display: block; overflow: hidden; }
 .line { display: block; }
@@ -6806,108 +6806,256 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
 
 .hero-media-wrapper { position: relative; height: 80vh; width: 100%; perspective: 1000px; }
 .container-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(45deg, rgba(139,92,246,0.1), transparent); z-index: 2; pointer-events: none; }
-.hero-primary { width: 75%; height: 85%; position: absolute; top: 0; right: 0; z-index: 5; box-shadow: var(--shadow-lg); }
-.hero-secondary { width: 40%; height: 40%; position: absolute; bottom: 0; left: 0; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--shadow-lg); }
+.hero-primary { width: 72%; height: 68%; position: absolute; top: 0%; right: 0; z-index: 5; box-shadow: var(--shadow-lg); }
+.hero-secondary { width: 45%; height: 45%; position: absolute; bottom: 15%; right: 50%; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--shadow-lg); }
 
 .float-anim { animation: float 6s ease-in-out infinite; }
 .float-anim-delayed { animation: float 6s ease-in-out infinite; animation-delay: -3s; }
 .float-anim-slow { animation: float 8s ease-in-out infinite; }
 @keyframes float { 0% { transform: translateY(0px) rotate(0.5deg); } 50% { transform: translateY(-15px) rotate(-0.5deg); } 100% { transform: translateY(0px) rotate(0.5deg); } }
 
-/* Hero Software Wave (Infinite Marquee of Bubbles) */
+/* ═══════════════════════════════════════════════════════════════
+   HERO SOFTWARE WAVE  (fresh rebuild — no legacy code below)
+   Infinite bubble marquee. On hover: tooltip above, toolbar below.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* --- Container: full-width, clips the scrolling track --- */
 .hero-software-wave {
     position: absolute;
-    bottom: 0;
-    left: 0;
+    bottom: 0; left: 0;
     width: 100%;
-    overflow: hidden;
-    padding: 2rem 0;
+    overflow-x: clip;
+    overflow-y: visible;
+    padding: 1.5rem 0;
     z-index: 20;
-    display: flex;
+}
+/* En modo admin la toolbar de cada burbuja flota hacia arriba; sin esto queda
+   atrapada bajo .hero-grid (z-index:30) y no se puede clickear. Subimos el
+   contexto de apilado de la wave por encima del grid solo para el admin. */
+body.is-admin .hero-software-wave {
+    z-index: 40;
 }
 
+/* --- Scrolling track --- */
 .wave-track {
     display: flex;
     width: max-content;
-    animation: marquee-wave 30s linear infinite;
+    animation: waveMarquee 55s linear infinite;
+}
+/* Pause the entire track on hover to allow clicking the toolbars easily */
+.hero-software-wave:hover .wave-track {
+    animation-play-state: paused;
+}
+@keyframes waveMarquee {
+    to { transform: translateX(-25%); }
 }
 
+/* --- One group of bubbles --- */
 .wave-group {
     display: flex;
-    gap: 3rem;
-    padding-right: 3rem; /* Matches gap to ensure seamless loop */
+    gap: 2.5rem;
+    padding-right: 2.5rem;
     align-items: center;
 }
 
-@keyframes marquee-wave {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-25%); }
+/* ── Single bubble ────────────────────────────────────────── */
+.wave-item {
+    position: relative;
+    max-width: 56px;
+    min-width: 56px;
+    width: max-content;
+    height: 56px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 12px; /* Centers the 30px icon within the 56px initial width */
+    cursor: pointer;
+    overflow: visible;
+    animation: waveBob 3s ease-in-out infinite alternate;
+    /* Colapso (al sacar el mouse): lento y con delay para que no sea brusco. */
+    transition: max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, padding 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, transform 0.55s ease 0.15s, border-color 0.45s ease, box-shadow 0.45s ease;
 }
 
-.wave-item {
-    width: 60px;
-    height: 60px;
-    border-radius: 30px;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+/* Hover for filled bubbles: kill bob, expand width horizontally */
+.wave-item.wave-has-content:hover {
+    animation: none;
+    max-width: 280px;
+    padding: 0 20px;
+    transform: scale(1.08); /* Reduced scale since it becomes much wider */
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 40;
+}
+
+/* Hover for empty bubbles: keep it circular, just scale up */
+.wave-item:not(.wave-has-content):hover {
+    animation: none;
+    transform: scale(1.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 40;
+}
+
+/* Expansión (al entrar el mouse): responsiva, sin delay. */
+.wave-item.wave-has-content:hover,
+.wave-item:not(.wave-has-content):hover {
+    transition: max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, padding 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, transform 0.3s ease 0s, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ── Icon slot ── */
+.wave-icon-slot {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+/* ── Name text — expands horizontally inside the bubble ── */
+.wave-text {
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    pointer-events: none;
+    /* Colapso del nombre acompasado con la burbuja (lento + delay). */
+    transition: max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, opacity 0.45s ease 0.15s, margin-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+.wave-item.wave-has-content:hover .wave-text {
+    max-width: 200px;
+    opacity: 1;
+    margin-left: 10px;
+    /* Aparición responsiva al entrar. */
+    transition: max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, opacity 0.3s ease 0s, margin-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s;
+}
+
+/* ── Empty bubble — dashed purple ring ── */
+.wave-item:not(.wave-has-content) {
+    border: 2px dashed rgba(124, 58, 237, 0.3);
+    background: rgba(255, 255, 255, 0.8);
+}
+.wave-item:not(.wave-has-content) .wave-icon-slot {
+    display: none;
+}
+.wave-item:not(.wave-has-content) .cms-tools {
+    display: none !important;
+}
+
+/* ── CMS upload overlay (shown on empty slots by engine) ── */
+.wave-item .cms-empty-overlay {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    animation: wave-bob 3s infinite ease-in-out alternate;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--accent);
     cursor: pointer;
+    z-index: 5;
+    transition: background 0.2s;
 }
+.wave-item .cms-empty-overlay:hover { background: rgba(124, 58, 237, 0.08); }
+.wave-item .cms-empty-overlay i     { font-size: 1rem; }
+.wave-item .cms-empty-overlay span  { display: none; }
+.wave-item.cms-empty-slot > *:not(.cms-empty-overlay) { visibility: visible !important; }
 
-.wave-item:hover {
-    width: 180px;
-    padding: 0 1rem;
-    justify-content: flex-start;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: 25;
-}
-
-.wave-icon {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    flex-shrink: 0;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-}
-
-.wave-text {
-    opacity: 0;
-    transform: translateX(10px);
-    transition: all 0.4s ease;
+/* ── CMS action toolbar — floats ABOVE bubble on hover ── */
+body.is-admin .wave-item .cms-tools {
+    position: absolute;
+    bottom: 100%;
+    top: auto;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -8px);
+    display: flex;
+    gap: 3px;
+    padding: 3px;
     white-space: nowrap;
-    margin-left: 0;
-    max-width: 0;
-    overflow: hidden;
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-family: var(--font-sans);
-    color: var(--text-primary);
+    background: #1a1a1a;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease 0.3s, visibility 0s 0.45s; /* Delay on leave */
+    z-index: 9999;
 }
-
-.wave-item:hover .wave-text {
+/* caret arrow pointing down */
+body.is-admin .wave-item .cms-tools::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    left: 50%;
+    margin-left: -4px;
+    border: 4px solid transparent;
+    border-top-color: #1a1a1a;
+    pointer-events: none;
+}
+/* massive invisible bridge to prevent hover loss in the gap */
+body.is-admin .wave-item .cms-tools::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: -20px;
+    right: -20px;
+    height: 30px;
+}
+/* reveal on hover */
+body.is-admin .wave-item:hover .cms-tools,
+body.is-admin .wave-item .cms-tools:hover {
     opacity: 1;
-    transform: translateX(0);
-    margin-left: 0.75rem;
-    max-width: 150px;
+    visibility: visible;
+    pointer-events: auto !important;
+    transition: opacity 0.1s ease 0s, visibility 0s 0s; /* Instant reveal */
+}
+/* override generic cms-edit-btn size */
+body.is-admin .wave-item .cms-tools .cms-edit-btn {
+    position: static;
+    top: auto;
+    right: auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    font-size: 0.6rem;
+    background: transparent;
+    color: white;
+    border: none;
+    box-shadow: none;
+    opacity: 1;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+/* hide the replace button in the wave bubbles as requested */
+body.is-admin .wave-item .cms-tools .cms-tool-replace {
+    display: none !important;
 }
 
-@keyframes wave-bob {
-    0% { transform: translateY(-20px); }
-    100% { transform: translateY(20px); }
+/* ── Float animation + stagger ── */
+@keyframes waveBob {
+    from { transform: translateY(-8px); }
+    to   { transform: translateY(8px); }
 }
-
 .wave-item:nth-child(even) { animation-delay: -1.5s; }
-.wave-item:nth-child(3n) { animation-delay: -0.7s; }
-.wave-item:nth-child(4n) { animation-delay: -2.2s; }
-.wave-item:nth-child(5n) { animation-delay: -1.1s; }
+.wave-item:nth-child(3n)   { animation-delay: -0.7s; }
+.wave-item:nth-child(4n)   { animation-delay: -2.2s; }
+.wave-item:nth-child(5n)   { animation-delay: -1.1s; }
 
 .soft-badge {
     display: flex;

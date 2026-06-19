@@ -1,258 +1,551 @@
 /* ============================================================
-   ABOUT — ficha técnica blueprint (SUBJECT FILE). Rediseño
-   completo: fondo de plano con grilla fina + glow de acento,
-   riel-cota vertical que se llena con el scroll (GSAP scrub,
-   AboutSection.tsx), retrato 3/4 con marcas de registro FIG.,
-   specs como tabla técnica y statement display con el trazo
-   del hero. Clases funcionales CMS/HomeFx intactas:
-   .bio-content, .artist-photo-wrapper/-img, .artist-video-
-   wrapper, .about-video, h2[data-i18n=about_title].
+   ABOUT — editorial cinematográfico con storytelling on-scroll.
+   Capa nueva (no toca legacy). GSAP setea los estados iniciales
+   en el componente: sin JS / reduced-motion → todo visible.
    ============================================================ */
 
-.about-tech {
+.about-section {
   position: relative;
-  padding: clamp(6rem, 12vh, 11rem) 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-hairline);
-  overflow: clip;
+  padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
+  background: var(--bg-primary);
+  overflow: hidden;
+  isolation: isolate;
 }
 
-/* fondo: grilla de plano (cruz fina) + glow de acento arriba-derecha */
-.about-tech::before {
+/* Grid blueprint sutil de fondo (mismo lenguaje del Hero/3D) */
+.about-section::before {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 65% at 50% 50%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 80% 65% at 50% 50%, #000 30%, transparent 85%);
+}
+
+/* Spotlight central violeta */
+.about-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(640px 420px at 84% 12%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    repeating-linear-gradient(0deg, transparent 0 79px, var(--container-border) 79px 80px),
-    repeating-linear-gradient(90deg, transparent 0 79px, var(--container-border) 79px 80px);
-  opacity: 0.5;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+    radial-gradient(ellipse 55% 45% at 30% 35%, rgba(139, 92, 246, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 70%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
 }
 
-.about-tech-frame {
-  position: relative;
-  max-width: 1340px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: clamp(1rem, 3vw, 3rem);
-}
-
-/* --- Riel-cota vertical: graduación + relleno scrubbed --- */
+/* --- Riel-cota vertical (decorativo, scrubbed con scroll) --- */
 .about-rail {
-  position: relative;
+  position: absolute;
+  top: clamp(4rem, 8vw, 6rem);
+  bottom: clamp(4rem, 8vw, 6rem);
+  left: clamp(0.9rem, 2vw, 1.8rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
+  z-index: 2;
+  pointer-events: none;
 }
-.about-rail-track {
-  position: relative;
-  flex: 1;
-  width: 3px;
-  /* graduación de regla (ticks horizontales) */
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0 39px,
-    var(--container-border) 39px 40px
-  );
-}
-.about-rail-fill {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--accent), #22d3ee);
-  transform: scaleY(0); /* GSAP scrub lo llena */
-  transform-origin: top center;
-}
-.about-rail-label {
+.about-rail-fig {
   font-family: 'Fira Code', monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: var(--text-secondary);
   writing-mode: vertical-rl;
-  white-space: nowrap;
+  transform: rotate(180deg);
+  opacity: 0.6;
 }
-
-/* --- Grid principal: copy | media --- */
-.about-tech-grid {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(3rem, 6vw, 6rem);
-  align-items: start;
-}
-
-/* --- Copy --- */
-.about-tech h2[data-i18n='about_title'] {
-  font-family: 'Raleway', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 1.6rem;
-}
-
-.about-statement {
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3.6vw, 3.3rem);
-  font-weight: 500;
-  line-height: 1.16;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  text-wrap: balance;
-  margin-bottom: 2.2rem;
-  max-width: 16em;
-}
-.about-statement .line-wrap { display: block; overflow: hidden; }
-.about-statement .line { display: block; }
-/* palabras clave con el trazo-contorno del hero (sistema, no adorno) */
-.about-statement em {
-  font-style: normal;
-  color: transparent;
-  -webkit-text-stroke: 1.2px var(--accent);
-  text-stroke: 1.2px var(--accent);
-}
-
-.about-tech .bio-content { max-width: 56ch; }
-
-/* --- Specs: tabla técnica de ficha --- */
-.about-specs {
-  margin: 2.4rem 0 0;
-  max-width: 30rem;
-  border-top: 1px solid var(--container-border);
-}
-.about-specs .spec-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1.5rem;
-  padding: 0.65rem 0;
-  border-bottom: 1px dashed var(--container-border);
-}
-.about-specs dt {
-  font-family: 'Fira Code', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  color: var(--accent);
-}
-.about-specs dd {
-  margin: 0;
-  font-size: 0.88rem;
-  letter-spacing: 0.03em;
-  color: var(--text-primary);
-  text-align: right;
-}
-
-/* --- Links de texto fino con subrayado que se dibuja --- */
-.about-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.6rem;
-  margin-top: 1.6rem;
-}
-.about-links .about-link {
-  padding: 0.2rem 0;
-  font-size: 0.88rem;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  color: var(--text-primary);
-  opacity: 0.78;
+.about-rail-fig--end { transform: rotate(180deg); opacity: 0.4; }
+.about-rail-track {
   position: relative;
-  transition: opacity 0.3s ease, color 0.3s ease;
+  flex: 1;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
-.about-links .about-link::after {
+.about-rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* --- Frame interior --- */
+.about-frame {
+  position: relative;
+  z-index: 3;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Header: FIG label + título line-mask + lede ---
+   Ahora vive dentro de .about-copy (la columna izquierda), por lo que el
+   gap del flex column maneja la separación. `position: static !important`
+   se mantiene por si el tag cambia a <header> y choca con la regla legacy
+   del navbar. */
+.about-header {
+  position: static !important;
+  margin: 0;
+  max-width: 880px;
+}
+.about-fig {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  padding-left: 1.4rem;
+}
+.about-fig::before {
   content: '';
   position: absolute;
   left: 0;
-  bottom: 0;
-  width: 100%;
+  top: 50%;
+  width: 1rem;
   height: 1px;
   background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0.7;
 }
-.about-links .about-link:hover { opacity: 1; color: var(--accent); }
-.about-links .about-link:hover::after { transform: scaleX(1); }
 
-/* --- Media: retrato 3/4 + reel, marcas de registro FIG. --- */
-.about-media {
+.about-title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(3.2rem, 8vw, 6.8rem);
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0 0 1.4rem;
+}
+.about-title .line-wrap {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.about-title .line {
+  display: block;
+  transform-origin: left center;
+}
+
+.about-lede {
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  letter-spacing: 0.005em;
+  max-width: 60ch;
+}
+
+/* --- Grid split --- */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2.5rem, 6vw, 6rem);
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .about-rail { display: none; }
+}
+
+/* --- Columna izquierda: copy --- */
+.about-copy {
   display: flex;
   flex-direction: column;
-  gap: 2.6rem;
+  gap: clamp(2rem, 4vw, 3rem);
 }
 
-.about-portrait,
+.about-bio p {
+  font-size: clamp(1.02rem, 1.4vw, 1.18rem);
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--text-primary);
+  margin: 0 0 1.2rem;
+  max-width: 56ch;
+  letter-spacing: 0.008em;
+}
+.about-bio p:last-child { margin-bottom: 0; }
+
+/* --- Bloques de metadata --- */
+.about-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.about-meta-head {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  opacity: 0.8;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.about-specs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+}
+.about-spec {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
+}
+.about-spec-k {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.about-spec-v {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+/* --- Redes sociales — una sola línea, los 5 entran juntos --- */
+.about-socials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+.about-social { flex: 0 0 auto; }
+.about-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;
+}
+.about-social a:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.about-social i { font-size: 0.85rem; }
+
+/* Si el viewport es muy angosto, dejamos solo iconos para que igual entren */
+@media (max-width: 1100px) {
+  .about-social a { padding: 0.45rem 0.55rem; gap: 0; }
+  .about-social .about-social-label { display: none; }
+  .about-social i { font-size: 1rem; }
+}
+
+/* --- Columna derecha: reel grande + retrato chico SEPARADO ---
+   Reel = contenedor principal (animación). Foto = contenedor independiente
+   anclado abajo-izquierda del reel, fuera de él, con su propio marco.
+   Las dos manchas decorativas (blobs) flotan detrás para dar color y vida. */
+.about-media {
+  position: relative;
+  padding-top: 0;
+  padding-bottom: clamp(3rem, 7vw, 5rem);  /* espacio inferior para que la foto entre completa */
+  align-self: start;
+  isolation: isolate;  /* contiene el z-index de los blobs */
+}
+
+/* Manchas decorativas violetas detrás del stack media. */
+.about-media-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.about-media-blob--a {
+  width: 70%;
+  aspect-ratio: 1/1;
+  top: -8%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.55), rgba(124, 58, 237, 0.15) 60%, transparent 75%);
+  animation: about-blob-float-a 14s ease-in-out infinite alternate;
+}
+.about-media-blob--b {
+  width: 55%;
+  aspect-ratio: 1/1;
+  bottom: -6%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(91, 33, 182, 0.5), rgba(59, 7, 100, 0.18) 55%, transparent 70%);
+  animation: about-blob-float-b 18s ease-in-out infinite alternate;
+}
+@keyframes about-blob-float-a {
+  0%   { transform: translate(0, 0)       scale(1);    opacity: 0.5; }
+  50%  { transform: translate(-10%, 6%)   scale(1.18); opacity: 0.7; }
+  100% { transform: translate(-4%, 14%)   scale(1.08); opacity: 0.55; }
+}
+@keyframes about-blob-float-b {
+  0%   { transform: translate(0, 0)       scale(1);    opacity: 0.45; }
+  50%  { transform: translate(12%, -8%)   scale(0.85); opacity: 0.65; }
+  100% { transform: translate(6%, -16%)   scale(0.95); opacity: 0.5; }
+}
+
 .about-reel {
   position: relative;
-  margin: 0; /* reset del figure del browser */
-  border: 1px solid var(--container-border);
-  background: var(--bg-secondary);
+  aspect-ratio: 3/4;
+  max-height: 620px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 460px;
+  overflow: visible;
+  background: transparent;
+  z-index: 2;
+  animation: about-reel-float 9s ease-in-out infinite;
 }
-.about-portrait { aspect-ratio: 3 / 4; max-width: 460px; width: 100%; }
-.about-reel { aspect-ratio: 16 / 9; width: min(100%, 520px); align-self: flex-end; }
-
-.about-portrait .artist-photo-wrapper,
-.about-reel .artist-video-wrapper {
+@keyframes about-reel-float {
+  0%, 100% { transform: translateY(0)     rotate(0deg); }
+  33%      { transform: translateY(-10px) rotate(-0.6deg); }
+  66%      { transform: translateY(6px)   rotate(0.5deg); }
+}
+/* Wrapper interno con clipping para el video (mantiene esquinas redondeadas
+   y permite que el ken-burns no se desborde). */
+.about-reel-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0d0d12;
+  box-shadow:
+    0 30px 60px -20px rgba(0, 0, 0, 0.3),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  will-change: transform;
+  animation: about-reel-breathe 12s ease-in-out infinite;
+}
+/* Respiración sutil (ken-burns) del contenedor de la animación */
+@keyframes about-reel-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+.about-reel .about-video {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Caption del reel: pegada al borde superior, no choca con la foto abajo. */
+.about-reel-cap {
+  position: absolute;
+  top: 0;
+  bottom: auto;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(13, 13, 18, 0.7), transparent);
+  z-index: 4;
+}
+
+/* Foto retrato: contenedor INDEPENDIENTE del reel, anclado abajo-izquierda
+   del área media, fuera del reel. Marco blanco polaroid + sombra fuerte +
+   ligera rotación + flotación lenta opuesta al reel para crear contraste. */
+.about-portrait {
+  position: absolute;
+  bottom: 0;
+  left: -4%;
+  width: 38%;
+  max-width: 200px;
+  aspect-ratio: 4/5;
+  margin: 0;
   overflow: hidden;
+  border-radius: 3px;
+  background: #0d0d12;
+  box-shadow:
+    0 30px 60px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 8px var(--bg-primary),
+    0 0 0 9px color-mix(in srgb, var(--accent) 38%, transparent);
+  z-index: 4;
+  transform-origin: center center;
+  will-change: transform;
+  animation: about-portrait-float 11s ease-in-out infinite;
+}
+@keyframes about-portrait-float {
+  0%, 100% { transform: translateY(0)    rotate(-2.5deg); }
+  50%      { transform: translateY(10px) rotate(-1deg); }
+}
+.about-portrait:hover {
+  animation-play-state: paused;
 }
 .about-portrait .artist-photo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  display: block;
 }
-.about-portrait:hover .artist-photo-img { transform: scale(1.04); }
 
-/* metadatos bajo el frame (FIG + reloj), tono de plano técnico */
-.about-portrait-meta,
-.about-reel-meta {
+/* Caption de la foto: pequeño chip arriba-derecha */
+.about-portrait-cap {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1.7rem;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  background: rgba(13, 13, 18, 0.7);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Caption genérico (compatibilidad con caption del reel) */
+.about-portrait-meta {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-}
-.bp-fig-label {
+  align-items: center;
+  padding: 0.5rem 0.8rem;
   font-family: 'Fira Code', monospace;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Placeholder visual cuando aún no hay imagen */
+.about-portrait .artist-photo-img:not([src]),
+.about-portrait .artist-photo-img[src=""] {
+  background: linear-gradient(135deg, #1f1f2a, #2a1a3e);
+}
+
+/* --- Empty state: SOLO icono de subir (sin label "Asignar contenido"). ---
+   El engine.ts inyecta .cms-empty-overlay con un <i> + <span>.
+   Aquí ocultamos el texto y agrandamos el ícono. */
+.about-reel .cms-empty-overlay,
+.about-portrait .cms-empty-overlay {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: rgba(124, 58, 237, 0.45);  /* violeta punteado, igual que las burbujas */
+  background: #ffffff;                       /* fondo blanco sólido */
   color: var(--accent);
+  border-radius: 4px;
+  z-index: 6;
 }
-.about-stamp {
-  font-family: 'Fira Code', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+.about-reel .cms-empty-overlay:hover,
+.about-portrait .cms-empty-overlay:hover {
+  background: #fff;
+  border-color: var(--accent);
+}
+
+/* El wrapper interno del reel (que normalmente es oscuro #0d0d12) debe verse
+   blanco cuando está vacío, para igualar el estilo de las burbujas. Quitamos
+   también la sombra y la respiración mientras no hay contenido. */
+.about-reel-media.cms-empty-slot {
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.25);
+  animation: none;
+}
+.about-reel .cms-empty-overlay span,
+.about-portrait .cms-empty-overlay span { display: none !important; }
+.about-reel .cms-empty-overlay i { font-size: 2.4rem; }
+.about-portrait .cms-empty-overlay i { font-size: 1.4rem; }
+
+/* Cuando hay empty overlay, ocultar la caption decorativa */
+.about-reel.cms-empty-slot .about-reel-cap,
+.about-portrait.cms-empty-slot .about-portrait-cap { display: none; }
+
+@media (max-width: 960px) {
+  .about-media { margin-top: 1rem; padding-bottom: 5rem; }
+  .about-reel { max-width: 320px; }
+  .about-portrait { width: 35%; max-width: 150px; left: 4%; bottom: 0; }
+  .about-media-blob--a { width: 80%; }
+  .about-media-blob--b { width: 65%; }
+}
+
+/* ============================================================
+   CMS modals — versión compacta del UploadModal para evitar scroll.
+   Mantiene la base visual de .cms-modal pero adapta padding y layout
+   del done-state a una sola vista (preview + meta side by side).
+   ============================================================ */
+
+/* Sistema unificado de campos: TÍTULO en negrita, VALOR normal.
+   Aplica a editar texto, editar info, subir/reemplazar contenido. */
+.cms-field > span {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.cms-field > input,
+.cms-field > textarea,
+.cms-up-fields .cms-field input,
+.cms-up-fields .cms-field textarea {
+  font-weight: 400;
+}
+
+.cms-upload--compact { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.cms-upload-done {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.cms-upload-done__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 10px;
+}
+.cms-upload-done__head i { font-size: 1.4rem; }
+.cms-upload-done__grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 1.2fr;
+  gap: 1rem;
+  align-items: start;
+}
+.cms-upload-done__preview {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+}
+.cms-upload-done__meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
+  line-height: 1.45;
 }
+.cms-upload-done__meta strong { color: var(--text-primary); font-weight: 600; }
+.cms-upload-done__meta li { padding-bottom: 0.35rem; border-bottom: 1px dashed var(--border); }
+.cms-upload-done__meta li:last-child { border-bottom: none; }
 
-/* --- Responsive --- */
-@media (max-width: 1024px) {
-  .about-tech-grid { grid-template-columns: 1fr; gap: 4.5rem; }
-  .about-media { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
-  .about-portrait { max-width: 380px; }
-  .about-reel { align-self: auto; }
-}
-@media (max-width: 768px) {
-  .about-tech-frame { grid-template-columns: 1fr; }
-  .about-rail { display: none; }
-  .about-statement { max-width: 100%; }
-  .about-media { flex-direction: column; }
-  .about-portrait { max-width: 100%; }
-  .about-specs dd { font-size: 0.82rem; }
-}
-
-/* --- Reduced motion --- */
-@media (prefers-reduced-motion: reduce) {
-  .about-links .about-link::after { transition: none; }
-  .about-portrait .artist-photo-img { transition: none; }
+@media (max-width: 640px) {
+  .cms-upload-done__grid { grid-template-columns: 1fr; }
 }

@@ -29,15 +29,27 @@ export async function getContent(): Promise<ContentItems> {
 }
 
 export async function saveContent(items: ContentItems): Promise<void> {
-  const r = await fetch('/api/content', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
-  })
-  if (!r.ok) {
-    const err = await r.json().catch(() => null)
-    throw new Error((err && err.error) || `Error del servidor (${r.status})`)
+  let r: Response
+  try {
+    r = await fetch('/api/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    })
+  } catch {
+    // Backend Express no disponible → persistencia solo local (el caller ya
+    // guardó en localStorage). No bloquea el CMS en desarrollo sin backend.
+    return
   }
+  if (r.ok) return
+  // 5xx = backend caído o sin DB. El contenido ya quedó en localStorage,
+  // así que degradamos en silencio en vez de bloquear el CMS.
+  if (r.status >= 500) return
+  // 4xx con error legible (ej. payload inválido) sí se reporta.
+  const text = await r.text().catch(() => '')
+  let msg = ''
+  try { msg = (JSON.parse(text) as { error?: string }).error || '' } catch { /* sin JSON → degradar */ }
+  if (msg) throw new Error(msg)
 }
 
 export async function login(user: string, pass: string, code: string | null): Promise<LoginResponse> {
@@ -50,14 +62,38 @@ export async function login(user: string, pass: string, code: string | null): Pr
 }
 
 export async function uploadMedia(base64Data: string, originalSize: number, originalName: string): Promise<UploadResponse> {
-  const r = await fetch('/api/upload-test', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ base64Data, originalSize, originalName }),
+  // Fallback local: si el backend (Cloudinary) no está disponible, se usa el
+  // propio dataURL como fuente. Permite seleccionar/subir imágenes sin backend
+  // en desarrollo (se persisten en los overrides locales).
+  const localFallback = (): UploadResponse => ({
+    success: true,
+    secure_url: base64Data,
+    final_bytes: originalSize,
+    final_format: (originalName.split('.').pop() || 'webp').toLowerCase(),
+    original_size: originalSize,
+    original_name: originalName,
   })
-  const data = await r.json()
-  if (!data.success) throw new Error(data.error || 'Error en la subida')
-  return data
+
+  let r: Response
+  try {
+    r = await fetch('/api/upload-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Data, originalSize, originalName }),
+    })
+  } catch {
+    return localFallback() // backend no corre → usar dataURL local
+  }
+  if (!r.ok) {
+    const text = await r.text()
+    try {
+      const data = JSON.parse(text)
+      throw new Error(data.error || 'Error en la subida')
+    } catch {
+      return localFallback() // backend inalcanzable → dataURL local
+    }
+  }
+  return r.json()
 }
 
 export async function deleteMedia(url: string): Promise<void> {

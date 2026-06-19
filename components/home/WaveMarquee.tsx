@@ -1,31 +1,30 @@
-/* Wave marquee de software — portado de index.html (hero-software-wave).
-   El legacy duplicaba el grupo 4 veces a mano para el loop infinito en
-   ultrawide; acá se mapea desde un solo array (grupos clon aria-hidden). */
+/* WaveMarquee — Infinite horizontal ribbon of tool/software bubbles.
+   
+   Structure (for CMS engine compatibility):
+     .hero-software-wave
+       └ .wave-track              ← CSS translateX animation
+           └ .wave-group           ← one set of bubbles
+               └ .wave-item       ← single bubble (data-cms-key on editable group)
+                   └ .wave-icon-slot  ← icon filled via CMS
+                   └ .wave-text       ← name span created by CMS WAVE_FIELDS
 
-const WAVE_ITEMS = [
-  { src: 'https://cdn.simpleicons.org/adobeillustrator/FF9A00', alt: 'Ai', label: 'Illustrator' },
-  { src: 'https://cdn.simpleicons.org/adobephotoshop/31A8FF', alt: 'Ps', label: 'Photoshop' },
-  { src: 'https://cdn.simpleicons.org/adobeaftereffects/9999FF', alt: 'Ae', label: 'After Effects' },
-  { src: 'https://cdn.simpleicons.org/adobepremierepro/EA77FF', alt: 'Pr', label: 'Premiere' },
-  { src: 'https://cdn.simpleicons.org/blender/F5792A', alt: 'Blender', label: 'Blender' },
-  { src: 'https://cdn.simpleicons.org/autodesk/0696D7', alt: '3ds Max', label: '3ds Max' },
-  { src: 'https://cdn.simpleicons.org/unity/000000', alt: 'Unity', label: 'Unity' },
-  { src: 'https://cdn.simpleicons.org/epicgames/FFFFFF', alt: 'Unreal', label: 'Unreal Engine' },
-  { src: 'https://cdn.simpleicons.org/maxon/FFFFFF', alt: 'ZBrush', label: 'ZBrush' },
-  { src: 'https://cdn.simpleicons.org/autodesk/0696D7', alt: 'Maya', label: 'Maya' },
-  { src: 'https://cdn.simpleicons.org/adobe/FFFFFF', alt: 'Substance', label: 'Substance' },
-]
+   The first group is the editable source of truth.
+   Clone groups (aria-hidden) provide seamless loop visuals.
+   engine.syncWaveGroups() mirrors content to clones. */
 
-const GROUPS = 4 // 1 visible + 3 clones para el loop infinito
+const SLOTS  = 11
+const CLONES = 3
 
-function WaveGroup({ hidden }: { hidden?: boolean }) {
+function Group() {
   return (
-    <div className="wave-group" aria-hidden={hidden || undefined}>
-      {WAVE_ITEMS.map((item) => (
-        <div className="wave-item" key={item.label}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.src} className="wave-icon" alt={item.alt} />
-          <span className="wave-text">{item.label}</span>
+    <div className="wave-group">
+      {Array.from({ length: SLOTS }, (_, i) => (
+        <div
+          key={i}
+          className="wave-item"
+          data-cms-key={`hero.marquee#${i}`}
+        >
+          <div className="wave-icon-slot" />
         </div>
       ))}
     </div>
@@ -36,8 +35,9 @@ export default function WaveMarquee() {
   return (
     <div className="hero-software-wave">
       <div className="wave-track">
-        {Array.from({ length: GROUPS }, (_, i) => (
-          <WaveGroup key={i} hidden={i > 0} />
+        <Group />
+        {Array.from({ length: CLONES }, (_, i) => (
+          <Group key={i} />
         ))}
       </div>
     </div>

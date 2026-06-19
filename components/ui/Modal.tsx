@@ -8,13 +8,15 @@
    - useModal().open/confirm — imperativo, para modales simples
    - <CmsModal> declarativo — para modales con estado propio (upload, pickers) */
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useKeyHandler } from '@/hooks/useKeyHandler'
 
 export type ModalAction = {
   label: React.ReactNode
   primary?: boolean
   danger?: boolean
+  disabled?: boolean
+  title?: string
   // return false para mantener el modal abierto (validación)
   onClick: () => void | false
 }
@@ -32,6 +34,9 @@ type CmsModalProps = {
 
 export function CmsModal({ title, children, actions, wide, locked, show = true, onClose }: CmsModalProps) {
   const [visible, setVisible] = useState(false)
+  // Solo cierra si el gesto EMPEZÓ y TERMINÓ sobre el overlay. Evita que
+  // arrastrar una selección de texto desde dentro y soltar afuera cierre el modal.
+  const downOnOverlay = useRef(false)
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true))
   }, [])
@@ -48,7 +53,11 @@ export function CmsModal({ title, children, actions, wide, locked, show = true, 
   return (
     <div
       className={`cms-modal-overlay${visible && show ? ' show' : ''}`}
-      onClick={(e) => { if (e.target === e.currentTarget && !locked) onClose() }}
+      onMouseDown={(e) => { downOnOverlay.current = e.target === e.currentTarget }}
+      onMouseUp={(e) => {
+        if (e.target === e.currentTarget && downOnOverlay.current && !locked) onClose()
+        downOnOverlay.current = false
+      }}
     >
       <div className={`cms-modal${wide ? ' cms-modal--wide' : ''}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
@@ -72,8 +81,10 @@ export function CmsModal({ title, children, actions, wide, locked, show = true, 
                 key={i}
                 type="button"
                 className={`cms-btn${a.primary ? ' cms-btn--primary' : ''}`}
+                disabled={a.disabled}
+                title={a.title}
                 style={a.danger ? { background: '#ef4444', borderColor: '#ef4444' } : undefined}
-                onClick={() => { if (a.onClick() !== false) onClose() }}
+                onClick={() => { if (a.disabled) return; if (a.onClick() !== false) onClose() }}
               >
                 {a.label}
               </button>

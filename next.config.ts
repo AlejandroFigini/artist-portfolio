@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 const API_URL = process.env.API_URL || "http://localhost:3001";
 
 const nextConfig: NextConfig = {
+  // Oculta el indicador flotante de Next.js Dev Tools (la "N" en dev).
+  devIndicators: false,
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },

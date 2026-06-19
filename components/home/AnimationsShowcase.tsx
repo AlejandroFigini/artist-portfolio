@@ -1,273 +1,391 @@
 'use client'
 
-/* Animations (home) — portado de index.html #animaciones + script.js:
-   hover-play con controles, fullscreen → lightbox, doble-tap en táctil,
-   viñetas decorativas con "teleportation" y canvas de blobs. */
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterLoop, wordRevealLoop } from '@/hooks/useGSAP'
 
-import { useEffect, useRef, useState } from 'react'
-import AnimBlobCanvas from './AnimBlobCanvas'
-import { openVideoLightbox } from '@/components/ui/lightbox'
-import { realMedia } from '@/lib/media'
-import './animations-modern.css'
+const CARD_COUNT = 6
+const SOFTWARE_COUNT = 6
 
-const SOFTWARE_STACK = [
-  { href: 'https://www.adobe.com/products/illustrator.html', badge: 'ai', short: 'Ai', name: 'Adobe Illustrator' },
-  { href: 'https://www.adobe.com/products/animate.html', badge: 'an', short: 'An', name: 'Adobe Animate' },
-  { href: 'https://www.adobe.com/products/aftereffects.html', badge: 'ae', short: 'Ae', name: 'Adobe After Effects' },
-  { href: 'https://www.adobe.com/products/photoshop.html', badge: 'ps', short: 'Ps', name: 'Adobe Photoshop' },
-  { href: 'https://www.adobe.com/products/premiere.html', badge: 'pr', short: 'Pr', name: 'Adobe Premiere Pro' },
-]
-
-const DECOR_LABELS = ['Haai Thar', 'Galope']
-
-const VIDEOS = [
-  {
-    title: 'Fox Animation', date: '2020', project: 'Concept Art',
-    desc: 'A character animation study exploring fluid quadruped motion and expressive posing.',
-    inspiration: 'Classic 2D animation and natural animal movement.',
-  },
-  {
-    title: 'Dog Run Cycle', date: '2020', project: 'Motion Study',
-    desc: 'A run-cycle study focused on weight, timing and looping mechanics.',
-    inspiration: "Muybridge's locomotion studies.",
-  },
-  {
-    title: 'Animated Short (Part 1)', date: '2021', project: 'Universidad ORT',
-    desc: 'Exploring narrative pacing and character weight in a multi-stage animated sequence. Created as part of the diploma at ORT University.',
-    inspiration: 'Narrative-driven student films.',
-  },
-  {
-    title: 'LipSync Study', date: '2020', project: 'Dialogue Test',
-    desc: 'Focusing on phonetic mouth movements and expressive character acting in sync with audio dialogue. Highlighting facial emotion fluidity.',
-    inspiration: 'Expressive facial acting and phonetics.',
-  },
-  {
-    title: 'Action Sequence', date: '2020', project: 'Mechanics',
-    desc: 'A study in mechanical movement, anticipation, and follow-through. Analyzing the physics of body motion in a high-intensity character loop.',
-    inspiration: 'Action animation and body mechanics.',
-  },
-  {
-    title: 'Final Project Scene', date: '2021', project: 'Universidad ORT',
-    desc: 'A cinematic composition from a final production phase. Integrating environment lighting, character rig complexity, and emotional storytelling.',
-    inspiration: 'Cinematic storytelling and lighting.',
-  },
-]
-
-// "Vista móvil" legacy: táctil o viewport angosto → doble-tap para fullscreen
-const isMobileView = () =>
-  window.matchMedia('(hover: none), (pointer: coarse)').matches || window.innerWidth <= 768
-
-const clearTouchActive = (except?: Element | null) => {
-  document.querySelectorAll('.touch-active').forEach((x) => { if (x !== except) x.classList.remove('touch-active') })
+function Corners() {
+  return (
+    <>
+      <span className="bp-corner tl" />
+      <span className="bp-corner tr" />
+      <span className="bp-corner bl" />
+      <span className="bp-corner br" />
+    </>
+  )
 }
 
-function VideoCard({ v }: { v: (typeof VIDEOS)[number] }) {
-  const itemRef = useRef<HTMLDivElement>(null)
-  const vidRef = useRef<HTMLVideoElement>(null)
-  const [playing, setPlaying] = useState(false)
+/* Ítem del desplegable de software: imagen (logo) + texto, ambos editables
+   por el CMS (contenedores .anim-soft-icon / .anim-soft-name registrados en
+   engine.ts). Para visitantes se ocultan los slots sin logo; en admin se ven
+   todos para poder cargarlos. */
+function SoftwareItem({ index }: { index: number }) {
+  const iconRef = useRef<HTMLSpanElement>(null)
+  const nameRef = useRef<HTMLSpanElement>(null)
+  const [hasImg, setHasImg] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
-  const open = () => {
-    const vid = vidRef.current
-    if (!realMedia(vid)) return
-    openVideoLightbox(vid!.currentSrc || vid!.getAttribute('src') || '', v.title, v.desc, {
-      date: v.date, project: v.project, inspiration: v.inspiration,
-    })
-  }
+  useEffect(() => {
+    // texto default solo si el span está vacío (el CMS lo sobreescribe al hidratar)
+    if (nameRef.current && !(nameRef.current.textContent || '').trim()) {
+      nameRef.current.textContent = `Software ${index + 1}`
+    }
+    const el = iconRef.current
+    if (!el) return
+    const checkImg = () => {
+      const bg = el.style.backgroundImage
+      setHasImg(!!bg && bg !== 'none' && !bg.includes("url('')") && !bg.includes('url("")'))
+    }
+    checkImg()
+    const moImg = new MutationObserver(checkImg)
+    moImg.observe(el, { attributes: true, attributeFilter: ['style', 'data-full'] })
+
+    const checkAdmin = () => setIsAdmin(document.body.classList.contains('is-admin'))
+    checkAdmin()
+    const moAdmin = new MutationObserver(checkAdmin)
+    moAdmin.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+    return () => { moImg.disconnect(); moAdmin.disconnect() }
+  }, [index])
+
+  const hidden = !isAdmin && !hasImg
 
   return (
-    <div
-      ref={itemRef}
-      className="animation-item video-container"
-      data-title={v.title}
-      data-desc={v.desc}
-      data-date={v.date}
-      data-project={v.project}
-      data-inspiration={v.inspiration}
-      onMouseEnter={() => {
-        if (itemRef.current?.closest('.section-inactive')) return
-        vidRef.current?.play().then(() => setPlaying(true)).catch(() => {})
-      }}
-      onMouseLeave={() => {
-        vidRef.current?.pause()
-        setPlaying(false)
-      }}
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest('.play-pause-btn, .fullscreen-btn')) return
-        const item = itemRef.current!
-        if (isMobileView() && !item.classList.contains('touch-active')) {
-          // Primer tap: revelar overlay y reproducir; el segundo abre fullscreen
-          clearTouchActive(item)
-          item.classList.add('touch-active')
-          vidRef.current?.play().catch(() => {})
-          return
-        }
-        open()
-      }}
-    >
-      <video ref={vidRef} loop muted playsInline className="anim-video" preload="metadata"></video>
-      <div className="video-overlay">
-        <div className="video-info">
-          <h3 className="video-title">{v.title}</h3>
-          <div className="video-meta">
-            <span className="video-date"><i className="fa-regular fa-calendar"></i> {v.date}</span>
-            <span className="video-project"><i className="fa-solid fa-folder-open"></i> {v.project}</span>
-          </div>
-        </div>
-        <div className="video-controls">
-          <button
-            className="control-btn play-pause-btn"
-            aria-label="Pause/Play"
-            onClick={(e) => {
-              e.stopPropagation()
-              const vid = vidRef.current
-              if (!vid) return
-              if (vid.paused) vid.play().then(() => setPlaying(true)).catch(() => {})
-              else { vid.pause(); setPlaying(false) }
-            }}
-          >
-            <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`}></i>
-          </button>
-          <button className="control-btn fullscreen-btn" aria-label="Fullscreen" onClick={(e) => { e.stopPropagation(); open() }}>
-            <i className="fa-solid fa-expand"></i>
-          </button>
-        </div>
-      </div>
+    <li className={`anim-software__item${hidden ? ' is-hidden' : ''}`} role="menuitem">
+      <span className="anim-soft-icon-wrap">
+        <span ref={iconRef} className="anim-soft-icon" data-full="" aria-hidden="true">
+          {!hasImg && <i className="fa-solid fa-cube anim-soft-ph" />}
+        </span>
+      </span>
+      <span ref={nameRef} className="anim-soft-name" />
+    </li>
+  )
+}
+
+function SoftwareDropdown() {
+  // El hover (abrir/cerrar) lo maneja CSS puro → cierra solo al salir el mouse.
+  // El estado React es solo para apertura por click (sticky), que se cierra al
+  // clickear fuera del componente.
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div ref={ref} className={`anim-software${open ? ' is-open' : ''}`}>
+      <button
+        type="button"
+        className="anim-software__trigger"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <i className="fa-solid fa-layer-group" aria-hidden="true" />
+        <span>Software</span>
+        <i className="fa-solid fa-chevron-down anim-software__chev" aria-hidden="true" />
+      </button>
+      <ul className="anim-software__list" role="menu">
+        {Array.from({ length: SOFTWARE_COUNT }, (_, i) => (
+          <SoftwareItem key={i} index={i} />
+        ))}
+      </ul>
     </div>
   )
 }
 
-// Viñetas decorativas: aparecen 3s cada 10s en posiciones aleatorias,
-// solo con la sección en viewport (port de initVignetteTeleportation)
-function useVignetteTeleportation(sectionRef: React.RefObject<HTMLElement | null>) {
+type CardFields = { title: string; project: string; date: string; inspiration: string; desc: string }
+
+function AnimCard({ index }: { index: number }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [hasContent, setHasContent] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
+  const [fields, setFields] = useState<CardFields>({ title: '', project: '', date: '', inspiration: '', desc: '' })
+  const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  // Observa el contenedor (que el CMS muta imperativamente): src del video para
+  // saber si hay contenido, y los data-* para reflejar los datos en el overlay.
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const section = sectionRef.current
-    if (!section) return
-    const vignettes = section.querySelectorAll<HTMLElement>('.decor-motion')
-    if (!vignettes.length) return
+    const v = videoRef.current
+    const c = cardRef.current
+    if (!v || !c) return
 
-    const SPOTS = [
-      { top: '8%', left: '3%', right: 'auto', bottom: 'auto' },
-      { top: '10%', right: '4%', left: 'auto', bottom: 'auto' },
-      { top: '42%', left: '2%', right: 'auto', bottom: 'auto' },
-      { top: '48%', right: '2%', left: 'auto', bottom: 'auto' },
-      { bottom: '15%', left: '4%', right: 'auto', top: 'auto' },
-      { bottom: '12%', right: '3%', left: 'auto', top: 'auto' },
-    ]
-    const PEEK_OPACITY = '0.18'
-    const VISIBLE_MS = 3000
-    const CYCLE_MS = 10000
-
-    const applySpot = (el: HTMLElement, idx: number) => {
-      const s = SPOTS[idx]
-      if (!s) return
-      el.style.top = s.top
-      el.style.left = s.left
-      el.style.right = s.right
-      el.style.bottom = s.bottom
+    const syncContent = () => {
+      const has = !!(v.src && v.src !== window.location.href)
+      setHasContent(has)
+      // mostrar el primer frame en reposo (no reproducir hasta hover)
+      if (has) { try { v.pause(); v.currentTime = 0 } catch {} }
     }
+    const syncFields = () => setFields({
+      title: c.getAttribute('data-title') || '',
+      project: c.getAttribute('data-project') || '',
+      date: c.getAttribute('data-date') || '',
+      inspiration: c.getAttribute('data-inspiration') || '',
+      desc: c.getAttribute('data-desc') || '',
+    })
+    syncContent()
+    syncFields()
 
-    const timers: number[] = []
-    function showCycle() {
-      const nextL = [0, 2, 4][Math.floor(Math.random() * 3)]
-      const nextR = [1, 3, 5][Math.floor(Math.random() * 3)]
-      if (vignettes[0]) applySpot(vignettes[0], nextL)
-      if (vignettes[1]) applySpot(vignettes[1], nextR)
-      vignettes.forEach((v) => { v.style.opacity = PEEK_OPACITY })
-      timers.push(window.setTimeout(() => vignettes.forEach((v) => { v.style.opacity = '0' }), VISIBLE_MS))
-    }
+    const moVideo = new MutationObserver(syncContent)
+    moVideo.observe(v, { attributes: true, attributeFilter: ['src'] })
+    const srcEl = v.querySelector('source')
+    if (srcEl) moVideo.observe(srcEl, { attributes: true, attributeFilter: ['src'] })
 
-    vignettes.forEach((v) => { v.style.opacity = '0' })
+    const moFields = new MutationObserver(syncFields)
+    moFields.observe(c, { attributes: true, attributeFilter: ['data-title', 'data-project', 'data-date', 'data-inspiration', 'data-desc'] })
 
-    let cycleTimer: number | null = null
-    let firstShow: number | null = null
-    const startCycle = () => {
-      if (cycleTimer) return
-      if (!firstShow) firstShow = window.setTimeout(showCycle, 2500)
-      cycleTimer = window.setInterval(showCycle, CYCLE_MS)
-    }
-    const stopCycle = () => {
-      if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null }
-      vignettes.forEach((v) => { v.style.opacity = '0' })
-    }
+    v.addEventListener('loadeddata', syncContent)
+    return () => { moVideo.disconnect(); moFields.disconnect(); v.removeEventListener('loadeddata', syncContent) }
+  }, [])
 
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) startCycle()
-      else stopCycle()
-    }, { threshold: 0 })
-    io.observe(section)
-
-    return () => {
-      io.disconnect()
-      stopCycle()
-      if (firstShow) clearTimeout(firstShow)
-      timers.forEach(clearTimeout)
-    }
-  }, [sectionRef])
-}
-
-export default function AnimationsShowcase() {
-  const [stackOpen, setStackOpen] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-  useVignetteTeleportation(sectionRef)
-
-  // Tap fuera de cualquier tarjeta → limpiar overlays táctiles (port L105)
   useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('.animation-item, .gallery-item')) clearTouchActive(null)
+    if (expanded) {
+      infoTimerRef.current = setTimeout(() => setShowInfo(true), 1000)
+    } else {
+      setShowInfo(false)
+      if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
     }
-    document.addEventListener('click', onDocClick)
-    return () => document.removeEventListener('click', onDocClick)
+    return () => { if (infoTimerRef.current) clearTimeout(infoTimerRef.current) }
+  }, [expanded])
+
+  const handleMouseEnter = useCallback(() => {
+    if (!hasContent) return
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = 0
+    v.play().catch(() => {})
+    setPlaying(true)
+  }, [hasContent])
+
+  const handleMouseLeave = useCallback(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.pause()
+    setPlaying(false)
+  }, [])
+
+  const togglePlay = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) {
+      v.play().catch(() => {})
+      setPlaying(true)
+    } else {
+      v.pause()
+      setPlaying(false)
+    }
+  }, [])
+
+  const openExpand = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpanded(true)
+  }, [])
+
+  const closeExpanded = useCallback(() => {
+    setExpanded(false)
+    const v = videoRef.current
+    if (v) { v.pause(); setPlaying(false) }
   }, [])
 
   return (
-    <section id="animaciones" className="animations-section anim-modern" ref={sectionRef}>
-      {/* Fondo en movimiento moderno: malla de auroras a la deriva +
-          barrido de luz, sobre lienzo oscuro. Capas GPU (transform/
-          opacity), aria oculto. Ref.: secciones reel modernas con
-          gradient mesh animado (Awwwards / Linear-style). */}
-      <div className="am-bg" aria-hidden="true">
-        <span className="am-aurora am-a1"></span>
-        <span className="am-aurora am-a2"></span>
-        <span className="am-aurora am-a3"></span>
-        <span className="am-beam"></span>
+    <>
+      <div
+        ref={cardRef}
+        className={`anim-card animation-item${hasContent ? '' : ' anim-card--empty'}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={{ '--card-i': index } as React.CSSProperties}
+      >
+        <Corners />
+        <div className="anim-card__media">
+          <video
+            ref={videoRef}
+            className="anim-card__video anim-video"
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+          {!hasContent && (
+            <div className="anim-card__placeholder" aria-hidden="true">
+              <i className="fa-solid fa-film" />
+            </div>
+          )}
+        </div>
+
+        {hasContent && (
+          <div className="anim-card__overlay">
+            <div className="anim-card__info">
+              <span className="anim-card__fig">FIG. 03{String.fromCharCode(97 + index)}</span>
+              <h3 className="anim-card__title video-title">{fields.title}</h3>
+              <span className="anim-card__meta">
+                <span className="video-project"><i className="fa-solid fa-folder" aria-hidden="true" /> {fields.project}</span>
+                <span className="video-date"><i className="fa-regular fa-calendar" aria-hidden="true" /> {fields.date}</span>
+              </span>
+            </div>
+            <div className="anim-card__controls">
+              <button
+                type="button"
+                className="anim-card__btn"
+                onClick={togglePlay}
+                aria-label={playing ? 'Pausar' : 'Reproducir'}
+              >
+                <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`} />
+              </button>
+              <button
+                type="button"
+                className="anim-card__btn"
+                onClick={openExpand}
+                aria-label="Ver en pantalla completa"
+              >
+                <i className="fa-solid fa-expand" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div
-        className={`global-soft-reveal${stackOpen ? ' open' : ''}`}
-        onClick={() => setStackOpen((o) => !o)}
-      >
-        <div className="global-soft-header">Production Stack <i className="fa-solid fa-layer-group"></i></div>
-        <div className="global-soft-icons">
-          {SOFTWARE_STACK.map((s) => (
-            <a key={s.badge} href={s.href} target="_blank" rel="noopener noreferrer" className="soft-item">
-              <span className={`soft-badge ${s.badge}`}>{s.short}</span><span className="soft-name">{s.name}</span>
-            </a>
+      {expanded && hasContent && typeof document !== 'undefined' && createPortal(
+        <div className="anim-lightbox" onClick={closeExpanded}>
+          <button
+            type="button"
+            className="anim-lightbox__close"
+            onClick={closeExpanded}
+            aria-label="Cerrar"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+
+          <div className="anim-lightbox__media">
+            <video
+              src={videoRef.current?.src || ''}
+              className="anim-lightbox__video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            <button
+              type="button"
+              className="anim-lightbox__info-btn"
+              onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
+              aria-label="Información"
+            >
+              <i className={`fa-solid ${showInfo ? 'fa-xmark' : 'fa-circle-info'}`} />
+            </button>
+
+            {showInfo && (
+              <div className="anim-lightbox__info-panel" onClick={(e) => e.stopPropagation()}>
+                {fields.title && <h3>{fields.title}</h3>}
+                <dl className="anim-lightbox__meta">
+                  {fields.date && <div><dt>Fecha</dt><dd>{fields.date}</dd></div>}
+                  {fields.project && <div><dt>Proyecto</dt><dd>{fields.project}</dd></div>}
+                  {fields.inspiration && <div><dt>Inspiración</dt><dd>{fields.inspiration}</dd></div>}
+                  {fields.desc && <div className="anim-lightbox__meta-block"><dt>Descripción</dt><dd>{fields.desc}</dd></div>}
+                </dl>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
+export default function AnimationsShowcase() {
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    ensureGSAP()
+    const sec = sectionRef.current
+    if (!sec) return
+
+    let twTimeout: ReturnType<typeof setTimeout>
+    let titleTw: gsap.core.Timeline | null = null
+    let descTw: gsap.core.Timeline | null = null
+
+    const ctx = gsap.context(() => {
+      gsap.set('.anim-showcase__fig', { autoAlpha: 0, y: 12 })
+      gsap.set('.anim-showcase__title .line', { yPercent: 115, skewY: 4 })
+      gsap.set('.anim-showcase__desc', { autoAlpha: 0, y: 18 })
+      gsap.set('.anim-card', { autoAlpha: 0, y: 40, scale: 0.95 })
+
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
+      tl.to('.anim-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
+        .to('.anim-showcase__title .line', { yPercent: 0, skewY: 0, duration: 1.0, stagger: 0.1 }, 0.05)
+        .to('.anim-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.6')
+        // clearProps: tras la entrada GSAP suelta el transform inline para que
+        // el float pasivo (CSS) lo controle limpio y fluido.
+        .to('.anim-card', { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'transform' }, '-=0.3')
+
+      let played = false
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !played) {
+            played = true
+            tl.play()
+            io.disconnect()
+            const lineEl = sec.querySelector<HTMLElement>('.anim-showcase__title .line')
+            const descEl = sec.querySelector<HTMLElement>('.anim-showcase__desc')
+            twTimeout = setTimeout(() => {
+              if (lineEl) titleTw = typewriterLoop(lineEl, 8)
+              if (descEl) descTw = wordRevealLoop(descEl, 8)
+            }, (tl.duration() + 1) * 1000)
+          }
+        }
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
+      io.observe(sec)
+
+      ScrollTrigger.refresh()
+    }, sectionRef)
+    return () => { clearTimeout(twTimeout); titleTw?.kill(); descTw?.kill(); ctx.revert() }
+  }, [])
+
+  return (
+    <section ref={sectionRef} className="anim-showcase" aria-labelledby="anim-showcase-title">
+      <div className="anim-showcase__rail" aria-hidden="true">
+        <span className="anim-showcase__rail-fig">FILE 03 · ANIMATIONS</span>
+        <span className="anim-showcase__rail-track">
+          <span className="anim-showcase__rail-fill" />
+        </span>
+        <span className="anim-showcase__rail-fig anim-showcase__rail-fig--end">END</span>
+      </div>
+
+      <div className="anim-showcase__frame">
+        <div className="anim-showcase__header">
+          <span className="anim-showcase__fig">FIG. 03 — Motion</span>
+          <h2 id="anim-showcase-title" className="anim-showcase__title">
+            <span className="line-wrap"><span className="line">Animations</span></span>
+          </h2>
+          <p className="anim-showcase__desc" data-i18n="anim_desc">
+            Una selección de animaciones, motion graphics y pruebas técnicas
+            que exploran movimiento, narrativa y expresión a través de personajes y escenarios.
+          </p>
+          <SoftwareDropdown />
+        </div>
+
+        <div className="animations-grid">
+          {Array.from({ length: CARD_COUNT }, (_, i) => (
+            <AnimCard key={i} index={i} />
           ))}
         </div>
-      </div>
-
-      {DECOR_LABELS.map((label) => (
-        <div className="decor-motion" key={label}>
-          <video loop muted playsInline className="decor-video" preload="none"></video>
-          <div className="decor-label">{label}</div>
-        </div>
-      ))}
-
-      <div className="motion-grid"></div>
-      <div className="anim-bg-animation">
-        <AnimBlobCanvas />
-      </div>
-      <div className="section-title anim-title-container" data-scroll="reveal">
-        <h2 className="section-typewriter" data-i18n="animations_title">Animations</h2>
-        {/* regla-cota: se llena con el avance de la sección (HomeFx scrub) */}
-        <span className="title-rule" aria-hidden="true"><span className="title-rule-fill"></span></span>
-        <p className="anim-subtitle">A collection of movement and storytelling. From professional cutscenes to
-          experimental character movements.</p>
-        <a className="see-all-cta" href="/animations"><span>Explore all animations</span> <i className="fa-solid fa-arrow-right"></i></a>
-      </div>
-      <div className="animations-grid">
-        {VIDEOS.map((v) => <VideoCard key={v.title} v={v} />)}
       </div>
     </section>
   )

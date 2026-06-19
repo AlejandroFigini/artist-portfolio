@@ -11,13 +11,16 @@
    scoped por prefijo de clase (.anim-, .char-, .illu-, .m3d-, .mm-). */
 @import "./legacy/style.css";
 @import "./hero.css"; /* capa de mejora del hero (instrumentos blueprint) */
+@import "./about.css"; /* sección About: editorial + storytelling on-scroll */
+@import "./animations-showcase.css"; /* sección Animations: 6-card grid hover-to-play */
+@import "./characters-showcase.css"; /* sección Character Design: stage + carrusel */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
-@import "./about.css"; /* about rediseñado: ficha técnica blueprint */
 @import "./cursor.css"; /* cursor delicado (punto + anillo fino) */
 @import "./scroll-fx.css"; /* reglas-cota de progreso ligadas al scroll */
-@import "./legacy/gallery-common.css";
-@import "./legacy/animations.css";
-@import "./legacy/characters.css";
-@import "./legacy/illustrations.css";
-@import "./legacy/models-3d.css";
-@import "./legacy/multimedia.css";
+
+/* sparkle — usado por CvButton (components/ui/button-8.tsx) */
+@keyframes sparkle {
+  0%, 100% { opacity: 0.75; transform: scale(0.9) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(8deg); }
+}
+.animate-sparkle { animation: sparkle 2s ease-in-out infinite; }

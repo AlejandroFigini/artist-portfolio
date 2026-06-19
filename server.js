@@ -6,7 +6,7 @@ const { Pool } = require('pg');
 const cloudinary = require('cloudinary').v2;
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Enable JSON parsing and CORS
 app.use(express.json({ limit: '50mb' }));
@@ -74,6 +74,10 @@ initDb();
 // GET /api/content
 // Returns the CMS state as a JSON object, mapping keys to values
 app.get('/api/content', async (req, res) => {
+    // Mock si no hay base de datos: el frontend usa localStorage como fuente.
+    if (!process.env.DATABASE_URL) {
+        return res.json({ version: 1, items: {} });
+    }
     try {
         const result = await pool.query('SELECT key, value FROM cms_data');
         const items = {};
@@ -83,7 +87,8 @@ app.get('/api/content', async (req, res) => {
         res.json({ version: 1, items: items });
     } catch (err) {
         console.error('Error fetching content:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        // Degradar en vez de romper el sitio si la DB no responde.
+        res.json({ version: 1, items: {} });
     }
 });
 
@@ -124,9 +129,15 @@ app.post('/api/login', async (req, res) => {
 // Receives the entire CMS items object and updates the database
 app.post('/api/content', async (req, res) => {
     const { items } = req.body;
-    if (!items || typeof items !== 'object') {
-        return res.status(400).json({ error: 'Invalid payload' });
-    }
+        if (!items || typeof items !== 'object') {
+            return res.status(400).json({ error: 'Formato inválido. Se esperaba un objeto items.' });
+        }
+
+        // Mock si no hay base de datos configurada
+        if (!process.env.DATABASE_URL) {
+            console.log('[MOCK] Saving content globally in memory (no DB connected)');
+            return res.json({ success: true, message: 'Contenido guardado exitosamente (Mock)' });
+        }
 
     let client;
     try {
@@ -214,6 +225,20 @@ app.post('/api/upload-test', async (req, res) => {
 
     try {
         let uploadRes;
+        
+        // Mock si no hay Cloudinary configurado
+        if (!process.env.CLOUDINARY_API_KEY) {
+            console.log(`[MOCK] Uploading ${originalName} locally...`);
+            return res.json({
+                success: true,
+                secure_url: base64Data,
+                final_bytes: originalSize,
+                final_format: 'webp',
+                original_size: originalSize,
+                original_name: originalName,
+                asset_id: `mock_${Date.now()}`
+            });
+        }
         if (base64Data.startsWith('data:image')) {
             console.log(`Testing image upload for ${originalName}...`);
             uploadRes = await cloudinary.uploader.upload(base64Data, {

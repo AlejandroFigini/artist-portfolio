@@ -10,8 +10,8 @@
 /* --- Título: segunda línea como trazo de borrador (draft stroke) --- */
 .hero-title .line-wrap:nth-child(2) .line {
   color: transparent;
-  -webkit-text-stroke: 1.5px var(--accent);
-  text-stroke: 1.5px var(--accent);
+  -webkit-text-stroke: 1px var(--accent);
+  text-stroke: 1px var(--accent);
 }
 
 /* --- Vida continua del título: deriva vertical lenta por línea
@@ -155,3 +155,22 @@
 .motion-off .badge .badge-dot { animation: none; }
 .motion-off .bp-scanline { display: none; }
 .motion-off .hero-title .line-wrap, .motion-off .hero-title .line { animation: none; }
+
+/* Reveal por carácter del título (Hero.tsx): chars en inline-block ocupan
+   su espacio siempre (texto fijo, sin reflow); .anim-in dispara el fade+rise
+   sutil por letra. Reduced-motion / motion-off lo dejan estático y legible. */
+.hero-title .hero-char {
+  display: inline-block;
+  opacity: 1;
+}
+.hero-title.anim-in .hero-char {
+  animation: hero-char-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hero-char-in {
+  from { opacity: 0.25; transform: translateY(0.16em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-title.anim-in .hero-char { animation: none; opacity: 1; }
+}
+.motion-off .hero-title.anim-in .hero-char { animation: none; opacity: 1; }

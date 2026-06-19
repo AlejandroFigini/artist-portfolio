@@ -4,16 +4,16 @@
    desde PC vs repositorio, con renombrado inline del contenedor) y
    openRepoPicker() (grilla del repo filtrada por tipo compatible). */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
-  syncWaveGroups, renameContainerSite,
+  syncWaveGroups, refreshTools,
 } from './engine'
 
 // ----- Content Picker ---------------------------------------------------------
@@ -28,54 +28,57 @@ type ContentPickerProps = {
 export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: ContentPickerProps) {
   const toast = useToast()
   const meta = metaByKey[cmsKey]
-  const [renaming, setRenaming] = useState(false)
-  const [label, setLabel] = useState(meta?.label || 'Asignar contenido')
-  const [draft, setDraft] = useState(label)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const [editingName, setEditingName] = useState(false)
 
   if (!meta) return null
+  const isVideo = meta.kind === 'video'
 
-  const doRename = () => {
-    const newName = draft.trim()
-    if (newName && newName !== label) {
-      renameContainerSite(cmsKey, newName)
-      setLabel(newName)
-      toast('Contenedor renombrado')
+  const commitRename = () => {
+    const newName = nameRef.current?.value.trim()
+    if (newName && newName !== meta.label) {
+      performRenameContainer(cmsKey, newName)
+      meta.label = newName
+      toast('Contenedor actualizado')
     }
-    setRenaming(false)
+    setEditingName(false)
   }
 
   return (
-    <CmsModal title="¿Qué deseas hacer?" onClose={onClose} actions={[{ label: 'Cancelar', onClick: () => {} }]}>
+    <CmsModal title="¿Qué deseas hacer?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancelar', onClick: () => { commitRename() } }]}>
       <div>
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> Principal</div>
-          <div className="cms-meta-line"><strong>Sección:</strong> {meta.section}</div>
-          <div className="cms-meta-line cms-container-editable">
-            <strong>Contenedor:</strong>{' '}
-            {renaming ? (
-              <>
-                <input
-                  type="text" className="cms-rename-inline" value={draft} autoFocus
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') doRename(); if (e.key === 'Escape') setRenaming(false) }}
-                />
-                <button type="button" className="cms-rename-confirm" onClick={doRename}>
-                  <i className="fa-solid fa-check"></i>
-                </button>
-              </>
+          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
+          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Tipo requerido:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Imagen'}</span></div>
+          <div className="cms-container-name-row" style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {editingName ? (
+              <label className="cms-field" style={{ flex: 1, margin: 0 }}>
+                <span>Nombre del contenedor</span>
+                <input ref={nameRef} type="text" defaultValue={meta.label} autoFocus style={{ fontWeight: 400 }} onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename() }} />
+              </label>
             ) : (
-              <>
-                <span className="cms-container-name-text">{label}</span>
-                <button
-                  type="button" className="cms-rename-pencil" title="Renombrar contenedor"
-                  onClick={() => { setDraft(label); setRenaming(true) }}
-                >
-                  <i className="fa-solid fa-pencil"></i>
-                </button>
-              </>
+              <div className="cms-meta-line" style={{ flex: 1 }}>
+                <strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span>
+              </div>
             )}
+            <button
+              type="button"
+              title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
+              style={{
+                background: 'none', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+                borderRadius: '6px', padding: '0.35rem 0.5rem', cursor: 'pointer',
+                color: 'var(--accent)', fontSize: '0.78rem', flexShrink: 0,
+                transition: 'background 0.2s, border-color 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+            >
+              <i className={`fa-solid ${editingName ? 'fa-check' : 'fa-pen'}`} />
+            </button>
           </div>
-          <div className="cms-meta-line"><strong>Tipo requerido:</strong> {meta.kind === 'video' ? 'Video' : 'Imagen'}</div>
         </div>
         <div className="cms-picker-grid">
           <button type="button" className="cms-picker-option" onClick={() => { onClose(); onLocal() }}>
@@ -83,7 +86,7 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
             <span className="cms-picker-title">Subir desde tu PC</span>
             <span className="cms-picker-desc">Selecciona un archivo nuevo de tu computadora para subirlo y asignarlo aquí.</span>
           </button>
-          <button type="button" className="cms-picker-option" onClick={() => { onClose(); onRepo() }}>
+          <button type="button" className="cms-picker-option" onClick={onRepo}>
             <i className="fa-solid fa-cloud"></i>
             <span className="cms-picker-title">Usar desde repositorio</span>
             <span className="cms-picker-desc">Elige un archivo que ya fue subido previamente al repositorio de contenidos.</span>
@@ -113,7 +116,7 @@ const FILTERS = [
   { value: 'sin usar', label: 'Sin usar', icon: 'fa-box-archive', colorClass: 'cms-filter-unused' },
 ] as const
 
-export function RepoPickerModal({ cmsKey, onClose }: { cmsKey: string; onClose: () => void }) {
+export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string; onClose: () => void; onSuccess?: () => void }) {
   const toast = useToast()
   const meta = metaByKey[cmsKey]
   const isVideoSlot = meta?.kind === 'video'
@@ -167,6 +170,7 @@ export function RepoPickerModal({ cmsKey, onClose }: { cmsKey: string; onClose: 
     const ri = state.retired.indexOf(cmsKey)
     if (ri >= 0) { state.retired.splice(ri, 1); persistRetired() }
     clearEmptySlot(cmsKey)
+    refreshTools(cmsKey)
     if (cmsKey.startsWith('hero.wave')) syncWaveGroups()
 
     recordAudit({
@@ -174,6 +178,7 @@ export function RepoPickerModal({ cmsKey, onClose }: { cmsKey: string; onClose: 
       summary: `Contenido asignado desde repositorio (${selected.name || 'archivo existente'})`,
     })
     toast('Contenido asignado correctamente')
+    if (onSuccess) onSuccess()
   }
 
   return (
@@ -186,8 +191,10 @@ export function RepoPickerModal({ cmsKey, onClose }: { cmsKey: string; onClose: 
     >
       <div>
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Asignar a:</strong> {meta.label} ({meta.section})</div>
-          <div className="cms-meta-line"><strong>Mostrando:</strong> {isVideoSlot ? 'Videos' : 'Imágenes'} disponibles en el repositorio</div>
+          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
+          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span></div>
+          <div className="cms-meta-line"><strong>Mostrando:</strong> <span style={{ opacity: 0.85 }}>{isVideoSlot ? 'Videos' : 'Imágenes'} disponibles en el repositorio</span></div>
         </div>
         <div className="cms-repo-filter-bar">
           {FILTERS.map((f) => (
@@ -222,8 +229,9 @@ export function RepoPickerModal({ cmsKey, onClose }: { cmsKey: string; onClose: 
                 <div className="cms-repo-thumb-icon"><i className="fa-solid fa-image"></i></div>
               )}
               <div className="cms-repo-thumb-info">
-                <strong>{entry.name || entry.label || '—'}</strong><br />
-                {entry.size ? fmtBytes(entry.size) : ''} <span style={{ opacity: 0.7 }}>· {entry._state}</span>
+                <span style={{ fontWeight: 400 }}>{entry.name || entry.label || '—'}</span><br />
+                {entry.size ? <><strong>Tamaño:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
+                <span style={{ opacity: 0.7, fontWeight: 400 }}>· {entry._state}</span>
               </div>
             </div>
           ))}

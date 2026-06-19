@@ -26,6 +26,7 @@ export default function CmsRoot() {
   const toast = useToast()
   useCmsStore()
   const [cmd, setCmd] = useState<Command | null>(null)
+  const [cmdStack, setCmdStack] = useState<Command[]>([])
   const [uploadFile, setUploadFile] = useState<{ key: string; file: File } | null>(null)
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
   // al nodo definitivo del DOM (patrón estándar de portales)
@@ -39,24 +40,19 @@ export default function CmsRoot() {
       const meta = engine.metaByKey[c.key]
       if (!meta || !fileInputRef.current) return
       pendingKeyRef.current = c.key
-      fileInputRef.current.accept = meta.accept === 'webp' ? 'image/*' : 'video/*'
+      fileInputRef.current.accept = meta.kind === 'video' ? 'video/*' : 'image/*'
       fileInputRef.current.click()
       return
     }
-    setCmd(c)
+    setCmd((prev) => {
+      if (prev && c.type !== prev.type) {
+        setCmdStack((stack) => [...stack, prev])
+      } else if (!prev) {
+        setCmdStack([])
+      }
+      return c
+    })
   }, [])
-
-  // Tuerca global del carrusel en modo admin (port indexEditables L414)
-  const attachCarouselGear = useCallback(() => {
-    const heroContainer = document.querySelector('.hero-bg-carousel')
-    if (!heroContainer || heroContainer.querySelector('.cms-hero-gear')) return
-    const btn = document.createElement('button')
-    btn.className = 'cms-hero-gear'
-    btn.innerHTML = '<i class="fa-solid fa-layer-group"></i>'
-    btn.title = 'Configurar Carrusel'
-    btn.onclick = (e) => { e.preventDefault(); dispatch({ type: 'carouselManager' }) }
-    heroContainer.appendChild(btn)
-  }, [dispatch])
 
   // Modo admin: overlay de edición + slots (port setAdmin)
   const setAdmin = useCallback((on: boolean) => {
@@ -67,14 +63,12 @@ export default function CmsRoot() {
       engine.seedUsedContent()
       engine.attachEditControls()
       addGallerySlots(dispatch)
-      attachCarouselGear()
     } else {
       engine.removeEditControls()
       removeGallerySlots()
-      document.querySelector('.cms-hero-gear')?.remove()
     }
     engine.refreshRetired()
-  }, [dispatch, attachCarouselGear])
+  }, [dispatch])
 
   // ----- Init (port de cms.js init()) ----------------------------------------
   useEffect(() => {
@@ -92,17 +86,21 @@ export default function CmsRoot() {
         // el backend es la fuente de verdad; overrides locales como base
         state.items = Object.assign({}, loadJSON(LS.OVERRIDES, {}), serverItems)
 
-        // settings del hero → evento para el slideshow React
-        let settings = { count: 3, duration: 7000 }
-        try { settings = Object.assign(settings, JSON.parse(state.items['hero.settings'] || '')) } catch {}
-        const slides: string[] = []
-        for (let i = 0; i < (settings.count || 3); i++) {
-          slides.push(state.items[`hero.slide#${i}`] || '')
+        const broadcastCarousel = (prefix: string) => {
+          let settings = { count: 3, duration: 7000 }
+          try { settings = Object.assign(settings, JSON.parse(state.items[`${prefix}.settings`] || '')) } catch {}
+          const slides: string[] = []
+          for (let i = 0; i < (settings.count || 3); i++) {
+            slides.push(state.items[`${prefix}.slide#${i}`] || '')
+          }
+          window.dispatchEvent(new CustomEvent(`cms:${prefix}`, { detail: { slides, duration: settings.duration || 7000 } }))
         }
-        window.dispatchEvent(new CustomEvent('cms:hero', { detail: { slides, duration: settings.duration || 7000 } }))
+        
+        broadcastCarousel('hero')
+        broadcastCarousel('hero-main')
+        broadcastCarousel('hero-sub')
 
         engine.hydrate()
-        engine.syncWaveGroups()
         engine.refreshRetired()
         emit()
         let wasAdmin = false
@@ -110,40 +108,65 @@ export default function CmsRoot() {
         setAdmin(wasAdmin)
       })
 
-    // re-escaneo para contenido generado dinámicamente (port L1801)
     const t = setTimeout(() => engine.rescan(), 300)
 
-    // skip loader al navegar a Gestión (port nav-admin-link)
-    const adminLink = document.getElementById('nav-admin-link')
-    const markSkip = () => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }
-    adminLink?.addEventListener('click', markSkip)
+    // skip loader logic moved to the inline onClick handler for the Gestión link
+
+    const onCarouselCmd = (e: Event) => {
+      const prefix = (e as CustomEvent).detail?.prefix || 'hero'
+      dispatch({ type: 'carouselManager', key: prefix })
+    }
+    window.addEventListener('cms:carouselManager', onCarouselCmd)
 
     return () => {
       clearTimeout(t)
-      adminLink?.removeEventListener('click', markSkip)
+      window.removeEventListener('cms:carouselManager', onCarouselCmd)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const close = () => setCmd(null)
+  const close = useCallback(() => {
+    setCmdStack((stack) => {
+      if (stack.length > 0) {
+        const nextStack = [...stack]
+        const lastCmd = nextStack.pop()!
+        setCmd(lastCmd)
+        return nextStack
+      }
+      setCmd(null)
+      return []
+    })
+  }, [])
 
   return (
     <CommandContext.Provider value={dispatch}>
       {/* botón de sesión en la navbar (port renderAuth) */}
       {authHost && createPortal(
         state.isAdmin ? (
-          <>
+          <div className="admin-dropdown-wrapper">
             <span className="cms-user-chip" title="Sesión iniciada como Administrador">
-              <i className="fa-solid fa-user-shield"></i> Administrador
+              <i className="fa-solid fa-user-shield"></i> Administrador <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
             </span>
-            <button type="button" className="cms-navauth-btn" title="Cerrar sesión"
-              onClick={() => { setAdmin(false); toast('Sesión cerrada') }}>
-              <i className="fa-solid fa-right-from-bracket"></i> Salir
-            </button>
-          </>
+            <div className="admin-dropdown-menu">
+              <div className="admin-menu-header">Sesión actual: Administrador</div>
+              <a 
+                href="/admin" 
+                className="cms-navauth-btn" 
+                style={{ textDecoration: 'none', display: 'inline-block' }}
+                onClick={() => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }}
+              >
+                <i className="fa-solid fa-sliders"></i> Gestión
+              </a>
+              <button type="button" className="cms-navauth-btn" title="Cerrar sesión"
+                onClick={() => { setAdmin(false); toast('Sesión cerrada') }}>
+                <i className="fa-solid fa-right-from-bracket"></i> Salir
+              </button>
+            </div>
+          </div>
         ) : (
-          <button type="button" className="cms-navauth-btn" onClick={() => setCmd({ type: 'login' })}>
-            <i className="fa-solid fa-right-to-bracket"></i> Iniciar sesión
+          <button type="button" className="login-min-btn" onClick={() => setCmd({ type: 'login' })}>
+            <i className="fa-solid fa-right-to-bracket"></i>
+            <span>Iniciar sesión</span>
           </button>
         ),
         authHost,
@@ -179,11 +202,35 @@ export default function CmsRoot() {
           onRepo={() => dispatch({ type: 'repoPicker', key: cmd.key })}
         />
       )}
-      {cmd?.type === 'repoPicker' && <RepoPickerModal cmsKey={cmd.key} onClose={close} />}
+      {cmd?.type === 'repoPicker' && (
+        <RepoPickerModal
+          cmsKey={cmd.key}
+          onClose={close}
+          onSuccess={() => {
+            const k = cmd.key
+            setCmdStack((stack) => {
+              const next = [...stack]
+              while (next.length > 0 && (next[next.length - 1].type === 'contentPicker' || next[next.length - 1].type === 'repoPicker')) {
+                next.pop()
+              }
+              if (next.length > 0) {
+                setCmd(next.pop()!)
+                return next
+              }
+              setCmd(null)
+              return []
+            })
+            if (k.startsWith('hero.marquee#')) {
+              setTimeout(() => dispatch({ type: 'editInfo', key: k }), 50)
+            }
+          }}
+        />
+      )}
       {cmd?.type === 'carouselManager' && (
         <CarouselManager
+          prefix={cmd.key || 'hero'}
           onClose={close}
-          onPickImage={(key) => dispatch({ type: 'contentPicker', key })}
+          onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
         />
       )}
       {cmd?.type === 'auditPage' && <AuditOverlay onClose={close} />}

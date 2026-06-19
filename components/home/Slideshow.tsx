@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { useCmsStore, state } from '@/lib/cms/store'
 
 const DEFAULT_SLIDES = ['/images/portada-1.webp', '/images/portada-2.webp', '/images/portada-3.webp']
 const DEFAULT_INTERVAL_MS = 6000
@@ -15,6 +16,8 @@ const DEFAULT_INTERVAL_MS = 6000
 type HeroDetail = { slides: string[]; duration: number }
 
 export default function HeroSlideshow() {
+  useCmsStore()
+  const isAdmin = state.isAdmin
   const [slides, setSlides] = useState<string[]>(DEFAULT_SLIDES)
   const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS)
 
@@ -61,6 +64,19 @@ export default function HeroSlideshow() {
         ></div>
       ))}
       <div className="carousel-overlay"></div>
+      
+      {isAdmin && (
+        <button
+          className="cms-hero-gear"
+          title="Configurar Carrusel de Fondo"
+          onClick={(e) => {
+            e.preventDefault()
+            window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix: 'hero' } }))
+          }}
+        >
+          <i className="fa-solid fa-layer-group"></i>
+        </button>
+      )}
     </div>
   )
 }

@@ -1,0 +1,626 @@
+/* ============================================================
+   ANIMATIONS SHOWCASE — 6-card grid, hover-to-play, lightbox.
+   Blueprint aesthetic matching About/Hero sections.
+   ============================================================ */
+
+.anim-showcase {
+  position: relative;
+  padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
+  background: #f6f5fb;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Detalle sutil: trama de puntos violeta apenas visible */
+.anim-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1px at center, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+}
+
+/* --- Rail vertical (decorativo) --- */
+.anim-showcase__rail {
+  position: absolute;
+  top: clamp(4rem, 8vw, 6rem);
+  bottom: clamp(4rem, 8vw, 6rem);
+  left: clamp(0.9rem, 2vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.anim-showcase__rail-fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.6;
+}
+.anim-showcase__rail-fig--end { transform: rotate(180deg); opacity: 0.4; }
+.anim-showcase__rail-track {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.anim-showcase__rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+/* --- Frame interior --- */
+.anim-showcase__frame {
+  position: relative;
+  z-index: 3;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Header --- */
+.anim-showcase__header {
+  margin-bottom: clamp(1.4rem, 2.8vw, 2.2rem);
+}
+.anim-showcase__fig {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  padding-left: 1.4rem;
+}
+.anim-showcase__fig::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+.anim-showcase__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(3.2rem, 8vw, 6.8rem);
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.anim-showcase__title .line-wrap {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.anim-showcase__title .line {
+  display: block;
+  transform-origin: left center;
+}
+
+.anim-showcase__desc {
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  letter-spacing: 0.005em;
+  max-width: 60ch;
+  margin: 1.2rem 0 0;
+}
+
+/* --- Desplegable de software (hover/click) — lista imagen+texto editable --- */
+.anim-software {
+  position: relative;
+  display: inline-block;
+  margin-top: 1.6rem;
+}
+.anim-software__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 999px;
+  padding: 0.55rem 1.05rem;
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.anim-software__trigger:hover {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.3);
+}
+.anim-software__chev {
+  font-size: 0.6rem;
+  transition: transform 0.3s ease;
+}
+.anim-software:hover .anim-software__chev,
+.anim-software.is-open .anim-software__chev { transform: rotate(180deg); }
+
+.anim-software__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 240px;
+  margin: 0;
+  /* padding-top extra hace de puente: el hover entre botón y lista es continuo
+     (sin gap) para que no parpadee ni quede abierto al salir. */
+  padding: 0.85rem 0.5rem 0.5rem;
+  list-style: none;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 12px;
+  box-shadow: 0 18px 45px -12px rgba(124, 58, 237, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+.anim-software:hover .anim-software__list,
+.anim-software:focus-within .anim-software__list,
+.anim-software.is-open .anim-software__list {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.anim-software__item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+.anim-software__item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.anim-software__item.is-hidden { display: none; }
+
+.anim-soft-icon-wrap { position: relative; flex-shrink: 0; }
+.anim-soft-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 7px;
+  background: #15131f;
+  background-size: cover;
+  background-position: center;
+  color: color-mix(in srgb, var(--accent) 50%, transparent);
+  font-size: 0.85rem;
+}
+.anim-soft-name {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+/* Overlay de subida compacto para el logo (solo el ícono, sin etiqueta) */
+.anim-soft-icon-wrap .cms-empty-overlay {
+  border-radius: 7px;
+  border-width: 1px;
+  font-size: 0.75rem;
+  padding: 0;
+}
+.anim-soft-icon-wrap .cms-empty-overlay span { display: none; }
+
+/* --- Grid 3×2 → 2×3 → 1×6 --- */
+.animations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+  /* Anula el reveal legacy (.animations-grid en style.css deja opacity:0 +
+     translateY(72px) hasta recibir .visible, sistema que esta sección no usa;
+     el reveal lo maneja el GSAP propio sobre las cards). */
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 1024px) {
+  .animations-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .animations-grid { grid-template-columns: 1fr; }
+  .anim-showcase__rail { display: none; }
+}
+
+/* --- Card --- */
+.anim-card {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0d0d12;
+  box-shadow:
+    0 6px 24px -6px rgba(0, 0, 0, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.15);
+  /* translate (float) y scale (hover) son propiedades independientes → no
+     compiten entre sí ni con el transform que deja GSAP en la entrada. */
+  transition: box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1), scale 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: anim-card-float 10s ease-in-out infinite;
+  animation-delay: calc(var(--card-i, 0) * -2.4s);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+@keyframes anim-card-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+.anim-card:hover {
+  box-shadow:
+    0 26px 60px -10px rgba(124, 58, 237, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 40px -5px rgba(139, 92, 246, 0.18);
+  scale: 1.055;
+  z-index: 4;
+}
+
+/* --- Media container --- */
+.anim-card__media {
+  position: absolute;
+  inset: 0;
+}
+.anim-card__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.anim-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16162a 50%, #0d0d12 100%);
+  color: color-mix(in srgb, var(--accent) 35%, transparent);
+  font-size: 2.2rem;
+}
+
+/* --- Overlay (info + controls) — slides up on hover --- */
+.anim-card__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(0.6rem, 1.5vw, 1rem);
+  background: linear-gradient(
+    to top,
+    rgba(13, 13, 18, 0.92) 0%,
+    rgba(13, 13, 18, 0.5) 45%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 2;
+}
+.anim-card:hover .anim-card__overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.anim-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.anim-card__fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.anim-card__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  font-weight: 500;
+  color: #fff;
+  margin: 0;
+  line-height: 1.2;
+}
+.anim-card__meta {
+  display: flex;
+  gap: 0.8rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.anim-card__meta i {
+  margin-right: 0.25rem;
+  font-size: 0.55rem;
+}
+
+/* --- Controls row --- */
+.anim-card__controls {
+  display: flex;
+  gap: 0.5rem;
+  align-self: flex-end;
+}
+.anim-card__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: rgba(13, 13, 18, 0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.anim-card__btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+}
+
+/* --- Lightbox (fullscreen expanded view) --- */
+.anim-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06060a;
+  animation: anim-lb-fadein 0.4s ease;
+}
+@keyframes anim-lb-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.anim-lightbox__close {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 10001;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(13, 13, 18, 0.6);
+  color: #fff;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.anim-lightbox__close:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+}
+
+.anim-lightbox__video {
+  width: min(90vw, 1500px);
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+  box-shadow: 0 30px 90px -20px rgba(0, 0, 0, 0.8);
+  animation: anim-lb-scalein 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes anim-lb-scalein {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Media: contiene el video + botón + panel --- */
+.anim-lightbox__media {
+  position: relative;
+  display: inline-flex;
+}
+
+/* --- Botón de info: POR FUERA del video, sobre su borde derecho --- */
+.anim-lightbox__info-btn {
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: rgba(13, 13, 18, 0.85);
+  color: var(--accent);
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.anim-lightbox__info-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+/* --- Panel de info: sale desde el icono, deslizándose sobre el borde
+   derecho del contenido (origen en el icono, a la derecha) --- */
+.anim-lightbox__info-panel {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: right center;
+  z-index: 3;
+  background: rgba(13, 13, 18, 0.92);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  width: min(300px, 30vw);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.7);
+  animation: anim-info-slidein 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes anim-info-slidein {
+  from { opacity: 0; transform: translate(26px, -50%) scale(0.95); }
+  to { opacity: 1; transform: translate(0, -50%) scale(1); }
+}
+
+.anim-lightbox__info-panel h3 {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+.anim-lightbox__info-panel p {
+  font-size: 0.88rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+/* --- Meta en formato etiqueta: valor --- */
+.anim-lightbox__meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.anim-lightbox__meta > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.anim-lightbox__meta dt {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+  flex-shrink: 0;
+}
+.anim-lightbox__meta dd {
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0;
+}
+/* La descripción (texto largo) se apila: etiqueta arriba, valor debajo */
+.anim-lightbox__meta-block {
+  flex-direction: column;
+  gap: 0.25rem !important;
+  margin-top: 0.3rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.anim-lightbox__meta-block dd {
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* --- Responsive --- */
+@media (max-width: 960px) {
+  .anim-showcase__rail { display: none; }
+}
+/* Sin espacio lateral para el panel: se ancla abajo sobre el contenido. */
+@media (max-width: 900px) {
+  .anim-lightbox__video { width: min(94vw, 1100px); border-radius: 6px; }
+  /* En mobile no hay gutter lateral: el icono va fijo arriba-derecha del viewport
+     y el panel emerge abajo. */
+  .anim-lightbox__info-btn {
+    position: fixed;
+    left: auto;
+    right: 0.8rem;
+    top: 0.8rem;
+    bottom: auto;
+    transform: none;
+  }
+  .anim-lightbox__info-btn:hover { transform: scale(1.08); }
+  .anim-lightbox__info-panel {
+    position: fixed;
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    transform-origin: bottom center;
+    width: min(340px, 90%);
+    animation: anim-info-slideup 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes anim-info-slideup {
+    from { opacity: 0; transform: translate(-50%, 16px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .anim-lightbox__close { top: 0.6rem; right: 0.6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-card { animation: none; }
+  .anim-card:hover { scale: 1.02; }
+}
+
+/* --- Empty card state (no content uploaded) --- */
+.anim-card--empty {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16162a 50%, #0d0d12 100%);
+  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+  animation: none;
+}
+.anim-card--empty:hover {
+  scale: 1;
+  box-shadow:
+    0 6px 24px -6px rgba(0, 0, 0, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* --- CMS empty state (matches About pattern) --- */
+.anim-card .cms-empty-overlay {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: rgba(124, 58, 237, 0.45);
+  background: #ffffff;
+  color: var(--accent);
+  border-radius: 10px;
+  z-index: 6;
+}
+.anim-card .cms-empty-overlay:hover {
+  background: #fff;
+  border-color: var(--accent);
+}

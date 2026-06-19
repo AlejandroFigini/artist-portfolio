@@ -21,6 +21,7 @@ export type FieldDef = {
   key: string
   label: string
   textarea?: boolean
+  optional?: boolean // si es true, no bloquea la subida cuando está vacío
   get: (c: HTMLElement) => string
   set: (c: HTMLElement, v: string) => void
 }
@@ -38,35 +39,64 @@ const ANIM_FIELDS: FieldDef[] = [
   { key: 'title', label: 'Título',
     get: (c) => txt(c.querySelector('.video-title')),
     set: (c, v) => { const e = c.querySelector('.video-title'); if (e) e.textContent = v; c.setAttribute('data-title', v) } },
-  { key: 'date', label: 'Fecha',
+  { key: 'date', label: 'Fecha', optional: true,
     get: (c) => txt(c.querySelector('.video-date')) || c.getAttribute('data-date') || '',
     set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-date'), v); c.setAttribute('data-date', v) } },
-  { key: 'project', label: 'Proyecto',
+  { key: 'project', label: 'Proyecto', optional: true,
     get: (c) => txt(c.querySelector('.video-project')) || c.getAttribute('data-project') || '',
     set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-project'), v); c.setAttribute('data-project', v) } },
-  { key: 'inspiration', label: 'Inspiración',
+  { key: 'inspiration', label: 'Inspiración', optional: true,
     get: (c) => c.getAttribute('data-inspiration') || '',
     set: (c, v) => c.setAttribute('data-inspiration', v) },
-  { key: 'fsdesc', label: 'Descripción (al ver en pantalla completa)', textarea: true,
+  { key: 'fsdesc', label: 'Descripción (al ver en pantalla completa)', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => c.setAttribute('data-desc', v) },
 ]
 
 const ILLU_FIELDS: FieldDef[] = [
   { key: 'title', label: 'Título', get: (c) => c.dataset.title || '', set: (c, v) => { c.dataset.title = v } },
-  { key: 'date', label: 'Fecha', get: (c) => c.dataset.date || '', set: (c, v) => { c.dataset.date = v } },
-  { key: 'project', label: 'Proyecto', get: (c) => c.dataset.project || '', set: (c, v) => { c.dataset.project = v } },
-  { key: 'inspiration', label: 'Inspiración', get: (c) => c.dataset.inspiration || '', set: (c, v) => { c.dataset.inspiration = v } },
-  { key: 'desc', label: 'Descripción (al ver en pantalla completa)', textarea: true,
+  { key: 'date', label: 'Fecha', optional: true, get: (c) => c.dataset.date || '', set: (c, v) => { c.dataset.date = v } },
+  { key: 'project', label: 'Proyecto', optional: true, get: (c) => c.dataset.project || '', set: (c, v) => { c.dataset.project = v } },
+  { key: 'inspiration', label: 'Inspiración', optional: true, get: (c) => c.dataset.inspiration || '', set: (c, v) => { c.dataset.inspiration = v } },
+  { key: 'desc', label: 'Descripción (al ver en pantalla completa)', textarea: true, optional: true,
     get: (c) => c.dataset.desc || '', set: (c, v) => { c.dataset.desc = v } },
-  { key: 'link', label: 'Link al repositorio (Instagram, ArtStation, etc.)',
+  { key: 'link', label: 'Link al repositorio (Instagram, ArtStation, etc.)', optional: true,
     get: (c) => c.dataset.link || '', set: (c, v) => { c.dataset.link = v } },
 ]
 
+
+
 const WAVE_FIELDS: FieldDef[] = [
-  { key: 'text', label: 'Nombre de la Herramienta',
+  { key: 'name', label: 'Nombre de Software',
     get: (c) => txt(c.querySelector('.wave-text')),
-    set: (c, v) => { const e = c.querySelector('.wave-text'); if (e) e.textContent = v } },
+    set: (c, v) => {
+      const key = c.getAttribute('data-cms-key')
+      if (!key) return
+      document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`).forEach(el => {
+        let t = el.querySelector('.wave-text')
+        if (!t) { t = document.createElement('span'); t.className = 'wave-text'; el.appendChild(t) }
+        t.textContent = v
+      })
+    }
+  },
+]
+
+const ABOUT_SPEC_FIELDS: FieldDef[] = [
+  { key: 'k', label: 'Etiqueta',
+    get: (c) => txt(c.querySelector('.about-spec-k')),
+    set: (c, v) => { const e = c.querySelector('.about-spec-k'); if (e) e.textContent = v } },
+  { key: 'v', label: 'Valor',
+    get: (c) => txt(c.querySelector('.about-spec-v')),
+    set: (c, v) => { const e = c.querySelector('.about-spec-v'); if (e) e.textContent = v } },
+]
+
+const ABOUT_SOCIAL_FIELDS: FieldDef[] = [
+  { key: 'label', label: 'Nombre',
+    get: (c) => txt(c.querySelector('.about-social-label')),
+    set: (c, v) => { const e = c.querySelector('.about-social-label'); if (e) e.textContent = v } },
+  { key: 'url', label: 'URL',
+    get: (c) => c.querySelector('a')?.getAttribute('href') || '',
+    set: (c, v) => { const a = c.querySelector('a'); if (a) a.setAttribute('href', v) } },
 ]
 
 // ----- Registro de editables (selectores adaptados al markup Next) ----------
@@ -90,21 +120,22 @@ const charLabel = (prefix: string) => (el: Element) => {
 }
 
 const REGISTRY: RegistryEntry[] = [
-  // Portada (el hero Next usa .hero-title/.hero-subtitle; el legacy .hero-overlay quedó muerto)
-  { base: 'hero.title', sel: '.hero-title', kind: 'text', mount: 'self', section: 'Portada', label: 'Título Principal' },
-  { base: 'hero.sub', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Portada', label: 'Subtítulo' },
-  { base: 'hero.slide', sel: '.hero-bg-carousel .carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada', label: (el, i) => `Imagen Carrusel #${i + 1}` },
-  { base: 'hero.media', sel: '.hero-media-wrapper .cms-media', kind: 'image', accept: 'webp', mount: 'parent', section: 'Portada', label: (el, i) => `Imagen Flotante Hero #${i + 1}` },
-  { base: 'hero.wave', sel: '.hero-software-wave .wave-track .wave-group:first-child .wave-item img.wave-icon', kind: 'image', accept: 'webp,png,svg', mount: 'parent', section: 'Portada', container: '.wave-item', fields: WAVE_FIELDS, label: (el, i) => `Herramienta Wave #${i + 1}` },
+  // Portada
+  { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Principal)', label: (el, i) => `Imagen Carrusel Principal #${i + 1}` },
+  { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Secundario)', label: (el, i) => `Imagen Carrusel Secundario #${i + 1}` },
+  { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Portada', fields: WAVE_FIELDS, label: (el, i) => `Herramienta Wave #${(i % 11) + 1}` },
   // Production Stack
   { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animaciones', label: (el, i) => `Logo Stack Animaciones #${i + 1}` },
   // Animaciones de fondo
   { base: 'anim.bg', sel: '.decor-motion .decor-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animaciones', label: (el, i) => `Video Fondo Animaciones #${i + 1}` },
   // Sobre mí
   { base: 'about.title', sel: 'h2[data-i18n="about_title"]', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Título — Sobre mí' },
+  { base: 'about.lede', sel: '.about-lede', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Bajada (debajo del título) — Sobre mí' },
   { base: 'about.desc', sel: '.bio-content', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Biografía — Sobre mí' },
+  { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'Sobre mí', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — Sobre mí` },
+  { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'Sobre mí', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Red social #${i + 1} — Sobre mí` },
   { base: 'about.photo', sel: '.artist-photo-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Sobre mí', label: 'Foto de Lucía — Sobre mí' },
-  { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Sobre mí', label: 'Video — Sobre mí' },
+  { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Sobre mí', label: 'Video / Animación — Sobre mí' },
   // Subtítulos de sección
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtítulos', label: (el) => {
     const sec = el.closest('section')
@@ -123,6 +154,9 @@ const REGISTRY: RegistryEntry[] = [
   // Ilustraciones (masonry generada por el CMS → re-escaneo)
   { base: 'illu', sel: '#illustrations-container .gallery-item img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Ilustraciones', container: '.gallery-item', fields: ILLU_FIELDS, label: (el, i) => `Ilustración #${i + 1}` },
   // Animations
+  { base: 'anim.desc', sel: '.anim-showcase__desc', kind: 'text', mount: 'self', section: 'Animations', label: 'Descripción — Animations' },
+  { base: 'anim.soft', sel: '.anim-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Animations', label: (el, i) => `Logo de software #${i + 1}` },
+  { base: 'anim.softname', sel: '.anim-soft-name', kind: 'text', mount: 'self', section: 'Animations', label: (el, i) => `Nombre de software #${i + 1}` },
   { base: 'anim', sel: '.animations-grid .anim-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animations', container: '.animation-item', fields: ANIM_FIELDS, label: (el, i) => `Animación #${i + 1}` },
   // 3D Models
   { base: 'model3d.soft', sel: '.software-icons-mini .soft-icon-wrap img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `Logo Software 3D #${i + 1}` },
@@ -140,6 +174,7 @@ export type Meta = {
   accept?: string
   fields?: FieldDef[]
   container?: string
+  mount: 'self' | 'parent' | 'none'
 }
 
 export const elementsByKey: Record<string, HTMLElement> = {}
@@ -172,6 +207,7 @@ export function indexEditables() {
         accept: entry.accept,
         fields: entry.fields,
         container: entry.container,
+        mount: entry.mount,
       }
       if (entry.fields) {
         const cont = entry.container ? el.closest<HTMLElement>(entry.container) : el
@@ -191,6 +227,16 @@ export function currentSrcOf(el: HTMLElement | null): string {
   if (el.tagName === 'VIDEO') {
     const s = el.querySelector('source')
     return s ? s.src : (el as HTMLVideoElement).src
+  }
+  // Wave items: read from the .wave-icon-slot child
+  if (el.classList.contains('wave-item')) {
+    const slot = el.querySelector<HTMLElement>('.wave-icon-slot')
+    if (slot) {
+      const bg = slot.style.backgroundImage || ''
+      const m = bg.match(/url\(["']?(.*?)["']?\)/)
+      return m ? m[1] : ''
+    }
+    return ''
   }
   if (el.getAttribute('data-full')) return el.getAttribute('data-full') || ''
   const bg = el.style.backgroundImage || ''
@@ -240,7 +286,50 @@ function applyValue(el: HTMLElement, type: string, value: string) {
   }
 }
 
+// Las slides del carrusel (hero.slide#i) no tienen elemento DOM propio
+// (el slideshow se hidrata por evento), así que no se indexan vía REGISTRY.
+// Crea una meta sintética para que los pickers (que hacen `if(!meta) return null`)
+// puedan asignarles imagen.
+export function ensureSlideMeta(key: string) {
+  if (metaByKey[key]) return
+  const m = key.match(/^(.+)\.slide#(\d+)$/)
+  if (!m) return
+  metaByKey[key] = {
+    label: state.containerNames[key] || `Imagen del carrusel #${Number(m[2]) + 1}`,
+    section: 'Portada',
+    kind: 'image',
+    accept: 'webp',
+  }
+  typeByKey[key] = 'media'
+}
+
+// Re-emite el evento del carrusel para que el slideshow (Slideshow.tsx) se
+// actualice en vivo tras asignar/quitar una slide (no hay elemento DOM por
+// slide; el slideshow se hidrata desde state.items vía este evento).
+export function broadcastCarousel(prefix: string) {
+  let settings = { count: 3, duration: 7000 }
+  try { settings = Object.assign(settings, JSON.parse(state.items[`${prefix}.settings`] || '')) } catch {}
+  const slides: string[] = []
+  for (let i = 0; i < (settings.count || 3); i++) slides.push(state.items[`${prefix}.slide#${i}`] || '')
+  window.dispatchEvent(new CustomEvent(`cms:${prefix}`, { detail: { slides, duration: settings.duration || 7000 } }))
+}
+
 export function applyMedia(key: string, value: string) {
+  // Slides del carrusel: no tienen elemento propio → actualizar vía evento.
+  const slideMatch = key.match(/^(.+)\.slide#\d+$/)
+  if (slideMatch) { broadcastCarousel(slideMatch[1]); return }
+
+  // Wave items: update ALL instances in the DOM for infinite scroll clones
+  if (key.startsWith('hero.marquee#')) {
+    document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`).forEach(el => {
+      const slot = el.querySelector<HTMLElement>('.wave-icon-slot')
+      if (slot) slot.style.backgroundImage = value ? `url("${value}")` : ''
+      if (value) el.classList.add('wave-has-content')
+      else el.classList.remove('wave-has-content')
+    })
+    return
+  }
+
   const el = elementsByKey[key]
   if (!el) return
   if (el.tagName === 'IMG') applyValue(el, 'image', value)
@@ -262,16 +351,8 @@ export function hydrate() {
 
 // Clona el contenido del primer wave-group a los duplicados (port syncWaveGroups)
 export function syncWaveGroups() {
-  const track = document.querySelector('.wave-track')
-  if (!track) return
-  const groups = track.querySelectorAll('.wave-group')
-  if (groups.length <= 1) return
-  const content = groups[0].innerHTML
-  for (let i = 1; i < groups.length; i++) {
-    groups[i].innerHTML = content
-    groups[i].querySelectorAll('.cms-tools, .cms-empty-overlay').forEach((el) => el.remove())
-    groups[i].querySelectorAll('[data-cms-key]').forEach((el) => el.removeAttribute('data-cms-key'))
-  }
+  // Obsoleto: WaveMarquee.tsx ahora renderiza todos los clones de forma idéntica en React.
+  // applyMedia actualiza todos los duplicados en vivo.
 }
 
 // ----- Campos de info -----------------------------------------------------------
@@ -325,50 +406,69 @@ function isIconSlot(el: HTMLElement) {
   return el.classList.contains('soft-item') || el.classList.contains('carousel-slide')
 }
 
-function visualHost(key: string): HTMLElement | null {
+function visualHosts(key: string): HTMLElement[] {
+  if (key.startsWith('hero.marquee#')) {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`))
+    return els.length > 0 ? els : []
+  }
   const el = elementsByKey[key]
-  if (!el) return null
-  if (isIconSlot(el)) return el.closest('a') || el
-  return el.closest<HTMLElement>('.gallery-item, .animation-item, .model-video-card') || el.parentElement || el
+  if (!el) return []
+  if (el.classList.contains('wave-item')) return [el]
+  if (isIconSlot(el)) return [el.closest('a') || el]
+  return [el.closest<HTMLElement>('.gallery-item, .animation-item, .model-video-card') || el.parentElement || el]
 }
 
 export function showEmptySlot(key: string) {
-  const h = visualHost(key)
-  if (!h) return
-  h.classList.add('cms-empty-slot')
-  if (!h.querySelector('.cms-empty-overlay')) {
-    const meta = metaByKey[key]
-    const ov = document.createElement('div')
-    ov.className = 'cms-empty-overlay'
-    ov.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span></span>'
-    ov.querySelector('span')!.textContent = meta ? meta.label : 'Asignar contenido'
-    ov.title = 'Subir o asignar contenido aquí'
-    ov.addEventListener('click', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      dispatch({ type: 'contentPicker', key })
-    })
-    h.appendChild(ov)
-  }
+  visualHosts(key).forEach((h) => {
+    h.classList.add('cms-empty-slot')
+    h.classList.remove('wave-has-content')
+    if (!h.querySelector('.cms-empty-overlay')) {
+      const meta = metaByKey[key]
+      const ov = document.createElement('div')
+      ov.className = 'cms-empty-overlay'
+      ov.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span></span>'
+      ov.querySelector('span')!.textContent = meta ? meta.label : 'Asignar contenido'
+      ov.title = 'Subir o asignar contenido aquí'
+      ov.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        dispatch({ type: 'contentPicker', key })
+      })
+      h.appendChild(ov)
+    }
+  })
 }
 
 export function clearEmptySlot(key: string) {
-  const h = visualHost(key)
-  if (!h) return
-  h.classList.remove('cms-empty-slot')
-  h.querySelector('.cms-empty-overlay')?.remove()
+  visualHosts(key).forEach((h) => {
+    h.classList.remove('cms-empty-slot')
+    h.querySelector('.cms-empty-overlay')?.remove()
+  })
 }
 
 export function refreshRetired() {
   document.querySelectorAll('.cms-retired').forEach((e) => e.classList.remove('cms-retired'))
   document.querySelectorAll('.cms-empty-slot').forEach((e) => e.classList.remove('cms-empty-slot'))
   document.querySelectorAll('.cms-empty-overlay').forEach((e) => e.remove())
+  
   state.retired.forEach((key) => {
-    const h = visualHost(key)
-    if (!h) return
-    if (state.isAdmin) showEmptySlot(key)
-    else h.classList.add('cms-retired')
+    visualHosts(key).forEach((h) => {
+      if (state.isAdmin) showEmptySlot(key)
+      else h.classList.add('cms-retired')
+    })
   })
+
+  // Slots de media vacíos (sin contenido y no retirados) → overlay grande
+  // clickeable de subida, para poder apretar el contenedor y subir contenido.
+  // Aplica a animaciones, retratos, fotos, etc. Excluye texto y los carruseles
+  // (mount 'none', que se gestionan desde el CarouselManager).
+  if (state.isAdmin) {
+    Object.keys(elementsByKey).forEach((key) => {
+      const m = metaByKey[key]
+      if (!m || m.kind === 'text' || m.mount === 'none') return
+      if (!state.items[key] && !state.retired.includes(key)) showEmptySlot(key)
+    })
+  }
 }
 
 // Mueve un contenido usado a "no usados" desde el sitio (port moveToUnused)
@@ -393,6 +493,7 @@ export function moveToUnusedSite(key: string) {
   if (!state.retired.includes(key)) state.retired.push(key)
   persistUnused(); persistUsed(); persistRetired()
   showEmptySlot(key)
+  refreshTools(key)
   recordAudit({ section: entry.section, label: entry.label, kind: 'gestión', summary: 'Contenido movido a no usados' })
 }
 
@@ -406,7 +507,9 @@ function toolBtn(icon: string, title: string, extra: string, onClick: () => void
   const b = document.createElement('button')
   b.type = 'button'
   b.className = 'cms-edit-btn cms-tool-btn' + (extra ? ' ' + extra : '')
-  b.innerHTML = `<i class="fa-solid ${icon}"></i>`
+  const i = document.createElement('i')
+  i.classList.add('fa-solid', icon)
+  b.appendChild(i)
   b.title = title
   b.setAttribute('aria-label', title)
   b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClick() })
@@ -418,12 +521,14 @@ function makeTools(key: string) {
   const tools = document.createElement('div')
   tools.className = 'cms-tools'
   if (meta.kind === 'text') {
-    tools.appendChild(toolBtn('fa-pen', 'Editar: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editText', key })))
+    if (meta.fields) tools.appendChild(toolBtn('fa-pen', 'Editar: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
+    else tools.appendChild(toolBtn('fa-pen', 'Editar: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editText', key })))
     return tools
   }
-  if (meta.fields) tools.appendChild(toolBtn('fa-pen', 'Editar información: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
-  tools.appendChild(toolBtn('fa-arrow-up-from-bracket', 'Reemplazar: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))
-  tools.appendChild(toolBtn('fa-box-archive', 'Mover a no usados: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
+  const hasContent = !!state.items[key]
+  if (hasContent && meta.fields) tools.appendChild(toolBtn('fa-pen', 'Editar información: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
+  tools.appendChild(toolBtn('fa-arrow-up-from-bracket', hasContent ? 'Reemplazar: ' + meta.label : 'Subir contenido: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))
+  if (hasContent) tools.appendChild(toolBtn('fa-box-archive', 'Mover a no usados: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
   return tools
 }
 
@@ -431,7 +536,14 @@ export function attachEditControls() {
   REGISTRY.forEach((entry) => {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el) => {
       const key = el.getAttribute('data-cms-key')
-      if (!key || el.getAttribute('data-cms-has-btn') === '1') return
+      if (!key) return
+      
+      // Ensure empty wave slots always get the upload button overlay
+      if (key.startsWith('hero.marquee#') && !state.items[key]) {
+        showEmptySlot(key)
+      }
+
+      if (el.getAttribute('data-cms-has-btn') === '1') return
       if (entry.mount === 'none') { el.setAttribute('data-cms-has-btn', '1'); return }
       const host = entry.mount === 'parent' && el.parentElement ? el.parentElement : el
       host.classList.add('cms-mount')
@@ -448,6 +560,20 @@ export function removeEditControls() {
   document.querySelectorAll('.cms-mount').forEach((e) => e.classList.remove('cms-mount'))
 }
 
+/** Reconstruye los botones de edición de un slot (tras subir/archivar contenido,
+    para reflejar el set de acciones correcto según haya o no contenido). */
+export function refreshTools(key: string) {
+  if (!state.isAdmin) return
+  const el = elementsByKey[key]
+  const meta = metaByKey[key]
+  if (!el || !meta || meta.mount === 'none') return
+  const host = meta.mount === 'parent' && el.parentElement ? el.parentElement : el
+  host.querySelector(':scope > .cms-tools')?.remove()
+  host.classList.add('cms-mount')
+  ensurePositioned(host)
+  host.appendChild(makeTools(key))
+}
+
 // ----- Persistencia al backend -------------------------------------------------------
 
 /** Guarda overrides en localStorage y sincroniza con el Express. Lanza si falla la red. */
@@ -459,8 +585,22 @@ export async function persistOverrides(): Promise<void> {
 
 export function rescan() {
   indexEditables()
-  if (state.isAdmin) attachEditControls()
+  if (state.isAdmin) {
+    attachEditControls()
+    // Asegurar que las waves vacías muestren el overlay de subida ("solo icono de subir imagen")
+    REGISTRY.forEach((entry) => {
+      if (entry.base === 'hero.wave') {
+        document.querySelectorAll<HTMLElement>(entry.sel).forEach((el) => {
+          const key = el.getAttribute('data-cms-key')
+          if (key && !state.usedContent[key] && !state.items[key]) {
+            showEmptySlot(key)
+          }
+        })
+      }
+    })
+  }
   refreshRetired()
+  syncWaveGroups()
 }
 
 // Renombrar contenedor desde el sitio (port del pencil del ContentPicker).

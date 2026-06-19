@@ -14,7 +14,7 @@ export type Command =
   | { type: 'contentPicker'; key: string }
   | { type: 'repoPicker'; key: string }
   | { type: 'confirmMove'; key: string }
-  | { type: 'carouselManager' }
+  | { type: 'carouselManager'; key?: string }
   | { type: 'auditPage' }
   | { type: 'addIllustration' }
   | { type: 'export' }
