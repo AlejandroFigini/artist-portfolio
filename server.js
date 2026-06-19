@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const { Pool } = require('pg');
 const cloudinary = require('cloudinary').v2;
 
@@ -273,18 +272,16 @@ app.post('/api/upload-test', async (req, res) => {
     }
 });
 
-// --- STATIC FILES ---
-app.use(express.static(path.join(__dirname)));
-
-// Catch-all route to serve index.html for unknown routes (like frontend routing if any)
-app.get('*', (req, res, next) => {
-    if (!req.path.includes('.')) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        next();
-    }
+// --- API ONLY ---
+// Este servidor es exclusivamente la API. El frontend es la app Next.js
+// (puerto 3000); no se sirve ningún sitio estático desde acá.
+app.get('/', (req, res) => {
+    res.json({ service: 'artist-portfolio API', status: 'ok' });
+});
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not found. Esta es solo la API; el sitio corre en Next.js.' });
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor de Lucia Montaña corriendo en el puerto ${PORT}`);
+    console.log(`API de Lucia Montaña corriendo en el puerto ${PORT}`);
 });
