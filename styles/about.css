@@ -439,41 +439,17 @@
   background: linear-gradient(135deg, #1f1f2a, #2a1a3e);
 }
 
-/* --- Empty state: SOLO icono de subir (sin label "Asignar contenido"). ---
-   El engine.ts inyecta .cms-empty-overlay con un <i> + <span>.
-   Aquí ocultamos el texto y agrandamos el ícono. */
-.about-reel .cms-empty-overlay,
-.about-portrait .cms-empty-overlay {
-  border-style: dashed;
-  border-width: 2px;
-  border-color: rgba(124, 58, 237, 0.45);  /* violeta punteado, igual que las burbujas */
-  background: #ffffff;                       /* fondo blanco sólido */
-  color: var(--accent);
-  border-radius: 4px;
-  z-index: 6;
-}
-.about-reel .cms-empty-overlay:hover,
-.about-portrait .cms-empty-overlay:hover {
-  background: #fff;
-  border-color: var(--accent);
-}
-
-/* El wrapper interno del reel (que normalmente es oscuro #0d0d12) debe verse
-   blanco cuando está vacío, para igualar el estilo de las burbujas. Quitamos
-   también la sombra y la respiración mientras no hay contenido. */
-.about-reel-media.cms-empty-slot {
-  background: #ffffff;
-  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.25);
-  animation: none;
-}
-.about-reel .cms-empty-overlay span,
-.about-portrait .cms-empty-overlay span { display: none !important; }
-.about-reel .cms-empty-overlay i { font-size: 2.4rem; }
-.about-portrait .cms-empty-overlay i { font-size: 1.4rem; }
-
-/* Cuando hay empty overlay, ocultar la caption decorativa */
-.about-reel.cms-empty-slot .about-reel-cap,
+/* --- Empty state: usa el ESTILO GENÉRICO ÚNICO (.cms-empty-overlay base). No se
+   overridea color/borde/radio/tamaños. Solo se neutralizan los efectos propios
+   del contenedor (float exterior del reel + caption + corners) para que el vacío
+   sea un marco limpio. El bg/sombra/breathe del host los mata `.cms-empty-slot`. */
+.about-reel:has(.cms-empty-slot) { animation: none; }
+.about-reel:has(.cms-empty-slot) .about-reel-cap,
+.about-reel:has(.cms-empty-slot) .bp-corner,
 .about-portrait.cms-empty-slot .about-portrait-cap { display: none; }
+/* Las manchas violetas animadas se cuelan por el overlay translúcido y rompen
+   la uniformidad → ocultarlas mientras los contenedores estén vacíos. */
+.about-media:has(.cms-empty-slot) .about-media-blob { display: none; }
 
 @media (max-width: 960px) {
   .about-media { margin-top: 1rem; padding-bottom: 5rem; }

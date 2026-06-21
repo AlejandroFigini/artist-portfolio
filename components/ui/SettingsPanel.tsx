@@ -99,7 +99,7 @@ export default function SettingsPanel() {
       <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}`}>
         <h3>Settings</h3>
         <div className="setting-item admin-only">
-          <span>Hide Edit Buttons</span>
+          <span>Hide Edit actions</span>
           <label className="switch">
             <input
               type="checkbox" id="hide-cms-switch" checked={hideCms} suppressHydrationWarning

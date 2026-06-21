@@ -1,0 +1,307 @@
+/* ============================================================
+   MODELS SHOWCASE (3D) — texto (izq) + coverflow 3D scoped (der).
+   Blueprint aesthetic, hermana de Animations/Characters.
+   ============================================================ */
+
+.m3d-showcase {
+  position: relative;
+  padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
+  background: #f6f5fb;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Trama de puntos violeta apenas visible (paridad con Animations) */
+.m3d-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1px at center, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+}
+
+/* --- Rail vertical (decorativo) --- */
+.m3d-showcase__rail {
+  position: absolute;
+  top: clamp(4rem, 8vw, 6rem);
+  bottom: clamp(4rem, 8vw, 6rem);
+  left: clamp(0.9rem, 2vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.m3d-showcase__rail-fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.6;
+}
+.m3d-showcase__rail-fig--end { opacity: 0.4; }
+.m3d-showcase__rail-track {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.m3d-showcase__rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+/* --- Frame interior --- */
+.m3d-showcase__frame {
+  position: relative;
+  z-index: 3;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Header --- */
+.m3d-showcase__header {
+  margin-bottom: clamp(2.4rem, 5vw, 4rem);
+  max-width: 70ch;
+}
+.m3d-showcase__fig {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  padding-left: 1.4rem;
+}
+.m3d-showcase__fig::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+.m3d-showcase__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(3.2rem, 8vw, 6.8rem);
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.m3d-showcase__desc {
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  letter-spacing: 0.005em;
+  max-width: 60ch;
+  margin: 1.2rem 0 0;
+}
+
+/* --- Grid 2-columnas: textos (sticky) | coverflow --- */
+.m3d-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+}
+
+/* --- Columna de texto (sticky) --- */
+.m3d-texts {
+  position: sticky;
+  top: clamp(5rem, 12vh, 9rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.6rem, 3.5vw, 2.8rem);
+}
+.m3d-text {
+  position: relative;
+  padding-left: 1.4rem;
+}
+/* Marca-cota: línea vertical de acento a la izquierda de cada bloque */
+.m3d-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.m3d-text__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 0 0.6rem;
+}
+.m3d-text__body {
+  font-size: clamp(0.95rem, 1.25vw, 1.05rem);
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 46ch;
+}
+
+/* ============================================================
+   COVERFLOW 3D
+   ============================================================ */
+.m3d-coverflow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.2rem, 2.5vw, 1.8rem);
+}
+
+/* Escenario: perspectiva 3D, slides absolutas centradas */
+.m3d-coverflow__stage {
+  position: relative;
+  width: 100%;
+  height: clamp(300px, 42vw, 440px);
+  perspective: 1500px;
+  transform-style: preserve-3d;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.m3d-coverflow__stage:active { cursor: grabbing; }
+
+/* --- Slide (contenedor de video CMS) — más chico que la versión apilada --- */
+.m3d-slide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(240px, 30vw, 440px);
+  aspect-ratio: 16 / 9;          /* rectangular — contenedor de video */
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d0d12;
+  box-shadow:
+    0 18px 50px -12px rgba(0, 0, 0, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+/* La slide central resalta con glow de acento */
+.m3d-slide[aria-hidden='false'] {
+  box-shadow:
+    0 30px 70px -14px rgba(124, 58, 237, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 0 50px -8px rgba(139, 92, 246, 0.22);
+}
+
+.m3d-slide__media {
+  position: absolute;
+  inset: 0;
+}
+.m3d-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.m3d-slide__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16162a 50%, #0d0d12 100%);
+  color: color-mix(in srgb, var(--accent) 38%, transparent);
+  font-size: 2.4rem;
+}
+.m3d-slide__fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* --- Controles (prev / dots / next) --- */
+.m3d-coverflow__controls {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+.m3d-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.m3d-nav:hover {
+  background: #fff;
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px -8px rgba(124, 58, 237, 0.35);
+}
+.m3d-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.m3d-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  cursor: pointer;
+  transition: background 0.25s ease, width 0.25s ease, border-radius 0.25s ease;
+}
+.m3d-dot.is-active {
+  width: 22px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+/* CMS: slot vacío → usa el estilo genérico único (.cms-empty-overlay base). */
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .m3d-grid { grid-template-columns: 1fr; gap: clamp(2rem, 6vw, 3rem); }
+  .m3d-texts { position: static; }
+  .m3d-showcase__rail { display: none; }
+  .m3d-coverflow__stage { height: clamp(200px, 52vw, 300px); }
+  .m3d-slide { width: clamp(240px, 78vw, 400px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m3d-slide { transition: opacity 0.3s ease; }
+}

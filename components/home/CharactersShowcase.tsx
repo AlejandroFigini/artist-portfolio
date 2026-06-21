@@ -8,7 +8,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterLoop } from '@/hooks/useGSAP'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 
 const INTERVAL_MS = 6000
 const CONCEPTS_PER = 3
@@ -111,19 +112,21 @@ export default function CharactersShowcase() {
     ensureGSAP()
     const sec = sectionRef.current
     if (!sec) return
-    let twTimeout: ReturnType<typeof setTimeout>
+
+    let titleTw: LoopHandle | null = null
+    let descTw: LoopHandle | null = null
 
     const ctx = gsap.context(() => {
       gsap.set('.char-showcase__fig', { autoAlpha: 0, y: 12 })
-      gsap.set('.char-showcase__title .line', { yPercent: 115, skewY: 4 })
+      gsap.set('.char-showcase__title', { autoAlpha: 0 })
       gsap.set('.char-showcase__desc', { autoAlpha: 0, y: 18 })
       gsap.set('.cd-stage', { autoAlpha: 0, y: 40 })
       gsap.set('.cd-rail-item', { autoAlpha: 0, y: 24 })
 
+      // fig + desc fade-up; el título entra letra por letra (typewriterRevealLoop).
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.char-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.char-showcase__title .line', { yPercent: 0, skewY: 0, duration: 1.0, stagger: 0.1 }, 0.05)
-        .to('.char-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.6')
+        .to('.char-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
         .to('.cd-stage', { autoAlpha: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
         .to('.cd-rail-item', { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' }, '-=0.4')
 
@@ -134,15 +137,17 @@ export default function CharactersShowcase() {
             played = true
             tl.play()
             io.disconnect()
-            const lineEl = sec.querySelector<HTMLElement>('.char-showcase__title .line')
-            if (lineEl) twTimeout = setTimeout(() => typewriterLoop(lineEl, 8), (tl.duration() + 1) * 1000)
+            const titleEl = sec.querySelector<HTMLElement>('.char-showcase__title')
+            const descEl = sec.querySelector<HTMLElement>('.char-showcase__desc')
+            if (titleEl) titleTw = typewriterRevealLoop(titleEl, 8)
+            if (descEl) descTw = wordRevealLoop(descEl, 8)
           }
         }
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
       ScrollTrigger.refresh()
     }, sectionRef)
-    return () => { clearTimeout(twTimeout); ctx.revert() }
+    return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [])
 
   // Visibilidad para el autoavance del carrusel.
@@ -194,13 +199,12 @@ export default function CharactersShowcase() {
       <div className="char-showcase__frame">
         <div className="char-showcase__header">
           <span className="char-showcase__fig">FIG. 04 — Cast</span>
-          <h2 id="char-showcase-title" className="char-showcase__title">
-            <span className="line-wrap"><span className="line">Character Design</span></span>
-          </h2>
+          <h2 id="char-showcase-title" className="char-showcase__title">Character Design</h2>
           <p className="char-showcase__desc" data-i18n="characters_desc">
             Un elenco interactivo de mis creaciones. Cada personaje recorre el proceso
             completo: del concept inicial al diseño final, explorando forma, color y carácter.
           </p>
+          <SoftwareDropdown prefix="char" />
         </div>
 
         <div className="cd-stage">

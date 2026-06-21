@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterLoop, wordRevealLoop } from '@/hooks/useGSAP'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 
 const CARD_COUNT = 6
-const SOFTWARE_COUNT = 6
 
 function Corners() {
   return (
@@ -15,90 +15,6 @@ function Corners() {
       <span className="bp-corner bl" />
       <span className="bp-corner br" />
     </>
-  )
-}
-
-/* Ítem del desplegable de software: imagen (logo) + texto, ambos editables
-   por el CMS (contenedores .anim-soft-icon / .anim-soft-name registrados en
-   engine.ts). Para visitantes se ocultan los slots sin logo; en admin se ven
-   todos para poder cargarlos. */
-function SoftwareItem({ index }: { index: number }) {
-  const iconRef = useRef<HTMLSpanElement>(null)
-  const nameRef = useRef<HTMLSpanElement>(null)
-  const [hasImg, setHasImg] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    // texto default solo si el span está vacío (el CMS lo sobreescribe al hidratar)
-    if (nameRef.current && !(nameRef.current.textContent || '').trim()) {
-      nameRef.current.textContent = `Software ${index + 1}`
-    }
-    const el = iconRef.current
-    if (!el) return
-    const checkImg = () => {
-      const bg = el.style.backgroundImage
-      setHasImg(!!bg && bg !== 'none' && !bg.includes("url('')") && !bg.includes('url("")'))
-    }
-    checkImg()
-    const moImg = new MutationObserver(checkImg)
-    moImg.observe(el, { attributes: true, attributeFilter: ['style', 'data-full'] })
-
-    const checkAdmin = () => setIsAdmin(document.body.classList.contains('is-admin'))
-    checkAdmin()
-    const moAdmin = new MutationObserver(checkAdmin)
-    moAdmin.observe(document.body, { attributes: true, attributeFilter: ['class'] })
-
-    return () => { moImg.disconnect(); moAdmin.disconnect() }
-  }, [index])
-
-  const hidden = !isAdmin && !hasImg
-
-  return (
-    <li className={`anim-software__item${hidden ? ' is-hidden' : ''}`} role="menuitem">
-      <span className="anim-soft-icon-wrap">
-        <span ref={iconRef} className="anim-soft-icon" data-full="" aria-hidden="true">
-          {!hasImg && <i className="fa-solid fa-cube anim-soft-ph" />}
-        </span>
-      </span>
-      <span ref={nameRef} className="anim-soft-name" />
-    </li>
-  )
-}
-
-function SoftwareDropdown() {
-  // El hover (abrir/cerrar) lo maneja CSS puro → cierra solo al salir el mouse.
-  // El estado React es solo para apertura por click (sticky), que se cierra al
-  // clickear fuera del componente.
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [open])
-
-  return (
-    <div ref={ref} className={`anim-software${open ? ' is-open' : ''}`}>
-      <button
-        type="button"
-        className="anim-software__trigger"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <i className="fa-solid fa-layer-group" aria-hidden="true" />
-        <span>Software</span>
-        <i className="fa-solid fa-chevron-down anim-software__chev" aria-hidden="true" />
-      </button>
-      <ul className="anim-software__list" role="menu">
-        {Array.from({ length: SOFTWARE_COUNT }, (_, i) => (
-          <SoftwareItem key={i} index={i} />
-        ))}
-      </ul>
-    </div>
   )
 }
 
@@ -268,7 +184,7 @@ function AnimCard({ index }: { index: number }) {
             <i className="fa-solid fa-xmark" />
           </button>
 
-          <div className="anim-lightbox__media">
+          <div className={`anim-lightbox__media${showInfo ? ' info-open' : ''}`}>
             <video
               src={videoRef.current?.src || ''}
               className="anim-lightbox__video"
@@ -317,20 +233,19 @@ export default function AnimationsShowcase() {
     const sec = sectionRef.current
     if (!sec) return
 
-    let twTimeout: ReturnType<typeof setTimeout>
-    let titleTw: gsap.core.Timeline | null = null
-    let descTw: gsap.core.Timeline | null = null
+    let titleTw: LoopHandle | null = null
+    let descTw: LoopHandle | null = null
 
     const ctx = gsap.context(() => {
       gsap.set('.anim-showcase__fig', { autoAlpha: 0, y: 12 })
-      gsap.set('.anim-showcase__title .line', { yPercent: 115, skewY: 4 })
+      gsap.set('.anim-showcase__title', { autoAlpha: 0 })
       gsap.set('.anim-showcase__desc', { autoAlpha: 0, y: 18 })
       gsap.set('.anim-card', { autoAlpha: 0, y: 40, scale: 0.95 })
 
+      // fig + desc fade-up; el título entra letra por letra (typewriterRevealLoop).
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.anim-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.anim-showcase__title .line', { yPercent: 0, skewY: 0, duration: 1.0, stagger: 0.1 }, 0.05)
-        .to('.anim-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.6')
+        .to('.anim-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
         // clearProps: tras la entrada GSAP suelta el transform inline para que
         // el float pasivo (CSS) lo controle limpio y fluido.
         .to('.anim-card', { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'transform' }, '-=0.3')
@@ -342,12 +257,10 @@ export default function AnimationsShowcase() {
             played = true
             tl.play()
             io.disconnect()
-            const lineEl = sec.querySelector<HTMLElement>('.anim-showcase__title .line')
+            const titleEl = sec.querySelector<HTMLElement>('.anim-showcase__title')
             const descEl = sec.querySelector<HTMLElement>('.anim-showcase__desc')
-            twTimeout = setTimeout(() => {
-              if (lineEl) titleTw = typewriterLoop(lineEl, 8)
-              if (descEl) descTw = wordRevealLoop(descEl, 8)
-            }, (tl.duration() + 1) * 1000)
+            if (titleEl) titleTw = typewriterRevealLoop(titleEl, 8)
+            if (descEl) descTw = wordRevealLoop(descEl, 8)
           }
         }
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
@@ -355,7 +268,7 @@ export default function AnimationsShowcase() {
 
       ScrollTrigger.refresh()
     }, sectionRef)
-    return () => { clearTimeout(twTimeout); titleTw?.kill(); descTw?.kill(); ctx.revert() }
+    return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [])
 
   return (
@@ -371,14 +284,12 @@ export default function AnimationsShowcase() {
       <div className="anim-showcase__frame">
         <div className="anim-showcase__header">
           <span className="anim-showcase__fig">FIG. 03 — Motion</span>
-          <h2 id="anim-showcase-title" className="anim-showcase__title">
-            <span className="line-wrap"><span className="line">Animations</span></span>
-          </h2>
+          <h2 id="anim-showcase-title" className="anim-showcase__title">Animations</h2>
           <p className="anim-showcase__desc" data-i18n="anim_desc">
             Una selección de animaciones, motion graphics y pruebas técnicas
             que exploran movimiento, narrativa y expresión a través de personajes y escenarios.
           </p>
-          <SoftwareDropdown />
+          <SoftwareDropdown prefix="anim" />
         </div>
 
         <div className="animations-grid">

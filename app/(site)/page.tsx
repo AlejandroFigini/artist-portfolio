@@ -7,6 +7,7 @@ import Hero from '@/components/home/Hero'
 import AboutSection from '@/components/home/AboutSection'
 import AnimationsShowcase from '@/components/home/AnimationsShowcase'
 import CharactersShowcase from '@/components/home/CharactersShowcase'
+import ModelsShowcase from '@/components/home/ModelsShowcase'
 
 /* Index — portada. Reconstrucción sección por sección: por ahora solo el
    Hero. HomeFx concentra los efectos globales (reveals, typewriter,
@@ -26,6 +27,7 @@ export default function HomePage() {
         <AboutSection />
         <AnimationsShowcase />
         <CharactersShowcase />
+        <ModelsShowcase />
       </main>
     </>
   )

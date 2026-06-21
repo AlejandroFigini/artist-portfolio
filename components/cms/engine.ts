@@ -124,6 +124,7 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Principal)', label: (el, i) => `Imagen Carrusel Principal #${i + 1}` },
   { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Secundario)', label: (el, i) => `Imagen Carrusel Secundario #${i + 1}` },
   { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Portada', fields: WAVE_FIELDS, label: (el, i) => `Herramienta Wave #${(i % 11) + 1}` },
+  { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Portada', label: 'Bajada (debajo del título) — Portada' },
   // Production Stack
   { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animaciones', label: (el, i) => `Logo Stack Animaciones #${i + 1}` },
   // Animaciones de fondo
@@ -143,6 +144,10 @@ const REGISTRY: RegistryEntry[] = [
     return 'Subtítulo — ' + (h ? (h.dataset.text || h.textContent || '').trim() : 'sección')
   } },
   // Character Design
+  { base: 'char.title', sel: '.char-showcase__title', kind: 'text', mount: 'self', section: 'Character Design', label: 'Título de sección — Character Design' },
+  { base: 'char.sectiondesc', sel: '.char-showcase__desc', kind: 'text', mount: 'self', section: 'Character Design', label: 'Descripción — Character Design' },
+  { base: 'char.soft', sel: '.char-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Character Design', label: (el, i) => `Logo de software #${i + 1}` },
+  { base: 'char.softname', sel: '.char-soft-name', kind: 'text', mount: 'self', section: 'Character Design', label: (el, i) => `Nombre de software #${i + 1}` },
   { base: 'char.name', sel: '.cd-name', kind: 'text', mount: 'self', section: 'Character Design', label: (el, i) => `Nombre de personaje #${i + 1}` },
   { base: 'char.role', sel: '.cd-role', kind: 'text', mount: 'self', section: 'Character Design', label: charLabel('Rol de personaje') },
   { base: 'char.desc', sel: '.cd-desc', kind: 'text', mount: 'self', section: 'Character Design', label: charLabel('Descripción de personaje') },
@@ -154,15 +159,19 @@ const REGISTRY: RegistryEntry[] = [
   // Ilustraciones (masonry generada por el CMS → re-escaneo)
   { base: 'illu', sel: '#illustrations-container .gallery-item img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Ilustraciones', container: '.gallery-item', fields: ILLU_FIELDS, label: (el, i) => `Ilustración #${i + 1}` },
   // Animations
+  { base: 'anim.title', sel: '.anim-showcase__title', kind: 'text', mount: 'self', section: 'Animations', label: 'Título de sección — Animations' },
   { base: 'anim.desc', sel: '.anim-showcase__desc', kind: 'text', mount: 'self', section: 'Animations', label: 'Descripción — Animations' },
   { base: 'anim.soft', sel: '.anim-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Animations', label: (el, i) => `Logo de software #${i + 1}` },
   { base: 'anim.softname', sel: '.anim-soft-name', kind: 'text', mount: 'self', section: 'Animations', label: (el, i) => `Nombre de software #${i + 1}` },
   { base: 'anim', sel: '.animations-grid .anim-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animations', container: '.animation-item', fields: ANIM_FIELDS, label: (el, i) => `Animación #${i + 1}` },
-  // 3D Models
-  { base: 'model3d.soft', sel: '.software-icons-mini .soft-icon-wrap img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `Logo Software 3D #${i + 1}` },
-  { base: 'model3d.title', sel: '.model-text h3', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Título 3D #${i + 1}` },
-  { base: 'model3d.desc', sel: '.model-text p', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Texto 3D #${i + 1}` },
-  { base: 'model3d', sel: '.model-video-card .obs-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `Video 3D #${i + 1}` },
+  // 3D Models (selectores → markup .m3d- de ModelsShowcase.tsx; bases conservadas)
+  { base: 'model3d.soft', sel: '.model3d-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: '3D Models', label: (el, i) => `Logo de software #${i + 1}` },
+  { base: 'model3d.softname', sel: '.model3d-soft-name', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Nombre de software #${i + 1}` },
+  { base: 'model3d.heading', sel: '.m3d-showcase__title', kind: 'text', mount: 'self', section: '3D Models', label: 'Nombre de la sección — 3D' },
+  { base: 'model3d.intro', sel: '.m3d-showcase__desc', kind: 'text', mount: 'self', section: '3D Models', label: 'Texto introductorio — 3D' },
+  { base: 'model3d.title', sel: '.m3d-text__title', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Título bloque #${i + 1} — 3D` },
+  { base: 'model3d.desc', sel: '.m3d-text__body', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Texto bloque #${i + 1} — 3D` },
+  { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `Video 3D #${i + 1}` },
 ]
 
 // ----- Índices del motor ------------------------------------------------------
@@ -299,6 +308,7 @@ export function ensureSlideMeta(key: string) {
     section: 'Portada',
     kind: 'image',
     accept: 'webp',
+    mount: 'none',
   }
   typeByKey[key] = 'media'
 }
@@ -415,7 +425,7 @@ function visualHosts(key: string): HTMLElement[] {
   if (!el) return []
   if (el.classList.contains('wave-item')) return [el]
   if (isIconSlot(el)) return [el.closest('a') || el]
-  return [el.closest<HTMLElement>('.gallery-item, .animation-item, .model-video-card') || el.parentElement || el]
+  return [el.closest<HTMLElement>('.gallery-item, .animation-item, .model-video-card, .m3d-slide') || el.parentElement || el]
 }
 
 export function showEmptySlot(key: string) {
@@ -432,6 +442,7 @@ export function showEmptySlot(key: string) {
       ov.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
+        if (!state.isAdmin) return // visitante: el contenedor es solo visual
         dispatch({ type: 'contentPicker', key })
       })
       h.appendChild(ov)
@@ -458,17 +469,15 @@ export function refreshRetired() {
     })
   })
 
-  // Slots de media vacíos (sin contenido y no retirados) → overlay grande
-  // clickeable de subida, para poder apretar el contenedor y subir contenido.
-  // Aplica a animaciones, retratos, fotos, etc. Excluye texto y los carruseles
-  // (mount 'none', que se gestionan desde el CarouselManager).
-  if (state.isAdmin) {
-    Object.keys(elementsByKey).forEach((key) => {
-      const m = metaByKey[key]
-      if (!m || m.kind === 'text' || m.mount === 'none') return
-      if (!state.items[key] && !state.retired.includes(key)) showEmptySlot(key)
-    })
-  }
+  // Slots de media vacíos (sin contenido y no retirados) → marco genérico.
+  // Se muestra para TODOS (admin y visitante): el contenedor punteado se mantiene
+  // siempre; el icono + nombre + click solo se ven en admin (CSS los oculta para
+  // el visitante). Excluye texto y los carruseles (mount 'none', gestionados aparte).
+  Object.keys(elementsByKey).forEach((key) => {
+    const m = metaByKey[key]
+    if (!m || m.kind === 'text' || m.mount === 'none') return
+    if (!state.items[key] && !state.retired.includes(key)) showEmptySlot(key)
+  })
 }
 
 // Mueve un contenido usado a "no usados" desde el sitio (port moveToUnused)
@@ -572,6 +581,18 @@ export function refreshTools(key: string) {
   host.classList.add('cms-mount')
   ensurePositioned(host)
   host.appendChild(makeTools(key))
+}
+
+/** Refresca en vivo el nombre visible del contenedor (texto del overlay vacío
+    + tooltips de las herramientas) tras renombrar, sin recargar la página. */
+export function refreshContainerLabel(key: string) {
+  const meta = metaByKey[key]
+  if (!meta) return
+  visualHosts(key).forEach((h) => {
+    const span = h.querySelector<HTMLElement>('.cms-empty-overlay span')
+    if (span) span.textContent = meta.label
+  })
+  refreshTools(key)
 }
 
 // ----- Persistencia al backend -------------------------------------------------------

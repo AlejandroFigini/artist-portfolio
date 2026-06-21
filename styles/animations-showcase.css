@@ -104,16 +104,6 @@
   color: var(--text-primary);
   margin: 0;
 }
-.anim-showcase__title .line-wrap {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.08em;
-}
-.anim-showcase__title .line {
-  display: block;
-  transform-origin: left center;
-}
-
 .anim-showcase__desc {
   font-size: clamp(1.05rem, 1.5vw, 1.3rem);
   font-weight: 300;
@@ -123,111 +113,6 @@
   max-width: 60ch;
   margin: 1.2rem 0 0;
 }
-
-/* --- Desplegable de software (hover/click) — lista imagen+texto editable --- */
-.anim-software {
-  position: relative;
-  display: inline-block;
-  margin-top: 1.6rem;
-}
-.anim-software__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  border-radius: 999px;
-  padding: 0.55rem 1.05rem;
-  cursor: pointer;
-  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-}
-.anim-software__trigger:hover {
-  border-color: var(--accent);
-  background: #fff;
-  box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.3);
-}
-.anim-software__chev {
-  font-size: 0.6rem;
-  transition: transform 0.3s ease;
-}
-.anim-software:hover .anim-software__chev,
-.anim-software.is-open .anim-software__chev { transform: rotate(180deg); }
-
-.anim-software__list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  min-width: 240px;
-  margin: 0;
-  /* padding-top extra hace de puente: el hover entre botón y lista es continuo
-     (sin gap) para que no parpadee ni quede abierto al salir. */
-  padding: 0.85rem 0.5rem 0.5rem;
-  list-style: none;
-  background: #fff;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  border-radius: 12px;
-  box-shadow: 0 18px 45px -12px rgba(124, 58, 237, 0.28);
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
-}
-.anim-software:hover .anim-software__list,
-.anim-software:focus-within .anim-software__list,
-.anim-software.is-open .anim-software__list {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.anim-software__item {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.45rem 0.6rem;
-  border-radius: 8px;
-  transition: background 0.2s ease;
-}
-.anim-software__item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.anim-software__item.is-hidden { display: none; }
-
-.anim-soft-icon-wrap { position: relative; flex-shrink: 0; }
-.anim-soft-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 7px;
-  background: #15131f;
-  background-size: cover;
-  background-position: center;
-  color: color-mix(in srgb, var(--accent) 50%, transparent);
-  font-size: 0.85rem;
-}
-.anim-soft-name {
-  font-family: var(--font-display, 'Syne', sans-serif);
-  font-weight: 500;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
-/* Overlay de subida compacto para el logo (solo el ícono, sin etiqueta) */
-.anim-soft-icon-wrap .cms-empty-overlay {
-  border-radius: 7px;
-  border-width: 1px;
-  font-size: 0.75rem;
-  padding: 0;
-}
-.anim-soft-icon-wrap .cms-empty-overlay span { display: none; }
 
 /* --- Grid 3×2 → 2×3 → 1×6 --- */
 .animations-grid {
@@ -439,10 +324,15 @@
   display: block;
   box-shadow: 0 30px 90px -20px rgba(0, 0, 0, 0.8);
   animation: anim-lb-scalein 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes anim-lb-scalein {
   from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+/* Panel abierto → el video se corre un poco a la izquierda (movimiento sutil). */
+.anim-lightbox__media.info-open .anim-lightbox__video {
+  transform: translateX(clamp(-70px, -5vw, -40px));
 }
 
 /* --- Media: contiene el video + botón + panel --- */
@@ -451,13 +341,13 @@
   display: inline-flex;
 }
 
-/* --- Botón de info: POR FUERA del video, sobre su borde derecho --- */
+/* --- Botón de info: POR FUERA del video, alejado a la derecha y más abajo --- */
 .anim-lightbox__info-btn {
   position: absolute;
-  left: calc(100% + 0.75rem);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 4;
+  left: calc(100% + 2.6rem);
+  top: auto;
+  bottom: 1.5rem;
+  z-index: 5;
   width: 2.8rem;
   height: 2.8rem;
   border-radius: 50%;
@@ -476,30 +366,32 @@
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
-  transform: translateY(-50%) scale(1.08);
+  transform: scale(1.08);
 }
 
-/* --- Panel de info: sale desde el icono, deslizándose sobre el borde
-   derecho del contenido (origen en el icono, a la derecha) --- */
+/* --- Panel de info: SOBRE el contenido, cubriendo un poco el borde derecho
+   del video. Emerge desde el icono (origen bottom-right, hacia el botón). --- */
 .anim-lightbox__info-panel {
   position: absolute;
-  right: 0.8rem;
-  top: 50%;
-  transform: translateY(-50%);
-  transform-origin: right center;
-  z-index: 3;
+  right: 0.6rem;                   /* dentro del video → cubre un poco, cerca del icono */
+  left: auto;
+  top: auto;
+  bottom: 1.5rem;                  /* a la altura del icono */
+  transform: none;
+  transform-origin: bottom right;  /* crece desde el icono */
+  z-index: 4;
   background: rgba(13, 13, 18, 0.92);
   border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-radius: 12px;
   padding: 1.2rem 1.4rem;
-  width: min(300px, 30vw);
+  width: min(300px, 26vw);
   backdrop-filter: blur(16px);
   box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.7);
   animation: anim-info-slidein 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes anim-info-slidein {
-  from { opacity: 0; transform: translate(26px, -50%) scale(0.95); }
-  to { opacity: 1; transform: translate(0, -50%) scale(1); }
+  from { opacity: 0; transform: translate(8px, 8px) scale(0.94); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 
 .anim-lightbox__info-panel h3 {
@@ -564,6 +456,8 @@
 /* Sin espacio lateral para el panel: se ancla abajo sobre el contenido. */
 @media (max-width: 900px) {
   .anim-lightbox__video { width: min(94vw, 1100px); border-radius: 6px; }
+  /* En mobile el panel va fixed abajo: el video no se desplaza. */
+  .anim-lightbox__media.info-open .anim-lightbox__video { transform: none; }
   /* En mobile no hay gutter lateral: el icono va fijo arriba-derecha del viewport
      y el panel emerge abajo. */
   .anim-lightbox__info-btn {
@@ -597,30 +491,14 @@
   .anim-card:hover { scale: 1.02; }
 }
 
-/* --- Empty card state (no content uploaded) --- */
+/* --- Empty card state: sin efectos (usa el overlay genérico .cms-empty-overlay).
+   El contenedor vacío no lleva gradiente/sombra: solo el marco del overlay. --- */
 .anim-card--empty {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16162a 50%, #0d0d12 100%);
-  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+  background: transparent;
+  border: none;
   animation: none;
 }
 .anim-card--empty:hover {
   scale: 1;
-  box-shadow:
-    0 6px 24px -6px rgba(0, 0, 0, 0.4),
-    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-/* --- CMS empty state (matches About pattern) --- */
-.anim-card .cms-empty-overlay {
-  border-style: dashed;
-  border-width: 2px;
-  border-color: rgba(124, 58, 237, 0.45);
-  background: #ffffff;
-  color: var(--accent);
-  border-radius: 10px;
-  z-index: 6;
-}
-.anim-card .cms-empty-overlay:hover {
-  background: #fff;
-  border-color: var(--accent);
+  box-shadow: none;
 }

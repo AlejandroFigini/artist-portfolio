@@ -32,36 +32,89 @@ export function useGSAP(setup: () => void, deps: unknown[] = []) {
   }, deps)
 }
 
-export function typewriterLoop(lineEl: HTMLElement, intervalSec = 8) {
-  const text = lineEl.textContent || ''
-  if (!text) return null
-  lineEl.innerHTML = text
-    .split('')
-    .map((c) => `<span class="tw-char" style="display:inline-block">${c === ' ' ? '&nbsp;' : c}</span>`)
-    .join('')
-  const chars = lineEl.querySelectorAll<HTMLElement>('.tw-char')
-  const tl = gsap.timeline({ repeat: -1, delay: intervalSec })
-  tl.set(chars, { autoAlpha: 0 })
-    .to(chars, { autoAlpha: 1, duration: 0.04, stagger: 0.07, ease: 'none' })
-    .set({}, {}, `+=${intervalSec}`)
-  return tl
+// Handle killable para animaciones en loop manejadas con recursión.
+export type LoopHandle = { kill: () => void }
+
+type BuildFn = (text: string) => string
+type AnimFn = (targets: NodeListOf<HTMLElement>, onDone: () => void) => gsap.core.Tween
+
+// Motor compartido de reveal en loop. Recursión con delayedCall: cada ciclo
+// RE-LEE el textContent (clave: si el CMS editó el texto, el ciclo siguiente
+// toma el valor nuevo en vez de revertir al original), reconstruye el HTML y
+// anima los spans recién creados. Preserva .cms-tools (no rompe la edición).
+function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animate: AnimFn): LoopHandle {
+  gsap.set(el, { autoAlpha: 1 })
+  let killed = false
+  let tween: gsap.core.Tween | null = null
+  let wait: gsap.core.Tween | null = null
+  let lastText = el.textContent || ''
+
+  const detachTools = () => {
+    const t = el.querySelector(':scope > .cms-tools')
+    if (t) t.remove()
+    return t
+  }
+
+  const cycle = () => {
+    if (killed) return
+    const tools = detachTools()
+    const text = el.textContent || ''
+    lastText = text
+    if (!text.trim()) {
+      if (tools) el.appendChild(tools)
+      wait = gsap.delayedCall(intervalSec, cycle)
+      return
+    }
+    el.innerHTML = build(text)
+    const targets = el.querySelectorAll<HTMLElement>('.tw-char, .tw-word')
+    tween = animate(targets, () => {
+      el.textContent = text
+      if (tools) el.appendChild(tools)
+      wait = gsap.delayedCall(intervalSec, cycle)
+    })
+  }
+  cycle()
+
+  return {
+    kill: () => {
+      killed = true
+      tween?.kill()
+      wait?.kill()
+      const tools = detachTools()
+      el.textContent = lastText
+      if (tools) el.appendChild(tools)
+    },
+  }
 }
 
-// Reveal por palabras en loop — pensado para párrafos (más fluido que el
-// typewriter char-by-char). Cada intervalSec re-revela el texto en cascada.
-export function wordRevealLoop(el: HTMLElement, intervalSec = 8) {
-  const text = (el.textContent || '').trim()
-  if (!text) return null
-  el.innerHTML = text
-    .split(/(\s+)/)
-    .map((w) => (/^\s+$/.test(w) ? w : `<span class="tw-word" style="display:inline-block">${w}</span>`))
-    .join('')
-  const words = el.querySelectorAll<HTMLElement>('.tw-word')
-  const tl = gsap.timeline({ repeat: -1, delay: intervalSec })
-  tl.set(words, { autoAlpha: 0, y: 8 })
-    .to(words, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.045, ease: 'power2.out' })
-    .set({}, {}, `+=${intervalSec}`)
-  return tl
+// Reveal letra por letra LOOPING — para títulos de sección con repetición.
+export function typewriterRevealLoop(el: HTMLElement, intervalSec = 8): LoopHandle {
+  return revealLoop(
+    el,
+    intervalSec,
+    (text) =>
+      text
+        .split('')
+        .map((c) => `<span class="tw-char" style="display:inline-block">${c === ' ' ? '&nbsp;' : c}</span>`)
+        .join(''),
+    (targets, onDone) =>
+      gsap.from(targets, { autoAlpha: 0, duration: 0.05, stagger: 0.06, ease: 'none', onComplete: onDone }),
+  )
+}
+
+// Reveal por palabras en loop — para párrafos (más fluido que char-by-char).
+export function wordRevealLoop(el: HTMLElement, intervalSec = 8): LoopHandle {
+  return revealLoop(
+    el,
+    intervalSec,
+    (text) =>
+      text
+        .split(/(\s+)/)
+        .map((w) => (/^\s+$/.test(w) ? w : `<span class="tw-word" style="display:inline-block">${w}</span>`))
+        .join(''),
+    (targets, onDone) =>
+      gsap.from(targets, { autoAlpha: 0, y: 8, duration: 0.4, stagger: 0.045, ease: 'power2.out', onComplete: onDone }),
+  )
 }
 
 export { gsap, ScrollTrigger }

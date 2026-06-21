@@ -1,113 +1,33 @@
 {
   ".claude/launch.json": {
-    "mtime": 1781535874.180633,
-    "ast_hash": "ee933ac36af8edbe8b59dce6b11a0b7c",
+    "mtime": 1781850042.606143,
+    "ast_hash": "497985bc6a274c34b85f1bbf45a87ff1",
     "semantic_hash": ""
-  },
-  "_cssaudit.js": {
-    "mtime": 1780981389.1824882,
-    "ast_hash": "f3639902a537c8c4f38fbb6d9035d6c2",
-    "semantic_hash": "f3639902a537c8c4f38fbb6d9035d6c2"
-  },
-  "_cssclean.js": {
-    "mtime": 1780981389.1824882,
-    "ast_hash": "58274423db676874a31ad03d084b64a4",
-    "semantic_hash": "58274423db676874a31ad03d084b64a4"
-  },
-  "admin.js": {
-    "mtime": 1780981389.183997,
-    "ast_hash": "ab96ba430407267597b90397cfa3ae8a",
-    "semantic_hash": "ab96ba430407267597b90397cfa3ae8a"
-  },
-  "animations.page.js": {
-    "mtime": 1780981389.1844983,
-    "ast_hash": "733541f8e6f6f20299e79c0ae57bff1e",
-    "semantic_hash": "733541f8e6f6f20299e79c0ae57bff1e"
-  },
-  "characters.page.js": {
-    "mtime": 1780981389.1854978,
-    "ast_hash": "e3cbbef767bed2c1ee75756bc2f39a21",
-    "semantic_hash": "e3cbbef767bed2c1ee75756bc2f39a21"
-  },
-  "cms.js": {
-    "mtime": 1781050779.408452,
-    "ast_hash": "69b66e11250a3a4ab883c4ec09bdc1e5",
-    "semantic_hash": "69b66e11250a3a4ab883c4ec09bdc1e5"
-  },
-  "content.json": {
-    "mtime": 1780981389.1864972,
-    "ast_hash": "28831c6e0deb9c5059a8f8107f9be6b5",
-    "semantic_hash": "28831c6e0deb9c5059a8f8107f9be6b5"
   },
   "db-setup.js": {
     "mtime": 1780981389.1864972,
     "ast_hash": "9f70e62447ca93145df6e73356e87af9",
     "semantic_hash": "9f70e62447ca93145df6e73356e87af9"
   },
-  "download_icons.js": {
-    "mtime": 1780981389.186998,
-    "ast_hash": "26d1086b7b92e1292d6d1570bbd3d6bb",
-    "semantic_hash": "26d1086b7b92e1292d6d1570bbd3d6bb"
-  },
-  "fetch.js": {
-    "mtime": 1780981389.186998,
-    "ast_hash": "5b945eea0cafdb3dc3aa27f46adfd2fe",
-    "semantic_hash": "5b945eea0cafdb3dc3aa27f46adfd2fe"
-  },
-  "gallery-common.js": {
-    "mtime": 1780981389.187498,
-    "ast_hash": "acda45f9aaea0b5316afd8804e2656b6",
-    "semantic_hash": "acda45f9aaea0b5316afd8804e2656b6"
-  },
   "generate-2fa.js": {
     "mtime": 1780981389.187498,
     "ast_hash": "d8cd0870bbe3dca40456d10fcfd26a21",
     "semantic_hash": "d8cd0870bbe3dca40456d10fcfd26a21"
-  },
-  "illustrations.page.js": {
-    "mtime": 1780981389.1884987,
-    "ast_hash": "7dd979fb21d3e7c1f31af9dcdf658a84",
-    "semantic_hash": "7dd979fb21d3e7c1f31af9dcdf658a84"
   },
   "init.sql": {
     "mtime": 1780981389.1890008,
     "ast_hash": "4e6af27b2e7e8800d3a30e6dd6f9882b",
     "semantic_hash": "4e6af27b2e7e8800d3a30e6dd6f9882b"
   },
-  "models-3d.page.js": {
-    "mtime": 1780981389.1899986,
-    "ast_hash": "67ef696a9f588861fe9a5e92fb333646",
-    "semantic_hash": "67ef696a9f588861fe9a5e92fb333646"
-  },
-  "multimedia.page.js": {
-    "mtime": 1780981389.1909976,
-    "ast_hash": "0eea457e6199403f27b6264639a68592",
-    "semantic_hash": "0eea457e6199403f27b6264639a68592"
-  },
   "package.json": {
     "mtime": 1781562150.4821928,
     "ast_hash": "d0ce96f27de276147be5b52f4af4a9d6",
     "semantic_hash": ""
   },
-  "script.js": {
-    "mtime": 1781502028.8055916,
-    "ast_hash": "ecb03636048fac14c65632c5ddf0d16f",
-    "semantic_hash": "ecb03636048fac14c65632c5ddf0d16f"
-  },
   "server.js": {
-    "mtime": 1781562130.769564,
-    "ast_hash": "afacf648181fa920288ec6760308bbc1",
+    "mtime": 1781849914.6552396,
+    "ast_hash": "d2b8faf0f116ced041bd668fdf524096",
     "semantic_hash": ""
-  },
-  "server.ps1": {
-    "mtime": 1780981389.1935015,
-    "ast_hash": "8d828d7b10eff5f48c997b674dce1f05",
-    "semantic_hash": "8d828d7b10eff5f48c997b674dce1f05"
-  },
-  "shared-ui.js": {
-    "mtime": 1780981389.1935015,
-    "ast_hash": "413d0353c30166d7d296c8cf3d847f59",
-    "semantic_hash": "413d0353c30166d7d296c8cf3d847f59"
   },
   ".agents/rules/graphify.md": {
     "mtime": 1780982753.4210634,
@@ -123,61 +43,6 @@
     "mtime": 1780982766.7391033,
     "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
     "semantic_hash": "8a6643a420fdad6bfb583523bc6cef16"
-  },
-  "admin.html": {
-    "mtime": 1780981389.1834927,
-    "ast_hash": "cd2450fb64eea189f2af4a20a44dddef",
-    "semantic_hash": "cd2450fb64eea189f2af4a20a44dddef"
-  },
-  "animations.html": {
-    "mtime": 1780981389.1844983,
-    "ast_hash": "c09ee34156f5016cba830861f5f2f701",
-    "semantic_hash": "c09ee34156f5016cba830861f5f2f701"
-  },
-  "characters.html": {
-    "mtime": 1780981389.1849988,
-    "ast_hash": "8d608b78c13df9a5cae32cf9a1d610ec",
-    "semantic_hash": "8d608b78c13df9a5cae32cf9a1d610ec"
-  },
-  "illustrations.html": {
-    "mtime": 1780981389.1879976,
-    "ast_hash": "22da769f9d6f36299dd2be59dd262972",
-    "semantic_hash": "22da769f9d6f36299dd2be59dd262972"
-  },
-  "index.html": {
-    "mtime": 1781501993.024671,
-    "ast_hash": "23813b43359b25e1670b43941d16e438",
-    "semantic_hash": ""
-  },
-  "models-3d.html": {
-    "mtime": 1780981389.1899986,
-    "ast_hash": "cb9cd99ddb64bd80bf4e84877091f5bb",
-    "semantic_hash": "cb9cd99ddb64bd80bf4e84877091f5bb"
-  },
-  "multimedia.html": {
-    "mtime": 1780981389.1904979,
-    "ast_hash": "2ec9fc72611752211534e021c5c24388",
-    "semantic_hash": "2ec9fc72611752211534e021c5c24388"
-  },
-  "max.svg": {
-    "mtime": 1780981389.1894975,
-    "ast_hash": "76fa4e59833949802dcc568487d3e37f",
-    "semantic_hash": "76fa4e59833949802dcc568487d3e37f"
-  },
-  "ps.png": {
-    "mtime": 1780981389.1919973,
-    "ast_hash": "76fa4e59833949802dcc568487d3e37f",
-    "semantic_hash": "76fa4e59833949802dcc568487d3e37f"
-  },
-  "ps.svg": {
-    "mtime": 1780981389.1919973,
-    "ast_hash": "76fa4e59833949802dcc568487d3e37f",
-    "semantic_hash": "76fa4e59833949802dcc568487d3e37f"
-  },
-  "ps_old.svg": {
-    "mtime": 1780981389.1924982,
-    "ast_hash": "76fa4e59833949802dcc568487d3e37f",
-    "semantic_hash": "76fa4e59833949802dcc568487d3e37f"
   },
   ".agent/skills/browse/bin/find-browse": {
     "mtime": 1780985913.5808897,
@@ -3334,16 +3199,6 @@
     "ast_hash": "33c93268883c8bde2d812ac1424b7621",
     "semantic_hash": ""
   },
-  "interactions.js": {
-    "mtime": 1780988076.0613523,
-    "ast_hash": "55d3d7e3df1dd977ccdae275df1d812a",
-    "semantic_hash": "55d3d7e3df1dd977ccdae275df1d812a"
-  },
-  "demo.js": {
-    "mtime": 1781004977.4997523,
-    "ast_hash": "a744f5fb03a65536c8988084f5cfd25a",
-    "semantic_hash": "a744f5fb03a65536c8988084f5cfd25a"
-  },
   "skills-lock.json": {
     "mtime": 1781058802.081144,
     "ast_hash": "e997102e312bfacb7e1cec4c648dd5c7",
@@ -3353,11 +3208,6 @@
     "mtime": 1781348733.6359887,
     "ast_hash": "1eadb49261423b0367582585f082ae6c",
     "semantic_hash": ""
-  },
-  "demo.html": {
-    "mtime": 1781004997.3693836,
-    "ast_hash": "de49e962efc3b81cf45ada73e94594fc",
-    "semantic_hash": "de49e962efc3b81cf45ada73e94594fc"
   },
   "handoff.md": {
     "mtime": 1781245032.7691774,
@@ -11535,8 +11385,8 @@
     "semantic_hash": ""
   },
   ".claude/settings.local.json": {
-    "mtime": 1781593909.1031806,
-    "ast_hash": "c1a0ce37aa21fff73fc63c2c2f9c4632",
+    "mtime": 1781850164.0548565,
+    "ast_hash": "33348425034bb39c5023592605476c3c",
     "semantic_hash": ""
   },
   ".gemini/settings.json": {
@@ -18149,231 +17999,6 @@
     "ast_hash": "a384d4675a56cd69e8b666e33b01ec9c",
     "semantic_hash": ""
   },
-  "images/feed/3dmodels/452007_preview.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "b757b9ff60eadfab62f67099ecd8ebfc",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/595-5954306_3ds-max-icon-png-clipart.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "c7533110deecd473fed50699f3cf92d2",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/Captura de pantalla 2024-06-13 013443.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "2031cb29f98c4759c2f9bebfe704fa79",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/images (1).webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "4cfd9c390d4de8bce775c8ab918ec723",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/images.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "e6b7bf75e42305c5d42e883fe33dc68b",
-    "semantic_hash": ""
-  },
-  "images/feed/aboutMe/IMG_5869.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "25a9db8c92bfd133c588521eb0e96f5a",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/alessio/a1.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "67751488669b6435e94b638dffe6c513",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/alessio/a2.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "8c9669cc0274d1b3a9e5cc5a65a750fd",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/alessio/alessio 4 patas.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "9ba7305fdf35adf1d7e22452f069a3a1",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/alessio/main.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "65d44f1dfa58b3e1365fb0942d65c959",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/jaffare/Artboard 33.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "a4bce038180c804ab29e5faafd18c0c6",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/jaffare/Artboard 38.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "4a18d3eaa18e7eba40ad0f286b7f5ae5",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/jaffare/jaffare.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "633873e2f1fc6555798b9d2634607ae3",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/jaffare/main.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "d0ca1e60d351f14741619e88dba59268",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/king/Artboard 44.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "7ff9fd614831e73d1fb218a3fa6b477c",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/king/Artboard 46.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "7151cab4d3abeba7fdb9ee94d0b24ff3",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/king/Artboard 47.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "72d40fa122bf5c31f8980eaab7fe7970",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/king/main.jpg": {
-    "mtime": 1780615050.0,
-    "ast_hash": "07952bd7efcecba76a0cc9b2764ed633",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/leda/Artboard 27.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "1e1efb5b4de394ff119cff1ccbae61fb",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/leda/Artboard 28.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "2e7ee3c1453f9689c6ea0f5611e6138d",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/leda/lucia-montana-leda.jpg": {
-    "mtime": 1780615050.0,
-    "ast_hash": "a5d29c3cc7445bad4750a584a9ca5acb",
-    "semantic_hash": ""
-  },
-  "images/feed/characterdesign/leda/main.jpg": {
-    "mtime": 1780615050.0,
-    "ast_hash": "8f6ea30c1e354249d43073b60c30e108",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Andy_s birthday.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "e1b1397b229b8f8d1c95a64bad8b1b4f",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Artboard 36.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "d0ca1e60d351f14741619e88dba59268",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Artboard_26.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "ce73690963a8bbb22c7d2f97b0bc5ced",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Captura de pantalla 2024-06-11 213817.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "9fedfd71258344e521b72f24b7cc7f06",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Captura de pantalla 2024-06-21 040725.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "f8fdb306974859aef70dfd2e2a0d5217",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Ejercicio 5 parte 3.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "a25e3552f16666e7c788e92a5251ea45",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Ilustracion de escenario y personaje juntos.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "17ed7ffc3286274cd9c8114dca1ae915",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Pokemon 9gen.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "81bded107bba101dec5cc62827a35fe6",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/Tony terminado.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "08777f0613379fa66a670bb6cc9a213d",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/afiche (1).webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "ed49c47764acf90f32a1e3a41d47e3ac",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/concept leda 1.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "03f3b446a68e661f56f6f820b9e2b9ed",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/fondo_1_con_personajes.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "6532882d0b47acfdfa4376b44f1660a3",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/post menu.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "151affacd7e7c0967c66f4b73eb6c6b6",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/ramen party.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "8e4509a9516df870e008b75a52270ba7",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/recuerdo abuelo.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "85c9256f46967219c86fe2b133f263f9",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/recuerdo pezca sin borde.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "ee6e913ae110779e8302711bb8aacdb0",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/recuerdo11ghft.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "1e03ae98b3c38b89a1ccea749db1b741",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/sardins.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "e8e9ac2ad6a9f8ea33ee8de37a375636",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/shoashoa.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "724115e7de62cb1c22e29fbdec36f93f",
-    "semantic_hash": ""
-  },
-  "images/feed/ilustrations/ya.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "eb7a216a3f1ec7953c57515338071696",
-    "semantic_hash": ""
-  },
-  "images/portada-1.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "443029ae701eaa879b4199a2a3a1c6cf",
-    "semantic_hash": ""
-  },
-  "images/portada-2.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "896a26e64a5e9deabd638e8a503f9d9c",
-    "semantic_hash": ""
-  },
-  "images/portada-3.webp": {
-    "mtime": 1780615050.0,
-    "ast_hash": "ee9d8cb859349b91da1592d79e9ac21f",
-    "semantic_hash": ""
-  },
   "public/images/3dsmax-logo.svg": {
     "mtime": 1780615050.0,
     "ast_hash": "ecfce75b0d030dee89bbe626b6d83bb6",
@@ -18607,71 +18232,6 @@
   "public/images/ps-logo.svg": {
     "mtime": 1780615050.0,
     "ast_hash": "18fd6088c9cf657032ca03d0d82b47e4",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/Screen Recording 2024-05-17 at 4.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "232b8a14f1f6c29ef7b52f3cabe91108",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/Screen Recording 2024-05-17 at 6.11_1.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "d69eed0cf62bd3d819e9ceb153148e74",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/Screen Recording 2024-05-27 at 10.41.17\u202fAM_1.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "632d9ed11137b08b764f322626f20880",
-    "semantic_hash": ""
-  },
-  "images/feed/3dmodels/Screen Recording 2024-06-13 at 1.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "26bbf15f3a91a36a1d8300bbb7aa6711",
-    "semantic_hash": ""
-  },
-  "images/feed/aboutMe/Alessio te saluda.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "b974df7a37a6aabc7948c3ed05e1707b",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/Animaci\u00f3n Zorro(2020).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "ab9c03114195dab092dc6467f5a28a54",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/Animaci\u00f3n perro(2020).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "76712dab4629470131e7972cc08124cf",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/Corto animado primera parte (2021).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "fc47a446a54d54a9e2571e383e460948",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/HAAI THAR. IDLE (1).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "987d1957e79f35367c0680ac1298781f",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/LipSync Animaci\u00f3n (2020).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "e7eb581bd04ce46fc26e87248efb273f",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/Pr\u00e1ctica de animaci\u00f3n(2020).webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "8319dd060c706ef0a3cafdae2e25868b",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/__ANIMACION 1 TERMINADO.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "294a63155c955c9d645321b7f0829386",
-    "semantic_hash": ""
-  },
-  "images/feed/animation/galope.webm": {
-    "mtime": 1780615050.0,
-    "ast_hash": "1ca368e32cd41c1d159c4fe9eb4a322a",
     "semantic_hash": ""
   },
   "public/images/feed/3dmodels/Screen Recording 2024-05-17 at 4.webm": {

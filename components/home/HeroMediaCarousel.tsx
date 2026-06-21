@@ -1,80 +1,109 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { useCmsStore, state } from '@/lib/cms/store'
-
-type HeroDetail = { slides: string[]; duration: number }
 
 type Props = {
   prefix: string
   defaultSlides: string[]
   className?: string
+  label?: string
 }
 
-const DEFAULT_INTERVAL_MS = 6000
+const DEFAULT_DURATION_MS = 7000
 
-export default function HeroMediaCarousel({ prefix, defaultSlides, className = 'cms-media' }: Props) {
-  useCmsStore()
+// Lee las slides + duración DIRECTO de state.items (fuente de verdad tras la
+// hidratación). No depende del evento `cms:${prefix}` → sin race ni eventos
+// perdidos en remount/Fast-Refresh.
+function readCarousel(prefix: string): { slides: string[]; duration: number } {
+  let count = 3
+  let duration = DEFAULT_DURATION_MS
+  try {
+    const s = JSON.parse(state.items[`${prefix}.settings`] || '')
+    if (s && typeof s.count === 'number') count = s.count
+    if (s && typeof s.duration === 'number') duration = s.duration
+  } catch {}
+  const slides: string[] = []
+  for (let i = 0; i < (count || 3); i++) slides.push(state.items[`${prefix}.slide#${i}`] || '')
+  return { slides, duration }
+}
+
+export default function HeroMediaCarousel({ prefix, defaultSlides, className = 'cms-media', label = 'Carrusel de portada' }: Props) {
+  useCmsStore() // re-render en cada cambio del store (hidratación, admin, etc.)
   const isAdmin = state.isAdmin
-  const [slides, setSlides] = useState<string[]>(defaultSlides)
-  const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS)
+  const [, force] = useReducer((x: number) => x + 1, 0)
 
-  // contenido del CMS
+  // El upload actualiza state.items y dispara `cms:${prefix}` (applyMedia →
+  // broadcastCarousel). Re-leemos state.items en vivo al recibirlo.
   useEffect(() => {
-    // When CmsRoot loads it dispatches cms:hero. But our prefix might be different.
-    // Actually, CmsRoot currently only broadcasts `cms:hero`.
-    // I need to make CmsRoot broadcast `cms:hero-main` and `cms:hero-sub` too!
-    const onCarousel = (e: Event) => {
-      const { slides: cmsSlides, duration } = (e as CustomEvent<HeroDetail>).detail
-      const real = cmsSlides.filter((s) => s && s.trim() !== '')
-      if (real.length) setSlides(cmsSlides.map((s, i) => s || defaultSlides[i % defaultSlides.length]))
-      if (duration) setIntervalMs(duration)
-    }
+    const onCarousel = () => force()
     window.addEventListener(`cms:${prefix}`, onCarousel)
     return () => window.removeEventListener(`cms:${prefix}`, onCarousel)
-  }, [prefix, defaultSlides])
+  }, [prefix])
+
+  const { slides, duration } = readCarousel(prefix)
+  // Si todavía no hay nada en state (pre-hidratación) y se pasaron defaults, usarlos.
+  const hasAny = slides.some((s) => s && s.trim() !== '')
+  const panels = (hasAny || slides.length ? slides : defaultSlides)
+  const finalPanels = panels.length ? panels : ['']
+  const slidesKey = finalPanels.join('|')
 
   useEffect(() => {
     if (prefersReducedMotion()) return
     ensureGSAP()
-    const els = document.querySelectorAll(`.${prefix}-carousel-slide`)
+    // TODOS los paneles entran al crossfade (imagen o contenedor vacío) -> el
+    // carrusel rota entre todas las diapositivas; las vacías muestran su contenedor.
+    const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`)
+    if (els.length === 0) return
+    gsap.set(els, { opacity: 0 })
+    gsap.set(els[0], { opacity: 1 })
     if (els.length < 2) return
 
     let current = 0
-    gsap.set(els[0], { opacity: 1 })
     const timer = setInterval(() => {
       const next = (current + 1) % els.length
-      // The floating images don't need the scale, just crossfade
-      gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 2, ease: 'power1.inOut' })
-      gsap.to(els[current], { opacity: 0, duration: 2, ease: 'power1.inOut' })
+      gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power1.inOut' })
+      gsap.to(els[current], { opacity: 0, duration: 1.6, ease: 'power1.inOut' })
       current = next
-    }, intervalMs)
+    }, duration)
 
     return () => {
       clearInterval(timer)
       gsap.killTweensOf(els)
     }
-  }, [slides, intervalMs, prefix])
+    // slidesKey cambia cuando se sube/quita una imagen → re-arma el crossfade.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slidesKey, duration, prefix])
 
   return (
     <>
-      {slides.map((src, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={`${i}-${src}`}
-          src={src}
-          alt={`Slide ${i}`}
-          className={`${className} ${prefix}-carousel-slide`}
-          style={{
-            position: 'absolute',
-            top: 0, left: 0, width: '100%', height: '100%',
-            objectFit: 'cover',
-            opacity: i === 0 ? 1 : 0,
-            zIndex: i === 0 ? 1 : 0
-          }}
-        />
-      ))}
+      {finalPanels.map((src, i) => {
+        const isFilled = !!(src && src.trim() !== '')
+        return (
+          <div
+            key={`${i}-${src || 'empty'}`}
+            className={`${prefix}-carousel-slide hero-slide-panel`}
+            style={{ position: 'absolute', inset: 0, opacity: i === 0 ? 1 : 0, zIndex: i === 0 ? 1 : 0 }}
+          >
+            {isFilled ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src}
+                alt=""
+                className={className}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div className="hero-carousel-empty" aria-hidden="true">
+                <i className="fa-solid fa-cloud-arrow-up" />
+                <span>{label}</span>
+              </div>
+            )}
+          </div>
+        )
+      })}
+      {/* Solo el engranaje abre el gestor del carrusel (no todo el contenedor). */}
       {isAdmin && (
         <button
           className="cms-hero-gear"

@@ -13,7 +13,7 @@ import {
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
-  syncWaveGroups, refreshTools,
+  syncWaveGroups, refreshTools, refreshContainerLabel,
 } from './engine'
 
 // ----- Content Picker ---------------------------------------------------------
@@ -39,6 +39,7 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
     if (newName && newName !== meta.label) {
       performRenameContainer(cmsKey, newName)
       meta.label = newName
+      refreshContainerLabel(cmsKey) // refresca overlay + tooltips en vivo (sin recargar)
       toast('Contenedor actualizado')
     }
     setEditingName(false)
@@ -66,6 +67,9 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
               type="button"
               title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
               aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              // mousedown preventDefault → el input no pierde foco antes del click,
+              // evita el doble disparo onBlur+onClick que dejaba la edición abierta.
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
               style={{
                 background: 'none', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',

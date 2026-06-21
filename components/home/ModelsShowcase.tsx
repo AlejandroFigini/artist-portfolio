@@ -1,0 +1,282 @@
+'use client'
+
+/* MODELS SHOWCASE (3D) — texto (izq) + coverflow 3D scoped (der).
+   Ref. visual: coverflow / cover-stack tipo Awwwards — card central al frente,
+   laterales inclinados con rotateY (profundidad). A diferencia del CircularGallery
+   scroll-driven, este es scoped a la sección: navega por prev/next + drag +
+   autoplay, NO secuestra el scroll de la página.
+
+   CMS: los textos (nombre de sección, intro, 3 bloques) y los 3 videos usan el
+   sistema de subida estándar del sitio (engine.ts → REGISTRY model3d.*). Los
+   contenedores son estáticos; el engine los muta imperativamente. */
+
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+
+const SLIDE_COUNT = 3
+const AUTOPLAY_MS = 5000
+
+/* Bloques de texto (3). Contenido por defecto, editable desde el CMS. */
+const TEXT_BLOCKS: { title: string; body: string }[] = [
+  {
+    title: 'Proceso',
+    body: 'Del concepto al modelo final: blocking de formas, escultura, retopología, UVs y texturizado. Cada pieza se construye con topología limpia y materiales listos para producción.',
+  },
+  {
+    title: 'Enfoque',
+    body: 'Personajes, props y entornos con foco en silueta, proporción y lectura de volumen. La estética guía la técnica — no al revés.',
+  },
+  {
+    title: 'Herramientas',
+    body: 'Blender y ZBrush para modelado y escultura; Substance para texturizado PBR; render y lookdev para integrar cada modelo en su escena.',
+  },
+]
+
+function Corners() {
+  return (
+    <>
+      <span className="bp-corner tl" />
+      <span className="bp-corner tr" />
+      <span className="bp-corner bl" />
+      <span className="bp-corner br" />
+    </>
+  )
+}
+
+/* Posición circular de una slide respecto a la activa (rango -1..0..1 para 3). */
+function relOffset(i: number, active: number, n: number) {
+  let off = i - active
+  if (off > n / 2) off -= n
+  if (off < -n / 2) off += n
+  return off
+}
+
+function slideStyle(off: number): React.CSSProperties {
+  const abs = Math.abs(off)
+  const translateX = off * 50
+  const rotateY = off * -30
+  const translateZ = abs === 0 ? 0 : -180
+  const scale = abs === 0 ? 1 : 0.78
+  const opacity = abs === 0 ? 1 : abs === 1 ? 0.5 : 0
+  return {
+    transform: `translate(-50%, -50%) translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+    opacity,
+    zIndex: 10 - abs,
+    pointerEvents: abs === 0 ? 'auto' : 'none',
+  }
+}
+
+/* Slide = contenedor de video CMS. Observa el src para alternar placeholder y
+   reproduce solo cuando es la slide activa (perf). */
+function Slide({ index, isActive, off }: { index: number; isActive: boolean; off: number }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [hasContent, setHasContent] = useState(false)
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    const sync = () => {
+      const has = !!(v.src && v.src !== window.location.href)
+      setHasContent(has)
+      if (has) { try { v.pause(); v.currentTime = 0 } catch {} }
+    }
+    sync()
+    const mo = new MutationObserver(sync)
+    mo.observe(v, { attributes: true, attributeFilter: ['src'] })
+    v.addEventListener('loadeddata', sync)
+    return () => { mo.disconnect(); v.removeEventListener('loadeddata', sync) }
+  }, [])
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !hasContent) return
+    if (isActive) { v.play().catch(() => {}) }
+    else { v.pause() }
+  }, [isActive, hasContent])
+
+  return (
+    <figure className="m3d-slide" style={slideStyle(off)} aria-hidden={!isActive}>
+      <Corners />
+      <div className="m3d-slide__media">
+        <video
+          ref={videoRef}
+          className="m3d-video"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+        {!hasContent && (
+          <div className="m3d-slide__placeholder" aria-hidden="true">
+            <i className="fa-solid fa-cube" />
+            <span className="m3d-slide__fig">FIG. 05{String.fromCharCode(97 + index)}</span>
+          </div>
+        )}
+      </div>
+    </figure>
+  )
+}
+
+function Coverflow() {
+  const [active, setActive] = useState(0)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const hoverRef = useRef(false)
+  const dragRef = useRef<{ x: number; active: boolean }>({ x: 0, active: false })
+
+  const go = useCallback((dir: number) => {
+    setActive((a) => (a + dir + SLIDE_COUNT) % SLIDE_COUNT)
+  }, [])
+
+  // Autoplay — pausa en hover, fuera de viewport o con reduced-motion.
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    const stage = stageRef.current
+    let inView = true
+    const io = stage
+      ? new IntersectionObserver((e) => { inView = e[0].isIntersecting }, { threshold: 0.2 })
+      : null
+    if (stage && io) io.observe(stage)
+    const id = setInterval(() => {
+      if (!hoverRef.current && inView && !dragRef.current.active) go(1)
+    }, AUTOPLAY_MS)
+    return () => { clearInterval(id); io?.disconnect() }
+  }, [go])
+
+  // Drag horizontal → cambia slide.
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragRef.current = { x: e.clientX, active: true }
+  }
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragRef.current.active) return
+    const dx = e.clientX - dragRef.current.x
+    dragRef.current.active = false
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
+  }
+
+  return (
+    <div className="m3d-coverflow">
+      <div
+        ref={stageRef}
+        className="m3d-coverflow__stage"
+        onMouseEnter={() => { hoverRef.current = true }}
+        onMouseLeave={() => { hoverRef.current = false }}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
+        {Array.from({ length: SLIDE_COUNT }, (_, i) => {
+          const off = relOffset(i, active, SLIDE_COUNT)
+          return <Slide key={i} index={i} off={off} isActive={off === 0} />
+        })}
+      </div>
+
+      <div className="m3d-coverflow__controls">
+        <button type="button" className="m3d-nav" onClick={() => go(-1)} aria-label="Anterior">
+          <i className="fa-solid fa-chevron-left" />
+        </button>
+        <div className="m3d-dots" role="tablist" aria-label="Modelados 3D">
+          {Array.from({ length: SLIDE_COUNT }, (_, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`m3d-dot${i === active ? ' is-active' : ''}`}
+              onClick={() => setActive(i)}
+              aria-label={`Ver modelado ${i + 1}`}
+              aria-selected={i === active}
+              role="tab"
+            />
+          ))}
+        </div>
+        <button type="button" className="m3d-nav" onClick={() => go(1)} aria-label="Siguiente">
+          <i className="fa-solid fa-chevron-right" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function ModelsShowcase() {
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    ensureGSAP()
+    const sec = sectionRef.current
+    if (!sec) return
+
+    let titleTw: LoopHandle | null = null
+    let descTw: LoopHandle | null = null
+
+    const ctx = gsap.context(() => {
+      gsap.set('.m3d-showcase__fig', { autoAlpha: 0, y: 12 })
+      gsap.set('.m3d-showcase__title', { autoAlpha: 0 })
+      gsap.set('.m3d-showcase__desc', { autoAlpha: 0, y: 18 })
+      gsap.set('.m3d-text', { autoAlpha: 0, y: 24 })
+      gsap.set('.m3d-coverflow', { autoAlpha: 0, y: 36 })
+
+      // fig + desc fade-up; el título entra letra por letra (typewriterRevealLoop).
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
+      tl.to('.m3d-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
+        .to('.m3d-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
+        .to('.m3d-text', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, '-=0.4')
+        .to('.m3d-coverflow', { autoAlpha: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.6')
+
+      let played = false
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !played) {
+            played = true
+            tl.play()
+            io.disconnect()
+            const titleEl = sec.querySelector<HTMLElement>('.m3d-showcase__title')
+            const descEl = sec.querySelector<HTMLElement>('.m3d-showcase__desc')
+            if (titleEl) titleTw = typewriterRevealLoop(titleEl, 8)
+            if (descEl) descTw = wordRevealLoop(descEl, 8)
+          }
+        }
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
+      io.observe(sec)
+
+      ScrollTrigger.refresh()
+    }, sectionRef)
+    return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
+  }, [])
+
+  return (
+    <section ref={sectionRef} className="m3d-showcase" aria-labelledby="m3d-showcase-title">
+      <div className="m3d-showcase__rail" aria-hidden="true">
+        <span className="m3d-showcase__rail-fig">FILE 05 · 3D</span>
+        <span className="m3d-showcase__rail-track">
+          <span className="m3d-showcase__rail-fill" />
+        </span>
+        <span className="m3d-showcase__rail-fig m3d-showcase__rail-fig--end">END</span>
+      </div>
+
+      <div className="m3d-showcase__frame">
+        <div className="m3d-showcase__header">
+          <span className="m3d-showcase__fig">FIG. 05 — Models</span>
+          <h2 id="m3d-showcase-title" className="m3d-showcase__title">3D</h2>
+          <p className="m3d-showcase__desc">
+            Modelado y escultura digital — personajes, props y entornos
+            construidos con foco en forma, topología y materiales para producción.
+          </p>
+          <SoftwareDropdown prefix="model3d" />
+        </div>
+
+        <div className="m3d-grid">
+          <div className="m3d-texts">
+            {TEXT_BLOCKS.map((b, i) => (
+              <article key={i} className="m3d-text">
+                <h3 className="m3d-text__title">{b.title}</h3>
+                <p className="m3d-text__body">{b.body}</p>
+              </article>
+            ))}
+          </div>
+
+          <Coverflow />
+        </div>
+      </div>
+    </section>
+  )
+}

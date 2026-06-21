@@ -14,7 +14,7 @@
    Vacíos: cms-empty-overlay (solo icono, ver styles/about.css). */
 
 import { useEffect, useRef } from 'react'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterLoop, wordRevealLoop } from '@/hooks/useGSAP'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 
 const SPECS = [
   { k: 'ROLE',      v: '3D Generalist & Animator' },
@@ -54,8 +54,8 @@ export default function AboutSection() {
     if (!sec) return
 
     let twTimeout: ReturnType<typeof setTimeout>
-    let titleTw: gsap.core.Timeline | null = null
-    let ledeTw: gsap.core.Timeline | null = null
+    let titleTw: LoopHandle | null = null
+    let ledeTw: LoopHandle | null = null
 
     const ctx = gsap.context(() => {
       gsap.set('.about-title .line', { yPercent: 115, skewY: 4 })
@@ -93,7 +93,7 @@ export default function AboutSection() {
             const lineEl = sec.querySelector<HTMLElement>('.about-title .line')
             const ledeEl = sec.querySelector<HTMLElement>('.about-lede')
             twTimeout = setTimeout(() => {
-              if (lineEl) titleTw = typewriterLoop(lineEl, 8)
+              if (lineEl) titleTw = typewriterRevealLoop(lineEl, 8)
               if (ledeEl) ledeTw = wordRevealLoop(ledeEl, 8)
             }, (tl.duration() + 1) * 1000)
           }

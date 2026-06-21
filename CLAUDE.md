@@ -111,9 +111,13 @@ Activar `/caveman ultra` al inicio de cada sesión. Respuestas terse: sin filler
 
 ## Stack actual
 
-**Next.js 15 (App Router) + Tailwind CSS v4 + TypeScript**
+**Next.js 16 (App Router) + Tailwind CSS v4 + TypeScript**
 
-Backend separado: Express + PostgreSQL + Cloudinary (no cambiar)
+Backend **dentro de Next** (`app/api/*` route handlers). 1 solo servicio, sin Express ni proxy.
+- DB: PostgreSQL vía `pg` (`lib/db.ts` → pool + `initDb` con `CREATE TABLE IF NOT EXISTS` + runner de migraciones idempotentes en `MIGRATIONS[]`). Sin `DATABASE_URL` → modo mock (front usa localStorage).
+- Media: `lib/storage.ts` decide por entorno → Cloudinary si hay credenciales (prod), filesystem `public/uploads` si no (local). Una subida en local NUNCA toca Cloudinary.
+- Rutas: `/api/content` (GET/POST), `/api/login` (admin+2FA TOTP), `/api/upload-test`, `/api/delete-media`.
+- Env en `.env.example`. Estructura (tablas/migraciones) viaja con el commit; los datos no.
 
 ## Reglas
 
@@ -123,7 +127,7 @@ Backend separado: Express + PostgreSQL + Cloudinary (no cambiar)
 - Animaciones de UI y transiciones entre páginas → Framer Motion (cuando sea necesario)
 - Animaciones complejas (cursor, canvas, SVG, secuencias) → GSAP con `useEffect` + cleanup
 - Estilos → Tailwind utility classes + variables CSS para la estética blueprint
-- El backend Express no se toca
+- Backend = route handlers de Next (`app/api/*`). Para cambios de esquema, agregar a `MIGRATIONS[]` en `lib/db.ts` (no romper tablas existentes)
 
 ### Diseño y experiencia visual
 
@@ -169,6 +173,27 @@ Antes de colocar cualquier imagen o video, crear primero el contenedor que defin
 3. El contenedor nunca se modifica para acomodar las dimensiones de un archivo específico — el archivo se adapta al contenedor.
 4. Cada contenedor debe ser accesible desde el CMS: el usuario puede reemplazar el contenido sin tocar código.
 5. Si se planea agregar una nueva pieza de contenido, el primer commit es el contenedor vacío con su placeholder.
+
+### Estilo genérico de contenedor vacío (OBLIGATORIO)
+
+> Cuando se diga "contenedor", **siempre** se refiere a un elemento con estas cualidades. Aplica a toda la página, de aquí en adelante, sin excepción para contenedores de media (imagen/video).
+
+Todo contenedor **sin contenido** debe verse EXACTAMENTE así (estilo único, no overridear por sección):
+
+- **Fondo**: violeta claro casi transparente → `rgba(124, 58, 237, 0.06)`.
+- **Borde**: punteado (`2px dashed var(--accent)`), `border-radius: 14px`.
+- **Centro**: icono de nube de subir contenido (`fa-cloud-arrow-up`).
+- **Debajo del icono**: el **nombre del contenedor** (label del CMS).
+
+**Fuente de verdad única**: la clase base `.cms-empty-overlay` en `styles/legacy/style.css`. El engine (`components/cms/engine.ts → showEmptySlot`) inyecta el overlay con `<i class="fa-cloud-arrow-up"> + <span>{nombre}</span>`. **Nunca** redefinir `background`/`border`/`border-radius`/colores del overlay en CSS por sección — eso rompe la uniformidad (era el bug de Animations/About/Characters/3D que usaban fondo blanco).
+
+**Sin efectos en el contenedor vacío**: sombras, glow, gradientes, float/breathe, blur del contenido **NO** se aplican al contenedor — solo aparecen al subir contenido. El neutralizador global `.cms-empty-slot { background/box-shadow/animation/filter/backdrop-filter: none !important }` (en `legacy/style.css`) garantiza esto. Si un efecto vive en un ancestro (ej. float del `.about-reel` exterior), neutralizarlo con `:has(.cms-empty-slot)`.
+
+**Excepción**: slots de icono inline muy chicos (logos de software `.sw-*`, burbujas wave `.wave-item`) usan el mismo borde punteado + icono pero **ocultan el nombre** (`span { display: none }`) por falta de espacio físico.
+
+**Admin vs visitante (mismo marco, distinto contenido)**: el contenedor vacío se muestra para TODOS (el engine inyecta el overlay sin gate de admin). El **marco punteado + fondo violeta translúcido son idénticos** en ambas vistas. La diferencia: en **admin** se ven el icono nube + el nombre + es clickeable (abre el picker); para el **visitante** (`body:not(.is-admin)`) o con **"Hide Edit actions"** (`body.hide-cms-controls`) se ocultan icono + nombre (`> i, > span { display: none }`) y el marco deja de ser interactivo (`pointer-events: none`). Nunca dejar que un contenedor vacío muestre su fondo propio (oscuro/gradiente) al visitante — debe ser el mismo dashed translúcido.
+
+**Flujo al crear una sección nueva**: primero colocar los contenedores vacíos (con esta estética), recién después subir el contenido por el CMS.
 
 ### Estructura de componente de referencia
 

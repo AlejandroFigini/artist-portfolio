@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# media subida en local (storage de dev; en prod se usa Cloudinary)
+/public/uploads
 
 # vercel
 .vercel

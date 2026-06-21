@@ -14,6 +14,8 @@
 @import "./about.css"; /* sección About: editorial + storytelling on-scroll */
 @import "./animations-showcase.css"; /* sección Animations: 6-card grid hover-to-play */
 @import "./characters-showcase.css"; /* sección Character Design: stage + carrusel */
+@import "./models-showcase.css"; /* sección 3D: split 2-col (textos sticky + videos) */
+@import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
 @import "./cursor.css"; /* cursor delicado (punto + anillo fino) */
 @import "./scroll-fx.css"; /* reglas-cota de progreso ligadas al scroll */

@@ -4371,6 +4371,13 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
 /* Slot vacío (admin): se conserva el contenedor con un botón para subir */
 .cms-empty-slot > *:not(.cms-empty-overlay) { visibility: hidden !important; }
 
+/* ============================================================================
+   ESTILO GENÉRICO ÚNICO DE CONTENEDOR VACÍO (canónico — no overridear por sección)
+   Fondo violeta claro translúcido + borde punteado + icono nube + nombre debajo.
+   Cualquier contenedor sin contenido debe verse EXACTAMENTE así. Los efectos del
+   contenido (sombras, glow, float, gradientes) NO se aplican al contenedor vacío:
+   solo aparecen al subir contenido. Ver `.cms-empty-slot` (neutralizador) abajo.
+   ============================================================================ */
 .cms-empty-overlay {
     position: absolute;
     inset: 0;
@@ -4380,7 +4387,7 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
     justify-content: center;
     gap: 0.5rem;
     border: 2px dashed var(--accent);
-    border-radius: 28px;
+    border-radius: 14px;
     background: rgba(124, 58, 237, 0.06);
     color: var(--accent);
     cursor: pointer;
@@ -4389,7 +4396,18 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
 }
 .cms-empty-overlay:hover { background: rgba(124, 58, 237, 0.14); }
 .cms-empty-overlay i { font-size: 1.8rem; }
-.cms-empty-overlay span { font-size: 0.85rem; font-weight: 600; }
+.cms-empty-overlay span { font-size: 0.85rem; font-weight: 400; text-align: center; padding: 0 0.5rem; }
+
+/* Neutralizador: el contenedor vacío NO muestra efectos decorativos propios
+   (sombra, gradiente, glow, animación de flotado/respiración, blur). Solo es un
+   marco para el overlay genérico. Los efectos vuelven al subir contenido. */
+.cms-empty-slot {
+    background: transparent !important;
+    box-shadow: none !important;
+    animation: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+}
 
 /* ---- Content Picker: modal con 2 opciones grandes ---- */
 .cms-picker-grid {
@@ -6837,6 +6855,43 @@ body.is-admin .hero-software-wave {
 }
 
 /* --- Scrolling track --- */
+/* Contenedor de carrusel vacío (sin imágenes) — borde punteado + icono +
+   nombre, igual que el resto de contenedores vacíos. Clase propia para no
+   colisionar con .cms-empty-overlay (que el engine gestiona globalmente). */
+.hero-carousel-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    background: rgba(124, 58, 237, 0.06);
+    color: var(--accent);
+    cursor: default;          /* no clickeable: el carrusel se abre desde el engranaje */
+    pointer-events: none;
+    z-index: 60;
+    text-align: center;
+}
+.hero-carousel-empty i { font-size: 2rem; }
+.hero-carousel-empty span { font-size: 0.9rem; font-weight: 600; padding: 0 0.6rem; }
+
+/* Carrusel hero VACÍO → marco genérico limpio: ocultar las decoraciones
+   blueprint propias del contenedor (label data-container-id, corners, scanline,
+   FIG, overlay) y neutralizar su fondo/borde, para que solo se vea el dashed. */
+.media-container:has(.hero-carousel-empty)::before { content: none; }
+.media-container:has(.hero-carousel-empty) .bp-corner,
+.media-container:has(.hero-carousel-empty) .bp-scanline,
+.media-container:has(.hero-carousel-empty) .bp-fig,
+.media-container:has(.hero-carousel-empty) .container-overlay { display: none; }
+.media-container:has(.hero-carousel-empty) {
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
 .wave-track {
     display: flex;
     width: max-content;
@@ -6846,6 +6901,9 @@ body.is-admin .hero-software-wave {
 .hero-software-wave:hover .wave-track {
     animation-play-state: paused;
 }
+/* La cinta se mueve siempre. Para editar, el hover sobre la wave la congela
+   (regla `.hero-software-wave:hover .wave-track` arriba) → se puede apretar el
+   lápiz sin que la burbuja se escape. */
 @keyframes waveMarquee {
     to { transform: translateX(-25%); }
 }
@@ -7084,7 +7142,34 @@ body.hide-cms-controls .cms-panel-delete,
 body.hide-cms-controls .cms-add-slot,
 body.hide-cms-controls .cms-add-illu,
 body.hide-cms-controls .cms-carousel-controls,
+body.hide-cms-controls .cms-tools,
 body.hide-cms-controls .cms-tool-btn {
+    display: none !important;
+}
+/* Vista "usuario normal": sin recuadros de edición ni slots vacíos resaltados */
+body.hide-cms-controls .cms-mount { outline: none !important; }
+body.hide-cms-controls .cms-empty-slot > *:not(.cms-empty-overlay) { visibility: visible !important; }
+
+/* ============================================================================
+   CONTENEDOR VACÍO — VISTA VISITANTE / HIDE-EDIT
+   El marco punteado + fondo violeta translúcido SE MANTIENEN igual que en admin.
+   Solo se oculta el icono de subir + el nombre, y deja de ser interactivo.
+   ============================================================================ */
+body:not(.is-admin) .cms-empty-overlay,
+body.hide-cms-controls .cms-empty-overlay,
+body:not(.is-admin) .hero-carousel-empty,
+body.hide-cms-controls .hero-carousel-empty {
+    cursor: default;
+    pointer-events: none;
+}
+body:not(.is-admin) .cms-empty-overlay > i,
+body:not(.is-admin) .cms-empty-overlay > span,
+body.hide-cms-controls .cms-empty-overlay > i,
+body.hide-cms-controls .cms-empty-overlay > span,
+body:not(.is-admin) .hero-carousel-empty > i,
+body:not(.is-admin) .hero-carousel-empty > span,
+body.hide-cms-controls .hero-carousel-empty > i,
+body.hide-cms-controls .hero-carousel-empty > span {
     display: none !important;
 }
 

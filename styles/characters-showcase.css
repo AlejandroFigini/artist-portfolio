@@ -7,7 +7,7 @@
 .char-showcase {
   position: relative;
   padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
-  background: #f6f5fb;
+  background: #ffffff;
   overflow: hidden;
   isolation: isolate;
 }
@@ -104,15 +104,6 @@
   letter-spacing: -0.04em;
   color: var(--text-primary);
   margin: 0;
-}
-.char-showcase__title .line-wrap {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.08em;
-}
-.char-showcase__title .line {
-  display: block;
-  transform-origin: left center;
 }
 .char-showcase__desc {
   font-size: clamp(1.05rem, 1.5vw, 1.3rem);
@@ -524,13 +515,4 @@
   .cd-rail-item.active .cd-rail-progress.run { animation: none; }
 }
 
-/* --- CMS empty state --- */
-.char-showcase .cms-empty-overlay {
-  border-style: dashed;
-  border-width: 2px;
-  border-color: rgba(124, 58, 237, 0.45);
-  background: #fff;
-  color: var(--accent);
-  border-radius: 10px;
-  z-index: 6;
-}
+/* CMS empty state → usa el estilo genérico único (.cms-empty-overlay base). */

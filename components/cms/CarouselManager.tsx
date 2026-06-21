@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
 import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf } from './engine'
+import { elementsByKey, currentSrcOf, metaByKey } from './engine'
 
 const MIN_SLIDES = 2
 const MAX_SLIDES = 5
@@ -121,19 +121,19 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     await saveContent(payload)
   }
 
-  // Guardar Configuración: poda las slides vacías de forma automática
-  // (regla del CMS: no se persisten slides sin imagen). Bloquea si quedan <2.
+  // Guardar Configuración: las slides vacías SE PERMITEN (no se podan). Quedan
+  // como contenedores con su nombre, editables luego. Solo exige ≥1 imagen para
+  // que el carrusel tenga algo que mostrar.
   const onSaveSettings = () => {
-    const keep = slides.filter((k) => !isEmptySlide(k))
-    if (keep.length < MIN_SLIDES) {
-      toast(`Necesitas al menos ${MIN_SLIDES} imágenes para guardar el carrusel`, 'error')
+    if (filledCount < 1) {
+      toast('Agregá al menos una imagen al carrusel', 'error')
       return
     }
-    const pruned = slides.length - keep.length
+    const empties = slides.length - filledCount
     setSaving(true)
-    persistSettings(keep)
+    persistSettings(slides)
       .then(() => {
-        if (pruned > 0) toast(`Carrusel guardado. Se eliminaron ${pruned} diapositiva(s) vacía(s).`)
+        if (empties > 0) toast(`Carrusel guardado. ${empties} diapositiva(s) vacía(s) quedan como contenedor con su nombre.`)
         else toast('Carrusel guardado correctamente')
         window.location.reload()
       })
@@ -170,7 +170,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
           {dirty
             ? <><i className="fa-solid fa-circle-info" style={{ marginRight: 6 }}></i>Guardá el grafo para habilitar la asignación de imágenes en las nuevas diapositivas.</>
             : hasEmpty
-              ? <><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }}></i>{filledCount} de {slides.length} diapositiva(s) con imagen. Al guardar configuración, las {slides.length - filledCount} vacía(s) se eliminarán automáticamente.</>
+              ? <><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }}></i>{filledCount} de {slides.length} diapositiva(s) con imagen. Las {slides.length - filledCount} vacía(s) se mantienen como contenedor con su nombre — el carrusel rota solo las que tienen imagen.</>
               : <><i className="fa-solid fa-circle-check" style={{ marginRight: 6 }}></i>{filledCount} diapositiva(s) listas para guardar.</>
           }
         </div>
@@ -206,7 +206,10 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
             <div key={vKey} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
               <div style={{ width: 100, height: 60, borderRadius: 4, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url("${slideSrc(vKey, prefix)}")` }}></div>
               <div style={{ flex: 1 }}>
-                <strong style={{ display: 'block', marginBottom: '0.3rem' }}>Slide {i + 1}</strong>
+                <strong style={{ display: 'block', marginBottom: '0.3rem' }}>
+                  {metaByKey[vKey]?.label || `Diapositiva ${i + 1}`}
+                  {isEmptySlide(vKey) && <span style={{ marginLeft: 8, fontWeight: 400, fontSize: '0.78rem', color: '#92400e' }}>· vacía</span>}
+                </strong>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
                     type="button" className="cms-btn"
@@ -216,10 +219,10 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
                   >
                     Cambiar Imagen
                   </button>
-                  <button type="button" className="cms-btn" title="Subir" disabled={i === 0 || hasEmpty} onClick={() => move(i, -1)}>
+                  <button type="button" className="cms-btn" title="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
                     <i className="fa-solid fa-arrow-up"></i>
                   </button>
-                  <button type="button" className="cms-btn" title="Bajar" disabled={i === slides.length - 1 || hasEmpty} onClick={() => move(i, 1)}>
+                  <button type="button" className="cms-btn" title="Bajar" disabled={i === slides.length - 1} onClick={() => move(i, 1)}>
                     <i className="fa-solid fa-arrow-down"></i>
                   </button>
                   <button type="button" className="cms-btn" title={slides.length <= MIN_SLIDES ? `Mínimo ${MIN_SLIDES} diapositivas requeridas` : "Eliminar"} disabled={slides.length <= MIN_SLIDES} style={slides.length <= MIN_SLIDES ? {} : { color: '#ef4444' }} onClick={() => setSlides((s) => s.filter((_, j) => j !== i))}>
@@ -241,9 +244,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
           </div>
           <button
             type="button" className="cms-btn cms-btn--primary"
-            disabled={saving || dirty || filledCount < MIN_SLIDES}
-            style={(dirty || filledCount < MIN_SLIDES) ? { opacity: 0.5 } : undefined}
-            title={dirty ? 'Debes guardar el grafo primero' : filledCount < MIN_SLIDES ? `Mínimo ${MIN_SLIDES} imágenes para guardar` : undefined}
+            disabled={saving || dirty || filledCount < 1}
+            style={(dirty || filledCount < 1) ? { opacity: 0.5 } : undefined}
+            title={dirty ? 'Debes guardar el grafo primero' : filledCount < 1 ? 'Agregá al menos una imagen' : undefined}
             onClick={onSaveSettings}
           >
             {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Guardando...</> : 'Guardar Configuración'}
