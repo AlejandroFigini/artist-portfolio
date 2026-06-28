@@ -83,9 +83,9 @@ export default function AdminDashboard() {
   const goto = (s: string) => { setSection(s); if (!s.startsWith('contenidos-') && s !== 'subircontenido') setSubOpen(false) }
   const isContenidos = section.startsWith('contenidos-') || section === 'subircontenido'
 
-  const navBadge = (label: string, count: number, size: number) => (
+  const navBadge = (label: string, size: number) => (
     <span className="admin-nav-badge-label">
-      {label} <span className="admin-nav-badge-stats">[ <span className="badge-count">{count}</span> · <span className="badge-size">{fmtBytes(size)}</span> ]</span>
+      {label} <span className="admin-nav-badge-stats">[ <span className="badge-size">{fmtBytes(size)}</span> ]</span>
     </span>
   )
 
@@ -114,16 +114,16 @@ export default function AdminDashboard() {
               </button>
               <div className={`admin-nav-sub${subOpen || isContenidos ? ' open' : ''}`}>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-usado' ? ' active' : ''}`} onClick={() => goto('contenidos-usado')}>
-                  <i className="fa-solid fa-check c-uso"></i>{navBadge('En uso', usedArr.length, sumSizes(usedArr))}
+                  <i className="fa-solid fa-check c-uso"></i>{navBadge('En uso', sumSizes(usedArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-nousado' ? ' active' : ''}`} onClick={() => goto('contenidos-nousado')}>
-                  <i className="fa-solid fa-folder-closed c-nouso"></i>{navBadge('Sin usar', unusedArr.length, sumSizes(unusedArr))}
+                  <i className="fa-solid fa-folder-closed c-nouso"></i>{navBadge('Sin usar', sumSizes(unusedArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-basurero' ? ' active' : ''}`} onClick={() => goto('contenidos-basurero')}>
-                  <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', trashArr.length, sumSizes(trashArr))}
+                  <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-repo' ? ' active' : ''}`} onClick={() => goto('contenidos-repo')}>
-                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', usedArr.length + unusedArr.length + trashArr.length, sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))}
+                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'subircontenido' ? ' active' : ''}`} onClick={() => goto('subircontenido')}>
                   <i className="fa-solid fa-vial c-subir"></i><span>Subir contenido</span>
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
           {section === 'resumen' && (
             <div className="admin-card">
               <h2><i className="fa-solid fa-gauge-high"></i> Resumen</h2>
-              <p className="cms-admin-sub">Panel de gestión del contenido del sitio. Elegí una sección en el menú lateral.</p>
+              <p className="cms-admin-sub">Panel de gestión del contenido del sitio.</p>
               <div className="admin-stats">
                 <Stat num={usedArr.length} label="contenidos usados" />
                 <Stat num={fmtBytes(sumSizes(usedArr))} label="espacio usado" />

@@ -12,6 +12,7 @@ import {
   state, sumSizes, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
   performRestore, loadJSON, saveJSON, LS,
 } from '@/lib/cms/store'
+import { buildPageTree } from '@/lib/cms/pages'
 import {
   deletePermanent, emptyTrash, purgeUnused, autoCleanTrash,
   batchMoveUsedToUnused, batchMoveUnusedToTrash, batchDeletePermanent,
@@ -122,16 +123,44 @@ const toViewMenu = (acts: MenuAction[]) =>
     onClick: a.onClick,
   }))
 
+const USED_INFO = 'Todo el contenido en uso, organizado por página y sección. Las páginas o secciones sin contenido se muestran igual, con su conteo en cero.'
+
+const toggleInSet = (upd: (updater: (prev: Set<string>) => Set<string>) => void, id: string) =>
+  upd((prev) => {
+    const n = new Set(prev)
+    if (n.has(id)) n.delete(id); else n.add(id)
+    return n
+  })
+
 export function SectionUsado({ usedArr, openModal }: Ctx) {
   const sel = useSelection()
   const { confirm } = useModal()
   const { usedMenu } = useMenus({ openModal })
   const count = sel.selected.length
+  const [openPages, setOpenPages] = useState<Set<string>>(() => new Set(['feed']))
+  const [openSecs, setOpenSecs] = useState<Set<string>>(() => new Set())
+  const tree = buildPageTree(usedArr)
+
+  const renderCard = (e: AnyEntry) => (
+    <MediaCard
+      key={(e as { key: string }).key} e={e} cardType="used" actions={usedMenu(e)}
+      multiSelect={sel.multiSelect}
+      selected={sel.isSel('used', (e as { key: string }).key)}
+      onToggleSelect={(on) => sel.toggle('used', (e as { key: string }).key, on)}
+      onView={() => openModal({ kind: 'view', e, cardType: 'used', menu: toViewMenu(usedMenu(e)) })}
+    />
+  )
 
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-check"></i> Contenido en Uso</h2>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <i className="fa-solid fa-check"></i> Contenido en Uso
+          <span className="cms-info-tip" tabIndex={0} aria-label={USED_INFO}>
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip">{USED_INFO}</span>
+          </span>
+        </h2>
         <MultiToggleBtn multiSelect={sel.multiSelect} onClick={sel.toggleMulti} />
       </div>
       {sel.multiSelect && (
@@ -147,25 +176,66 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           }}
         />
       )}
-      <p className="cms-admin-sub" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-        <span>Todo lo que el sitio muestra ahora, agrupado por sección.</span>
-        <span><strong>Cantidad:</strong> {usedArr.length} archivos.</span>
-        <span><strong>Tamaño total:</strong> {fmtBytes(sumSizes(usedArr))}</span>
-      </p>
-      <CardGroups
-        arr={usedArr} emptyMsg="Todavía no hay contenido registrado."
-        multiSelect={sel.multiSelect}
-        onSelectGroup={(items, on) => items.forEach((it) => sel.toggle('used', (it as { key: string }).key, on))}
-        renderCard={(e) => (
-          <MediaCard
-            key={(e as { key: string }).key} e={e} cardType="used" actions={usedMenu(e)}
-            multiSelect={sel.multiSelect}
-            selected={sel.isSel('used', (e as { key: string }).key)}
-            onToggleSelect={(on) => sel.toggle('used', (e as { key: string }).key, on)}
-            onView={() => openModal({ kind: 'view', e, cardType: 'used', menu: toViewMenu(usedMenu(e)) })}
-          />
-        )}
-      />
+      <div className="admin-tree">
+        {tree.map((page) => {
+          const pOpen = openPages.has(page.id)
+          return (
+            <div className="admin-tree-page" key={page.id}>
+              <button
+                type="button"
+                className={`admin-tree-row admin-tree-row--page${pOpen ? ' open' : ''}`}
+                onClick={() => toggleInSet(setOpenPages, page.id)}
+                aria-expanded={pOpen}
+              >
+                <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
+                <i className={`fa-solid ${page.icon} admin-tree-icon`}></i>
+                <span className="admin-tree-label">{page.label}</span>
+                <span className="admin-tree-route">{page.route}</span>
+                <span className="admin-badge">{page.count} archivos · {fmtBytes(page.size)}</span>
+              </button>
+              {pOpen && (
+                <div className="admin-tree-sections">
+                  {page.sections.length === 0 && (
+                    <p className="cms-admin-sub admin-tree-empty">Esta página todavía no tiene secciones.</p>
+                  )}
+                  {page.sections.map((s) => {
+                    const sid = `${page.id}:${s.id}`
+                    const sOpen = openSecs.has(sid)
+                    return (
+                      <div className="admin-tree-section" key={sid}>
+                        <div className={`admin-tree-row admin-tree-row--section${sOpen ? ' open' : ''}`}>
+                          <button
+                            type="button" className="admin-tree-rowbtn"
+                            onClick={() => toggleInSet(setOpenSecs, sid)}
+                            aria-expanded={sOpen}
+                          >
+                            <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
+                            <span className="admin-tree-label">{s.label}</span>
+                            <span className="admin-badge">{s.count} archivos · {fmtBytes(s.size)}</span>
+                          </button>
+                          {sel.multiSelect && s.count > 0 && (
+                            <input
+                              type="checkbox" title="Seleccionar toda la sección" className="admin-tree-selall"
+                              onChange={(ev) => s.items.forEach((it) => sel.toggle('used', (it as { key: string }).key, ev.target.checked))}
+                            />
+                          )}
+                        </div>
+                        {sOpen && (
+                          <div className="admin-tree-content">
+                            {s.count === 0
+                              ? <p className="cms-admin-sub admin-tree-empty">Sin contenido en esta sección.</p>
+                              : <div className="cms-mlib-grid">{s.items.map(renderCard)}</div>}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
