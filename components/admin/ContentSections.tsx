@@ -131,7 +131,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-check" style={{ color: '#22c55e' }}></i> Contenido en Uso</h2>
+        <h2><i className="fa-solid fa-check"></i> Contenido en Uso</h2>
         <MultiToggleBtn multiSelect={sel.multiSelect} onClick={sel.toggleMulti} />
       </div>
       {sel.multiSelect && (

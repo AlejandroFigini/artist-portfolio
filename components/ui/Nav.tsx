@@ -10,37 +10,29 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { state, useCmsStore } from '@/lib/cms/store'
+import { setLanguage } from '@/components/cms/engine'
+import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
+import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
+import { useSocial } from '@/components/ui/SocialProvider'
 
 const GALLERY_LINKS = [
   { href: '/illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
   { href: '/animations', icon: 'fa-clapperboard', label: 'Animations', i18n: 'nav_animations' },
-  { href: '/characters', icon: 'fa-user-astronaut', label: 'Character Design', i18n: 'nav_characters' },
+  { href: '/characters', icon: 'fa-user-astronaut', label: 'Characters', i18n: 'nav_characters' },
   { href: '/models-3d', icon: 'fa-cube', label: '3D Models', i18n: 'nav_3d' },
   { href: '/multimedia', icon: 'fa-photo-film', label: 'Multimedia', i18n: 'nav_multimedia' },
 ]
 
-const PORTFOLIO_LINKS = [
-  { icon: 'fa-artstation', label: 'Artstation' },
-  { icon: 'fa-vimeo-v', label: 'Vimeo' },
-  { icon: 'fa-youtube', label: 'Youtube' },
-  { icon: 'fa-instagram', label: 'Instagram' },
-  { icon: 'fa-behance', label: 'Behance' },
-  { icon: 'fa-linkedin-in', label: 'LinkedIn' },
-]
-
-const LANGS = [
-  { code: 'en', flag: 'us', label: 'English' },
-  { code: 'es', flag: 'es', label: 'Español' },
-  { code: 'pt', flag: 'pt', label: 'Português' },
-  { code: 'fr', flag: 'fr', label: 'Français' },
-]
-
 export default function Nav() {
   const pathname = usePathname()
+  useCmsStore() // re-render al cambiar el idioma global
+  const { links } = useSocial()
+  const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
   const [navOpen, setNavOpen] = useState(false)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
   const [langOpen, setLangOpen] = useState(false)
-  const [lang, setLang] = useState(LANGS[0])
+  const activeLang = LANG_META[state.lang]
   const headerRef = useRef<HTMLElement>(null)
   const linksRef = useRef<HTMLElement>(null)
   const viewfinderRef = useRef<HTMLSpanElement>(null)
@@ -217,14 +209,14 @@ export default function Nav() {
                 Portfolio <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
               </div>
               <div className="dropdown-content">
-                {PORTFOLIO_LINKS.map((l) => (
-                  <a key={l.label} href="#" target="_blank" rel="noopener noreferrer">
-                    <i className={`fa-brands ${l.icon}`}></i> {l.label}
+                {portfolioNets.map((n) => (
+                  <a key={n.id} href={socialHref(n, links[n.id])} target="_blank" rel="noopener noreferrer">
+                    <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
                   </a>
                 ))}
               </div>
             </div>
-            <Link href="/#presentacion" data-i18n="nav_about" onClick={closeNav}>About me</Link>
+            <Link href="/about" data-i18n="nav_about" onClick={closeNav}>About me</Link>
             <Link href="/#contacto" data-i18n="nav_contact" onClick={closeNav}>Contact</Link>
             {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
             {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
@@ -245,19 +237,19 @@ export default function Nav() {
                 title="Language"
                 onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
               >
-                <span className={`fi fi-${lang.flag}`} id="lang-flag-nav"></span>
-                <span className="lang-code" id="lang-code-nav">{lang.code.toUpperCase()}</span>
+                <span className={`fi fi-${activeLang.flag}`} id="lang-flag-nav"></span>
+                <span className="lang-code" id="lang-code-nav">{state.lang.toUpperCase()}</span>
               </button>
               <div className={`lang-dropdown${langOpen ? ' active' : ''}`} id="lang-dropdown-nav">
-                {LANGS.map((l) => (
+                {ALL_LANGS.map((code) => (
                   <button
-                    key={l.code}
+                    key={code}
                     className="lang-option"
-                    data-lang={l.code}
-                    title={l.label}
-                    onClick={() => { setLang(l); setLangOpen(false) }}
+                    data-lang={code}
+                    title={LANG_META[code].label}
+                    onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
                   >
-                    <span className={`fi fi-${l.flag}`}></span> {l.label}
+                    <span className={`fi fi-${LANG_META[code].flag}`}></span> {LANG_META[code].label}
                   </button>
                 ))}
               </div>

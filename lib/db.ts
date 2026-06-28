@@ -65,6 +65,17 @@ async function createBaseTables(pool: Pool): Promise<void> {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `)
+  // Traducciones del contenido: una fila por (contenedor, idioma destino).
+  // El base (es) NO vive acá — vive en cms_data. Acá solo en/pt/fr.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cms_translations (
+      key VARCHAR(255) NOT NULL,
+      lang VARCHAR(5) NOT NULL,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (key, lang)
+    );
+  `)
 }
 
 async function runMigrations(pool: Pool): Promise<void> {

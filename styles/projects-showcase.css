@@ -1,0 +1,76 @@
+/* ============================================================
+   PROJECTS SHOWCASE — Featured projects using shadcn Carousel.
+   Blueprint aesthetic matching About/Hero/Animations sections.
+   ============================================================ */
+
+.proj-showcase {
+  position: relative;
+  padding: clamp(2rem, 5vw, 4rem) 0 clamp(2rem, 5vw, 4rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* --- Rail vertical decorativo --- */
+.proj-showcase__rail {
+  position: absolute;
+  top: clamp(4rem, 8vw, 6rem);
+  bottom: clamp(4rem, 8vw, 6rem);
+  left: clamp(0.9rem, 2vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.proj-showcase__rail-fig {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.35);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.6;
+}
+.proj-showcase__rail-fig--end { transform: rotate(180deg); opacity: 0.4; }
+.proj-showcase__rail-track {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.proj-showcase__rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+/* --- Frame interior --- */
+.proj-showcase__frame {
+  position: relative;
+  z-index: 3;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Empty card state --- */
+.proj-card--empty {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Responsive fixes */
+@media (max-width: 960px) {
+  .proj-showcase__rail { display: none; }
+}
+
+/* Override shadcn carousel buttons if necessary */
+.proj-showcase__nav button {
+  transition: all 0.3s ease;
+}
+.proj-showcase__nav button:hover:not(:disabled) {
+  transform: scale(1.08);
+}

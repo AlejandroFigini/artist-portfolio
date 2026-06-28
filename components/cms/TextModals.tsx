@@ -6,9 +6,9 @@
 import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { state, recordAudit, persistUsed, performRenameContainer } from '@/lib/cms/store'
+import { state, recordAudit, persistUsed, performRenameContainer, type FieldValue } from '@/lib/cms/store'
 import {
-  elementsByKey, metaByKey, applyStored, persistOverrides, moveToUnusedSite, computeFields,
+  elementsByKey, metaByKey, applyStored, persistOverrides, moveToUnusedSite, deleteProjectSite, computeFields,
 } from './engine'
 
 // Etiqueta amigable para la página actual a partir del pathname.
@@ -115,18 +115,19 @@ export function EditTextModal({ cmsKey, onClose }: KeyProps) {
   )
 }
 
-export function EditInfoModal({ cmsKey, onClose }: KeyProps) {
+export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: () => void }) {
   const toast = useToast()
-  const el = elementsByKey[cmsKey]
   const meta = metaByKey[cmsKey]
-  const [fields] = useState(() => (el && meta ? computeFields(cmsKey, el, meta) || [] : []))
+  const el = elementsByKey[cmsKey] || null
+  const [fields] = useState<FieldValue[]>(() => {
+    return (meta && computeFields(cmsKey, el, meta)) || []
+  })
   const valuesRef = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
   const nameRef = useRef<HTMLInputElement>(null)
   const [editingName, setEditingName] = useState(false)
   const [page] = useState(() => currentPageLabel())
 
-  if (!el || !meta || !meta.fields) return null
-  const cont = meta.container ? el.closest<HTMLElement>(meta.container) : el
+  const cont = meta.container && el ? el.closest<HTMLElement>(meta.container) : el
 
   const commitRename = () => {
     const newName = nameRef.current?.value.trim()
@@ -183,7 +184,7 @@ export function EditInfoModal({ cmsKey, onClose }: KeyProps) {
               {f.textarea ? (
                 <textarea rows={2} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} />
               ) : (
-                <input type={f.key === 'date' ? 'date' : 'text'} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} />
+                <input type={f.key.includes('date') ? 'date' : 'text'} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} />
               )}
             </label>
           ))}
@@ -199,6 +200,32 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
   if (!meta) return null
   // Mostrar el nombre del ARCHIVO actual (no el del contenedor).
   const fileName = state.usedContent[cmsKey]?.name || meta.label
+  // Proyectos: la papelera ELIMINA la tarjeta (reindexa el carrusel) pero archiva
+  // la imagen a no usados. Resto: solo vacía el slot conservando el contenedor.
+  const isProject = /^proj#\d+$/.test(cmsKey)
+
+  if (isProject) {
+    return (
+      <CmsModal
+        title="Eliminar tarjeta"
+        onClose={onClose}
+        actions={[
+          { label: 'Cancelar', onClick: () => {} },
+          { label: 'Eliminar tarjeta', primary: true, onClick: () => {
+            deleteProjectSite(cmsKey).catch(() => toast('Error eliminando', 'error'))
+            toast('Tarjeta eliminada · imagen movida a no usados')
+          } },
+        ]}
+      >
+        <div className="cms-confirm-body">
+          Vas a <strong>eliminar esta tarjeta de proyecto</strong>. La imagen se moverá a
+          <strong> contenidos no usados</strong> (podrás restaurarla desde Gestión); el resto
+          de los proyectos se reordena para ocupar el lugar.
+        </div>
+      </CmsModal>
+    )
+  }
+
   return (
     <CmsModal
       title="Mover a no usados"

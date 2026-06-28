@@ -7,6 +7,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { isVideo } from '@/lib/utils'
+import { BASE_LANG, type Lang } from '@/lib/i18n'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -15,7 +16,6 @@ export const LS = {
   AUDIT: 'cms_audit_v1',
   MEDIA: 'cms_media_meta_v1',
   UNUSED: 'cms_unused_v1',
-  ADDED: 'cms_added_illu_v1',
   USED: 'cms_used_content_v1',
   RETIRED: 'cms_retired_v1',
   TRASH: 'cms_trash_v1',
@@ -23,6 +23,7 @@ export const LS = {
   UPLOAD_TEST: 'cms_upload_test_v1',
   REPO_FILTER: 'cms_repo_filter_v1',
   CONTAINER_NAMES: 'cms_container_names_v1',
+  LANG: 'cms_lang_v1',
 } as const
 
 export const MAX_BYTES = 25 * 1024 * 1024
@@ -69,18 +70,6 @@ export type AuditEntry = {
   file: { name: string; size: number; type?: string } | null
 }
 
-export type AddedIllu = {
-  id: string
-  dataUrl: string
-  title: string
-  desc: string
-  link: string
-  name: string
-  size: number
-  type: string
-  ts: number
-}
-
 export function loadJSON<T>(key: string, def: T): T {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)) }
   catch { return def }
@@ -97,12 +86,26 @@ export const state = {
   audit: [] as AuditEntry[],
   mediaMeta: {} as Record<string, { name: string; size: number; type: string; ts: number; label: string; section: string }>,
   unused: [] as UnusedEntry[],
-  addedIllu: [] as AddedIllu[],
   usedContent: {} as Record<string, UsedEntry>,
   retired: [] as string[],
   trash: [] as UnusedEntry[],
   containerNames: {} as Record<string, string>,
   isAdmin: false,
+  lang: BASE_LANG as Lang,                                    // idioma activo
+  translations: {} as Record<string, Record<string, string>>, // lang -> key -> valor traducido
+}
+
+/** Idioma guardado (localStorage). Default = base (es). */
+export function loadLang(): Lang {
+  try {
+    const v = localStorage.getItem(LS.LANG) as Lang | null
+    if (v) return v
+  } catch {}
+  return BASE_LANG
+}
+
+export function persistLang() {
+  try { localStorage.setItem(LS.LANG, state.lang) } catch {}
 }
 
 let version = 0
@@ -127,7 +130,6 @@ export function loadState() {
   state.audit = loadJSON(LS.AUDIT, [])
   state.mediaMeta = loadJSON(LS.MEDIA, {})
   state.unused = loadJSON(LS.UNUSED, [])
-  state.addedIllu = loadJSON(LS.ADDED, [])
   state.usedContent = loadJSON(LS.USED, {})
   state.retired = loadJSON(LS.RETIRED, [])
   state.trash = loadJSON(LS.TRASH, [])
@@ -142,7 +144,6 @@ export function loadState() {
 export const persistAudit = () => saveJSON(LS.AUDIT, state.audit.slice(-300))
 export const persistMedia = () => saveJSON(LS.MEDIA, state.mediaMeta)
 export const persistUnused = () => saveJSON(LS.UNUSED, state.unused)
-export const persistAdded = () => saveJSON(LS.ADDED, state.addedIllu)
 export const persistUsed = () => saveJSON(LS.USED, state.usedContent)
 export const persistRetired = () => saveJSON(LS.RETIRED, state.retired)
 export const persistTrash = () => saveJSON(LS.TRASH, state.trash)
@@ -212,24 +213,17 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'about.photo': { section: 'Sobre mí', label: () => 'Foto de Lucía — Sobre mí', kind: 'image' },
   'about.video': { section: 'Sobre mí', label: () => 'Video — Sobre mí', kind: 'video' },
   'subtitle': { section: 'Subtítulos', label: (n) => `Subtítulo #${n}`, kind: 'text' },
-  'char.name': { section: 'Character Design', label: (n) => `Nombre de personaje #${n}`, kind: 'text' },
-  'char.role': { section: 'Character Design', label: (n) => `Rol de personaje #${n}`, kind: 'text' },
-  'char.desc': { section: 'Character Design', label: (n) => `Descripción de personaje #${n}`, kind: 'text' },
-  'char.portrait': { section: 'Character Design', label: (n) => `Retrato principal #${n}`, kind: 'image' },
-  'char.concept': { section: 'Character Design', label: (n) => `Concept #${n}`, kind: 'image' },
-  'char.railname': { section: 'Character Design', label: (n) => `Nombre carrusel inferior #${n}`, kind: 'text' },
-  'char.railthumb': { section: 'Character Design', label: (n) => `Miniatura carrusel inferior #${n}`, kind: 'image' },
-  'char.railrole': { section: 'Character Design', label: (n) => `Rol carrusel inferior #${n}`, kind: 'text' },
-  'illu': { section: 'Ilustraciones', label: (n) => `Ilustración #${n}`, kind: 'image' },
+  'char': { section: 'Characters', label: (n) => `Personaje #${n}`, kind: 'image' },
+  'illustration': { section: 'Ilustraciones', label: (n) => `Ilustración #${n}`, kind: 'image' },
   'anim.title': { section: 'Animations', label: () => 'Título de sección — Animations', kind: 'text' },
   'anim.desc': { section: 'Animations', label: () => 'Descripción — Animations', kind: 'text' },
   'anim.soft': { section: 'Animations', label: (n) => `Logo de software #${n}`, kind: 'image' },
   'anim.softname': { section: 'Animations', label: (n) => `Nombre de software #${n}`, kind: 'text' },
   'anim': { section: 'Animations', label: (n) => `Animación #${n}`, kind: 'video' },
-  'char.title': { section: 'Character Design', label: () => 'Título de sección — Character Design', kind: 'text' },
-  'char.sectiondesc': { section: 'Character Design', label: () => 'Descripción — Character Design', kind: 'text' },
-  'char.soft': { section: 'Character Design', label: (n) => `Logo de software #${n}`, kind: 'image' },
-  'char.softname': { section: 'Character Design', label: (n) => `Nombre de software #${n}`, kind: 'text' },
+  'char.title': { section: 'Characters', label: () => 'Título de sección — Characters', kind: 'text' },
+  'char.sectiondesc': { section: 'Characters', label: () => 'Descripción — Characters', kind: 'text' },
+  'char.soft': { section: 'Characters', label: (n) => `Logo de software #${n}`, kind: 'image' },
+  'char.softname': { section: 'Characters', label: (n) => `Nombre de software #${n}`, kind: 'text' },
   'model3d.soft': { section: '3D Models', label: (n) => `Logo de software #${n}`, kind: 'image' },
   'model3d.softname': { section: '3D Models', label: (n) => `Nombre de software #${n}`, kind: 'text' },
   'model3d.heading': { section: '3D Models', label: () => 'Nombre de la sección — 3D', kind: 'text' },
@@ -259,8 +253,9 @@ export function moveUsedToUnused(key: string) {
     label: entry.label, section: entry.section, original: entry.original, reason: 'retired',
   })
   delete state.usedContent[key]
+  delete state.items[key]
   if (!state.retired.includes(key)) state.retired.push(key)
-  persistUsed(); persistUnused(); persistRetired()
+  persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   recordAudit({ section: entry.section, label: entry.label, summary: 'Contenido movido a no usados' })
 }
 

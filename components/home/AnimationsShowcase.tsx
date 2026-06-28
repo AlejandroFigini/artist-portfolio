@@ -29,20 +29,39 @@ function AnimCard({ index }: { index: number }) {
   const [showInfo, setShowInfo] = useState(false)
   const [fields, setFields] = useState<CardFields>({ title: '', project: '', date: '', inspiration: '', desc: '' })
   const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
+  const hasContentRef = useRef(false)
 
-  // Observa el contenedor (que el CMS muta imperativamente): src del video para
-  // saber si hay contenido, y los data-* para reflejar los datos en el overlay.
+  // ── Detect whether the video has real content ──
+  // The CMS mutates the <video> element imperatively (sets/removes src).
+  // We use multiple strategies to stay in sync:
+  //   1. MutationObserver on src attribute + subtree (for <source> children)
+  //   2. Media events (loadeddata, emptied)
+  //   3. Polling fallback every 500ms (catches any edge case)
   useEffect(() => {
     const v = videoRef.current
     const c = cardRef.current
     if (!v || !c) return
 
-    const syncContent = () => {
-      const has = !!(v.src && v.src !== window.location.href)
-      setHasContent(has)
-      // mostrar el primer frame en reposo (no reproducir hasta hover)
-      if (has) { try { v.pause(); v.currentTime = 0 } catch {} }
+    const checkHasContent = (): boolean => {
+      // Check the attribute directly (not the .src property which resolves to full URL)
+      const videoSrc = v.getAttribute('src')
+      if (videoSrc) return true
+      // Check <source> children
+      const sourceEl = v.querySelector('source')
+      if (sourceEl && sourceEl.getAttribute('src')) return true
+      return false
     }
+
+    const syncContent = () => {
+      const has = checkHasContent()
+      setHasContent(has)
+      // Only pause/reset if we just transitioned to having content
+      if (has && !hasContentRef.current) { 
+        try { v.pause(); v.currentTime = 0 } catch {} 
+      }
+      hasContentRef.current = has
+    }
+
     const syncFields = () => setFields({
       title: c.getAttribute('data-title') || '',
       project: c.getAttribute('data-project') || '',
@@ -50,21 +69,36 @@ function AnimCard({ index }: { index: number }) {
       inspiration: c.getAttribute('data-inspiration') || '',
       desc: c.getAttribute('data-desc') || '',
     })
+
+    // Initial sync
     syncContent()
     syncFields()
 
-    const moVideo = new MutationObserver(syncContent)
-    moVideo.observe(v, { attributes: true, attributeFilter: ['src'] })
-    const srcEl = v.querySelector('source')
-    if (srcEl) moVideo.observe(srcEl, { attributes: true, attributeFilter: ['src'] })
+    // MutationObserver: watch src changes on <video> and any <source> children
+    const mo = new MutationObserver(() => syncContent())
+    mo.observe(v, { attributes: true, attributeFilter: ['src'], childList: true, subtree: true })
 
+    // Data fields observer
     const moFields = new MutationObserver(syncFields)
     moFields.observe(c, { attributes: true, attributeFilter: ['data-title', 'data-project', 'data-date', 'data-inspiration', 'data-desc'] })
 
+    // Media events
     v.addEventListener('loadeddata', syncContent)
-    return () => { moVideo.disconnect(); moFields.disconnect(); v.removeEventListener('loadeddata', syncContent) }
+    v.addEventListener('emptied', syncContent)
+
+    // Polling fallback: catches any edge case the observer misses
+    const poll = setInterval(syncContent, 500)
+
+    return () => {
+      mo.disconnect()
+      moFields.disconnect()
+      v.removeEventListener('loadeddata', syncContent)
+      v.removeEventListener('emptied', syncContent)
+      clearInterval(poll)
+    }
   }, [])
 
+  // Info timer for lightbox
   useEffect(() => {
     if (expanded) {
       infoTimerRef.current = setTimeout(() => setShowInfo(true), 1000)

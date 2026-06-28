@@ -14,10 +14,12 @@ import {
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
+import SocialSettings from './SocialSettings'
 import type { AnyEntry } from './cards'
 
 const NAV_MAIN = [
   { id: 'resumen', icon: 'fa-gauge-high', label: 'Resumen' },
+  { id: 'redes', icon: 'fa-share-nodes', label: 'Redes sociales' },
   { id: 'usuarios', icon: 'fa-users-gear', label: 'Usuarios' },
   { id: 'auditoria', icon: 'fa-clipboard-list', label: 'Auditoría' },
   { id: 'ajustes', icon: 'fa-sliders', label: 'Ajustes del sitio' },
@@ -153,6 +155,8 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+
+          {section === 'redes' && <SocialSettings />}
 
           {section === 'contenidos-usado' && <SectionUsado usedArr={usedArr} unusedArr={unusedArr} trashArr={trashArr} openModal={setModal} />}
           {section === 'contenidos-nousado' && <SectionNoUsado usedArr={usedArr} unusedArr={unusedArr} trashArr={trashArr} openModal={setModal} />}

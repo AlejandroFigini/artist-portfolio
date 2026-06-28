@@ -2,15 +2,14 @@
 
 /* Hero slideshow — portado de script.js (initHeroSlideshow): crossfade
    GSAP con zoom sutil. CMS-aware: CmsRoot emite 'cms:hero' con las
-   slides (hero.slide#i) y la duración (hero.settings) del backend; si
-   no hay contenido CMS quedan las portadas estáticas.
-   Con prefers-reduced-motion queda la primera slide fija. */
+   slides (hero.slide#i) y la duración (hero.settings) del backend.
+   Sin imágenes → fondo blanco (sin portadas estáticas). 1 imagen → fija,
+   sin rotación. Con prefers-reduced-motion queda la primera slide fija. */
 
 import { useEffect, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { useCmsStore, state } from '@/lib/cms/store'
 
-const DEFAULT_SLIDES = ['/images/portada-1.webp', '/images/portada-2.webp', '/images/portada-3.webp']
 const DEFAULT_INTERVAL_MS = 6000
 
 type HeroDetail = { slides: string[]; duration: number }
@@ -18,15 +17,15 @@ type HeroDetail = { slides: string[]; duration: number }
 export default function HeroSlideshow() {
   useCmsStore()
   const isAdmin = state.isAdmin
-  const [slides, setSlides] = useState<string[]>(DEFAULT_SLIDES)
+  const [slides, setSlides] = useState<string[]>([])
   const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS)
 
   // contenido del CMS (CmsRoot → evento tras el fetch de /api/content)
   useEffect(() => {
     const onHero = (e: Event) => {
       const { slides: cmsSlides, duration } = (e as CustomEvent<HeroDetail>).detail
-      const real = cmsSlides.filter((s) => s && s.trim() !== '')
-      if (real.length) setSlides(cmsSlides.map((s, i) => s || DEFAULT_SLIDES[i % DEFAULT_SLIDES.length]))
+      // Solo las slides con imagen real. Vacío → []  → fondo blanco.
+      setSlides(cmsSlides.filter((s) => s && s.trim() !== ''))
       if (duration) setIntervalMs(duration)
     }
     window.addEventListener('cms:hero', onHero)
@@ -55,20 +54,26 @@ export default function HeroSlideshow() {
   }, [slides, intervalMs])
 
   return (
-    <div className="hero-bg-carousel">
-      {slides.map((src, i) => (
-        <div
-          key={`${i}-${src}`}
-          className="carousel-slide"
-          style={{ backgroundImage: `url('${src}')`, ...(i === 0 ? { opacity: 1 } : {}) }}
-        ></div>
-      ))}
-      <div className="carousel-overlay"></div>
-      
+    <>
+      <div className="hero-bg-carousel">
+        {slides.map((src, i) => (
+          <div
+            key={`${i}-${src}`}
+            className="carousel-slide"
+            style={{ backgroundImage: `url('${src}')`, ...(i === 0 ? { opacity: 1 } : {}) }}
+          ></div>
+        ))}
+        <div className="carousel-overlay"></div>
+      </div>
+
+      {/* El gear vive FUERA del carrusel: éste tiene z-index:-1 (fondo), que
+          atrapa a sus hijos en un contexto de apilado detrás del contenido y los
+          vuelve no clickeables. Como hermano fixed escapa ese contexto. */}
       {isAdmin && (
         <button
           className="cms-hero-gear"
           title="Configurar Carrusel de Fondo"
+          style={{ position: 'fixed', zIndex: 1200 }}
           onClick={(e) => {
             e.preventDefault()
             window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix: 'hero' } }))
@@ -77,6 +82,6 @@ export default function HeroSlideshow() {
           <i className="fa-solid fa-layer-group"></i>
         </button>
       )}
-    </div>
+    </>
   )
 }

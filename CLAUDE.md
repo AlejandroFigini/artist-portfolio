@@ -119,6 +119,92 @@ Backend **dentro de Next** (`app/api/*` route handlers). 1 solo servicio, sin Ex
 - Rutas: `/api/content` (GET/POST), `/api/login` (admin+2FA TOTP), `/api/upload-test`, `/api/delete-media`.
 - Env en `.env.example`. Estructura (tablas/migraciones) viaja con el commit; los datos no.
 
+### Setup & operación (backend/DB)
+
+**Correr local:** solo `npm run dev` (ya NO existe `npm run server`). Postgres nativo local en `:5432`, DB `artistportfolio`. `.env` local → `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/artistportfolio`, Cloudinary **vacío** (uploads van a `public/uploads`, gitignoreado). `initDb` crea las tablas al primer request.
+
+**Entornos (aislados, NO se sincronizan datos):**
+- Local: Postgres local + `public/uploads`. Login admin requiere `ADMIN_USER/PASS/2FA_SECRET` en `.env`.
+- Prod (Railway): 1 servicio app + servicio Postgres. Setear en el servicio app: `DATABASE_URL` (referencia al Postgres), `CLOUDINARY_*`, `ADMIN_*`.
+
+**Modelo deploy:** `git push` a `main` → Railway redeploya. Viaja **código + estructura** (las migraciones de `MIGRATIONS[]` corren al bootear). **Los datos/contenido NO viajan** — el contenido de prod se carga en el sitio live (admin); el local queda local.
+
+**Cambios de esquema:** agregar entradas a `MIGRATIONS[]` en `lib/db.ts` (idempotentes, `ALTER ... IF (NOT) EXISTS`). Nunca romper tablas existentes; los datos no se migran solos.
+
+**Login admin:** user+pass → si no manda código, pide 2FA → verifica TOTP (`otplib`, `epochTolerance` ±30s). Secreto en `ADMIN_2FA_SECRET` (base32, mismo que la app autenticadora).
+
+### Sistema de Traducción Automática (Admin-Driven)
+
+**Objetivo**: Traducir todo el contenido editable a múltiples idiomas sin presupuesto API. Admin controla el flujo completamente en la UI.
+
+**Idiomas soportados**: ES (base), EN, PT, FR
+
+**Flujo**:
+1. **Admin edita contenido** en el CMS (en español) → Guarda en BD
+2. **Admin presiona "Export for Translation"** en Admin Settings → Descarga `translations-export.json`
+   ```json
+   {
+     "es": {
+       "about_title": "Sobre mí",
+       "about_lede": "Artista basada...",
+       "hero_subtitle": "Animation, illustration & 3D art"
+     }
+   }
+   ```
+3. **Admin copia el JSON → lo pega en Claude**
+   ```
+   Prompt: "Traduce el siguiente contenido a inglés, portugués y francés.
+   Mantén el contexto profesional y artístico.
+   Retorna el mismo JSON con las traducciones."
+   ```
+4. **Claude retorna `translations-translated.json`** con ES, EN, PT, FR completados
+5. **Admin presiona "Import Translations"** → Adjunta el archivo descargado
+6. **Sistema valida estructura** → Guarda TODO en BD
+   - Nueva tabla `translations`: `{ key, lang, value }`
+   - Cada contenedor tiene sus 4 variantes de idioma
+
+**Frontend lee según idioma seleccionado**:
+- Usuario selecciona idioma en Nav o Settings
+- Componentes leen el valor correcto de la BD según `localStorage['preferredLang']`
+
+**¿Nuevos contenedores se incluyen automáticamente?**
+
+✅ **SÍ**. El export lee TODO el texto de `cms_data` filtrando media/URLs vía `isTranslatableEntry` (`lib/i18n.ts`): incluye prosa, excluye valores que son URL/ruta/data-url y las claves `*.settings`. No hay lista fija de claves.
+
+Cuando el admin agrega un nuevo contenedor de texto (ej. `new.section.title#0`), apenas tenga contenido en español la próxima exportación lo incluye solo. El admin solo repite el flujo (export → Claude → import).
+
+**Arquitectura**:
+- **Tabla `cms_translations`** (`lib/db.ts → createBaseTables`): `(key, lang, value)`, PK `(key, lang)`. Solo idiomas destino (en/pt/fr); el base (es) vive en `cms_data`.
+- **`lib/i18n.ts`**: `BASE_LANG='es'`, `TARGET_LANGS=['en','pt','fr']`, `LANG_META`, `isTranslatableEntry`.
+- **Endpoint único `app/api/translations/route.ts`**:
+  - `GET` → `{ base, langs, items: { es, en, pt, fr } }`. `es` = texto base vivo (filtrado); en/pt/fr = `cms_translations`. Lo usa el cliente (aplicar idioma) y el botón Export (descargar para Claude).
+  - `POST` → recibe `{ items: { en, pt, fr } }`, upsertea en `cms_translations`.
+- **Aplicación en el front**: `engine.setLanguage(lang)` reaplica el texto del DOM (base o traducción, con fallback al base si falta la clave); persiste en `localStorage[cms_lang_v1]`. `CmsRoot` trae las traducciones al iniciar y aplica el idioma guardado. Los selectores de Nav y Settings comparten `state.lang` vía el store.
+- **UI admin**: botones "Export for Translation" / "Import Translations" en el panel de Admin Settings (`SettingsPanel.tsx`).
+
+**Alcance actual**: la aplicación de idioma corre donde está montado `CmsRoot` (la portada `/`). Extender a las páginas de galería requiere inicializar el engine en esas rutas — pendiente para una iteración futura.
+
+**Ventajas**:
+- ✅ Cero presupuesto (usa Claude API desde Claude Code)
+- ✅ Totalmente dinámico (sin Git commits)
+- ✅ Admin auto-suficiente (sin intervención de dev)
+- ✅ Escalable (nuevos contenedores automáticamente incluidos)
+- ✅ Revisable (Claude produce traducciones de calidad)
+
+### Enlaces a redes sociales (global)
+
+**Objetivo**: una única fuente para los enlaces sociales que se aplica a TODOS los iconos del sitio (menú, pie, cualquier sección que redirija a una red). Editable desde Gestión.
+
+**Lista única**: `lib/social.ts → SOCIAL_NETWORKS` (Artstation, Vimeo, Youtube, Instagram, Behance, LinkedIn, Email). Cada red define `id`, `label`, `icon`, `brand` (fa-brands vs fa-solid), `type` (`url`/`email`) y `placeholder`. `socialHref(net, value)` arma el href final (`mailto:` para email). Agregar una red = una entrada en este array.
+
+**Almacenamiento**: las URLs viven en `cms_data` con la clave `social.<id>` (son contenido normal). Las escrituras reusan `POST /api/content`; la lectura liviana es `GET /api/social` (`app/api/social/route.ts`) que devuelve `{ items: { <id>: url } }` solo de las claves `social.*`.
+
+**Aplicación site-wide**: `components/ui/SocialProvider.tsx` (montado en `Providers`) hace un fetch único a `/api/social` y expone `{ links, setLinks }` vía `useSocial()`. Nav y Footer consumen ese contexto → los enlaces funcionan en TODAS las páginas (no dependen del store CMS, que es solo-home). Solo se renderizan las redes con URL configurada (las vacías se ocultan).
+
+**Edición (admin)**: Gestión → "Redes sociales" (`components/admin/SocialSettings.tsx`). Form con un input por red; al guardar hace `POST /api/content`, refleja en `state.items`, y llama `setLinks` para aplicar en vivo en Nav/Footer sin recargar.
+
+**Nota**: el bloque de redes de "Sobre mí" es aparte (editable por item vía `ABOUT_SOCIAL_FIELDS` del engine) — no se rige por esta lista global.
+
 ## Reglas
 
 ### Stack y frameworks

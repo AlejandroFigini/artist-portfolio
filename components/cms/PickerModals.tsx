@@ -151,7 +151,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
     if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
 
     const prev = state.usedContent[cmsKey]
-    if (prev) {
+    if (prev && prev.src) {
       state.unused.push({
         key: cmsKey, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
         type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),

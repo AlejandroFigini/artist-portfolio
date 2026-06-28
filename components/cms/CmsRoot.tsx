@@ -9,16 +9,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
-import { getContent } from '@/lib/api'
+import { getContent, getTranslations } from '@/lib/api'
 import { validateFile } from '@/lib/media'
-import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, LS } from '@/lib/cms/store'
+import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, loadLang, LS } from '@/lib/cms/store'
+import { BASE_LANG } from '@/lib/i18n'
 import * as engine from './engine'
-import { renderAddedIllu, addGallerySlots, removeGallerySlots } from './gallery'
 import LoginModal from './LoginModal'
 import UploadModal from './UploadModal'
 import CarouselManager from './CarouselManager'
+import ProjectsManager from './ProjectsManager'
+import CharactersManager from './CharactersManager'
 import AuditOverlay from './AuditOverlay'
-import AddIllustrationModal from './AddIllustrationModal'
 import { ContentPickerModal, RepoPickerModal } from './PickerModals'
 import { EditTextModal, EditInfoModal, ConfirmMoveModal, ExportModal } from './TextModals'
 
@@ -62,10 +63,8 @@ export default function CmsRoot() {
       engine.indexEditables()
       engine.seedUsedContent()
       engine.attachEditControls()
-      addGallerySlots(dispatch)
     } else {
       engine.removeEditControls()
-      removeGallerySlots()
     }
     engine.refreshRetired()
   }, [dispatch])
@@ -76,7 +75,6 @@ export default function CmsRoot() {
     loadState()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el DOM real (portal host), no estado derivable
     setAuthHost(document.getElementById('cms-auth-nav'))
-    renderAddedIllu()
     engine.indexEditables()
     engine.refreshRetired()
 
@@ -89,8 +87,10 @@ export default function CmsRoot() {
         const broadcastCarousel = (prefix: string) => {
           let settings = { count: 3, duration: 7000 }
           try { settings = Object.assign(settings, JSON.parse(state.items[`${prefix}.settings`] || '')) } catch {}
+          // count puede ser 0 (carrusel limpiado): respetarlo, no caer a 3.
+          const count = Number.isFinite(settings.count) ? Math.max(0, settings.count) : 3
           const slides: string[] = []
-          for (let i = 0; i < (settings.count || 3); i++) {
+          for (let i = 0; i < count; i++) {
             slides.push(state.items[`${prefix}.slide#${i}`] || '')
           }
           window.dispatchEvent(new CustomEvent(`cms:${prefix}`, { detail: { slides, duration: settings.duration || 7000 } }))
@@ -106,6 +106,14 @@ export default function CmsRoot() {
         let wasAdmin = false
         try { wasAdmin = localStorage.getItem(LS.ADMIN) === '1' } catch {}
         setAdmin(wasAdmin)
+
+        // i18n: traer traducciones y aplicar el idioma guardado (si no es base).
+        getTranslations().then((tr) => {
+          state.translations = tr
+          const lang = loadLang()
+          if (lang !== BASE_LANG) engine.setLanguage(lang)
+          else { state.lang = BASE_LANG; emit() }
+        }).catch(() => {})
       })
 
     const t = setTimeout(() => engine.rescan(), 300)
@@ -116,11 +124,21 @@ export default function CmsRoot() {
       const prefix = (e as CustomEvent).detail?.prefix || 'hero'
       dispatch({ type: 'carouselManager', key: prefix })
     }
+    const onProjectsCmd = () => {
+      dispatch({ type: 'projectsManager' })
+    }
+    const onCharactersCmd = () => {
+      dispatch({ type: 'charactersManager' })
+    }
     window.addEventListener('cms:carouselManager', onCarouselCmd)
+    window.addEventListener('cms:projectsManager', onProjectsCmd)
+    window.addEventListener('cms:charactersManager', onCharactersCmd)
 
     return () => {
       clearTimeout(t)
       window.removeEventListener('cms:carouselManager', onCarouselCmd)
+      window.removeEventListener('cms:projectsManager', onProjectsCmd)
+      window.removeEventListener('cms:charactersManager', onCharactersCmd)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -233,8 +251,19 @@ export default function CmsRoot() {
           onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
         />
       )}
+      {cmd?.type === 'projectsManager' && (
+        <ProjectsManager
+          onClose={close}
+          onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
+        />
+      )}
+      {cmd?.type === 'charactersManager' && (
+        <CharactersManager
+          onClose={close}
+          onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
+        />
+      )}
       {cmd?.type === 'auditPage' && <AuditOverlay onClose={close} />}
-      {cmd?.type === 'addIllustration' && <AddIllustrationModal onClose={close} />}
 
       {uploadFile && (
         <UploadModal

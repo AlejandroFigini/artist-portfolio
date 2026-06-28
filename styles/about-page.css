@@ -1,0 +1,541 @@
+/* ============================================================
+   ABOUT PAGE (/about) — "Sobre la artista" · blueprint cinematic CLARO.
+   Minimalismo editorial: mucho aire negativo, hairlines violeta, Syne
+   display fino, Fira Code para labels. La "vida" vive en GSAP (reveals
+   on-scroll, line-mask, timeline-draw) + auroras CSS a la deriva.
+
+   Reglas de oro respetadas:
+   - Estados iniciales de entrada los setea GSAP (sin JS / reduced-motion
+     → todo visible). Acá NO se ocultan elementos por CSS.
+   - Animaciones continuas (aurora, float) van bajo
+     @media (prefers-reduced-motion: no-preference).
+   - El retrato reusa el contenedor CMS (.artist-photo-img → about.photo):
+     el overlay vacío canónico (.cms-empty-overlay) NO se overridea acá.
+   Prefijo propio .ab- → no colisiona con .about- (sección de la home).
+   ============================================================ */
+
+.ab-main {
+  position: relative;
+  background: var(--bg-primary);
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* Grid blueprint sutil (mismo lenguaje del Hero/About) */
+.ab-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.045) 1px, transparent 1px);
+  background-size: 76px 76px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 35%, transparent 90%);
+          mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 35%, transparent 90%);
+}
+
+/* --- Auroras violetas a la deriva (la "vida" de fondo) --- */
+.ab-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.ab-aurora--a {
+  width: 46vw;
+  max-width: 680px;
+  aspect-ratio: 1/1;
+  top: -8vh;
+  right: -6vw;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.55), rgba(139, 92, 246, 0.12) 60%, transparent 72%);
+}
+.ab-aurora--b {
+  width: 40vw;
+  max-width: 560px;
+  aspect-ratio: 1/1;
+  top: 46vh;
+  left: -10vw;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.5), rgba(124, 58, 237, 0.1) 58%, transparent 70%);
+}
+.ab-aurora--c {
+  width: 38vw;
+  max-width: 520px;
+  aspect-ratio: 1/1;
+  bottom: -6vh;
+  right: 8vw;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.42), rgba(139, 92, 246, 0.08) 60%, transparent 72%);
+}
+
+/* --- Layout base --- */
+.ab-wrap {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 2 * var(--page-gutter), 1200px);
+  margin: 0 auto;
+}
+
+.ab-section {
+  position: relative;
+  z-index: 2;
+  padding-block: clamp(4.5rem, 11vh, 9rem);
+}
+
+/* Eyebrow mono con dash (lenguaje "FIG." del About) */
+.ab-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ab-eyebrow::before {
+  content: '';
+  width: 1.6rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+.ab-section-head {
+  margin-bottom: clamp(2rem, 4vw, 3.2rem);
+}
+.ab-section-title {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 600;
+  font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   1 · INTRO
+   ============================================================ */
+.ab-hero {
+  position: relative;
+  z-index: 2;
+  min-height: clamp(82vh, 90vh, 100svh);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: clamp(8rem, 15vh, 11rem);
+  padding-bottom: clamp(3rem, 8vh, 6rem);
+}
+
+.ab-hero-eyebrow { margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
+
+.ab-hero-name {
+  margin: 0;
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 500;
+  font-size: clamp(3.4rem, 12vw, 9.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  color: var(--text-primary);
+}
+.ab-line-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.ab-line { display: block; transform-origin: left center; }
+.ab-line--accent { color: var(--accent); }
+
+.ab-hero-lede {
+  margin: clamp(1.6rem, 3vw, 2.4rem) 0 0;
+  max-width: 46ch;
+  font-size: clamp(1.1rem, 1.7vw, 1.45rem);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.ab-hero-meta {
+  margin-top: clamp(2.4rem, 5vw, 3.6rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ab-hero-meta span { display: inline-flex; align-items: center; gap: 0.6rem; }
+.ab-hero-meta span::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ab-hero-meta .ab-meta-live::before { animation: ab-pulse 2.4s ease-in-out infinite; }
+
+/* ============================================================
+   2 · RETRATO + BIO
+   ============================================================ */
+.ab-about-grid {
+  display: grid;
+  grid-template-columns: 0.82fr 1fr;
+  gap: clamp(2.5rem, 6vw, 5.5rem);
+  align-items: start;
+}
+
+/* Retrato = contenedor CMS (host de about.photo). Sin borde propio:
+   el marco es box-shadow (lo neutraliza .cms-empty-slot cuando está vacío). */
+.ab-portrait {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 4/5;
+  margin: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  box-shadow:
+    0 30px 60px -22px rgba(124, 58, 237, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+  will-change: transform;
+}
+.ab-portrait .artist-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ab-portrait .artist-photo-img:not([src]),
+.ab-portrait .artist-photo-img[src=""] {
+  background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+}
+
+/* Esquinas blueprint (se ocultan solas cuando el slot está vacío) */
+.ab-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--accent);
+  z-index: 3;
+  pointer-events: none;
+}
+.ab-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
+.ab-corner.tr { top: 10px; right: 10px; border-left: none;  border-bottom: none; border-radius: 0 4px 0 0; }
+.ab-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
+.ab-corner.br { bottom: 10px; right: 10px; border-left: none;  border-top: none; border-radius: 0 0 4px 0; }
+
+.ab-portrait-cap {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  background: rgba(13, 13, 18, 0.62);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  border-radius: 3px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Empty-state: el contenedor vacío muestra SOLO el overlay canónico.
+   overflow visible para que el dashed radius no se recorte. */
+.ab-portrait.cms-empty-slot { overflow: visible !important; }
+
+.ab-bio {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.6rem, 3vw, 2.4rem);
+}
+.ab-bio-text p {
+  margin: 0 0 1.1rem;
+  max-width: 58ch;
+  font-size: clamp(1.02rem, 1.4vw, 1.16rem);
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+.ab-bio-text p:last-child { margin-bottom: 0; }
+.ab-bio-text strong { font-weight: 600; color: var(--text-primary); }
+
+/* Ficha técnica k/v */
+.ab-specs {
+  list-style: none;
+  margin: 0;
+  padding: clamp(1.4rem, 3vw, 2rem) 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem 1.6rem;
+}
+.ab-spec { display: flex; flex-direction: column; gap: 0.25rem; }
+.ab-spec-k {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ab-spec-v {
+  font-size: 0.98rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   3 · SOFTWARE / TOOLKIT — grilla de hairlines (gapless)
+   ============================================================ */
+.ab-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ab-tool {
+  position: relative;
+  background: var(--bg-primary);
+  padding: clamp(1.3rem, 2.4vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: background 0.35s ease, transform 0.35s ease;
+}
+.ab-tool:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-primary)); }
+.ab-tool-idx {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+.ab-tool-name {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.ab-tool-cat {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   4 · EXPERIENCIA / TIMELINE — línea que se dibuja con scroll
+   ============================================================ */
+.ab-timeline {
+  position: relative;
+  margin-top: 1rem;
+  padding-left: clamp(1.6rem, 4vw, 2.6rem);
+}
+/* Riel + relleno violeta (scaleY scrubbed por GSAP) */
+.ab-tl-track {
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.ab-tl-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: top center;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.ab-tl-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 7rem) 1fr;
+  gap: clamp(1rem, 3vw, 2.4rem);
+  padding-block: clamp(1.4rem, 3vw, 2.2rem);
+}
+.ab-tl-item:first-child { padding-top: 0; }
+.ab-tl-item:last-child { padding-bottom: 0; }
+.ab-tl-node {
+  position: absolute;
+  left: calc(clamp(1.6rem, 4vw, 2.6rem) * -1 - 4px);
+  top: clamp(1.7rem, 3.4vw, 2.5rem);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent);
+}
+.ab-tl-item:first-child .ab-tl-node { top: 0.3rem; }
+.ab-tl-year {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  padding-top: 0.1rem;
+}
+.ab-tl-role {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.ab-tl-place {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ab-tl-desc {
+  margin: 0.6rem 0 0;
+  max-width: 54ch;
+  font-size: clamp(0.98rem, 1.3vw, 1.08rem);
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   5 · CONTACTO
+   ============================================================ */
+.ab-contact { text-align: left; }
+.ab-contact-title {
+  margin: 0.9rem 0 0;
+  max-width: 16ch;
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  color: var(--text-primary);
+}
+.ab-contact-title em {
+  font-style: normal;
+  color: var(--accent);
+}
+.ab-contact-lede {
+  margin: clamp(1.4rem, 3vw, 2rem) 0 0;
+  max-width: 48ch;
+  font-size: clamp(1.02rem, 1.5vw, 1.2rem);
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.ab-contact-actions {
+  margin-top: clamp(2rem, 4vw, 3rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.4rem;
+}
+.ab-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.ab-cta:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.ab-socials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.ab-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+.ab-social a:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.ab-social i { font-size: 0.95rem; }
+
+/* ============================================================
+   MOVIMIENTO CONTINUO (solo si el usuario no pidió menos movimiento)
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .ab-aurora--a { animation: ab-drift-a 22s ease-in-out infinite alternate; }
+  .ab-aurora--b { animation: ab-drift-b 26s ease-in-out infinite alternate; }
+  .ab-aurora--c { animation: ab-drift-a 30s ease-in-out infinite alternate; }
+  .ab-portrait:not(.cms-empty-slot) { animation: ab-float 11s ease-in-out infinite; }
+  .ab-portrait:hover { animation-play-state: paused; }
+}
+
+@keyframes ab-drift-a {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-6%, 8%) scale(1.12); }
+}
+@keyframes ab-drift-b {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(8%, -6%) scale(0.9); }
+}
+@keyframes ab-float {
+  0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+  50%      { transform: translateY(-12px) rotate(0.4deg); }
+}
+@keyframes ab-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.7); opacity: 0.45; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 880px) {
+  .ab-about-grid { grid-template-columns: 1fr; gap: 2.6rem; }
+  .ab-portrait { max-width: 340px; }
+  .ab-specs { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 560px) {
+  .ab-hero { min-height: 86svh; padding-top: clamp(6.5rem, 18vh, 9rem); }
+  .ab-tl-item { grid-template-columns: 1fr; gap: 0.4rem; }
+  .ab-tl-year { font-size: 0.85rem; }
+  .ab-specs { grid-template-columns: 1fr; gap: 0.9rem; }
+  .ab-hero-meta { gap: 0.5rem 1rem; }
+}

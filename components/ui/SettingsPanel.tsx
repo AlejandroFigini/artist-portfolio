@@ -5,6 +5,11 @@
    controles de edición (cms.js hide-cms) funcionales. */
 
 import { useEffect, useRef, useState } from 'react'
+import { state, useCmsStore } from '@/lib/cms/store'
+import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from '@/components/cms/engine'
+import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
+import { getTranslations, importTranslations } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -36,15 +41,13 @@ function applyHideCms(hide: boolean) {
   try { localStorage.setItem(LS_HIDE_CMS, hide ? '1' : '0') } catch {}
 }
 
-const LANGS = [
-  { code: 'en', flag: 'us', label: 'English' },
-  { code: 'es', flag: 'es', label: 'Español' },
-  { code: 'pt', flag: 'pt', label: 'Português' },
-  { code: 'fr', flag: 'fr', label: 'Français' },
-]
-
 export default function SettingsPanel() {
+  const toast = useToast()
   const [open, setOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [sectionClear, setSectionClear] = useState<{ label: string; keys: string[]; count: number } | null>(null)
+  const transFileRef = useRef<HTMLInputElement>(null)
   // lazy init: en SSR no hay window; en hidratación lee el tema que el boot
   // script ya aplicó (el suppressHydrationWarning del input cubre el diff)
   const [dark, setDark] = useState(() => {
@@ -52,7 +55,7 @@ export default function SettingsPanel() {
     try { return localStorage.getItem('theme') === 'dark' } catch { return false }
   })
   const [langOpen, setLangOpen] = useState(false)
-  const [lang, setLang] = useState(LANGS[0])
+  const activeLang = LANG_META[state.lang]
   // lazy init desde localStorage (igual patrón que dark mode); el effect
   // solo aplica las clases al DOM, sin setState
   const [motionOff, setMotionOff] = useState(() => {
@@ -63,8 +66,11 @@ export default function SettingsPanel() {
     if (typeof window === 'undefined') return false
     try { return localStorage.getItem(LS_HIDE_CMS) === '1' } catch { return false }
   })
+  useCmsStore() // re-render cuando cambia el estado CMS
   const panelRef = useRef<HTMLDivElement>(null)
   const gearRef = useRef<HTMLButtonElement>(null)
+  const adminPanelRef = useRef<HTMLDivElement>(null)
+  const adminGearRef = useRef<HTMLButtonElement>(null)
 
   // aplicar preferencias guardadas al montar (port de los init legacy)
   useEffect(() => {
@@ -74,15 +80,15 @@ export default function SettingsPanel() {
   }, [])
 
   useEffect(() => {
-    if (!open) return
+    if (!open && !adminOpen) return
     const onClick = (e: MouseEvent) => {
       const t = e.target as Node
-      if (panelRef.current?.contains(t) || gearRef.current?.contains(t)) return
-      setOpen(false)
+      if (open && !(panelRef.current?.contains(t) || gearRef.current?.contains(t))) setOpen(false)
+      if (adminOpen && !(adminPanelRef.current?.contains(t) || adminGearRef.current?.contains(t))) setAdminOpen(false)
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
-  }, [open])
+  }, [open, adminOpen])
 
   const toggleDark = (checked: boolean) => {
     setDark(checked)
@@ -91,23 +97,42 @@ export default function SettingsPanel() {
     try { localStorage.setItem('theme', theme) } catch {}
   }
 
+  // i18n: descarga el JSON base (es) + traducciones actuales para mandar a Claude.
+  const handleExportTranslations = async () => {
+    const items = await getTranslations()
+    const blob = new Blob([JSON.stringify({ items }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'translations-export.json'
+    a.click()
+    URL.revokeObjectURL(url)
+    toast('JSON exportado. Pegalo en Claude para traducir.')
+  }
+
+  // i18n: importa el JSON traducido (en/pt/fr) → BD → reaplica idioma activo.
+  const handleImportTranslations = async (file: File) => {
+    let parsed: { items?: Record<string, Record<string, string>> }
+    try { parsed = JSON.parse(await file.text()) } catch { toast('Archivo JSON inválido', 'error'); return }
+    const items = parsed.items || (parsed as Record<string, Record<string, string>>)
+    try {
+      const { imported } = await importTranslations(items)
+      state.translations = await getTranslations()
+      setLanguage(state.lang) // reaplica con las traducciones nuevas
+      toast(`${imported} traducciones importadas`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Error importando', 'error')
+    }
+  }
+
   return (
     <>
-      <button ref={gearRef} id="settings-toggle" className="settings-gear" aria-label="Settings" onClick={() => setOpen((o) => !o)}>
+      {/* Tuerca general — visible para todos los usuarios */}
+      <button ref={gearRef} id="settings-toggle" className="settings-gear" aria-label="Settings" onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
         <i className="fa-solid fa-gear"></i>
       </button>
       <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}`}>
         <h3>Settings</h3>
-        <div className="setting-item admin-only">
-          <span>Hide Edit actions</span>
-          <label className="switch">
-            <input
-              type="checkbox" id="hide-cms-switch" checked={hideCms} suppressHydrationWarning
-              onChange={(e) => { setHideCms(e.target.checked); applyHideCms(e.target.checked) }}
-            />
-            <span className="slider round"></span>
-          </label>
-        </div>
         <div className="setting-item">
           <span>Dark Mode</span>
           <label className="switch">
@@ -129,14 +154,14 @@ export default function SettingsPanel() {
           <span>Language</span>
           <div className="lang-selector-settings" id="lang-selector-settings">
             <button className="lang-btn-settings" id="lang-toggle-settings" aria-label="Change language" onClick={() => setLangOpen((o) => !o)}>
-              <span className={`fi fi-${lang.flag}`} id="lang-flag-settings"></span>
-              <span className="lang-code" id="lang-code-settings">{lang.code.toUpperCase()}</span>
+              <span className={`fi fi-${activeLang.flag}`} id="lang-flag-settings"></span>
+              <span className="lang-code" id="lang-code-settings">{state.lang.toUpperCase()}</span>
               <i className="fa-solid fa-chevron-down chev"></i>
             </button>
             <div className={`lang-dropdown-settings${langOpen ? ' active' : ''}`} id="lang-dropdown-settings">
-              {LANGS.map((l) => (
-                <button key={l.code} className="lang-option" data-lang={l.code} title={l.label} onClick={() => { setLang(l); setLangOpen(false) }}>
-                  <span className={`fi fi-${l.flag}`}></span> {l.label}
+              {ALL_LANGS.map((code) => (
+                <button key={code} className="lang-option" data-lang={code} title={LANG_META[code].label} onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}>
+                  <span className={`fi fi-${LANG_META[code].flag}`}></span> {LANG_META[code].label}
                 </button>
               ))}
             </div>
@@ -150,6 +175,153 @@ export default function SettingsPanel() {
           </button>
         </div>
       </div>
+
+      {/* Tuerca admin — solo logueado como admin. Lista settings exclusivos de admin.
+          Por ahora: Hide Edit actions + Clear All Content (con el tiempo se suman más). */}
+      {state.isAdmin && (
+        <>
+          <button
+            ref={adminGearRef}
+            id="admin-settings-toggle"
+            className="settings-gear settings-gear--admin"
+            aria-label="Admin settings"
+            title="Admin settings"
+            onClick={() => { setAdminOpen((o) => !o); setOpen(false) }}
+          >
+            <i className="fa-solid fa-user-gear"></i>
+          </button>
+          <div ref={adminPanelRef} id="admin-settings-panel" className={`settings-panel settings-panel--admin${adminOpen ? '' : ' hidden'}`}>
+            <h3>Admin Settings</h3>
+            <div className="setting-item">
+              <span>Hide Edit actions</span>
+              <label className="switch">
+                <input
+                  type="checkbox" id="hide-cms-switch" checked={hideCms} suppressHydrationWarning
+                  onChange={(e) => { setHideCms(e.target.checked); applyHideCms(e.target.checked) }}
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <span>Clear Current Section</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                id="clear-section-btn"
+                title="Clear only the containers of the section currently in view (moves to unused)"
+                onClick={() => setSectionClear(currentSectionInfo())}
+              >
+                <i className="fa-solid fa-eraser"></i>
+                <span>Clear Section</span>
+              </button>
+            </div>
+            <div className="setting-item">
+              <span>Clear All Content</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                id="clear-content-btn"
+                title="Clear all page content (moves to unused)"
+                onClick={() => setShowClearConfirm(true)}
+              >
+                <i className="fa-solid fa-trash"></i>
+                <span>Clear All</span>
+              </button>
+            </div>
+            <div className="setting-item">
+              <span>Export for Translation</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                title="Descarga el texto actual en JSON para traducir con Claude"
+                onClick={handleExportTranslations}
+              >
+                <i className="fa-solid fa-download"></i>
+                <span>Export</span>
+              </button>
+            </div>
+            <div className="setting-item">
+              <span>Import Translations</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                title="Sube el JSON traducido (en/pt/fr) para guardarlo en la BD"
+                onClick={() => transFileRef.current?.click()}
+              >
+                <i className="fa-solid fa-upload"></i>
+                <span>Import</span>
+              </button>
+              <input
+                ref={transFileRef} type="file" accept=".json,application/json" style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  e.target.value = ''
+                  if (f) handleImportTranslations(f)
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {sectionClear && (
+        <div className="cms-confirm-overlay" onClick={() => setSectionClear(null)}>
+          <div className="cms-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Clear Current Section?</h3>
+            {sectionClear.count > 0 ? (
+              <p>
+                This will move the content of{' '}
+                <strong>{sectionClear.label || 'this section'}</strong> ({sectionClear.count}) to unused,
+                leaving only empty containers. The rest of the page is untouched.
+              </p>
+            ) : (
+              <p>No content to clear in <strong>{sectionClear.label || 'this section'}</strong>.</p>
+            )}
+            <div className="cms-confirm-actions">
+              <button type="button" onClick={() => setSectionClear(null)} className="cms-btn cms-btn-cancel">
+                Cancel
+              </button>
+              {sectionClear.count > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearSectionKeys(sectionClear.keys)
+                    setSectionClear(null)
+                    setAdminOpen(false)
+                  }}
+                  className="cms-btn cms-btn-danger"
+                >
+                  Clear Section
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showClearConfirm && (
+        <div className="cms-confirm-overlay" onClick={() => setShowClearConfirm(false)}>
+          <div className="cms-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Clear All Content?</h3>
+            <p>This will move all content to unused, leaving only empty containers.</p>
+            <div className="cms-confirm-actions">
+              <button type="button" onClick={() => setShowClearConfirm(false)} className="cms-btn cms-btn-cancel">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearAllSite()
+                  setShowClearConfirm(false)
+                  setAdminOpen(false)
+                }}
+                className="cms-btn cms-btn-danger"
+              >
+                Clear All Content
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

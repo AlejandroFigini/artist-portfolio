@@ -12,9 +12,12 @@
 @import "./legacy/style.css";
 @import "./hero.css"; /* capa de mejora del hero (instrumentos blueprint) */
 @import "./about.css"; /* sección About: editorial + storytelling on-scroll */
+@import "./about-page.css"; /* ruta /about: página dedicada "sobre la artista" */
 @import "./animations-showcase.css"; /* sección Animations: 6-card grid hover-to-play */
+@import "./projects-showcase.css"; /* sección Projects: carrusel horizontal de proyectos */
 @import "./characters-showcase.css"; /* sección Character Design: stage + carrusel */
 @import "./models-showcase.css"; /* sección 3D: split 2-col (textos sticky + videos) */
+@import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
 @import "./cursor.css"; /* cursor delicado (punto + anillo fino) */

@@ -1,14 +1,7 @@
 /* Footer — portado de shared-ui.js (FOOTER). Server component estático. */
 
 import Link from 'next/link'
-
-const SOCIAL_LINKS = [
-  { icon: 'fa-artstation', title: 'Artstation' },
-  { icon: 'fa-vimeo-v', title: 'Vimeo' },
-  { icon: 'fa-youtube', title: 'Youtube' },
-  { icon: 'fa-instagram', title: 'Instagram' },
-  { icon: 'fa-behance', title: 'Behance' },
-]
+import FooterSocial from './FooterSocial'
 
 const EXPLORE_LINKS = [
   { href: '/#presentacion', label: 'About me', i18n: 'nav_about' },
@@ -26,13 +19,7 @@ export default function Footer() {
         <div className="footer-col branding-col">
           <h2 className="footer-name">Lucia <span>Montaña</span></h2>
           <p className="footer-role">Licenciada en Animación y Videojuegos</p>
-          <div className="footer-social-bubbles">
-            {SOCIAL_LINKS.map((s) => (
-              <a key={s.title} href="#" target="_blank" rel="noopener noreferrer" className="social-bubble" title={s.title}>
-                <i className={`fa-brands ${s.icon}`}></i>
-              </a>
-            ))}
-          </div>
+          <FooterSocial />
         </div>
         <div className="footer-col links-col">
           <h3 className="footer-label">Exploration</h3>

@@ -1,135 +1,146 @@
 'use client'
 
-/* Character Design (home) — panel destacado + riel-carrusel con autoavance
-   y barra de progreso, en el mismo lenguaje visual que Animations (fondo
-   claro con trama, FIG monospace, typewriter, lightbox por portal).
-   Los contenedores .cd-* quedan registrados en el CMS (engine.ts) para que
-   el contenido sea editable sin tocar código. */
+/* Characters (home) — galería de personajes en paneles full-bleed con scroll
+   horizontal (carrusel embla: drag + botones + snap; un panel domina el viewport
+   y se asoma el siguiente). Cada personaje expone retrato + galería de concepts
+   y su ficha (nombre / rol / descripción), con lightbox. Dinámico: cantidad y
+   orden se gestionan desde el CMS (CharactersManager, evento `cms:charactersManager`),
+   espejando ProjectsShowcase: el contenido se lee reactivamente de state.items y
+   los contenedores quedan registrados en engine.ts para edición inline.
+   Ref. visual: case-studies con scroll lateral (Awwwards / Active Theory). */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import {
+  Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi,
+} from '@/components/ui/carousel'
+import {
+  ensureGSAP, gsap, prefersReducedMotion,
+  typewriterRevealLoop, wordRevealLoop, type LoopHandle,
+} from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import { useCmsStore, state } from '@/lib/cms/store'
 
-const INTERVAL_MS = 6000
-const CONCEPTS_PER = 3
+const CONCEPTS_PER = 4
 
-type Character = {
-  name: string; role: string; railRole: string; desc: string
-  date: string; project: string; inspiration: string
+function readCount(): number {
+  let count = 4
+  try {
+    const s = JSON.parse(state.items['char.settings'] || '')
+    if (s && typeof s.count === 'number') count = s.count
+  } catch {}
+  return Math.max(0, count)
 }
 
-const CHARACTERS: Character[] = [
-  {
-    name: 'Alessio', role: 'Main Design', railRole: 'Main',
-    desc: 'Del boceto inicial al render 3D final: un estudio profundo de proporciones, texturizado orgánico y accesorios.',
-    date: '2023', project: 'Character Design',
-    inspiration: 'Personajes expresivos de base animal y narrativa cálida.',
-  },
-  {
-    name: 'Jaffare', role: 'Stylized Design', railRole: 'Stylized',
-    desc: 'Su desarrollo incluyó variaciones extensas de expresiones y poses, preservando la frescura del concept 2D original.',
-    date: '2023', project: 'Character Design',
-    inspiration: 'Formas estilizadas y siluetas legibles y audaces.',
-  },
-  {
-    name: 'King', role: 'Complex Design', railRole: 'Complex',
-    desc: 'Un trabajo intenso sobre formas duras y orgánicas entrelazadas. La retopología y el render jugaron un rol crucial.',
-    date: '2023', project: 'Character Design',
-    inspiration: 'Hard-surface fusionado con anatomía orgánica.',
-  },
-  {
-    name: 'Leda', role: 'Fine Detail', railRole: 'Detail',
-    desc: 'El concept art definió el tono visual de su trasfondo literario: cada tela, material y luz evoca melancolía e intriga.',
-    date: '2023', project: 'Character Design',
-    inspiration: 'Detalle fino y paletas de color refinadas y armónicas.',
-  },
-]
-
-const TOTAL = String(CHARACTERS.length).padStart(2, '0')
+type Lightbox = { src: string; name: string; role: string; desc: string } | null
 
 function Corners() {
   return (
     <>
-      <span className="bp-corner tl" />
-      <span className="bp-corner tr" />
-      <span className="bp-corner bl" />
-      <span className="bp-corner br" />
+      <span className="ch-corner tl" /><span className="ch-corner tr" />
+      <span className="ch-corner bl" /><span className="ch-corner br" />
     </>
   )
 }
 
-// Imagen editable (bg-image) con placeholder y detección de contenido.
-function CharImage({
-  className, icon, onOpen,
-}: { className: string; icon: string; onOpen: (src: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [hasMedia, setHasMedia] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const check = () => {
-      const bg = el.style.backgroundImage
-      setHasMedia(!!bg && bg !== 'none' && !bg.includes("url('')") && !bg.includes('url("")'))
-    }
-    check()
-    const mo = new MutationObserver(check)
-    mo.observe(el, { attributes: true, attributeFilter: ['style', 'data-full'] })
-    return () => mo.disconnect()
-  }, [])
-
-  const open = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    const el = ref.current
-    const src = el?.getAttribute('data-full') || ''
-    if (src) onOpen(src)
-  }, [onOpen])
-
+/* Imagen editable (bg-image). El contenedor con data-cms-key queda registrado en
+   el motor CMS (engine.ts), que maneja el estado vacío (marco punteado + subida)
+   y las herramientas de edición inline. Acá pintamos el media reactivamente desde
+   state.items y exponemos data-full para el lightbox. */
+function CharMedia({
+  cmsKey, className, onOpen,
+}: { cmsKey: string; className: string; onOpen: (src: string) => void }) {
+  useCmsStore()
+  const src = state.items[cmsKey] || ''
+  const has = !!src && !src.includes('placeholder')
   return (
     <div
-      ref={ref}
-      className={`${className}${hasMedia ? ' has-media' : ''}`}
-      data-full=""
-      onClick={open}
-    >
-      <span className="cd-ph" aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
-    </div>
+      className={`${className}${has ? ' has-media' : ''}`}
+      data-cms-key={cmsKey}
+      data-full={has ? src : ''}
+      style={has ? { backgroundImage: `url("${src}")` } : undefined}
+      onClick={(e) => { e.stopPropagation(); if (has) onOpen(src) }}
+    />
+  )
+}
+
+function CharacterPanel({ index, total, onOpen }: { index: number; total: number; onOpen: (lb: Lightbox) => void }) {
+  useCmsStore()
+  const key = `char#${index}`
+  const name = state.items[`${key}::name`] || ''
+  const role = state.items[`${key}::role`] || ''
+  const desc = state.items[`${key}::desc`] || ''
+  const num = String(index + 1).padStart(2, '0')
+  const tot = String(total).padStart(2, '0')
+
+  const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
+
+  return (
+    <article className="ch-panel" data-cms-key={key} data-name={name} data-role={role} data-desc={desc}>
+      <Corners />
+      <div className="ch-panel__media">
+        <div className="ch-portrait-wrap">
+          <CharMedia cmsKey={key} className="ch-portrait" onOpen={open} />
+        </div>
+        <div className="ch-concepts">
+          {Array.from({ length: CONCEPTS_PER }, (_, m) => (
+            <div className="ch-concept-cell" key={m}>
+              <CharMedia cmsKey={`${key}::c${m}`} className="ch-concept" onOpen={open} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="ch-panel__info">
+        <span className="ch-ghost" aria-hidden="true">{num}</span>
+        <span className="ch-counter"><b>{num}</b> / {tot}</span>
+        <h3 className="ch-name">{name || `Personaje ${num}`}</h3>
+        <div className="ch-role">{role || 'Rol del personaje'}</div>
+        <p className="ch-desc">
+          {desc || 'Breve descripción del personaje: del concept inicial al diseño final, explorando forma, color y carácter.'}
+        </p>
+      </div>
+    </article>
   )
 }
 
 export default function CharactersShowcase() {
+  useCmsStore()
+  const isAdmin = state.isAdmin
   const sectionRef = useRef<HTMLElement>(null)
-  const [active, setActive] = useState(0)
-  const [visible, setVisible] = useState(false)
-  const [lightbox, setLightbox] = useState<{ src: string; char: Character } | null>(null)
+  const [api, setApi] = useState<CarouselApi>()
+  const [lightbox, setLightbox] = useState<Lightbox>(null)
   const [showInfo, setShowInfo] = useState(false)
-  const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
-  // Reveal de entrada + typewriter del título (mismo patrón que Animations).
+  const count = readCount()
+
+  // Firma del contenido visible → reInit de embla cuando cambian alta/baja/orden
+  // o las imágenes (los clones/medidas se reconstruyen), igual que en Projects.
+  const signature = Array.from({ length: count }, (_, i) =>
+    [
+      state.items[`char#${i}`] || '',
+      state.items[`char#${i}::name`] || '',
+      ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`char#${i}::c${m}`] || ''),
+    ].join('|'),
+  ).join('~')
+  useEffect(() => { api?.reInit() }, [api, signature])
+
+  // Reveal de entrada del encabezado + typewriter del título (patrón hermano).
   useEffect(() => {
     if (prefersReducedMotion()) return
     ensureGSAP()
     const sec = sectionRef.current
     if (!sec) return
-
     let titleTw: LoopHandle | null = null
     let descTw: LoopHandle | null = null
-
     const ctx = gsap.context(() => {
-      gsap.set('.char-showcase__fig', { autoAlpha: 0, y: 12 })
-      gsap.set('.char-showcase__title', { autoAlpha: 0 })
-      gsap.set('.char-showcase__desc', { autoAlpha: 0, y: 18 })
-      gsap.set('.cd-stage', { autoAlpha: 0, y: 40 })
-      gsap.set('.cd-rail-item', { autoAlpha: 0, y: 24 })
-
-      // fig + desc fade-up; el título entra letra por letra (typewriterRevealLoop).
+      gsap.set('.ch-showcase__fig', { autoAlpha: 0, y: 12 })
+      gsap.set('.ch-showcase__desc', { autoAlpha: 0, y: 18 })
+      gsap.set('.ch-panel', { autoAlpha: 0, y: 36 })
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
-      tl.to('.char-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.char-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
-        .to('.cd-stage', { autoAlpha: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
-        .to('.cd-rail-item', { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' }, '-=0.4')
-
+      tl.to('.ch-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
+        .to('.ch-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.35)
+        .to('.ch-panel', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' }, '-=0.3')
       let played = false
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
@@ -137,164 +148,106 @@ export default function CharactersShowcase() {
             played = true
             tl.play()
             io.disconnect()
-            const titleEl = sec.querySelector<HTMLElement>('.char-showcase__title')
-            const descEl = sec.querySelector<HTMLElement>('.char-showcase__desc')
+            const titleEl = sec.querySelector<HTMLElement>('.ch-showcase__title')
+            const descEl = sec.querySelector<HTMLElement>('.ch-showcase__desc')
             if (titleEl) titleTw = typewriterRevealLoop(titleEl, 8)
             if (descEl) descTw = wordRevealLoop(descEl, 8)
           }
         }
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
-      ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [])
 
-  // Visibilidad para el autoavance del carrusel.
+  // Panel de info del lightbox: aparece 1s después de ampliar.
   useEffect(() => {
-    const sec = sectionRef.current
-    if (!sec) return
-    sec.style.setProperty('--cd-interval', `${INTERVAL_MS / 1000}s`)
-    const io = new IntersectionObserver((entries) => setVisible(entries[0].isIntersecting), { threshold: 0.25 })
-    io.observe(sec)
-    return () => io.disconnect()
-  }, [])
-
-  // Barra de progreso + autoavance (solo en viewport, respeta reduced-motion).
-  useEffect(() => {
-    const sec = sectionRef.current
-    if (!sec) return
-    const bars = sec.querySelectorAll<HTMLElement>('.cd-rail-progress')
-    bars.forEach((b) => b.classList.remove('run'))
-    if (!visible) return
-    const bar = bars[active]
-    if (bar) { void bar.offsetWidth; bar.classList.add('run') }
-    if (prefersReducedMotion()) return
-    const t = setTimeout(() => setActive((a) => (a + 1) % CHARACTERS.length), INTERVAL_MS)
+    if (!lightbox) { setShowInfo(false); return }
+    const t = setTimeout(() => setShowInfo(true), 1000)
     return () => clearTimeout(t)
-  }, [active, visible])
-
-  // Panel de info del lightbox: se abre solo 1s después de ampliar.
-  useEffect(() => {
-    if (lightbox) {
-      infoTimerRef.current = setTimeout(() => setShowInfo(true), 1000)
-    } else {
-      setShowInfo(false)
-      if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
-    }
-    return () => { if (infoTimerRef.current) clearTimeout(infoTimerRef.current) }
   }, [lightbox])
 
-  const openLightbox = useCallback((char: Character) => (src: string) => setLightbox({ src, char }), [])
+  const openLightbox = useCallback((lb: Lightbox) => setLightbox(lb), [])
   const closeLightbox = useCallback(() => setLightbox(null), [])
 
   return (
-    <section ref={sectionRef} className="char-showcase" aria-labelledby="char-showcase-title">
-      <div className="char-showcase__rail" aria-hidden="true">
-        <span className="char-showcase__rail-fig">FILE 04 · CHARACTERS</span>
-        <span className="char-showcase__rail-track"><span className="char-showcase__rail-fill" /></span>
-        <span className="char-showcase__rail-fig char-showcase__rail-fig--end">END</span>
+    <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
+      <div className="ch-showcase__rail" aria-hidden="true">
+        <span className="ch-showcase__rail-fig">FILE 04 · CHARACTERS</span>
+        <span className="ch-showcase__rail-track"><span className="ch-showcase__rail-fill" /></span>
+        <span className="ch-showcase__rail-fig ch-showcase__rail-fig--end">END</span>
       </div>
 
-      <div className="char-showcase__frame">
-        <div className="char-showcase__header">
-          <span className="char-showcase__fig">FIG. 04 — Cast</span>
-          <h2 id="char-showcase-title" className="char-showcase__title">Character Design</h2>
-          <p className="char-showcase__desc" data-i18n="characters_desc">
-            Un elenco interactivo de mis creaciones. Cada personaje recorre el proceso
-            completo: del concept inicial al diseño final, explorando forma, color y carácter.
+      <div className="ch-showcase__inner">
+        <header className="ch-showcase__header">
+          <span className="ch-showcase__fig">FIG. 04 — Cast</span>
+          <h2 id="ch-showcase-title" className="ch-showcase__title">Characters</h2>
+          <p className="ch-showcase__desc" data-i18n="characters_desc">
+            Galería de personajes: cada uno recorre su proceso completo — del concept
+            inicial al diseño final, explorando forma, color y carácter.
           </p>
           <SoftwareDropdown prefix="char" />
-        </div>
-
-        <div className="cd-stage">
-          {CHARACTERS.map((c, i) => (
-            <article
-              key={c.name}
-              className={`cd-panel${i === active ? ' active' : ''}`}
-              data-index={i}
-              data-date={c.date}
-              data-project={c.project}
-              data-inspiration={c.inspiration}
-            >
-              <div className="cd-media">
-                <div className="cd-portrait-wrap" style={{ position: 'relative' }}>
-                  <CharImage className="cd-portrait" icon="fa-user-astronaut" onOpen={openLightbox(c)} />
-                </div>
-                <div className="cd-concepts">
-                  {Array.from({ length: CONCEPTS_PER }, (_, n) => (
-                    <CharImage key={n} className="cd-concept" icon="fa-palette" onOpen={openLightbox(c)} />
-                  ))}
-                </div>
-              </div>
-              <div className="cd-info">
-                <span className="cd-ghost" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                <span className="cd-counter"><b>{String(i + 1).padStart(2, '0')}</b> / {TOTAL}</span>
-                <h3 className="cd-name">{c.name}</h3>
-                <div className="cd-role">{c.role}</div>
-                <p className="cd-desc">{c.desc}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div className="cd-rail" role="tablist" aria-label="Personajes">
-          {CHARACTERS.map((c, i) => (
+          {isAdmin && (
             <button
-              key={c.name}
               type="button"
-              className={`cd-rail-item${i === active ? ' active' : ''}`}
-              role="tab"
-              aria-selected={i === active}
-              onClick={() => setActive(i)}
+              className="ch-showcase__manage"
+              title="Gestionar personajes"
+              aria-label="Gestionar personajes"
+              onClick={() => window.dispatchEvent(new CustomEvent('cms:charactersManager'))}
             >
-              <span className="cd-rail-thumb">
-                <span className="cd-ph" aria-hidden="true"><i className="fa-solid fa-user" /></span>
-              </span>
-              <span className="cd-rail-meta">
-                <span className="cd-rail-name">{c.name}</span>
-                <span className="cd-rail-role">{c.railRole}</span>
-              </span>
-              <span className="cd-rail-progress" />
+              <i className="fa-solid fa-gear" /> Gestionar
             </button>
-          ))}
-        </div>
+          )}
+        </header>
+
+        {count === 0 ? (
+          <div className="ch-empty">
+            <i className="fa-solid fa-user-plus" />
+            <span>{isAdmin ? 'Añadí personajes desde "Gestionar".' : 'Próximamente.'}</span>
+          </div>
+        ) : (
+          <Carousel setApi={setApi} opts={{ align: 'center', loop: false }} className="ch-carousel">
+            <CarouselContent className="-ml-4 md:-ml-6">
+              {Array.from({ length: count }).map((_, i) => (
+                <CarouselItem key={i} className="pl-4 md:pl-6 basis-[92%] md:basis-[82%] lg:basis-[74%]">
+                  <CharacterPanel index={i} total={count} onOpen={openLightbox} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="ch-nav" />
+            <CarouselNext className="ch-nav" />
+          </Carousel>
+        )}
       </div>
 
       {lightbox && typeof document !== 'undefined' && createPortal(
-        <div className="cd-lightbox" onClick={closeLightbox}>
-          <button type="button" className="cd-lightbox__close" onClick={closeLightbox} aria-label="Cerrar">
+        <div className="ch-lightbox" onClick={closeLightbox}>
+          <button type="button" className="ch-lightbox__close" onClick={closeLightbox} aria-label="Cerrar">
             <i className="fa-solid fa-xmark" />
           </button>
-
-          <div className={`cd-lightbox__media${showInfo ? ' is-shifted' : ''}`}>
+          <div className={`ch-lightbox__media${showInfo ? ' is-shifted' : ''}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={lightbox.src} alt={lightbox.char.name} className="cd-lightbox__img" onClick={(e) => e.stopPropagation()} />
-
+            <img src={lightbox.src} alt={lightbox.name} className="ch-lightbox__img" onClick={(e) => e.stopPropagation()} />
             <button
               type="button"
-              className="cd-lightbox__info-btn"
+              className="ch-lightbox__info-btn"
               onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
               aria-label="Información"
             >
               <i className={`fa-solid ${showInfo ? 'fa-xmark' : 'fa-circle-info'}`} />
             </button>
-
             {showInfo && (
-              <div className="cd-lightbox__info-panel" onClick={(e) => e.stopPropagation()}>
-                <h3>{lightbox.char.name}</h3>
-                <dl className="cd-lightbox__meta">
-                  <div><dt>Rol</dt><dd>{lightbox.char.role}</dd></div>
-                  <div><dt>Fecha</dt><dd>{lightbox.char.date}</dd></div>
-                  <div><dt>Proyecto</dt><dd>{lightbox.char.project}</dd></div>
-                  <div><dt>Inspiración</dt><dd>{lightbox.char.inspiration}</dd></div>
-                  <div className="cd-lightbox__meta-block"><dt>Descripción</dt><dd>{lightbox.char.desc}</dd></div>
+              <div className="ch-lightbox__info-panel" onClick={(e) => e.stopPropagation()}>
+                <h3>{lightbox.name}</h3>
+                <dl className="ch-lightbox__meta">
+                  {lightbox.role && <div><dt>Rol</dt><dd>{lightbox.role}</dd></div>}
+                  {lightbox.desc && <div className="ch-lightbox__meta-block"><dt>Descripción</dt><dd>{lightbox.desc}</dd></div>}
                 </dl>
               </div>
             )}
           </div>
         </div>,
-        document.body
+        document.body,
       )}
     </section>
   )

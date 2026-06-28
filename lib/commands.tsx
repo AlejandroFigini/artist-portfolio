@@ -15,8 +15,9 @@ export type Command =
   | { type: 'repoPicker'; key: string }
   | { type: 'confirmMove'; key: string }
   | { type: 'carouselManager'; key?: string }
+  | { type: 'projectsManager' }
+  | { type: 'charactersManager' }
   | { type: 'auditPage' }
-  | { type: 'addIllustration' }
   | { type: 'export' }
 
 export type Dispatch = (cmd: Command) => void

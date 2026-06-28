@@ -62,9 +62,9 @@ export default function AboutSection() {
       gsap.set('.about-fig', { autoAlpha: 0, y: 12 })
       gsap.set('.about-lede', { autoAlpha: 0, y: 22 })
       gsap.set('.about-bio p', { autoAlpha: 0, y: 22 })
-      gsap.set('.about-reel', { autoAlpha: 0, clipPath: 'inset(0% 100% 0% 0%)' })
+      gsap.set('.about-video-container', { autoAlpha: 0, clipPath: 'inset(0% 100% 0% 0%)' })
+      gsap.set('.about-corner', { autoAlpha: 0, scale: 0.4 })
       gsap.set('.about-portrait', { autoAlpha: 0, scale: 0.7, rotate: -6 })
-      gsap.set('.about-reel .bp-corner, .about-portrait .bp-corner', { autoAlpha: 0, scale: 0.4 })
       gsap.set('.about-meta-row', { autoAlpha: 0, x: -16 })
       gsap.set('.about-spec', { autoAlpha: 0, y: 14 })
       gsap.set('.about-social', { autoAlpha: 0, y: 10 })
@@ -73,8 +73,8 @@ export default function AboutSection() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.about-fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
         .to('.about-title .line', { yPercent: 0, skewY: 0, duration: 1.0, stagger: 0.1 }, 0.05)
-        .to('.about-reel', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, '-=0.85')
-        .to('.about-reel .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, '-=0.7')
+        .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, '-=0.85')
+        .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, '-=0.7')
         .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, '-=0.6')
         .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04 }, '-=0.5')
         .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.95')
@@ -101,7 +101,7 @@ export default function AboutSection() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.to('.about-reel-media', {
+      gsap.to('.about-video', {
         scale: 1.05, duration: 7, ease: 'sine.inOut',
         yoyo: true, repeat: -1, delay: 1.8,
       })
@@ -200,23 +200,26 @@ export default function AboutSection() {
             <span className="about-media-blob about-media-blob--a" aria-hidden="true" />
             <span className="about-media-blob about-media-blob--b" aria-hidden="true" />
 
-            <figure className="about-reel">
-              <Corners />
-              <div className="about-reel-media">
-                <video
-                  className="about-video"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                />
-              </div>
-              <figcaption className="about-portrait-meta about-reel-cap">
+            <div className="about-video-container">
+              <video
+                className="about-video"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              />
+              <div className="about-video-caption">
                 <span>FIG. 02a</span>
                 <span>Reel — Loop</span>
-              </figcaption>
-            </figure>
+              </div>
+              <div className="about-video-details">
+                <span className="about-corner tl" />
+                <span className="about-corner tr" />
+                <span className="about-corner bl" />
+                <span className="about-corner br" />
+              </div>
+            </div>
 
             <figure className="about-portrait">
               <Corners />

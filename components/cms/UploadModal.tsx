@@ -33,8 +33,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
   const nameRef = useRef<HTMLInputElement>(null)
   const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
   const [fields] = useState<FieldValue[]>(() => {
-    const el = elementsByKey[cmsKey]
-    return (el && meta && computeFields(cmsKey, el, meta)) || []
+    const el = elementsByKey[cmsKey] || null
+    return (meta && computeFields(cmsKey, el, meta)) || []
   })
   // Solo los campos NO opcionales deben completarse antes de habilitar la subida.
   const requiredDefs = (meta?.fields || []).filter((d) => !d.optional)
@@ -61,9 +61,9 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     fileToDataURL(file)
       .then((base64) => uploadMedia(base64, file.size, finalName))
       .then((data) => {
-        // versión anterior → no usados
+        // versión anterior → no usados (solo si tenía contenido real)
         const prev = state.usedContent[cmsKey]
-        if (prev) {
+        if (prev && prev.src) {
           state.unused.push({
             key: cmsKey, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
             type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
@@ -161,7 +161,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
                     <textarea rows={2} defaultValue={f.value} ref={(n) => { fieldRefs.current[f.key] = n }} onChange={recheckFields} />
                   ) : (
                     <input
-                      type={f.key === 'date' ? 'date' : 'text'}
+                      type={f.key.includes('date') ? 'date' : 'text'}
                       defaultValue={f.value}
                       ref={(n) => { fieldRefs.current[f.key] = n }}
                       onChange={recheckFields}

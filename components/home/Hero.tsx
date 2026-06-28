@@ -10,7 +10,11 @@
 import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
+import { useCmsStore, state } from '@/lib/cms/store'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+
+const openCarousel = (prefix: string) =>
+  window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
 
 const MEASURE_LABEL = 'W // 12-COL · REV.03'
 
@@ -40,6 +44,8 @@ function whenLoaderDone(cb: () => void): () => void {
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null)
+  useCmsStore() // re-render al cambiar admin (muestra/oculta los engranajes)
+  const isAdmin = state.isAdmin
 
   // Coreografía de entrada + parallax de scroll
   useEffect(() => {
@@ -207,6 +213,33 @@ export default function Hero() {
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.02 — DETAIL</span>
           </div>
+
+          {/* Engranajes FUERA de los media-container: dentro, la maquinaria de
+              contenedor-vacío + la coreografía de entrada los ocultaban hasta
+              subir una imagen. Como hijos del wrapper se ven siempre (igual que
+              el del fondo). Posicionados en la esquina inferior derecha de cada uno. */}
+          {isAdmin && (
+            <>
+              <button
+                className="cms-hero-gear"
+                title="Configurar Carrusel Principal — Portada"
+                aria-label="Configurar Carrusel Principal"
+                style={{ top: 'calc(68% - 58px)', bottom: 'auto', right: '14px' }}
+                onClick={(e) => { e.preventDefault(); openCarousel('hero-main') }}
+              >
+                <i className="fa-solid fa-layer-group"></i>
+              </button>
+              <button
+                className="cms-hero-gear"
+                title="Configurar Carrusel Secundario — Portada"
+                aria-label="Configurar Carrusel Secundario"
+                style={{ top: 'auto', bottom: 'calc(15% + 14px)', right: 'calc(50% + 14px)' }}
+                onClick={(e) => { e.preventDefault(); openCarousel('hero-sub') }}
+              >
+                <i className="fa-solid fa-layer-group"></i>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

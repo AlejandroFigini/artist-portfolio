@@ -25,13 +25,14 @@ function readCarousel(prefix: string): { slides: string[]; duration: number } {
     if (s && typeof s.duration === 'number') duration = s.duration
   } catch {}
   const slides: string[] = []
-  for (let i = 0; i < (count || 3); i++) slides.push(state.items[`${prefix}.slide#${i}`] || '')
+  // count puede ser 0/1 tras limpiar: respetarlo (no `|| 3`).
+  const n = Number.isFinite(count) ? Math.max(0, count) : 3
+  for (let i = 0; i < n; i++) slides.push(state.items[`${prefix}.slide#${i}`] || '')
   return { slides, duration }
 }
 
 export default function HeroMediaCarousel({ prefix, defaultSlides, className = 'cms-media', label = 'Carrusel de portada' }: Props) {
   useCmsStore() // re-render en cada cambio del store (hidratación, admin, etc.)
-  const isAdmin = state.isAdmin
   const [, force] = useReducer((x: number) => x + 1, 0)
 
   // El upload actualiza state.items y dispara `cms:${prefix}` (applyMedia →
@@ -103,20 +104,6 @@ export default function HeroMediaCarousel({ prefix, defaultSlides, className = '
           </div>
         )
       })}
-      {/* Solo el engranaje abre el gestor del carrusel (no todo el contenedor). */}
-      {isAdmin && (
-        <button
-          className="cms-hero-gear"
-          title={`Configurar Carrusel (${prefix})`}
-          style={{ position: 'absolute', bottom: '1rem', right: '1rem', zIndex: 100 }}
-          onClick={(e) => {
-            e.preventDefault()
-            window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
-          }}
-        >
-          <i className="fa-solid fa-layer-group"></i>
-        </button>
-      )}
     </>
   )
 }

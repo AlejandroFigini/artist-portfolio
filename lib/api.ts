@@ -103,3 +103,30 @@ export async function deleteMedia(url: string): Promise<void> {
     body: JSON.stringify({ url }),
   })
 }
+
+export type LangMaps = Record<string, Record<string, string>>
+
+/* Traducciones: trae todos los idiomas (es base + en/pt/fr). El cliente las
+   aplica al cambiar de idioma; el admin exporta el JSON para mandarlo a Claude. */
+export async function getTranslations(): Promise<LangMaps> {
+  try {
+    const r = await fetch('/api/translations', { cache: 'no-store' })
+    if (!r.ok) return {}
+    const data = await r.json()
+    return (data && data.items) || {}
+  } catch {
+    return {}
+  }
+}
+
+/* Importa el JSON traducido (en/pt/fr) que devolvió Claude → persiste en BD. */
+export async function importTranslations(items: LangMaps): Promise<{ imported: number }> {
+  const r = await fetch('/api/translations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error importando traducciones')
+  return { imported: (data as { imported?: number }).imported || 0 }
+}

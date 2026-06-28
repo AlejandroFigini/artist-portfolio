@@ -2011,6 +2011,25 @@ footer {
     pointer-events: none;
 }
 
+/* Tuerca + panel admin — segunda tuerca a la derecha de la general, color
+   distinto (índigo oscuro) para diferenciar de la violeta general. */
+.settings-gear--admin {
+    left: 85px;
+    background: #2a1f4d;
+}
+.settings-gear--admin:hover {
+    background: #3a2c66;
+}
+.settings-panel--admin {
+    left: 85px;
+}
+@media (max-width: 600px) {
+    /* En pantallas chicas, la tuerca admin va a la esquina derecha para no
+       solaparse ni desbordar con el panel general. */
+    .settings-gear--admin { left: auto; right: 30px; }
+    .settings-panel--admin { left: auto; right: 30px; }
+}
+
 .settings-panel h3 {
     margin-top: 0;
     margin-bottom: 1rem;
@@ -2037,6 +2056,23 @@ footer {
     background: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border);
+}
+
+/* Gestión → Redes sociales: input de URL/email por red */
+.social-input {
+    flex: 1 1 auto;
+    max-width: 60%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+
+.social-input:focus {
+    outline: none;
+    border-color: var(--accent);
 }
 
 /* Switch Estilo iOS */
@@ -4365,6 +4401,11 @@ body.is-admin .cms-tools .cms-edit-btn {
 body.is-admin .cms-tool-replace { background: rgba(16, 185, 129, 0.95); }  /* verde: subir */
 body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* ámbar: mover */
 
+/* Si el slot está vacío, ocultar por completo las herramientas pequeñas porque el propio overlay funciona de botón */
+body.is-admin .cms-empty-slot .cms-tools {
+    display: none !important;
+}
+
 /* Contenido retirado (movido a "no usados"): oculto para visitantes */
 .cms-retired { display: none !important; }
 
@@ -4587,20 +4628,21 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* á
     top: 100px;
     right: 40px;
     z-index: 1100;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: rgba(124, 58, 237, 0.2);
+    /* Fondo sólido → visible con buen contraste sobre cualquier fondo
+       (antes era violeta translúcido → invisible sobre el contenedor vacío). */
+    background: #fff;
     color: var(--accent);
     border: 1px solid var(--accent);
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     cursor: pointer;
     display: none;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 body.is-admin .cms-hero-gear {
     display: flex;
@@ -4609,6 +4651,39 @@ body.is-admin .cms-hero-gear {
     background: var(--accent);
     color: #fff;
     transform: scale(1.1);
+}
+
+/* ---- Botón icónico sutil (gestor de carrusel minimalista) ---- */
+.cms-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.cms-icon-btn:hover:not(:disabled) {
+    background: rgba(124, 58, 237, 0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.cms-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.cms-icon-btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.cms-icon-btn--primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
+.cms-icon-btn--danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
 }
 
 /* ---- Container rename inline (pencil button) ---- */
@@ -4675,6 +4750,10 @@ body.is-admin .cms-mount {
     outline: 1px dashed rgba(124, 58, 237, 0.45);
     outline-offset: 3px;
 }
+/* Si está vacío, el recuadro propio del empty-overlay reemplaza a este */
+body.is-admin .cms-mount.cms-empty-slot {
+    outline: none !important;
+}
 
 /* Botones genéricos del CMS (settings, modales) */
 .cms-btn {
@@ -4739,9 +4818,9 @@ body.is-admin .cms-mount {
     background: var(--bg-primary);
     color: var(--text-primary);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.6rem;
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+    border-radius: 12px;
+    padding: 1.7rem;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.4);
     transform: translateY(12px) scale(0.98);
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -4749,14 +4828,18 @@ body.is-admin .cms-mount {
 .cms-modal-overlay.show .cms-modal { transform: none; }
 
 .cms-modal-title {
-    margin: 0 0 1.1rem;
+    margin: 0 0 1.2rem;
+    font-family: var(--font-display);
     font-size: 1.15rem;
-    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
 }
 
 .cms-modal-actions {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 0.6rem;
     margin-top: 1.2rem;
 }
@@ -4772,6 +4855,72 @@ body.is-admin .cms-mount {
     background: var(--bg-secondary);
     color: var(--text-primary);
     resize: vertical;
+}
+
+/* Confirm dialog para operaciones destructivas */
+.cms-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.cms-confirm-dialog {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.cms-confirm-dialog h3 {
+    margin: 0 0 0.8rem;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.cms-confirm-dialog p {
+    margin: 0 0 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.cms-confirm-actions {
+    display: flex;
+    gap: 0.8rem;
+}
+
+/* Botones del diálogo de confirmación: full-width (cancelar / acción).
+   Antes era una def. global `.cms-btn` sin scope que filtraba flex:1 +
+   border:none al botón genérico de todo el sitio. */
+.cms-confirm-actions .cms-btn {
+    flex: 1;
+    padding: 0.7rem 1rem;
+}
+
+.cms-btn-cancel {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.cms-btn-cancel:hover {
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+}
+
+.cms-btn-danger {
+    background: #c92a2a;
+    color: #fff;
+    border: none;
+}
+
+.cms-btn-danger:hover {
+    background: #a01f1f;
 }
 
 /* Formulario de login */
@@ -5188,7 +5337,12 @@ body.cms-modal-open { overflow: hidden; }
    PÁGINA DE GESTIÓN (admin.html)
    ============================================================================ */
 .admin-page {
-    background: var(--bg-secondary);
+    background-color: var(--bg-secondary);
+    /* Grilla blueprint tenue — firma técnica del sitio, sin restar legibilidad */
+    background-image:
+        linear-gradient(to right, rgba(139, 92, 246, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(139, 92, 246, 0.035) 1px, transparent 1px);
+    background-size: 34px 34px;
     color: var(--text-primary);
     min-height: 100vh;
 }
@@ -5197,8 +5351,9 @@ body.cms-modal-open { overflow: hidden; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.1rem 2rem;
-    background: var(--bg-primary);
+    padding: 1.05rem 2rem;
+    background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -5217,18 +5372,25 @@ body.cms-modal-open { overflow: hidden; }
 .admin-card {
     background: var(--bg-primary);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem 1.7rem;
-    box-shadow: var(--shadow);
+    border-radius: 10px;
+    padding: 1.75rem 1.9rem;
 }
 
 .admin-card h2 {
-    margin: 0 0 1rem;
-    font-size: 1.15rem;
-    color: var(--accent);
+    margin: 0 0 1.1rem;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.6rem;
+}
+
+.admin-card h2 i {
+    font-size: 0.82em;
+    color: var(--accent);
 }
 
 .admin-card-head {
@@ -5256,30 +5418,43 @@ body.cms-modal-open { overflow: hidden; }
 
 .admin-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    overflow: hidden;
 }
 
 .admin-stat {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    padding: 1rem;
-    border-radius: 12px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    font-size: 0.8rem;
+    gap: 0.35rem;
+    padding: 1.35rem 1.45rem;
+    border-left: 1px solid var(--border);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
     color: var(--text-secondary);
 }
 
+.admin-stat:first-child { border-left: none; }
+
 .admin-stat-num {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.85rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
     color: var(--text-primary);
     font-family: 'Fira Code', monospace;
+    text-transform: none;
 }
 
 .admin-stat--warn .admin-stat-num { color: #dc2626; }
+
+@media (max-width: 640px) {
+    .admin-stats { grid-template-columns: repeat(2, 1fr); }
+    .admin-stat:nth-child(odd) { border-left: none; }
+}
 
 .cms-mlib-grid {
     display: grid;
@@ -5295,14 +5470,14 @@ body.cms-modal-open { overflow: hidden; }
     gap: 1rem;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     background: var(--bg-secondary);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.18s ease, background 0.18s ease;
     cursor: pointer;
 }
 .cms-mlib-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
 }
 
 .cms-mlib-item .cms-mlib-thumb-wrap {
@@ -5331,9 +5506,9 @@ body.cms-modal-open { overflow: hidden; }
 .cms-mlib-label {
     display: flex;
     font-family: 'Raleway', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--accent);
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--text-primary);
     margin-bottom: 0.3rem;
     padding-right: 40px; /* espacio para el botón de opciones, incrementado de 24px */
     line-height: 1.2;
@@ -5516,10 +5691,10 @@ body.cms-modal-open { overflow: hidden; }
 .admin-shell {
     display: flex;
     align-items: flex-start;
-    gap: 1.5rem;
-    max-width: 98%;
+    gap: 2rem;
+    max-width: 1360px;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 2rem 1.5rem;
 }
 
 /* Dentro del shell, la columna principal ocupa el resto del ancho. */
@@ -5541,12 +5716,11 @@ body.cms-modal-open { overflow: hidden; }
 .admin-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.15rem;
     background: var(--bg-primary);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 0.6rem;
-    box-shadow: var(--shadow);
+    border-radius: 10px;
+    padding: 0.5rem;
 }
 
 .admin-nav-item {
@@ -5555,26 +5729,28 @@ body.cms-modal-open { overflow: hidden; }
     gap: 0.7rem;
     width: 100%;
     text-align: left;
-    padding: 0.7rem 0.9rem;
+    padding: 0.65rem 0.85rem;
     border: none;
     background: transparent;
-    border-radius: 10px;
+    border-radius: 7px;
     font-family: 'Raleway', sans-serif;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition: background 0.18s ease, color 0.18s ease;
 }
 
-.admin-nav-item i { width: 1.1rem; text-align: center; }
+.admin-nav-item i { width: 1.1rem; text-align: center; color: var(--text-secondary); transition: color 0.18s ease; }
 .admin-nav-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.admin-nav-item:hover i { color: var(--text-primary); }
 
 .admin-nav-item.active {
-    background: rgba(124, 58, 237, 0.12);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
     color: var(--accent);
     font-weight: 600;
 }
+.admin-nav-item.active i { color: var(--accent); }
 
 .admin-nav-group {
     display: flex;
@@ -5583,20 +5759,21 @@ body.cms-modal-open { overflow: hidden; }
 .admin-nav-sub {
     display: none;
     flex-direction: column;
-    padding-left: 0.5rem;
-    border-left: 2px solid var(--border);
-    margin-left: 1.1rem;
-    margin-top: 0.3rem;
-    gap: 0.2rem;
+    padding-left: 0.55rem;
+    border-left: 1px dashed var(--border);
+    margin-left: 1.15rem;
+    margin-top: 0.15rem;
+    gap: 0.1rem;
 }
 .admin-nav-sub.open {
     display: flex;
 }
-.admin-nav-item i.c-uso { color: var(--c-uso); }
-.admin-nav-item i.c-nouso { color: var(--c-nouso); }
-.admin-nav-item i.c-repo { color: var(--c-repo); }
-.admin-nav-item i.c-basurero { color: var(--c-basurero); }
-.admin-nav-item i.c-subir { color: var(--c-subir); }
+/* Íconos del menú monocromos (sin arcoíris) — el estado activo lleva el acento */
+.admin-nav-item i.c-uso,
+.admin-nav-item i.c-nouso,
+.admin-nav-item i.c-repo,
+.admin-nav-item i.c-basurero,
+.admin-nav-item i.c-subir { color: inherit; }
 
 /* Alineación precisa de estadísticas en el menú lateral */
 .admin-nav-badge-label {
@@ -5752,6 +5929,14 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
     .admin-sidebar { width: 100%; position: static; }
     .admin-nav { flex-direction: row; flex-wrap: wrap; }
     .admin-nav-item { width: auto; }
+}
+
+@media (max-width: 560px) {
+    .admin-topbar { flex-wrap: wrap; gap: 0.6rem 1rem; padding: 0.85rem 1.1rem; }
+    .admin-topbar .logo { font-size: 1.05rem; }
+    .admin-topbar-right { flex-wrap: wrap; gap: 0.5rem; }
+    .admin-card { padding: 1.25rem 1.1rem; }
+    .admin-card h2 { font-size: 1rem; }
 }
 
 /* ============================================================
@@ -6414,44 +6599,6 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
     display: block;
 }
 
-/* Universal Responsive Overrides */
-/* Film Grain Overlay */
-.film-grain-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.012;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    transition: opacity 0.5s ease;
-}
-
-@keyframes grain {
-    0%, 100% { transform:translate(0, 0) }
-    10% { transform:translate(-2%, -4%) }
-    20% { transform:translate(-6%, 2%) }
-    30% { transform:translate(3%, -8%) }
-    40% { transform:translate(-2%, 8%) }
-    50% { transform:translate(-6%, 4%) }
-    60% { transform:translate(6%, 0%) }
-    70% { transform:translate(0%, 6%) }
-    80% { transform:translate(1%, 12%) }
-    90% { transform:translate(-4%, 4%) }
-}
-
-.film-grain-overlay::after {
-    content: '';
-    position: absolute;
-    top: -100%;
-    left: -100%;
-    right: -100%;
-    bottom: -100%;
-    background-image: inherit;
-    animation: grain 6s steps(10) infinite;
-}
 
 /* Sibling Dimming on Bio Paragraphs */
 .bio-content {
@@ -6773,6 +6920,7 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
     width: 100vw; height: 100vh;
     z-index: -1;
     overflow: hidden;
+    background: #fff; /* sin imágenes → fondo blanco (las slides lo cubren si hay) */
 }
 .carousel-slide {
     position: absolute;
@@ -6826,6 +6974,11 @@ body.admin-locked .admin-topbar-right .cms-user-chip { display: none; }
 .container-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(45deg, rgba(139,92,246,0.1), transparent); z-index: 2; pointer-events: none; }
 .hero-primary { width: 72%; height: 68%; position: absolute; top: 0%; right: 0; z-index: 5; box-shadow: var(--shadow-lg); }
 .hero-secondary { width: 45%; height: 45%; position: absolute; bottom: 15%; right: 50%; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--shadow-lg); }
+/* Los carruseles chicos NO reaccionan al click sobre el contenedor: sus acciones
+   se disparan SOLO desde el engranaje (que vive fuera, como hijo del wrapper, y
+   conserva pointer-events). */
+.hero-media-wrapper .media-container { pointer-events: none; }
+.hero-media-wrapper .cms-hero-gear { pointer-events: auto; }
 
 .float-anim { animation: float 6s ease-in-out infinite; }
 .float-anim-delayed { animation: float 6s ease-in-out infinite; animation-delay: -3s; }
@@ -7051,7 +7204,7 @@ body.is-admin .wave-item .cms-tools {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.15s ease 0.3s, visibility 0s 0.45s; /* Delay on leave */
+    transition: opacity 0.25s ease 1.1s, visibility 0s 1.35s; /* Delay largo on leave: tiempo para alcanzar/apretar los botones */
     z-index: 9999;
 }
 /* caret arrow pointing down */
@@ -7146,9 +7299,12 @@ body.hide-cms-controls .cms-tools,
 body.hide-cms-controls .cms-tool-btn {
     display: none !important;
 }
-/* Vista "usuario normal": sin recuadros de edición ni slots vacíos resaltados */
+/* Vista "usuario normal": sin recuadros de edición ni slots vacíos resaltados.
+   El media subyacente de un slot vacío DEBE seguir oculto (regla global 4372):
+   el contenedor vacío se ve idéntico en admin y hide-edit (marco punteado, sin
+   contenido stale). No reexponer el `> *` acá — era el bug de contenido que
+   reaparecía al togglear "Hide Edit actions". */
 body.hide-cms-controls .cms-mount { outline: none !important; }
-body.hide-cms-controls .cms-empty-slot > *:not(.cms-empty-overlay) { visibility: visible !important; }
 
 /* ============================================================================
    CONTENEDOR VACÍO — VISTA VISITANTE / HIDE-EDIT

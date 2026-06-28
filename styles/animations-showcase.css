@@ -491,14 +491,19 @@
   .anim-card:hover { scale: 1.02; }
 }
 
-/* --- Empty card state: sin efectos (usa el overlay genérico .cms-empty-overlay).
-   El contenedor vacío no lleva gradiente/sombra: solo el marco del overlay. --- */
+/* --- Empty card state: sin efectos visuales propios, pero el overlay CMS sigue
+   visible para que el admin pueda subir contenido. --- */
 .anim-card--empty {
-  background: transparent;
-  border: none;
-  animation: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+  cursor: default;
 }
 .anim-card--empty:hover {
-  scale: 1;
-  box-shadow: none;
+  scale: 1 !important;
+  box-shadow: none !important;
 }
+.anim-card--empty .anim-card__placeholder,
+.anim-card--empty .bp-corner,
+.anim-card--empty .cms-tools { display: none !important; }
