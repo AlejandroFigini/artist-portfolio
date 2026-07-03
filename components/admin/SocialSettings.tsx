@@ -42,7 +42,7 @@ export default function SocialSettings() {
   }
 
   return (
-    <div className="admin-card">
+    <div className="admin-card" id="ajustes-social">
       <div className="admin-card-head">
         <h2><i className="fa-solid fa-share-nodes"></i> Redes sociales</h2>
       </div>

@@ -15,9 +15,13 @@ import {
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
   loadJSON, saveJSON, LS, persistUsed, persistUnused,
 } from '@/lib/cms/store'
+import { buildPageTree } from '@/lib/cms/pages'
 import type { AnyEntry } from './cards'
 
 type CloseProp = { onClose: () => void }
+
+const toggleSet = (upd: (u: (prev: Set<string>) => Set<string>) => void, id: string) =>
+  upd((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
 // ----- Renombrar contenedor ----------------------------------------------------
 
@@ -59,47 +63,90 @@ type AssociateProps = CloseProp & { item: AnyEntry; isUnused: boolean; unusedIdx
 export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: AssociateProps) {
   const itemKind = kindOf(item)
   const allKeys = Array.from(new Set([...Object.keys(state.usedContent), ...state.retired]))
-  const matching = allKeys
-    .map((k) => ({ key: k, meta: getContainerMeta(k) }))
+  // contenedores compatibles → entradas del árbol Página → Sección (mismo orden que "En uso")
+  const containers = allKeys
+    .map((k) => { const meta = getContainerMeta(k); return { key: k, section: meta.section, size: 0, meta, occ: state.usedContent[k] } })
     .filter((c) => c.meta.kind === itemKind)
-    .sort((a, b) => (a.meta.section + a.meta.label).localeCompare(b.meta.section + b.meta.label))
+  const tree = buildPageTree(containers)
+
+  const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
+  const [openSecs, setOpenSecs] = useState<Set<string>>(() => new Set())
+
+  const choose = (targetKey: string) => {
+    if (isUnused) associateUnusedToContainer(unusedIdx, targetKey)
+    else associateUsedToContainer((item as { key?: string }).key || '', targetKey)
+    onClose()
+  }
+
+  const contBadge = (n: number) => `${n} contenedor${n === 1 ? '' : 'es'}`
 
   return (
     <CmsModal title="Asociar a nuevo contenedor" wide onClose={onClose} actions={[{ label: 'Cancelar', onClick: () => {} }]}>
       <div className="cms-upload" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         <p className="cms-admin-sub" style={{ marginBottom: '1rem' }}>
-          Asociar el archivo <strong>{item.name || '—'}</strong> a un nuevo contenedor.
+          Asociar el archivo <strong>{item.name || '—'}</strong> a un contenedor.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {matching.length === 0 && <p className="cms-admin-sub">No se encontraron contenedores compatibles.</p>}
-          {matching.map((c) => {
-            const occ = state.usedContent[c.key]
+        <div className="admin-tree">
+          {tree.map((page) => {
+            const pOpen = openPages.has(page.id)
             return (
-              <div key={c.key} className="admin-card" style={{ margin: 0, padding: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{c.meta.section}</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{c.meta.label}</span>
-                  <div style={{ fontSize: '0.75rem' }}>
-                    {occ ? (
-                      <>
-                        <span className="cms-tag" style={{ background: '#eab308', color: '#000' }}>Ocupado</span>{' '}
-                        <span style={{ opacity: 0.7 }} title={occ.name}>({occ.name || 'archivo'})</span>
-                      </>
-                    ) : (
-                      <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Libre</span>
-                    )}
-                  </div>
+              <div className="admin-tree-page" key={page.id}>
+                <div className={`admin-tree-row admin-tree-row--page${pOpen ? ' open' : ''}`}>
+                  <button type="button" className="admin-tree-rowbtn" onClick={() => toggleSet(setOpenPages, page.id)} aria-expanded={pOpen}>
+                    <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
+                    <i className={`fa-solid ${page.icon} admin-tree-icon`}></i>
+                    <span className="admin-tree-label">{page.label}</span>
+                    {page.count > 0 && <span className="admin-badge">{contBadge(page.count)}</span>}
+                  </button>
                 </div>
-                <button
-                  type="button" className="cms-btn cms-btn--sm" style={{ padding: '4px 10px' }}
-                  onClick={() => {
-                    if (isUnused) associateUnusedToContainer(unusedIdx, c.key)
-                    else associateUsedToContainer((item as { key?: string }).key || '', c.key)
-                    onClose()
-                  }}
-                >
-                  Seleccionar
-                </button>
+                {pOpen && (
+                  <div className="admin-tree-sections">
+                    {page.sections.length === 0 && (
+                      <p className="cms-admin-sub admin-tree-empty">Esta página todavía no tiene secciones.</p>
+                    )}
+                    {page.sections.map((s) => {
+                      const sid = `${page.id}:${s.id}`
+                      const sOpen = openSecs.has(sid)
+                      return (
+                        <div className="admin-tree-section" key={sid}>
+                          <div className={`admin-tree-row admin-tree-row--section${sOpen ? ' open' : ''}`}>
+                            <button type="button" className="admin-tree-rowbtn" onClick={() => toggleSet(setOpenSecs, sid)} aria-expanded={sOpen}>
+                              <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
+                              <span className="admin-tree-label">{s.label}</span>
+                              {s.count > 0 && <span className="admin-badge">{contBadge(s.count)}</span>}
+                            </button>
+                          </div>
+                          {sOpen && (
+                            <div className="admin-tree-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              {s.count === 0
+                                ? <p className="cms-admin-sub admin-tree-empty">Sin contenedores compatibles en esta sección.</p>
+                                : s.items.map((c) => (
+                                <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', minWidth: 0, flex: 1 }}>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{c.meta.label}</span>
+                                    <div style={{ fontSize: '0.75rem' }}>
+                                      {c.occ ? (
+                                        <>
+                                          <span className="cms-tag" style={{ background: '#eab308', color: '#000' }}>Ocupado</span>{' '}
+                                          <span style={{ opacity: 0.7 }} title={c.occ.name}>({c.occ.name || 'archivo'})</span>
+                                        </>
+                                      ) : (
+                                        <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Libre</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <button type="button" className="cms-btn cms-btn--sm" style={{ padding: '4px 10px' }} onClick={() => choose(c.key)}>
+                                    Seleccionar
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -186,9 +233,11 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
 
   return (
     <CmsModal
-      title="Vista previa de contenido" wide onClose={onClose}
+      title="Vista previa de contenido" wide compactActions onClose={onClose}
       actions={[
-        ...menu.map((m) => ({ label: m.label, onClick: m.onClick })),
+        // la acción cierra esta vista previa y abre el modal/confirm correspondiente;
+        // devolver false evita que CmsModal dispare onClose por segunda vez (pisaba el setModal)
+        ...menu.map((m) => ({ label: m.label, onClick: () => { onClose(); m.onClick(); return false as const } })),
         { label: <><i className="fa-solid fa-xmark" style={{ marginRight: 6 }}></i> Cerrar</>, primary: true, onClick: () => {} },
       ]}
     >
@@ -232,7 +281,7 @@ export function AdminUploadModal({ file, onClose }: CloseProp & { file: File }) 
         // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
         const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
         hist.unshift({ ...data, origSize: file.size, origType: file.type, originalName: finalName, ts: Date.now() })
-        if (hist.length > 3) hist.length = 3
+        if (hist.length > 4) hist.length = 4
         saveJSON(LS.UPLOAD_TEST, hist)
         // entra al repositorio como "sin usar"
         state.unused.push({

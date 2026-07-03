@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from '@/components/cms/engine'
+import { revealAllNow } from '@/components/home/HomeFx'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 
@@ -27,8 +28,14 @@ function revealTypewriters() {
 
 function applyMotionOff(off: boolean) {
   document.documentElement.classList.toggle('motion-off', off)
+  // GSAP global: matar/reactivar toda la coreografía (todas las secciones, no
+  // solo la portada). Import dinámico → gsap no viaja a rutas sin animación.
+  import('@/hooks/useGSAP').then((m) => (off ? m.killAllMotion() : m.resumeMotion())).catch(() => {})
   if (off) {
     document.querySelectorAll('video').forEach((v) => { try { v.pause() } catch {} })
+    // cortar también la coreografía de entrada (reveals on-scroll + typewriter):
+    // todo visible ya, sin esperar al IntersectionObserver.
+    revealAllNow()
     revealTypewriters()
     setTimeout(revealTypewriters, 60) // por si el observer aún no escribió un título
   }
@@ -138,18 +145,20 @@ export default function SettingsPanel() {
             </div>
           </div>
         </div>
-        {settings.cvUrl && (
-          <div className="setting-item">
-            <span>Curriculum</span>
-            <a
-              className="cv-btn cv-btn-settings" id="cv-download-settings" href={settings.cvUrl}
-              download={settings.cvName || 'CV.pdf'} target="_blank" rel="noopener noreferrer" title="Download CV"
-            >
-              <i className="fa-solid fa-file-arrow-down"></i>
-              <span>Download CV</span>
-            </a>
-          </div>
-        )}
+        <div className="setting-item">
+          <span>Curriculum</span>
+          <a
+            className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`}
+            id="cv-download-settings" href={settings.cvUrl || undefined}
+            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
+            title={settings.cvUrl ? 'Download CV' : 'CV no disponible aún'}
+            aria-disabled={!settings.cvUrl || undefined}
+          >
+            <i className="fa-solid fa-file-arrow-down"></i>
+            <span>CV</span>
+          </a>
+        </div>
       </div>
 
       {/* Tuerca admin — solo logueado como admin. Lista settings exclusivos de admin.

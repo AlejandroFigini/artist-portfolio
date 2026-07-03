@@ -7,7 +7,6 @@
    Todo respeta prefers-reduced-motion. */
 
 import { useEffect } from 'react'
-import { useGSAP, gsap } from '@/hooks/useGSAP'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -60,27 +59,29 @@ function typewrite(el: HTMLElement, htmlStr: string, speedFactor = TYPEWRITER_SP
   })
 }
 
-export default function HomeFx() {
-  // Reglas-cota bajo los títulos de sección: el relleno acompaña el
-  // avance de lectura de cada sección (mismo lenguaje que nav-progress)
-  useGSAP(() => {
-    document.querySelectorAll<HTMLElement>('.section-title .title-rule-fill').forEach((fill) => {
-      const section = fill.closest('section')
-      if (!section) return
-      gsap.fromTo(fill, { scaleX: 0 }, {
-        scaleX: 1, ease: 'none',
-        scrollTrigger: { trigger: section, start: 'top 75%', end: 'bottom 65%', scrub: 0.5 },
-      })
-    })
+// Corta toda coreografía de entrada: marca todo visible y completa los
+// typewriters. Lo usa el toggle "Pausar animaciones" (SettingsPanel).
+export function revealAllNow() {
+  document.querySelectorAll(REVEAL_SELECTOR).forEach((el) => el.classList.add('visible'))
+  document.querySelectorAll<HTMLElement>('.section-typewriter').forEach((t) => {
+    if (t.dataset.text) t.innerHTML = t.dataset.text
+    t.classList.add('visible')
+    t.dataset.animated = 'true'
   })
+}
 
+const motionOff = () => document.documentElement.classList.contains('motion-off')
+
+export default function HomeFx() {
   // Reveals (.visible) + typewriter de section-typewriter
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const els = document.querySelectorAll(REVEAL_SELECTOR)
     const titles = document.querySelectorAll<HTMLElement>('.section-typewriter')
 
-    if (reduced || !('IntersectionObserver' in window)) {
+    // "Pausar animaciones" activo o reduced-motion → sin coreografía de
+    // entrada: todo visible desde el arranque.
+    if (reduced || motionOff() || !('IntersectionObserver' in window)) {
       els.forEach((el) => el.classList.add('visible'))
       return
     }
@@ -98,8 +99,12 @@ export default function HomeFx() {
           const t = e.target as HTMLElement
           t.classList.add('visible')
           if (t.classList.contains('section-typewriter') && !t.dataset.animated) {
-            typewrite(t, t.dataset.text || '')
-            t.dataset.animated = 'true'
+            // con "Pausar animaciones" activado mid-sesión: texto completo directo
+            if (motionOff()) { t.innerHTML = t.dataset.text || ''; t.dataset.animated = 'true' }
+            else {
+              typewrite(t, t.dataset.text || '')
+              t.dataset.animated = 'true'
+            }
           }
           io.unobserve(t)
         })

@@ -15,6 +15,7 @@ import { setLanguage } from '@/components/cms/engine'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 
 const GALLERY_LINKS = [
   { href: '/illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
@@ -28,6 +29,7 @@ export default function Nav() {
   const pathname = usePathname()
   useCmsStore() // re-render al cambiar el idioma global
   const { links } = useSocial()
+  const { settings } = useSiteSettings()
   const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
   const [navOpen, setNavOpen] = useState(false)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
@@ -223,10 +225,18 @@ export default function Nav() {
             <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
           </nav>
           <div className="nav-actions">
-            <button type="button" className="cv-min-btn" id="cv-download" title="Download CV" aria-label="Download CV">
+            {/* Siempre presente; sin CV subido queda deshabilitado (sin href). */}
+            <a
+              className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`} id="cv-download"
+              href={settings.cvUrl || undefined}
+              download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+              target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
+              title={settings.cvUrl ? 'Download CV' : 'CV no disponible aún'}
+              aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
+            >
               <i className="fa-solid fa-file-arrow-down"></i>
               <span>CV</span>
-            </button>
+            </a>
             {/* cms.js renderiza aquí el botón de login / menú de sesión (Sesión 3) */}
             <div id="cms-auth-nav"></div>
             <div className="lang-selector-nav">

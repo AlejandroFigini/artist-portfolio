@@ -5,7 +5,10 @@
    checkbox de selección múltiple). */
 
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
-import { getFormat, sumSizes, groupBySection, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+
+/** Nombre de archivo sin su extensión (para el título de la tarjeta). */
+const stripExt = (name?: string) => (name ? name.replace(/\.[^./\\]+$/, '') : '')
 
 export type CardType = 'used' | 'unused' | 'trash' | 'repo'
 export type AnyEntry = (UsedEntry | UnusedEntry) & {
@@ -60,6 +63,11 @@ type MediaCardProps = {
 
 export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
   const ts = cardType === 'trash' ? e.deletedAt : e.ts
+  // Título = nombre del archivo sin extensión; el nombre completo y el formato
+  // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
+  const title = stripExt(e.name) || e.label || '—'
+  // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
+  const container = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Recién subido' : '')
   return (
     <div
       className="cms-mlib-item"
@@ -70,6 +78,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
         onView()
       }}
     >
+      {/* check de selección en el espacio libre por encima del tag */}
       {multiSelect && onToggleSelect && (
         <input
           type="checkbox" className="cms-multi-check" checked={!!selected}
@@ -77,22 +86,24 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           onClick={(ev) => ev.stopPropagation()}
         />
       )}
-      <Thumb e={e} />
+      {/* columna de la miniatura: el tag va ARRIBA de la imagen, con el mismo ancho que ella */}
+      <div className="cms-mlib-thumb-col">
+        {tags && <div className="cms-mlib-tag-top">{tags}</div>}
+        <Thumb e={e} />
+      </div>
       <div className="cms-mlib-info">
-        {(e.label || tags) && (
-          <div className="cms-mlib-label">
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={e.label}>
-              {e.label}
-            </span>
-            {tags}
-          </div>
-        )}
+        <div className="cms-mlib-label">
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={title}>
+            {title}
+          </span>
+        </div>
         <div className="cms-mlib-meta">
           <div><strong>Nombre:</strong> {e.name || '—'}</div>
           <div><strong>Formato:</strong> {getFormat(e)}</div>
           <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
           <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
           <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
+          <div className="cms-mlib-meta-truncate"><strong>Contenedor:</strong> <span title={container}>{container || '—'}</span></div>
         </div>
         {actions.length > 0 && (
           <div className="cms-mlib-actions">
@@ -113,36 +124,3 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   )
 }
 
-type GroupsProps = {
-  arr: AnyEntry[]
-  emptyMsg: string
-  renderCard: (e: AnyEntry) => React.ReactNode
-  multiSelect?: boolean
-  onSelectGroup?: (items: AnyEntry[], checked: boolean) => void
-}
-
-export function CardGroups({ arr, emptyMsg, renderCard, multiSelect, onSelectGroup }: GroupsProps) {
-  if (!arr.length) return <p className="cms-admin-sub">{emptyMsg}</p>
-  return (
-    <>
-      {groupBySection(arr).map((g) => (
-        <div className="admin-group" key={g.section}>
-          <div className="admin-group-head">
-            <h4 style={{ display: 'flex', alignItems: 'center' }}>
-              {g.section}
-              {multiSelect && onSelectGroup && (
-                <input
-                  type="checkbox" title="Seleccionar toda la sección"
-                  style={{ marginLeft: '0.5rem', transform: 'scale(1.2)', cursor: 'pointer' }}
-                  onChange={(ev) => onSelectGroup(g.items, ev.target.checked)}
-                />
-              )}
-            </h4>
-            <span className="admin-badge">{g.items.length} archivos · {fmtBytes(sumSizes(g.items))}</span>
-          </div>
-          <div className="cms-mlib-grid">{g.items.map(renderCard)}</div>
-        </div>
-      ))}
-    </>
-  )
-}

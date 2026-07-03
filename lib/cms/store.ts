@@ -143,7 +143,6 @@ export function loadState() {
 // ----- Persistencia ----------------------------------------------------------
 
 export const persistAudit = () => saveJSON(LS.AUDIT, state.audit.slice(-300))
-export const persistMedia = () => saveJSON(LS.MEDIA, state.mediaMeta)
 export const persistUnused = () => saveJSON(LS.UNUSED, state.unused)
 export const persistUsed = () => saveJSON(LS.USED, state.usedContent)
 export const persistRetired = () => saveJSON(LS.RETIRED, state.retired)
@@ -187,16 +186,6 @@ export function getFormat(e: { type?: string; src?: string; dataUrl?: string; na
 export const sumSizes = (arr: { size?: number | null }[]) =>
   arr.reduce((s, e) => s + (e.size || 0), 0)
 
-export function groupBySection<T extends { section?: string }>(arr: T[]) {
-  const map: Record<string, T[]> = {}
-  const order: string[] = []
-  arr.forEach((e) => {
-    const s = e.section || 'Sin sección'
-    if (!map[s]) { map[s] = []; order.push(s) }
-    map[s].push(e)
-  })
-  return order.map((s) => ({ section: s, items: map[s] }))
-}
 
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 

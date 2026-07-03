@@ -15,7 +15,6 @@ function SoftwareItem({ prefix, index }: { prefix: string; index: number }) {
   const iconRef = useRef<HTMLSpanElement>(null)
   const nameRef = useRef<HTMLSpanElement>(null)
   const [hasImg, setHasImg] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     // texto default solo si el span está vacío (el CMS lo sobreescribe al hidratar)
@@ -31,19 +30,15 @@ function SoftwareItem({ prefix, index }: { prefix: string; index: number }) {
     checkImg()
     const moImg = new MutationObserver(checkImg)
     moImg.observe(el, { attributes: true, attributeFilter: ['style', 'data-full'] })
-
-    const checkAdmin = () => setIsAdmin(document.body.classList.contains('is-admin'))
-    checkAdmin()
-    const moAdmin = new MutationObserver(checkAdmin)
-    moAdmin.observe(document.body, { attributes: true, attributeFilter: ['class'] })
-
-    return () => { moImg.disconnect(); moAdmin.disconnect() }
+    return () => moImg.disconnect()
   }, [index])
 
-  const hidden = !isAdmin && !hasImg
-
+  // El contenedor SIEMPRE se renderiza (regla del proyecto: contenedor
+  // presente aunque no tenga contenido). El engine inyecta el overlay
+  // vacío (.cms-empty-overlay) sobre .sw-icon-wrap cuando no hay logo;
+  // el CSS ya oculta icono/click para el visitante — acá no se gatea nada.
   return (
-    <li className={`sw-item${hidden ? ' is-hidden' : ''}`} role="menuitem">
+    <li className="sw-item" role="menuitem">
       <span className="sw-icon-wrap">
         <span ref={iconRef} className={`sw-icon ${prefix}-soft-icon`} data-full="" aria-hidden="true">
           {!hasImg && <i className="fa-solid fa-cube sw-ph" />}

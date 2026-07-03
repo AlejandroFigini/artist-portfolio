@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom'
 import {
   Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi,
 } from '@/components/ui/carousel'
+import AutoScroll from 'embla-carousel-auto-scroll'
 import {
   ensureGSAP, gsap, prefersReducedMotion,
   typewriterRevealLoop, wordRevealLoop, type LoopHandle,
@@ -206,7 +207,18 @@ export default function CharactersShowcase() {
             <span>{isAdmin ? 'Añadí personajes desde "Gestionar".' : 'Próximamente.'}</span>
           </div>
         ) : (
-          <Carousel setApi={setApi} opts={{ align: 'center', loop: false }} className="ch-carousel">
+          <Carousel
+            setApi={setApi}
+            opts={{ align: 'center', loop: true, watchDrag: count > 1 }}
+            // Cinta continua: AutoScroll mueve pixel a pixel (no snap-jump como
+            // Autoplay), constante y sin pausas. stopOnInteraction:false → el
+            // drag manual no la detiene para siempre, retoma sola. Respeta
+            // prefers-reduced-motion (mismo criterio que el resto del sitio).
+            plugins={count > 1 && !prefersReducedMotion() ? [
+              AutoScroll({ speed: 0.7, stopOnInteraction: false, stopOnMouseEnter: false }),
+            ] : []}
+            className="ch-carousel"
+          >
             <CarouselContent className="-ml-4 md:-ml-6">
               {Array.from({ length: count }).map((_, i) => (
                 <CarouselItem key={i} className="pl-4 md:pl-6 basis-[92%] md:basis-[82%] lg:basis-[74%]">

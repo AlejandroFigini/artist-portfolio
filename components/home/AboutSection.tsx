@@ -223,7 +223,7 @@ export default function AboutSection() {
 
             <figure className="about-portrait">
               <Corners />
-              <img className="artist-photo-img" alt="Retrato de Lucía Montaña" />
+              <img className="artist-photo-img" alt="Retrato de Lucía Montaña" loading="lazy" decoding="async" />
               <figcaption className="about-portrait-cap">
                 <span>FIG. 02b</span>
               </figcaption>

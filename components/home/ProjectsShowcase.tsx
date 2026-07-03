@@ -37,6 +37,7 @@ function ProjectCard({ index }: { index: number }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="proj-card-img w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          loading="lazy" decoding="async"
           src={imgSrc || undefined}
           alt={title || `Proyecto ${index + 1}`}
         />
@@ -100,6 +101,10 @@ export default function ProjectsShowcase() {
     const s = JSON.parse(state.items['proj.settings'] || '');
     if (s && typeof s.count === 'number') count = s.count;
   } catch {}
+  // Sin proyectos cargados: mínimo visual de 4 tarjetas de ejemplo (mismos
+  // placeholders que ya usa ProjectCard) para que la sección no se vea vacía.
+  // No persiste nada ni afecta el conteo real que gestiona el admin.
+  const displayCount = count > 0 ? count : 4
 
   // Embla clona los slides con loop:true y los clones son copias estáticas del
   // DOM; al cambiar contenido (alta/baja/reemplazo/reorden) sin reInit, los clones
@@ -208,7 +213,7 @@ export default function ProjectsShowcase() {
             className="w-full"
           >
             <CarouselContent className="-ml-6 md:-ml-12 lg:-ml-16">
-              {Array.from({ length: count }).map((_, i) => (
+              {Array.from({ length: displayCount }).map((_, i) => (
                 <CarouselItem key={i} className="pl-6 md:pl-12 lg:pl-16 md:basis-1/2 lg:basis-1/3 flex">
                   <ProjectCard index={i} />
                 </CarouselItem>

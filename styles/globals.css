@@ -20,12 +20,3 @@
 @import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
-@import "./cursor.css"; /* cursor delicado (punto + anillo fino) */
-@import "./scroll-fx.css"; /* reglas-cota de progreso ligadas al scroll */
-
-/* sparkle — usado por CvButton (components/ui/button-8.tsx) */
-@keyframes sparkle {
-  0%, 100% { opacity: 0.75; transform: scale(0.9) rotate(0deg); }
-  50% { opacity: 1; transform: scale(1.1) rotate(8deg); }
-}
-.animate-sparkle { animation: sparkle 2s ease-in-out infinite; }

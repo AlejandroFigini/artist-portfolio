@@ -14,14 +14,22 @@ import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, loadLang, LS } from '@/lib/cms/store'
 import { BASE_LANG } from '@/lib/i18n'
 import * as engine from './engine'
-import LoginModal from './LoginModal'
-import UploadModal from './UploadModal'
-import CarouselManager from './CarouselManager'
-import ProjectsManager from './ProjectsManager'
-import CharactersManager from './CharactersManager'
-import AuditOverlay from './AuditOverlay'
-import { ContentPickerModal, RepoPickerModal } from './PickerModals'
-import { EditTextModal, EditInfoModal, ConfirmMoveModal, ExportModal } from './TextModals'
+import dynamic from 'next/dynamic'
+
+/* Modales y gestores: code-split (next/dynamic) — solo se descargan al
+   abrirse (cmd), no viajan en el bundle inicial del home del visitante. */
+const LoginModal = dynamic(() => import('./LoginModal'), { ssr: false })
+const UploadModal = dynamic(() => import('./UploadModal'), { ssr: false })
+const CarouselManager = dynamic(() => import('./CarouselManager'), { ssr: false })
+const ProjectsManager = dynamic(() => import('./ProjectsManager'), { ssr: false })
+const CharactersManager = dynamic(() => import('./CharactersManager'), { ssr: false })
+const AuditOverlay = dynamic(() => import('./AuditOverlay'), { ssr: false })
+const ContentPickerModal = dynamic(() => import('./PickerModals').then((m) => m.ContentPickerModal), { ssr: false })
+const RepoPickerModal = dynamic(() => import('./PickerModals').then((m) => m.RepoPickerModal), { ssr: false })
+const EditTextModal = dynamic(() => import('./TextModals').then((m) => m.EditTextModal), { ssr: false })
+const EditInfoModal = dynamic(() => import('./TextModals').then((m) => m.EditInfoModal), { ssr: false })
+const ConfirmMoveModal = dynamic(() => import('./TextModals').then((m) => m.ConfirmMoveModal), { ssr: false })
+const ExportModal = dynamic(() => import('./TextModals').then((m) => m.ExportModal), { ssr: false })
 
 export default function CmsRoot() {
   const toast = useToast()

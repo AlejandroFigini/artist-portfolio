@@ -22,9 +22,11 @@ export function isMediaValue(v: string): boolean {
 }
 
 /** Una entrada de cms_data es texto traducible si su valor es prosa
-    (no media/URL) y no es configuración JSON (claves *.settings del carrusel). */
+    (no media/URL), no es configuración JSON (claves *.settings del carrusel)
+    ni un ajuste global del sitio (claves settings.* — loader, cv, etc.). */
 export function isTranslatableEntry(key: string, value: string): boolean {
   if (!value || !value.trim()) return false
   if (key.endsWith('.settings')) return false
+  if (key.startsWith('settings.')) return false
   return !isMediaValue(value)
 }

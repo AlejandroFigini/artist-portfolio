@@ -17,6 +17,11 @@ const BOOT_SCRIPT = `
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
+    // "Pausar animaciones" persistido: la clase debe existir ANTES de que
+    // monten las secciones (sus setups GSAP la chequean vía prefersReducedMotion).
+    if (localStorage.getItem('cms_motion_off_v1') === '1') {
+      document.documentElement.classList.add('motion-off');
+    }
   } catch (e) {}
   var nav = navigator;
   var mem = nav.deviceMemory || 4, cores = nav.hardwareConcurrency || 4;
@@ -47,6 +52,18 @@ const BOOT_SCRIPT = `
   if (skipLoader) document.documentElement.classList.add('skip-loader');
   // Solo el index tiene pantalla de carga; bloquear scroll antes del paint.
   if (!skipLoader && location.pathname === '/') document.body.classList.add('loading-active');
+  try {
+    var ov = JSON.parse(localStorage.getItem('cms_overrides_v1') || '{}');
+    var fav = ov['settings.faviconUrl'];
+    if (fav) {
+      var links = document.querySelectorAll('link[rel*="icon"]');
+      for (var i = 0; i < links.length; i++) links[i].parentNode.removeChild(links[i]);
+      var l = document.createElement('link');
+      l.rel = 'icon'; l.href = fav; document.head.appendChild(l);
+      var s = document.createElement('link');
+      s.rel = 'shortcut icon'; s.href = fav; document.head.appendChild(s);
+    }
+  } catch (e) {}
 })();
 `
 

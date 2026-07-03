@@ -26,13 +26,15 @@ type CmsModalProps = {
   children: React.ReactNode
   actions?: ModalAction[]
   wide?: boolean
+  // acciones en un único renglón (sin wrap), botones compactos
+  compactActions?: boolean
   // sin X / Escape / click-afuera (p.ej. durante una subida)
   locked?: boolean
   show?: boolean
   onClose: () => void
 }
 
-export function CmsModal({ title, children, actions, wide, locked, show = true, onClose }: CmsModalProps) {
+export function CmsModal({ title, children, actions, wide, compactActions, locked, show = true, onClose }: CmsModalProps) {
   const [visible, setVisible] = useState(false)
   // Solo cierra si el gesto EMPEZÓ y TERMINÓ sobre el overlay. Evita que
   // arrastrar una selección de texto desde dentro y soltar afuera cierre el modal.
@@ -59,24 +61,26 @@ export function CmsModal({ title, children, actions, wide, locked, show = true, 
         downOnOverlay.current = false
       }}
     >
-      <div className={`cms-modal${wide ? ' cms-modal--wide' : ''}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-          <h3 className="cms-modal-title" style={{ margin: 0 }}>{title}</h3>
-          {!locked && (
-            <button
-              type="button"
-              title="Cerrar"
-              onClick={onClose}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.4rem', cursor: 'pointer' }}
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-          )}
-        </div>
-        {children}
-        {actions && actions.length > 0 && (
-          <div className="cms-modal-actions">
-            {actions.map((a, i) => (
+      <div className={`cms-modal${wide ? ' cms-modal--wide' : ''}${compactActions ? ' cms-modal--actions-row' : ''}`}>
+        {/* el scroll vive en este wrapper interno (no en .cms-modal) para que la
+            barra nunca quede pegada a las esquinas redondeadas del contenedor */}
+        <div className="cms-modal-inner">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+            <h3 className="cms-modal-title" style={{ margin: 0 }}>{title}</h3>
+            {!locked && (
+              <button
+                type="button"
+                title="Cerrar"
+                onClick={onClose}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            )}
+          </div>
+          {children}
+          {actions && actions.length > 0 && (() => {
+            const renderBtn = (a: ModalAction, i: number) => (
               <button
                 key={i}
                 type="button"
@@ -88,9 +92,16 @@ export function CmsModal({ title, children, actions, wide, locked, show = true, 
               >
                 {a.label}
               </button>
-            ))}
-          </div>
-        )}
+            )
+            // compactActions (vista previa): todos los botones en un único
+            // renglón (sin wrap, scroll horizontal si no entran); el primario
+            // (Cerrar) queda al final, empujado al extremo derecho
+            if (compactActions) {
+              return <div className="cms-modal-actions cms-modal-actions--row">{actions.map(renderBtn)}</div>
+            }
+            return <div className="cms-modal-actions">{actions.map(renderBtn)}</div>
+          })()}
+        </div>
       </div>
     </div>
   )

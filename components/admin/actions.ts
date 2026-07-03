@@ -134,4 +134,15 @@ export async function batchDeletePermanent(indices: number[]): Promise<number> {
 }
 
 export function clearAudit() { state.audit = []; saveJSON(LS.AUDIT, []); emit() }
-export function purgeUnused() { state.unused = []; persistUnused(); emit() }
+
+/** Vacía "Sin usar" moviendo TODO al basurero (recuperable; no borra nada). */
+export function purgeUnused() {
+  const count = state.unused.length
+  if (!count) return
+  const now = Date.now()
+  state.unused.forEach((e) => { e.deletedAt = now; state.trash.push(e) })
+  state.unused = []
+  persistUnused(); persistTrash()
+  recordAudit({ user: 'superadmin', section: 'Sin usar', label: `${count} ítems`, summary: 'Movidos al basurero (vaciar)' })
+  emit()
+}

@@ -18,18 +18,49 @@ export function ensureGSAP() {
   return gsap
 }
 
+/* Toggle "Pausar animaciones" (SettingsPanel) activo. */
+export function motionOffActive() {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('motion-off')
+}
+
+/* Guard único de "no animar" para todos los setups GSAP del sitio:
+   prefers-reduced-motion del sistema O el toggle "Pausar animaciones".
+   Los componentes lo chequean al montar → con la pausa activa ningún
+   setup corre (nada queda en autoAlpha 0 esperando reveal: contenido
+   visible estático). */
 export function prefersReducedMotion() {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches || motionOffActive()
 }
 
 export function useGSAP(setup: () => void, deps: unknown[] = []) {
   useEffect(() => {
-    if (prefersReducedMotion()) return
+    if (prefersReducedMotion() || motionOffActive()) return
     ensureGSAP()
     const ctx = gsap.context(setup)
     return () => ctx.revert()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
+}
+
+// ----- Pausa global (toggle "Pausar animaciones") ----------------------------
+// Mata toda la coreografía GSAP viva: loops de reveal (dejan el texto pleno),
+// tweens en curso (saltan a estado final) y ScrollTriggers (quedan completados
+// y deshabilitados → nada más "aparece" al scrollear).
+const liveLoops = new Set<LoopHandle>()
+
+export function killAllMotion() {
+  ensureGSAP()
+  liveLoops.forEach((h) => h.kill())
+  liveLoops.clear()
+  ScrollTrigger.getAll().forEach((st) => { try { st.animation?.progress(1); st.disable(false) } catch {} })
+  gsap.globalTimeline.getChildren(true, true, false).forEach((t) => { try { t.progress(1); t.kill() } catch {} })
+}
+
+// Reactiva ScrollTriggers (los loops de reveal muertos vuelven al recargar).
+export function resumeMotion() {
+  ensureGSAP()
+  ScrollTrigger.getAll().forEach((st) => { try { st.enable() } catch {} })
 }
 
 // Handle killable para animaciones en loop manejadas con recursión.
@@ -57,6 +88,8 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
 
   const cycle = () => {
     if (killed) return
+    // pausa global activada mid-loop → dejar el texto pleno y no re-animar
+    if (motionOffActive()) { wait = gsap.delayedCall(intervalSec, cycle); return }
     const tools = detachTools()
     const text = el.textContent || ''
     lastText = text
@@ -75,7 +108,7 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
   }
   cycle()
 
-  return {
+  const handle: LoopHandle = {
     kill: () => {
       killed = true
       tween?.kill()
@@ -83,8 +116,11 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
       const tools = detachTools()
       el.textContent = lastText
       if (tools) el.appendChild(tools)
+      liveLoops.delete(handle)
     },
   }
+  liveLoops.add(handle)
+  return handle
 }
 
 // Reveal letra por letra LOOPING — para títulos de sección con repetición.

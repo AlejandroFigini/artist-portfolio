@@ -30,7 +30,7 @@ function Cell() {
     <figure className="illu-cell" onClick={onCellClick}>
       {/* Sin src: contenedor vacío. El engine setea .src al subir contenido. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="illu-cell__img" data-eager="" decoding="async" alt="" />
+      <img className="illu-cell__img" loading="lazy" decoding="async" alt="" />
       <span className="illu-cell__hud" aria-hidden="true">
         <i className="fa-solid fa-up-right-and-down-left-from-center" />
       </span>

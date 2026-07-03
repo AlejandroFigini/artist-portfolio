@@ -6,12 +6,15 @@
 import { ToastProvider } from './Toast'
 import { ModalProvider } from './Modal'
 import { SocialProvider } from './SocialProvider'
+import { SiteSettingsProvider } from './SiteSettingsProvider'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <ModalProvider>
-        <SocialProvider>{children}</SocialProvider>
+        <SocialProvider>
+          <SiteSettingsProvider>{children}</SiteSettingsProvider>
+        </SocialProvider>
       </ModalProvider>
     </ToastProvider>
   )

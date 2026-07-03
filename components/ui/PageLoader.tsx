@@ -1,22 +1,43 @@
 'use client'
 
 /* Pantalla de carga del index — portada de script.js initPageLoader().
-   Solo se muestra la primera vez en la sesión (sessionStorage), mínimo
-   3s, failsafe 6s. El video de galope es un contenedor CMS (src vacío). */
+   Visitante: se muestra una vez por sesión (sessionStorage), mínimo 3s,
+   failsafe 6s. El video de galope (.loader-gallop) es un contenedor CMS.
+   Admin: queda visible y editable (no auto-oculta ni respeta el skip),
+   se cierra con el botón ✕ — única vía para subir/reemplazar ese video. */
 
 import { useEffect, useRef, useState } from 'react'
+import { state, useCmsStore } from '@/lib/cms/store'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { loaderDurationMs } from '@/lib/settings'
 
-const MIN_DISPLAY_MS = 3000
-const FAILSAFE_MS = 6000
 const FADE_MS = 800
 
 export default function PageLoader() {
   const [gone, setGone] = useState(false)
+  const [adminDismissed, setAdminDismissed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  useCmsStore() // re-render cuando se activa/desactiva admin
+  const { settings } = useSiteSettings()
+  const admin = state.isAdmin
+  const minDisplay = loaderDurationMs(settings.loaderDuration) // duración configurable
+  const failsafe = minDisplay + 3000
 
   useEffect(() => {
     const loader = ref.current
     if (!loader) return
+
+    // Admin: mantener el loader montado y visible para poder editar el
+    // contenedor CMS. Se ignora el auto-hide y el skip de sesión.
+    if (admin) {
+      if (!adminDismissed) {
+        try { sessionStorage.removeItem('cms_skip_loader') } catch {}
+        document.body.classList.add('loading-active')
+        loader.classList.remove('loader-hidden')
+        setGone(false)
+      }
+      return () => { document.body.classList.remove('loading-active') }
+    }
 
     let skip = false
     try {
@@ -44,19 +65,19 @@ export default function PageLoader() {
       timers.push(window.setTimeout(() => setGone(true), FADE_MS))
     }
     const tryHide = () => {
-      timers.push(window.setTimeout(hide, Math.max(0, MIN_DISPLAY_MS - (Date.now() - start))))
+      timers.push(window.setTimeout(hide, Math.max(0, minDisplay - (Date.now() - start))))
     }
 
     if (document.readyState === 'complete') tryHide()
     else window.addEventListener('load', tryHide)
-    timers.push(window.setTimeout(hide, FAILSAFE_MS))
+    timers.push(window.setTimeout(hide, failsafe))
 
     return () => {
       window.removeEventListener('load', tryHide)
       timers.forEach(clearTimeout)
       document.body.classList.remove('loading-active')
     }
-  }, [])
+  }, [admin, adminDismissed, minDisplay, failsafe])
 
   if (gone) return null
 
@@ -64,10 +85,28 @@ export default function PageLoader() {
     <>
       {/* body.loading-active lo agrega el boot script del layout (pre-paint) */}
       <div id="page-loader" className="page-loader" ref={ref}>
+        {admin && (
+          <button
+            type="button"
+            className="loader-admin-dismiss"
+            aria-label="Cerrar pantalla de carga"
+            title="Cerrar (solo admin)"
+            onClick={() => { setAdminDismissed(true); setGone(true) }}
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        )}
         <div className="loader-stage">
           <div className="loader-media">
-            {/* contenedor CMS: el src lo inyecta el CMS (Sesión 3) */}
-            <video className="loader-gallop" autoPlay loop muted playsInline preload="auto"></video>
+            {settings.loaderImage ? (
+              /* imagen elegida en Ajustes → Pantalla de carga (clase propia para
+                 no colisionar con el contenedor CMS .loader-gallop del engine) */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img className="loader-still" src={settings.loaderImage} alt="" />
+            ) : (
+              /* contenedor CMS .loader-gallop — el admin sube/reemplaza el video acá */
+              <video className="loader-gallop" autoPlay loop muted playsInline preload="auto"></video>
+            )}
             <div className="loader-media-glow"></div>
           </div>
           <div className="loader-info">

@@ -150,6 +150,8 @@ type RegistryEntry = {
 }
 
 const REGISTRY: RegistryEntry[] = [
+  // Página de carga (loader del index — el video de galope se sube por CMS)
+  { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Página de carga', label: 'Video del loader — Página de carga' },
   // Portada
   { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Principal)', label: (el, i) => `Imagen Carrusel Principal #${i + 1}` },
   { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Secundario)', label: (el, i) => `Imagen Carrusel Secundario #${i + 1}` },
@@ -604,11 +606,10 @@ export function refreshRetired() {
   document.querySelectorAll('.cms-empty-slot').forEach((e) => e.classList.remove('cms-empty-slot'))
   document.querySelectorAll('.cms-empty-overlay').forEach((e) => e.remove())
   
+  // Retirados: mismo marco vacío para admin Y visitante (el contenedor nunca
+  // desaparece de la página; CSS ya oculta icono/nombre/click al visitante).
   state.retired.forEach((key) => {
-    visualHosts(key).forEach((h) => {
-      if (state.isAdmin) showEmptySlot(key)
-      else h.classList.add('cms-retired')
-    })
+    visualHosts(key).forEach(() => showEmptySlot(key))
   })
 
   // Slots de media vacíos (sin contenido y no retirados) → marco genérico.
@@ -996,16 +997,3 @@ export function rescan() {
   syncWaveGroups()
 }
 
-// Renombrar contenedor desde el sitio (port del pencil del ContentPicker).
-// Vive acá y no en el componente: muta metaByKey/usedContent (estado del motor).
-export function renameContainerSite(key: string, newName: string) {
-  state.containerNames[key] = newName
-  saveJSON(LS.CONTAINER_NAMES, state.containerNames)
-  const meta = metaByKey[key]
-  if (meta) meta.label = newName
-  if (state.usedContent[key]) {
-    state.usedContent[key].label = newName
-    persistUsed()
-  }
-  recordAudit({ section: meta?.section || '', label: newName, kind: 'gestión', summary: 'Contenedor renombrado' })
-}

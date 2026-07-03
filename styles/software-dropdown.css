@@ -76,7 +76,6 @@
   transition: background 0.2s ease;
 }
 .sw-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.sw-item.is-hidden { display: none; }
 
 .sw-icon-wrap { position: relative; flex-shrink: 0; }
 .sw-icon {

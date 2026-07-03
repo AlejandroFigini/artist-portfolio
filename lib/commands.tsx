@@ -4,7 +4,7 @@
    toast() en cms.js:L457 (llamaba a 13 funciones). Los componentes y
    el engine despachan comandos; CmsRoot renderiza el modal que toca. */
 
-import { createContext, useContext } from 'react'
+import { createContext } from 'react'
 
 export type Command =
   | { type: 'login' }
@@ -23,5 +23,3 @@ export type Command =
 export type Dispatch = (cmd: Command) => void
 
 export const CommandContext = createContext<Dispatch>(() => {})
-
-export const useCommand = () => useContext(CommandContext)

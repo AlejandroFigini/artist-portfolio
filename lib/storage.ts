@@ -33,7 +33,7 @@ export type StoredMedia = {
 const EXT_BY_MIME: Record<string, string> = {
   'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
   'image/gif': 'gif', 'image/svg+xml': 'svg', 'video/webm': 'webm', 'video/mp4': 'mp4',
-  'video/quicktime': 'mov',
+  'video/quicktime': 'mov', 'application/pdf': 'pdf',
 }
 
 function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: string } {
@@ -46,9 +46,14 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: st
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
 
-/** Sube una data URL (base64). Devuelve la URL servible + metadatos. */
-export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video'): Promise<StoredMedia> {
+/** Sube una data URL (base64). Devuelve la URL servible + metadatos.
+    kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar. */
+export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video' | 'raw'): Promise<StoredMedia> {
   if (hasCloudinary) {
+    if (kind === 'raw') {
+      const res = await cloudinary.uploader.upload(dataUrl, { folder: 'portfolio', resource_type: 'raw' })
+      return { url: res.secure_url, bytes: res.bytes, format: res.format || 'pdf', assetId: res.asset_id }
+    }
     const res = await cloudinary.uploader.upload(dataUrl, {
       folder: 'portfolio',
       resource_type: kind === 'video' ? 'video' : 'image',
