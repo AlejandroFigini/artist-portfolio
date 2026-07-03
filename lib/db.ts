@@ -43,7 +43,50 @@ export function getPool(): Pool | null {
 const MIGRATIONS: { id: string; sql: string }[] = [
   // Ejemplo (futuro):
   // { id: '2026_07_add_alt_to_multimedia', sql: 'ALTER TABLE multimedia ADD COLUMN IF NOT EXISTS alt TEXT' },
+  {
+    id: '2026_07_users_sessions',
+    sql: `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(64) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        totp_secret TEXT,
+        totp_enabled BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        id VARCHAR(128) PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
+  {
+    id: '2026_07_users_last_login',
+    sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP',
+  },
 ]
+
+/* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales
+   INICIALES desde env (USER1_NAME/USER1_PASS, USER2_NAME/USER2_PASS);
+   después cada usuario las cambia desde la UI y viven solo en DB. */
+async function seedUsers(pool: Pool): Promise<void> {
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM users')
+  if (rows[0].n > 0) return
+  const bcrypt = (await import('bcryptjs')).default
+  const seeds = [
+    { name: process.env.USER1_NAME, pass: process.env.USER1_PASS },
+    { name: process.env.USER2_NAME, pass: process.env.USER2_PASS },
+  ]
+  for (const s of seeds) {
+    if (!s.name || !s.pass) continue
+    await pool.query(
+      'INSERT INTO users (username, password_hash) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
+      [s.name, await bcrypt.hash(s.pass, 12)],
+    )
+  }
+}
 
 async function createBaseTables(pool: Pool): Promise<void> {
   await pool.query(`
@@ -104,6 +147,7 @@ export function ensureDb(): Promise<void> {
     initPromise = (async () => {
       await createBaseTables(pool)
       await runMigrations(pool)
+      await seedUsers(pool)
     })().catch((err) => {
       // permitir reintento en la próxima request si falló la conexión inicial
       initPromise = null

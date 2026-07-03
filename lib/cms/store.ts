@@ -91,7 +91,8 @@ export const state = {
   trash: [] as UnusedEntry[],
   containerNames: {} as Record<string, string>,
   isAdmin: false,
-  lang: BASE_LANG as Lang,                                    // idioma activo
+  username: '',                                               // usuario de la sesión actual
+  lang: BASE_LANG as Lang,                                   // idioma activo
   translations: {} as Record<string, Record<string, string>>, // lang -> key -> valor traducido
 }
 
@@ -163,14 +164,12 @@ export function recordAudit(entry: Partial<AuditEntry> & { user?: string }) {
   emit()
 }
 
-export function setAdminFlag(on: boolean) {
+export function setAdminFlag(on: boolean, username?: string) {
   state.isAdmin = on
-  try {
-    localStorage.setItem(LS.ADMIN, on ? '1' : '0')
-    // cookie para el middleware de /admin (gate de conveniencia, igual que el
-    // flag del legacy — la seguridad real requiere sesiones del lado servidor)
-    document.cookie = `cms_admin=${on ? '1' : '0'}; path=/; max-age=${on ? 86400 : 0}; SameSite=Lax`
-  } catch {}
+  state.username = on ? username || state.username : ''
+  // la sesión real vive en la cookie httpOnly `sid` (server-side); el
+  // localStorage es solo un hint de UX para pintar rápido al recargar.
+  try { localStorage.setItem(LS.ADMIN, on ? '1' : '0') } catch {}
   emit()
 }
 
@@ -292,7 +291,7 @@ export function performRestore(idx: number) {
   }
   state.usedContent[key] = {
     key, label: entry.label, section: entry.section, kind: kindOf(entry),
-    src: entry.src, name: entry.name, size: entry.size, original: !!entry.original,
+    src: entry.src, name: entry.name, size: entry.size, original: !!entry.original, ts: entry.ts,
   }
   state.items[key] = entry.src
   const ri = state.retired.indexOf(key)
@@ -342,7 +341,7 @@ export function associateUnusedToContainer(unusedIdx: number, targetKey: string)
   occupyTarget(targetKey)
   state.usedContent[targetKey] = {
     key: targetKey, label: targetMeta.label, section: targetMeta.section, kind: kindOf(entry),
-    src: entry.src || entry.dataUrl || '', name: entry.name, size: entry.size, original: !!entry.original,
+    src: entry.src || entry.dataUrl || '', name: entry.name, size: entry.size, original: !!entry.original, ts: entry.ts,
   }
   state.items[targetKey] = entry.src || entry.dataUrl || ''
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
@@ -360,7 +359,7 @@ export function associateUsedToContainer(oldKey: string, targetKey: string) {
   occupyTarget(targetKey)
   state.usedContent[targetKey] = {
     key: targetKey, label: targetMeta.label, section: targetMeta.section, kind: kindOf(entry),
-    src: entry.src, name: entry.name, size: entry.size, original: entry.original,
+    src: entry.src, name: entry.name, size: entry.size, original: entry.original, ts: entry.ts,
   }
   state.items[targetKey] = entry.src
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()

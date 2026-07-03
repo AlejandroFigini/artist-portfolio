@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { deleteAsset } from '@/lib/storage'
+import { requireSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /* POST /api/delete-media → borra un asset por su URL (Cloudinary o archivo local). */
 export async function POST(req: Request) {
+  const auth = await requireSession(req)
+  if ('deny' in auth) return auth.deny
+
   let body: { url?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const { url } = body

@@ -8,8 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from '@/components/cms/engine'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
-import { getTranslations, importTranslations } from '@/lib/api'
-import { useToast } from '@/components/ui/Toast'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -42,12 +41,11 @@ function applyHideCms(hide: boolean) {
 }
 
 export default function SettingsPanel() {
-  const toast = useToast()
+  const { settings } = useSiteSettings()
   const [open, setOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [sectionClear, setSectionClear] = useState<{ label: string; keys: string[]; count: number } | null>(null)
-  const transFileRef = useRef<HTMLInputElement>(null)
   // lazy init: en SSR no hay window; en hidratación lee el tema que el boot
   // script ya aplicó (el suppressHydrationWarning del input cubre el diff)
   const [dark, setDark] = useState(() => {
@@ -97,33 +95,6 @@ export default function SettingsPanel() {
     try { localStorage.setItem('theme', theme) } catch {}
   }
 
-  // i18n: descarga el JSON base (es) + traducciones actuales para mandar a Claude.
-  const handleExportTranslations = async () => {
-    const items = await getTranslations()
-    const blob = new Blob([JSON.stringify({ items }, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'translations-export.json'
-    a.click()
-    URL.revokeObjectURL(url)
-    toast('JSON exportado. Pegalo en Claude para traducir.')
-  }
-
-  // i18n: importa el JSON traducido (en/pt/fr) → BD → reaplica idioma activo.
-  const handleImportTranslations = async (file: File) => {
-    let parsed: { items?: Record<string, Record<string, string>> }
-    try { parsed = JSON.parse(await file.text()) } catch { toast('Archivo JSON inválido', 'error'); return }
-    const items = parsed.items || (parsed as Record<string, Record<string, string>>)
-    try {
-      const { imported } = await importTranslations(items)
-      state.translations = await getTranslations()
-      setLanguage(state.lang) // reaplica con las traducciones nuevas
-      toast(`${imported} traducciones importadas`)
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error importando', 'error')
-    }
-  }
 
   return (
     <>
@@ -167,13 +138,18 @@ export default function SettingsPanel() {
             </div>
           </div>
         </div>
-        <div className="setting-item">
-          <span>Curriculum</span>
-          <button type="button" className="cv-btn cv-btn-settings" id="cv-download-settings" title="Download CV">
-            <i className="fa-solid fa-file-arrow-down"></i>
-            <span>Download CV</span>
-          </button>
-        </div>
+        {settings.cvUrl && (
+          <div className="setting-item">
+            <span>Curriculum</span>
+            <a
+              className="cv-btn cv-btn-settings" id="cv-download-settings" href={settings.cvUrl}
+              download={settings.cvName || 'CV.pdf'} target="_blank" rel="noopener noreferrer" title="Download CV"
+            >
+              <i className="fa-solid fa-file-arrow-down"></i>
+              <span>Download CV</span>
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Tuerca admin — solo logueado como admin. Lista settings exclusivos de admin.
@@ -227,38 +203,6 @@ export default function SettingsPanel() {
                 <i className="fa-solid fa-trash"></i>
                 <span>Clear All</span>
               </button>
-            </div>
-            <div className="setting-item">
-              <span>Export for Translation</span>
-              <button
-                type="button"
-                className="cv-btn cv-btn-settings"
-                title="Descarga el texto actual en JSON para traducir con Claude"
-                onClick={handleExportTranslations}
-              >
-                <i className="fa-solid fa-download"></i>
-                <span>Export</span>
-              </button>
-            </div>
-            <div className="setting-item">
-              <span>Import Translations</span>
-              <button
-                type="button"
-                className="cv-btn cv-btn-settings"
-                title="Sube el JSON traducido (en/pt/fr) para guardarlo en la BD"
-                onClick={() => transFileRef.current?.click()}
-              >
-                <i className="fa-solid fa-upload"></i>
-                <span>Import</span>
-              </button>
-              <input
-                ref={transFileRef} type="file" accept=".json,application/json" style={{ display: 'none' }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  e.target.value = ''
-                  if (f) handleImportTranslations(f)
-                }}
-              />
             </div>
           </div>
         </>

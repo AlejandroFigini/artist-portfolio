@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
-import { getContent, getTranslations } from '@/lib/api'
+import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, loadLang, LS } from '@/lib/cms/store'
 import { BASE_LANG } from '@/lib/i18n'
@@ -56,8 +56,8 @@ export default function CmsRoot() {
   }, [])
 
   // Modo admin: overlay de edición + slots (port setAdmin)
-  const setAdmin = useCallback((on: boolean) => {
-    setAdminFlag(on)
+  const setAdmin = useCallback((on: boolean, username?: string) => {
+    setAdminFlag(on, username)
     document.body.classList.toggle('is-admin', on)
     if (on) {
       engine.indexEditables()
@@ -103,9 +103,9 @@ export default function CmsRoot() {
         engine.hydrate()
         engine.refreshRetired()
         emit()
-        let wasAdmin = false
-        try { wasAdmin = localStorage.getItem(LS.ADMIN) === '1' } catch {}
-        setAdmin(wasAdmin)
+        // la sesión server (cookie httpOnly) es la fuente de verdad — un flag
+        // falso en localStorage NO habilita admin.
+        getAccount().then((account) => setAdmin(!!account, account?.username))
 
         // i18n: traer traducciones y aplicar el idioma guardado (si no es base).
         getTranslations().then((tr) => {
@@ -162,11 +162,11 @@ export default function CmsRoot() {
       {authHost && createPortal(
         state.isAdmin ? (
           <div className="admin-dropdown-wrapper">
-            <span className="cms-user-chip" title="Sesión iniciada como Administrador">
-              <i className="fa-solid fa-user-shield"></i> Administrador <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+            <span className="cms-user-chip" title={`Sesión iniciada como ${state.username || 'Administrador'}`}>
+              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
             </span>
             <div className="admin-dropdown-menu">
-              <div className="admin-menu-header">Sesión actual: Administrador</div>
+              <div className="admin-menu-header">Sesión actual: {state.username || 'Administrador'}</div>
               <a 
                 href="/admin" 
                 className="cms-navauth-btn" 
@@ -176,7 +176,7 @@ export default function CmsRoot() {
                 <i className="fa-solid fa-sliders"></i> Gestión
               </a>
               <button type="button" className="cms-navauth-btn" title="Cerrar sesión"
-                onClick={() => { setAdmin(false); toast('Sesión cerrada') }}>
+                onClick={() => { logout().finally(() => { setAdmin(false); toast('Sesión cerrada') }) }}>
                 <i className="fa-solid fa-right-from-bracket"></i> Salir
               </button>
             </div>
@@ -206,7 +206,7 @@ export default function CmsRoot() {
       />
 
       {cmd?.type === 'login' && (
-        <LoginModal onClose={close} onSuccess={() => setAdmin(true)} />
+        <LoginModal onClose={close} onSuccess={(username) => setAdmin(true, username)} />
       )}
       {cmd?.type === 'editText' && <EditTextModal cmsKey={cmd.key} onClose={close} />}
       {cmd?.type === 'editInfo' && <EditInfoModal cmsKey={cmd.key} onClose={close} />}

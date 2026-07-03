@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { uploadDataUrl } from '@/lib/storage'
+import { requireSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic'
    del entorno (Cloudinary en prod, filesystem local en dev). Devuelve la URL +
    métricas (lo que espera el cliente: lib/api.ts → uploadMedia). */
 export async function POST(req: Request) {
+  const auth = await requireSession(req)
+  if ('deny' in auth) return auth.deny
+
   let body: { base64Data?: string; originalSize?: number; originalName?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const { base64Data, originalSize = 0, originalName = 'archivo' } = body

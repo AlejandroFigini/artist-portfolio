@@ -9,37 +9,31 @@ import Link from 'next/link'
 import { useModal } from '@/components/ui/Modal'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, loadJSON, LS,
+  state, useCmsStore, loadState, sumSizes, loadJSON, LS, setAdminFlag,
 } from '@/lib/cms/store'
+import { getAccount } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
+import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
 import SocialSettings from './SocialSettings'
-import type { AnyEntry } from './cards'
+import UsersSection from './UsersSection'
+import { MediaCard, type AnyEntry } from './cards'
 
-const NAV_MAIN = [
-  { id: 'resumen', icon: 'fa-gauge-high', label: 'Resumen' },
-  { id: 'redes', icon: 'fa-share-nodes', label: 'Redes sociales' },
-  { id: 'usuarios', icon: 'fa-users-gear', label: 'Usuarios' },
+const NAV_BOTTOM = [
   { id: 'auditoria', icon: 'fa-clipboard-list', label: 'Auditoría' },
-  { id: 'ajustes', icon: 'fa-sliders', label: 'Ajustes del sitio' },
 ]
 
 const markSkipLoader = () => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }
 
-function Stat({ num, label, warn }: { num: React.ReactNode; label: string; warn?: boolean }) {
+const RESUMEN_INFO = 'Cada tarjeta muestra la cantidad de contenidos y su peso total: en uso (activos en el sitio), sin usar (retirados), basurero (marcados para eliminar) y el repositorio (todo el contenido sumado).'
+
+function Stat({ label, count, size, warn }: { label: string; count: number; size: string; warn?: boolean }) {
   return (
     <div className={`admin-stat${warn ? ' admin-stat--warn' : ''}`}>
-      <span className="admin-stat-num">{num}</span><span>{label}</span>
-    </div>
-  )
-}
-
-function MockToggle({ label, on }: { label: string; on?: boolean }) {
-  return (
-    <div className="setting-item admin-mock-setting">
+      <span className="admin-stat-num">{count}</span>
       <span>{label}</span>
-      <label className="switch"><input type="checkbox" disabled defaultChecked={on} /><span className="slider round"></span></label>
+      <span className="admin-stat-size">{size}</span>
     </div>
   )
 }
@@ -49,12 +43,16 @@ export default function AdminDashboard() {
   const { confirm } = useModal()
   const [section, setSection] = useState('resumen')
   const [subOpen, setSubOpen] = useState(false)
+  const [ajustesOpen, setAjustesOpen] = useState(false)
   const [modal, setModal] = useState<AdminModal | null>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
 
   // loadState emite → useCmsStore re-renderiza; el render deriva de state.loaded
   useEffect(() => {
     if (!state.loaded) loadState()
+    // verificación real contra la sesión server (cookie httpOnly) — el flag
+    // de localStorage es solo un hint de pintado.
+    getAccount().then((account) => setAdminFlag(!!account, account?.username))
     if (state.isAdmin) {
       autoCleanTrash()
       resolveSizes([...Object.values(state.usedContent), ...state.unused])
@@ -80,12 +78,21 @@ export default function AdminDashboard() {
     )
   }
 
-  const goto = (s: string) => { setSection(s); if (!s.startsWith('contenidos-') && s !== 'subircontenido') setSubOpen(false) }
+  const goto = (s: string) => {
+    setSection(s)
+    if (!s.startsWith('contenidos-') && s !== 'subircontenido') setSubOpen(false)
+    if (s !== 'ajustes' && !s.startsWith('ajustes-')) setAjustesOpen(false)
+  }
   const isContenidos = section.startsWith('contenidos-') || section === 'subircontenido'
+  const isAjustes = section === 'ajustes' || section.startsWith('ajustes-')
 
-  const navBadge = (label: string, size: number) => (
+  const navBadge = (label: string, count: number, size: number) => (
     <span className="admin-nav-badge-label">
-      {label} <span className="admin-nav-badge-stats">[ <span className="badge-size">{fmtBytes(size)}</span> ]</span>
+      {label} {count > 0 && (
+        <span className="admin-nav-badge-stats">
+          [ <span className="badge-count">{count}</span> / <span className="badge-size">{fmtBytes(size)}</span> ]
+        </span>
+      )}
     </span>
   )
 
@@ -96,7 +103,7 @@ export default function AdminDashboard() {
       <header className="admin-topbar">
         <Link href="/" className="logo" onClick={markSkipLoader}>Lucia Montaña <span className="highlight">| Gestión</span></Link>
         <div className="admin-topbar-right">
-          <span className="cms-user-chip"><i className="fa-solid fa-user-shield"></i> superadmin</span>
+          <span className="cms-user-chip"><i className="fa-solid fa-user-shield"></i> {state.username || '…'}</span>
           <Link href="/" className="cms-btn cms-btn--sm" onClick={markSkipLoader}><i className="fa-solid fa-arrow-left"></i> Volver al sitio</Link>
         </div>
       </header>
@@ -107,6 +114,32 @@ export default function AdminDashboard() {
             <button type="button" className={`admin-nav-item${section === 'resumen' ? ' active' : ''}`} onClick={() => goto('resumen')}>
               <i className="fa-solid fa-gauge-high"></i><span>Resumen</span>
             </button>
+            <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
+              <i className="fa-solid fa-users-gear"></i><span>Administrar usuarios</span>
+            </button>
+            <div className="admin-nav-group">
+              <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => { if (!isAjustes) goto('ajustes-loader'); setAjustesOpen((o) => !o); }}>
+                <i className="fa-solid fa-sliders"></i>
+                <span>Ajustes del sitio <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: 'auto', width: 'auto', transform: ajustesOpen || isAjustes ? 'rotate(180deg)' : undefined }}></i></span>
+              </button>
+              <div className={`admin-nav-sub${ajustesOpen || isAjustes ? ' open' : ''}`}>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-loader' ? ' active' : ''}`} onClick={() => goto('ajustes-loader')}>
+                  <i className="fa-solid fa-spinner"></i><span>Pantalla de carga</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-favicon' ? ' active' : ''}`} onClick={() => goto('ajustes-favicon')}>
+                  <i className="fa-solid fa-compass"></i><span>Icono de pestaña</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-social' ? ' active' : ''}`} onClick={() => goto('ajustes-social')}>
+                  <i className="fa-solid fa-share-nodes"></i><span>Redes sociales</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-cv' ? ' active' : ''}`} onClick={() => goto('ajustes-cv')}>
+                  <i className="fa-solid fa-file-pdf"></i><span>Curriculum (CV)</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-traducciones' ? ' active' : ''}`} onClick={() => goto('ajustes-traducciones')}>
+                  <i className="fa-solid fa-language"></i><span>Traducciones</span>
+                </button>
+              </div>
+            </div>
             <div className="admin-nav-group">
               <button type="button" className={`admin-nav-item${isContenidos ? ' active' : ''}`} onClick={() => setSubOpen((o) => !o)}>
                 <i className="fa-solid fa-photo-film"></i>
@@ -114,23 +147,23 @@ export default function AdminDashboard() {
               </button>
               <div className={`admin-nav-sub${subOpen || isContenidos ? ' open' : ''}`}>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-usado' ? ' active' : ''}`} onClick={() => goto('contenidos-usado')}>
-                  <i className="fa-solid fa-check c-uso"></i>{navBadge('En uso', sumSizes(usedArr))}
+                  <i className="fa-solid fa-check c-uso"></i>{navBadge('En uso', usedArr.length, sumSizes(usedArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-nousado' ? ' active' : ''}`} onClick={() => goto('contenidos-nousado')}>
-                  <i className="fa-solid fa-folder-closed c-nouso"></i>{navBadge('Sin usar', sumSizes(unusedArr))}
+                  <i className="fa-solid fa-folder-closed c-nouso"></i>{navBadge('Sin usar', unusedArr.length, sumSizes(unusedArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-basurero' ? ' active' : ''}`} onClick={() => goto('contenidos-basurero')}>
-                  <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', sumSizes(trashArr))}
+                  <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', trashArr.length, sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-repo' ? ' active' : ''}`} onClick={() => goto('contenidos-repo')}>
-                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))}
+                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', usedArr.length + unusedArr.length + trashArr.length, sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'subircontenido' ? ' active' : ''}`} onClick={() => goto('subircontenido')}>
                   <i className="fa-solid fa-vial c-subir"></i><span>Subir contenido</span>
                 </button>
               </div>
             </div>
-            {NAV_MAIN.slice(1).map((n) => (
+            {NAV_BOTTOM.map((n) => (
               <button key={n.id} type="button" className={`admin-nav-item${section === n.id ? ' active' : ''}`} onClick={() => goto(n.id)}>
                 <i className={`fa-solid ${n.icon}`}></i><span>{n.label}</span>
               </button>
@@ -141,22 +174,26 @@ export default function AdminDashboard() {
         <main className="admin-root">
           {section === 'resumen' && (
             <div className="admin-card">
-              <h2><i className="fa-solid fa-gauge-high"></i> Resumen</h2>
+              <h2><i className="fa-solid fa-gauge-high"></i> Resumen
+                <span className="cms-info-tip" tabIndex={0} aria-label={RESUMEN_INFO}>
+                  <i className="fa-solid fa-circle-info"></i>
+                  <span className="cms-info-bubble" role="tooltip">{RESUMEN_INFO}</span>
+                </span>
+              </h2>
               <p className="cms-admin-sub">Panel de gestión del contenido del sitio.</p>
               <div className="admin-stats">
-                <Stat num={usedArr.length} label="contenidos usados" />
-                <Stat num={fmtBytes(sumSizes(usedArr))} label="espacio usado" />
-                <Stat num={unusedArr.length} label="contenidos no usados" />
-                <Stat num={fmtBytes(sumSizes(unusedArr))} label="espacio liberable" warn />
+                <Stat label="contenidos usados" count={usedArr.length} size={fmtBytes(sumSizes(usedArr))} />
+                <Stat label="contenidos no usados" count={unusedArr.length} size={fmtBytes(sumSizes(unusedArr))} />
+                <Stat label="en el basurero" count={trashArr.length} size={fmtBytes(sumSizes(trashArr))} warn />
+                <Stat label="repositorio total" count={usedArr.length + unusedArr.length + trashArr.length} size={fmtBytes(sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))} />
               </div>
               <div className="admin-quick">
+                <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Ajustes del sitio</button>
                 <button type="button" className="cms-btn" onClick={() => goto('contenidos-usado')}><i className="fa-solid fa-photo-film"></i> Gestionar contenidos</button>
                 <button type="button" className="cms-btn" onClick={() => goto('auditoria')}><i className="fa-solid fa-clipboard-list"></i> Ver auditoría</button>
               </div>
             </div>
           )}
-
-          {section === 'redes' && <SocialSettings />}
 
           {section === 'contenidos-usado' && <SectionUsado usedArr={usedArr} unusedArr={unusedArr} trashArr={trashArr} openModal={setModal} />}
           {section === 'contenidos-nousado' && <SectionNoUsado usedArr={usedArr} unusedArr={unusedArr} trashArr={trashArr} openModal={setModal} />}
@@ -178,21 +215,22 @@ export default function AdminDashboard() {
               </div>
               {uploadHist.length > 0 && (
                 <>
-                  <h3 style={{ marginTop: '2rem' }}>Últimas 3 subidas</h3>
+                  <h3 style={{ marginTop: '2rem' }}>Últimas 4 subidas</h3>
                   <div className="cms-mlib-grid" style={{ marginTop: '1rem' }}>
-                    {uploadHist.map((h, i) => (
-                      <div className="cms-mlib-item" key={i}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={h.secure_url} alt="" loading="lazy" style={{ objectFit: 'cover' }} />
-                        <div className="cms-mlib-info">
-                          <div className="cms-mlib-label">Subida {fmtDate(h.ts)}</div>
-                          <div className="cms-mlib-meta" style={{ fontSize: '0.75rem' }}>
-                            Original: {fmtBytes(h.origSize)}<br />
-                            Final: <strong style={{ color: 'var(--c-uso)' }}>{fmtBytes(h.final_bytes)}</strong> ({h.final_format})
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    {uploadHist.map((h, i) => {
+                      const entry = {
+                        src: h.secure_url, dataUrl: h.secure_url, name: h.originalName || 'archivo',
+                        size: h.final_bytes, type: h.origType || `image/${h.final_format}`,
+                        ts: h.ts, label: h.originalName || '', section: '', reason: 'upload' as const,
+                      } as AnyEntry
+                      return (
+                        <MediaCard
+                          key={i} e={entry} cardType="repo" actions={[]}
+                          tags={<span className="cms-tag cms-tag--subido">subido</span>}
+                          onView={() => setModal({ kind: 'view', e: entry, cardType: 'repo', menu: [] })}
+                        />
+                      )
+                    })}
                   </div>
                 </>
               )}
@@ -228,63 +266,14 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {section === 'usuarios' && (
-            <div className="admin-card">
-              <div className="admin-card-head">
-                <h2><i className="fa-solid fa-users-gear"></i> Gestión de usuarios</h2>
-                <div className="admin-card-head-actions">
-                  <button type="button" className="cms-btn cms-btn--sm cms-btn--primary" disabled title="Próximamente"><i className="fa-solid fa-plus"></i> Alta</button>
-                  <button type="button" className="cms-btn cms-btn--sm" disabled title="Próximamente"><i className="fa-solid fa-pen"></i> Modificar</button>
-                  <button type="button" className="cms-btn cms-btn--sm" disabled title="Próximamente"><i className="fa-solid fa-user-minus"></i> Baja</button>
-                </div>
-              </div>
-              <p className="cms-admin-sub"><i className="fa-solid fa-circle-info"></i> Distribución preparada. Alta / baja / modificación de usuarios y roles se implementarán con el backend.</p>
-              <div className="cms-audit-table-wrap">
-                <table className="cms-audit-table">
-                  <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-                  <tbody>
-                    {[
-                      { u: 'superadmin', rol: 'Administrador', estado: 'Activo' },
-                      { u: 'editor', rol: 'Editor de contenido', estado: 'Invitado' },
-                    ].map((r) => (
-                      <tr key={r.u}>
-                        <td>{r.u}</td><td>{r.rol}</td>
-                        <td><span className="cms-tag">{r.estado}</span></td>
-                        <td className="admin-row-actions">
-                          <button type="button" className="icon-btn" disabled title="Próximamente"><i className="fa-solid fa-pen"></i></button>
-                          <button type="button" className="icon-btn" disabled title="Próximamente"><i className="fa-solid fa-trash"></i></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <span className="admin-soon">Próximamente</span>
-            </div>
-          )}
+          {section === 'usuarios' && <UsersSection />}
 
-          {section === 'ajustes' && (
-            <>
-              <div className="admin-card">
-                <div className="admin-card-head">
-                  <h2><i className="fa-solid fa-sliders"></i> Ajustes del sitio</h2>
-                  <span className="admin-soon">Próximamente</span>
-                </div>
-                <p className="cms-admin-sub"><i className="fa-solid fa-circle-info"></i> Distribución preparada para futuras opciones globales del sitio.</p>
-                <MockToggle label="Idioma por defecto: Español" on />
-                <MockToggle label="Modo mantenimiento" />
-                <MockToggle label="Mostrar enlaces a redes en el pie" on />
-                <MockToggle label="Permitir descargas del CV" on />
-              </div>
-              <div className="admin-card">
-                <div className="admin-card-head">
-                  <h2><i className="fa-solid fa-shield-halved"></i> Seguridad y backend</h2>
-                  <span className="admin-soon">Próximamente</span>
-                </div>
-                <p className="cms-admin-sub">Conexión con la API, hash de contraseñas, control de sesiones y respaldos.</p>
-              </div>
-            </>
-          )}
+          {section === 'ajustes' && <SiteSettings />}
+          {section === 'ajustes-loader' && <LoaderSettings />}
+          {section === 'ajustes-favicon' && <FaviconSettings />}
+          {section === 'ajustes-social' && <SocialSettings />}
+          {section === 'ajustes-cv' && <CvSettings />}
+          {section === 'ajustes-traducciones' && <TranslationSettings />}
         </main>
       </div>
 

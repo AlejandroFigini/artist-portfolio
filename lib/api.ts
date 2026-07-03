@@ -3,11 +3,14 @@
 
 export type ContentItems = Record<string, string>
 
+export type AccountUser = { username: string; totpEnabled: boolean }
+
 export type LoginResponse = {
   success: boolean
   require2FA?: boolean
   message?: string
   error?: string
+  user?: AccountUser
 }
 
 export type UploadResponse = {
@@ -59,6 +62,61 @@ export async function login(user: string, pass: string, code: string | null): Pr
     body: JSON.stringify({ user, pass, code }),
   })
   return r.json()
+}
+
+export async function logout(): Promise<void> {
+  try { await fetch('/api/logout', { method: 'POST' }) } catch {}
+}
+
+/* Sesión actual (fuente de verdad de "estoy logeado"): 200 = sesión válida. */
+export async function getAccount(): Promise<AccountUser | null> {
+  try {
+    const r = await fetch('/api/account', { cache: 'no-store' })
+    if (!r.ok) return null
+    const data = await r.json()
+    return data.user || null
+  } catch {
+    return null
+  }
+}
+
+export async function updateAccount(payload: {
+  username?: string
+  currentPassword?: string
+  newPassword?: string
+}): Promise<AccountUser> {
+  const r = await fetch('/api/account', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error actualizando la cuenta')
+  return (data as { user: AccountUser }).user
+}
+
+export type UserRow = AccountUser & { lastLoginAt: string | null; createdAt: string }
+
+export async function getUsers(): Promise<UserRow[]> {
+  const r = await fetch('/api/users', { cache: 'no-store' })
+  if (!r.ok) return []
+  const data = await r.json().catch(() => ({}))
+  return (data as { users?: UserRow[] }).users || []
+}
+
+export async function twoFa(payload:
+  | { action: 'setup' }
+  | { action: 'enable'; code: string }
+  | { action: 'disable'; password: string },
+): Promise<{ secret?: string; uri?: string }> {
+  const r = await fetch('/api/account/2fa', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error de 2FA')
+  return data as { secret?: string; uri?: string }
 }
 
 export async function uploadMedia(base64Data: string, originalSize: number, originalName: string): Promise<UploadResponse> {

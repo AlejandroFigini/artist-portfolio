@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireSession } from '@/lib/auth'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { BASE_LANG, TARGET_LANGS, ALL_LANGS, isTranslatableEntry, type Lang } from '@/lib/i18n'
 
@@ -42,6 +43,9 @@ export async function GET() {
    Body: { items: { en: {key:val}, pt: {...}, fr: {...} } } (es se ignora: es base).
    Valida y upsertea cada (key, lang, value) en cms_translations. */
 export async function POST(req: Request) {
+  const auth = await requireSession(req)
+  if ('deny' in auth) return auth.deny
+
   let body: { items?: Record<string, Record<string, unknown>> }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
 

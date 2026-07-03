@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { uploadDataUrl } from '@/lib/storage'
+import { requireSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,9 @@ export async function GET() {
    Si algún value es una data URL (base64), se sube al storage (Cloudinary en
    prod, filesystem local en dev) y se guarda la URL resultante, no el base64. */
 export async function POST(req: Request) {
+  const auth = await requireSession(req)
+  if ('deny' in auth) return auth.deny
+
   let body: { items?: Record<string, unknown> }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const items = body.items
@@ -47,6 +51,8 @@ export async function POST(req: Request) {
         finalValue = (await uploadDataUrl(value, 'image')).url
       } else if (typeof value === 'string' && value.startsWith('data:video')) {
         finalValue = (await uploadDataUrl(value, 'video')).url
+      } else if (typeof value === 'string' && value.startsWith('data:application/pdf')) {
+        finalValue = (await uploadDataUrl(value, 'raw')).url
       }
       await client.query(
         `INSERT INTO cms_data (key, value) VALUES ($1, $2)
