@@ -46,18 +46,35 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: st
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
 
+/** Slug seguro para carpeta de Cloudinary: "Sobre mí" → "sobre-mi". */
+export function folderSlug(section?: string): string {
+  const s = (section || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return s ? `portfolio/${s}` : 'portfolio'
+}
+
 /** Sube una data URL (base64). Devuelve la URL servible + metadatos.
-    kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar. */
-export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video' | 'raw'): Promise<StoredMedia> {
+    kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar.
+    folder = carpeta destino en Cloudinary (por sección de la página). */
+export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video' | 'raw', folder = 'portfolio'): Promise<StoredMedia> {
   if (hasCloudinary) {
     if (kind === 'raw') {
-      const res = await cloudinary.uploader.upload(dataUrl, { folder: 'portfolio', resource_type: 'raw' })
+      const res = await cloudinary.uploader.upload(dataUrl, { folder, resource_type: 'raw' })
       return { url: res.secure_url, bytes: res.bytes, format: res.format || 'pdf', assetId: res.asset_id }
     }
+    if (kind === 'video') {
+      // Sin transformación entrante: transcodear sync (format/quality) hace fallar
+      // videos medianos por límite de procesamiento de Cloudinary. Se guarda el
+      // original; la optimización se aplica en la URL de entrega (f_auto/q_auto).
+      const res = await cloudinary.uploader.upload(dataUrl, { folder, resource_type: 'video' })
+      return { url: res.secure_url, bytes: res.bytes, format: res.format, assetId: res.asset_id }
+    }
     const res = await cloudinary.uploader.upload(dataUrl, {
-      folder: 'portfolio',
-      resource_type: kind === 'video' ? 'video' : 'image',
-      ...(kind === 'video' ? { format: 'webm' } : { format: 'webp' }),
+      folder,
+      resource_type: 'image',
+      format: 'webp',
       quality: 'auto',
     })
     return { url: res.secure_url, bytes: res.bytes, format: res.format, assetId: res.asset_id }
@@ -75,10 +92,13 @@ export async function deleteAsset(url: string): Promise<void> {
   try {
     if (url.includes('cloudinary.com')) {
       if (!hasCloudinary) return
-      const match = url.match(/\/v\d+\/(.+)\.[a-zA-Z0-9]+$/)
+      // El resource_type real viene en la URL (/image|video|raw/upload/); adivinarlo
+      // por extensión rompía el borrado de PDFs (raw) y de videos sin extensión típica.
+      const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?v\d+\/(.+)$/)
       if (!match) return
-      const publicId = match[1]
-      const resourceType = /\.(mp4|webm|mov)$/i.test(url) ? 'video' : 'image'
+      const resourceType = match[1] as 'image' | 'video' | 'raw'
+      // En raw el public_id conserva la extensión; en image/video se recorta.
+      const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '')
       await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
     } else if (url.startsWith('/uploads/')) {
       await unlink(path.join(process.cwd(), 'public', url.replace(/^\//, ''))).catch(() => {})

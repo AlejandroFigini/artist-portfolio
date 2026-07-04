@@ -337,6 +337,14 @@ header.scrolled {
     transition-delay: 0.25s;
 }
 
+.dropdown:hover .dropdown-content a:nth-child(6) {
+    transition-delay: 0.30s;
+}
+
+.dropdown:hover .dropdown-content a:nth-child(7) {
+    transition-delay: 0.35s;
+}
+
 .dropdown-content a:hover {
     background-color: rgba(129, 140, 248, 0.04);
     color: var(--accent);
@@ -371,6 +379,8 @@ header.scrolled {
 .dropdown.open .dropdown-content a:nth-child(3) { transition-delay: 0.15s; }
 .dropdown.open .dropdown-content a:nth-child(4) { transition-delay: 0.20s; }
 .dropdown.open .dropdown-content a:nth-child(5) { transition-delay: 0.25s; }
+.dropdown.open .dropdown-content a:nth-child(6) { transition-delay: 0.30s; }
+.dropdown.open .dropdown-content a:nth-child(7) { transition-delay: 0.35s; }
 
 /* Contenedor General */
 main {

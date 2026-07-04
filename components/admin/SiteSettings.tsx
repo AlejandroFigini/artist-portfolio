@@ -17,6 +17,7 @@ import { saveContent, getTranslations, importTranslations } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
 import { setLanguage } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
+import { isTranslatableEntry } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
 
 const CV_MAX_BYTES = 10 * 1024 * 1024
@@ -313,15 +314,37 @@ export function TranslationSettings() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const onExport = async () => {
-    const items = await getTranslations()
-    const blob = new Blob([JSON.stringify({ items }, null, 2)], { type: 'application/json' })
+    // Base ES = BD + estado vivo del CMS (texto recién editado que puede no
+    // haber llegado aún a cms_data). El filtro excluye media/URLs/settings.
+    const server = await getTranslations()
+    const es: Record<string, string> = { ...(server.es || {}) }
+    for (const [key, value] of Object.entries(state.items)) {
+      if (typeof value === 'string' && isTranslatableEntry(key, value)) es[key] = value
+    }
+    if (Object.keys(es).length === 0) {
+      toast('No hay texto para traducir todavía. Cargá contenido en español primero.', 'error')
+      return
+    }
+    const prompt = [
+      'Traduce el siguiente contenido de un portfolio de artista (animación, ilustración y 3D) del español a inglés (en), portugués (pt) y francés (fr).',
+      'Mantené un tono profesional y artístico. No traduzcas nombres propios ni marcas.',
+      '',
+      'Respondé SOLO con un JSON válido, sin texto extra ni markdown, con esta estructura exacta (mismas claves que el original en cada idioma):',
+      '{ "items": { "en": { ... }, "pt": { ... }, "fr": { ... } } }',
+      '',
+      'Guardá tu respuesta como archivo .json e importalo en el panel con "Importar traducciones".',
+      '',
+      '--- CONTENIDO (español) ---',
+      JSON.stringify({ items: { es } }, null, 2),
+    ].join('\n')
+    const blob = new Blob([prompt], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'translations-export.json'
+    a.download = 'translations-prompt.txt'
     a.click()
     URL.revokeObjectURL(url)
-    toast('JSON exportado. Pegalo en Claude para traducir.')
+    toast(`Prompt exportado con ${Object.keys(es).length} textos. Pegalo entero en Claude.`)
   }
 
   const onImport = async (file: File) => {
@@ -344,8 +367,8 @@ export function TranslationSettings() {
         <h2><i className="fa-solid fa-language"></i> Traducciones</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Exportá el texto del sitio en JSON, traducilo con Claude
-        (inglés, portugués y francés) e importá el JSON traducido para guardarlo.
+        <i className="fa-solid fa-circle-info"></i> Exportá el prompt listo (instrucciones + texto del sitio),
+        pegalo entero en Claude, y después importá el JSON que te devuelva (inglés, portugués y francés).
       </p>
       <div className="admin-quick" style={{ marginTop: '1rem' }}>
         <button type="button" className="cms-btn" onClick={onExport}>

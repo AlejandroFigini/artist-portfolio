@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, type FieldValue,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools,
@@ -59,7 +59,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     setPhase('uploading')
 
     fileToDataURL(file)
-      .then((base64) => uploadMedia(base64, file.size, finalName))
+      .then((base64) => uploadMedia(base64, file.size, finalName, getContainerMeta(cmsKey).section))
       .then((data) => {
         // versión anterior → no usados (solo si tenía contenido real)
         const prev = state.usedContent[cmsKey]

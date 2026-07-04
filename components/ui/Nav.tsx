@@ -30,7 +30,9 @@ export default function Nav() {
   useCmsStore() // re-render al cambiar el idioma global
   const { links } = useSocial()
   const { settings } = useSiteSettings()
-  const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
+  // Con URL configurada se usa esa; sin configurar cae al home genérico de la
+  // red (mismo patrón que About) — el menú Portfolio nunca queda vacío.
+  const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]) || n.home)
   const [navOpen, setNavOpen] = useState(false)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
   const [langOpen, setLangOpen] = useState(false)
@@ -212,7 +214,7 @@ export default function Nav() {
               </div>
               <div className="dropdown-content">
                 {portfolioNets.map((n) => (
-                  <a key={n.id} href={socialHref(n, links[n.id])} target="_blank" rel="noopener noreferrer">
+                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer">
                     <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
                   </a>
                 ))}

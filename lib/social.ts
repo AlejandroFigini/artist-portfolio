@@ -9,15 +9,16 @@ export type SocialNetwork = {
   brand: boolean // true → fa-brands, false → fa-solid
   type?: 'url' | 'email'
   placeholder: string
+  home?: string // fallback genérico si el admin aún no configuró la URL
 }
 
 export const SOCIAL_NETWORKS: SocialNetwork[] = [
-  { id: 'artstation', label: 'Artstation', icon: 'fa-artstation', brand: true, placeholder: 'https://www.artstation.com/usuario' },
-  { id: 'vimeo', label: 'Vimeo', icon: 'fa-vimeo-v', brand: true, placeholder: 'https://vimeo.com/usuario' },
-  { id: 'youtube', label: 'Youtube', icon: 'fa-youtube', brand: true, placeholder: 'https://youtube.com/@usuario' },
-  { id: 'instagram', label: 'Instagram', icon: 'fa-instagram', brand: true, placeholder: 'https://instagram.com/usuario' },
-  { id: 'behance', label: 'Behance', icon: 'fa-behance', brand: true, placeholder: 'https://www.behance.net/usuario' },
-  { id: 'linkedin', label: 'LinkedIn', icon: 'fa-linkedin-in', brand: true, placeholder: 'https://www.linkedin.com/in/usuario' },
+  { id: 'artstation', label: 'Artstation', icon: 'fa-artstation', brand: true, placeholder: 'https://www.artstation.com/usuario', home: 'https://www.artstation.com/' },
+  { id: 'vimeo', label: 'Vimeo', icon: 'fa-vimeo-v', brand: true, placeholder: 'https://vimeo.com/usuario', home: 'https://vimeo.com/' },
+  { id: 'youtube', label: 'Youtube', icon: 'fa-youtube', brand: true, placeholder: 'https://youtube.com/@usuario', home: 'https://youtube.com/' },
+  { id: 'instagram', label: 'Instagram', icon: 'fa-instagram', brand: true, placeholder: 'https://instagram.com/usuario', home: 'https://www.instagram.com/' },
+  { id: 'behance', label: 'Behance', icon: 'fa-behance', brand: true, placeholder: 'https://www.behance.net/usuario', home: 'https://www.behance.net/' },
+  { id: 'linkedin', label: 'LinkedIn', icon: 'fa-linkedin-in', brand: true, placeholder: 'https://www.linkedin.com/in/usuario', home: 'https://www.linkedin.com/' },
   { id: 'email', label: 'Email', icon: 'fa-envelope', brand: false, type: 'email', placeholder: 'tucorreo@dominio.com' },
 ]
 

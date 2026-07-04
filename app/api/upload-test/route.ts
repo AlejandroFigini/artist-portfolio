@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { uploadDataUrl } from '@/lib/storage'
+import { uploadDataUrl, folderSlug } from '@/lib/storage'
 import { requireSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -12,9 +12,9 @@ export async function POST(req: Request) {
   const auth = await requireSession(req)
   if ('deny' in auth) return auth.deny
 
-  let body: { base64Data?: string; originalSize?: number; originalName?: string }
+  let body: { base64Data?: string; originalSize?: number; originalName?: string; section?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
-  const { base64Data, originalSize = 0, originalName = 'archivo' } = body
+  const { base64Data, originalSize = 0, originalName = 'archivo', section } = body
 
   if (!base64Data || typeof base64Data !== 'string') {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image')
+    const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image', folderSlug(typeof section === 'string' ? section : ''))
     return NextResponse.json({
       success: true,
       secure_url: media.url,

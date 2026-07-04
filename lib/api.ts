@@ -119,7 +119,7 @@ export async function twoFa(payload:
   return data as { secret?: string; uri?: string }
 }
 
-export async function uploadMedia(base64Data: string, originalSize: number, originalName: string): Promise<UploadResponse> {
+export async function uploadMedia(base64Data: string, originalSize: number, originalName: string, section?: string): Promise<UploadResponse> {
   // Fallback local: si el backend (Cloudinary) no está disponible, se usa el
   // propio dataURL como fuente. Permite seleccionar/subir imágenes sin backend
   // en desarrollo (se persisten en los overrides locales).
@@ -137,7 +137,7 @@ export async function uploadMedia(base64Data: string, originalSize: number, orig
     r = await fetch('/api/upload-test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base64Data, originalSize, originalName }),
+      body: JSON.stringify({ base64Data, originalSize, originalName, section }),
     })
   } catch {
     return localFallback() // backend no corre → usar dataURL local

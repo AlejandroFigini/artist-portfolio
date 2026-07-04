@@ -276,7 +276,7 @@ export function AdminUploadModal({ file, onClose }: CloseProp & { file: File }) 
     const finalName = nameRef.current?.value.trim() || file.name
     setPhase('uploading')
     fileToDataURL(file)
-      .then((base64) => uploadMedia(base64, file.size, finalName))
+      .then((base64) => uploadMedia(base64, file.size, finalName, 'Subidas directas'))
       .then((data) => {
         // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
         const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
