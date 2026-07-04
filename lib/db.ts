@@ -66,6 +66,16 @@ const MIGRATIONS: { id: string; sql: string }[] = [
     id: '2026_07_users_last_login',
     sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP',
   },
+  {
+    id: '2026_07_cms_state',
+    sql: `
+      CREATE TABLE IF NOT EXISTS cms_state (
+        key VARCHAR(128) PRIMARY KEY,
+        value JSONB NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

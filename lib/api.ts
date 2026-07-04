@@ -188,3 +188,39 @@ export async function importTranslations(items: LangMaps): Promise<{ imported: n
   if (!r.ok) throw new Error((data as { error?: string }).error || 'Error importando traducciones')
   return { imported: (data as { imported?: number }).imported || 0 }
 }
+
+// ----- Estado compartido CMS (sync entre dispositivos) -----------------------
+
+export type CmsStatePayload = {
+  used_content?: Record<string, unknown>
+  unused?: unknown[]
+  retired?: string[]
+  trash?: unknown[]
+  media_meta?: Record<string, unknown>
+  audit?: unknown[]
+  container_names?: Record<string, string>
+}
+
+/* Trae el estado CMS compartido del servidor. Degrada a {} sin backend. */
+export async function getState(): Promise<CmsStatePayload> {
+  try {
+    const r = await fetch('/api/state', { cache: 'no-store' })
+    if (!r.ok) return {}
+    return await r.json()
+  } catch {
+    return {}
+  }
+}
+
+/* Persiste (parcial) el estado CMS al servidor. Silencioso si falla. */
+export async function saveState(payload: CmsStatePayload): Promise<void> {
+  try {
+    await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    // backend no disponible → el estado sigue en localStorage
+  }
+}

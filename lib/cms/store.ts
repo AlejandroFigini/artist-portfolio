@@ -142,14 +142,91 @@ export function loadState() {
 }
 
 // ----- Persistencia ----------------------------------------------------------
+//
+// La DB (vía /api/state) es la FUENTE DE VERDAD. localStorage es solo un caché
+// rápido para pintar antes de que el servidor responda; al llegar la respuesta
+// del server, se sobreescribe por completo. Las funciones persist*() guardan
+// en ambos lados: localStorage inmediato (UX) + DB con debounce (persistencia).
 
-export const persistAudit = () => saveJSON(LS.AUDIT, state.audit.slice(-300))
-export const persistUnused = () => { saveJSON(LS.UNUSED, state.unused); saveJSON(LS.MEDIA, state.mediaMeta) }
-export const persistUsed = () => { saveJSON(LS.USED, state.usedContent); saveJSON(LS.MEDIA, state.mediaMeta) }
-export const persistRetired = () => saveJSON(LS.RETIRED, state.retired)
-export const persistTrash = () => saveJSON(LS.TRASH, state.trash)
+import { saveState, getState, type CmsStatePayload } from '@/lib/api'
+
+let _syncTimer: ReturnType<typeof setTimeout> | null = null
+const _pendingKeys = new Set<string>()
+
+function scheduleSyncToServer(...keys: string[]) {
+  keys.forEach((k) => _pendingKeys.add(k))
+  if (_syncTimer) clearTimeout(_syncTimer)
+  _syncTimer = setTimeout(flushSyncToServer, 2000)
+}
+
+function flushSyncToServer() {
+  _syncTimer = null
+  if (!state.isAdmin || _pendingKeys.size === 0) return
+  const payload: CmsStatePayload = {}
+  for (const k of _pendingKeys) {
+    if (k === 'used_content') payload.used_content = state.usedContent
+    if (k === 'unused') payload.unused = state.unused
+    if (k === 'retired') payload.retired = state.retired
+    if (k === 'trash') payload.trash = state.trash
+    if (k === 'media_meta') payload.media_meta = state.mediaMeta
+    if (k === 'audit') payload.audit = state.audit.slice(-300)
+    if (k === 'container_names') payload.container_names = state.containerNames
+  }
+  _pendingKeys.clear()
+  saveState(payload).catch(() => {})
+}
+
+export const persistAudit = () => { saveJSON(LS.AUDIT, state.audit.slice(-300)); scheduleSyncToServer('audit') }
+export const persistUnused = () => { saveJSON(LS.UNUSED, state.unused); saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('unused', 'media_meta') }
+export const persistUsed = () => { saveJSON(LS.USED, state.usedContent); saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('used_content', 'media_meta') }
+export const persistRetired = () => { saveJSON(LS.RETIRED, state.retired); scheduleSyncToServer('retired') }
+export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyncToServer('trash') }
 export const persistOverridesLocal = () => saveJSON(LS.OVERRIDES, state.items)
-export const persistMediaMeta = () => saveJSON(LS.MEDIA, state.mediaMeta)
+export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
+
+/* Aplica el estado del servidor sobre el local. El server SIEMPRE gana:
+   si el server devuelve un array vacío o un objeto vacío, eso significa que
+   no hay datos — no que "se conserve lo local". localStorage se actualiza
+   como caché para el próximo arranque rápido. */
+export function mergeServerState(server: CmsStatePayload) {
+  if ('used_content' in server) {
+    state.usedContent = (server.used_content || {}) as typeof state.usedContent
+    saveJSON(LS.USED, state.usedContent)
+  }
+  if ('unused' in server) {
+    state.unused = (Array.isArray(server.unused) ? server.unused : []) as typeof state.unused
+    saveJSON(LS.UNUSED, state.unused)
+  }
+  if ('retired' in server) {
+    state.retired = (Array.isArray(server.retired) ? server.retired : []) as typeof state.retired
+    saveJSON(LS.RETIRED, state.retired)
+  }
+  if ('trash' in server) {
+    state.trash = (Array.isArray(server.trash) ? server.trash : []) as typeof state.trash
+    saveJSON(LS.TRASH, state.trash)
+  }
+  if ('media_meta' in server) {
+    state.mediaMeta = (server.media_meta || {}) as typeof state.mediaMeta
+    saveJSON(LS.MEDIA, state.mediaMeta)
+  }
+  if ('audit' in server) {
+    state.audit = (Array.isArray(server.audit) ? server.audit : []) as typeof state.audit
+    saveJSON(LS.AUDIT, state.audit)
+  }
+  if ('container_names' in server) {
+    state.containerNames = (server.container_names || {}) as typeof state.containerNames
+    saveJSON(LS.CONTAINER_NAMES, state.containerNames)
+  }
+  emit()
+}
+
+/* Carga el estado completo desde el server y lo aplica. La DB es la fuente
+   de verdad; lo que había en localStorage se sobreescribe. */
+export function loadServerState(): Promise<void> {
+  return getState()
+    .then((server) => { mergeServerState(server) })
+    .catch(() => {})
+}
 
 export function recordMediaMeta(key: string, src: string | undefined, meta: { name?: string; size?: number | null; type?: string; ts?: number; label?: string; section?: string }) {
   if (!meta.name && !meta.size) return
@@ -319,6 +396,7 @@ export function performRenameContainer(key: string, newLabel: string) {
   let oldLabel = state.containerNames[key]
   state.containerNames[key] = newLabel
   saveJSON(LS.CONTAINER_NAMES, state.containerNames)
+  scheduleSyncToServer('container_names')
   if (state.usedContent[key]) {
     if (!oldLabel) oldLabel = state.usedContent[key].label
     state.usedContent[key].label = newLabel

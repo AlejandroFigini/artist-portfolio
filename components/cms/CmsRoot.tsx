@@ -11,7 +11,7 @@ import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
-import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, loadLang, LS } from '@/lib/cms/store'
+import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, saveJSON, loadLang, loadServerState, LS } from '@/lib/cms/store'
 import { BASE_LANG } from '@/lib/i18n'
 import * as engine from './engine'
 import dynamic from 'next/dynamic'
@@ -87,10 +87,12 @@ export default function CmsRoot() {
     engine.refreshRetired()
 
     getContent()
-      .catch(() => ({}))
+      .catch(() => loadJSON(LS.OVERRIDES, {}) as Record<string, string>)
       .then((serverItems) => {
-        // el backend es la fuente de verdad; overrides locales como base
-        state.items = Object.assign({}, loadJSON(LS.OVERRIDES, {}), serverItems)
+        // La DB es la fuente de verdad; localStorage solo como fallback si
+        // getContent() falló (backend caído / sin DB).
+        state.items = serverItems
+        saveJSON(LS.OVERRIDES, state.items)
 
         const broadcastCarousel = (prefix: string) => {
           let settings = { count: 3, duration: 7000 }
@@ -111,6 +113,15 @@ export default function CmsRoot() {
         engine.hydrate()
         engine.refreshRetired()
         emit()
+
+        // Sincronizar estado compartido (usedContent, retired, etc.) desde el
+        // server — resuelve el bug de "cambios no visibles en otro dispositivo".
+        loadServerState().then(() => {
+          engine.refreshRetired()
+          engine.seedUsedContent()
+          emit()
+        })
+
         // la sesión server (cookie httpOnly) es la fuente de verdad — un flag
         // falso en localStorage NO habilita admin.
         getAccount().then((account) => setAdmin(!!account, account?.username))

@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useModal } from '@/components/ui/Modal'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, loadJSON, LS, setAdminFlag,
+  state, useCmsStore, loadState, sumSizes, loadJSON, LS, setAdminFlag, loadServerState,
 } from '@/lib/cms/store'
 import { getAccount } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
@@ -53,10 +53,14 @@ export default function AdminDashboard() {
     // verificación real contra la sesión server (cookie httpOnly) — el flag
     // de localStorage es solo un hint de pintado.
     getAccount().then((account) => setAdminFlag(!!account, account?.username))
-    if (state.isAdmin) {
-      autoCleanTrash()
-      resolveSizes([...Object.values(state.usedContent), ...state.unused])
-    }
+    // Sincronizar estado compartido desde el server (usedContent, unused,
+    // retired, etc.) para reflejar cambios de otros dispositivos/usuarios.
+    loadServerState().then(() => {
+      if (state.isAdmin) {
+        autoCleanTrash()
+        resolveSizes([...Object.values(state.usedContent), ...state.unused])
+      }
+    })
   }, [])
 
   const usedArr: AnyEntry[] = Object.values(state.usedContent)
