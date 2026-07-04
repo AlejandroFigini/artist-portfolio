@@ -5,7 +5,7 @@
    checkbox de selección múltiple). */
 
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
-import { getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { state, getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
 
 /** Nombre de archivo sin su extensión (para el título de la tarjeta). */
 const stripExt = (name?: string) => (name ? name.replace(/\.[^./\\]+$/, '') : '')
@@ -67,7 +67,9 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
   const title = stripExt(e.name) || e.label || '—'
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
-  const container = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Recién subido' : '')
+  const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
+  const containerBase = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Recién subido' : '')
+  const container = containerBase ? `${containerBase}${occCount >= 2 ? ` (${occCount} usos)` : ''}` : ''
   return (
     <div
       className="cms-mlib-item"
@@ -98,7 +100,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           </span>
         </div>
         <div className="cms-mlib-meta">
-          <div><strong>Nombre:</strong> {e.name || '—'}</div>
+          <div className="cms-mlib-meta-truncate"><strong>Nombre:</strong> <span title={e.name || '—'}>{e.name || '—'}</span></div>
           <div><strong>Formato:</strong> {getFormat(e)}</div>
           <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
           <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>

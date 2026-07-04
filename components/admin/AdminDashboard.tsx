@@ -80,8 +80,16 @@ export default function AdminDashboard() {
 
   const goto = (s: string) => {
     setSection(s)
-    if (!s.startsWith('contenidos-') && s !== 'subircontenido') setSubOpen(false)
-    if (s !== 'ajustes' && !s.startsWith('ajustes-')) setAjustesOpen(false)
+    if (s.startsWith('contenidos-') || s === 'subircontenido') {
+      setSubOpen(true)
+      setAjustesOpen(false)
+    } else if (s === 'ajustes' || s.startsWith('ajustes-')) {
+      setAjustesOpen(true)
+      setSubOpen(false)
+    } else {
+      setSubOpen(false)
+      setAjustesOpen(false)
+    }
   }
   const isContenidos = section.startsWith('contenidos-') || section === 'subircontenido'
   const isAjustes = section === 'ajustes' || section.startsWith('ajustes-')
@@ -118,7 +126,7 @@ export default function AdminDashboard() {
               <i className="fa-solid fa-users-gear"></i><span>Administrar usuarios</span>
             </button>
             <div className="admin-nav-group">
-              <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => { const next = !ajustesOpen; if (next && !isAjustes) goto('ajustes-loader'); setAjustesOpen(next); }}>
+              <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => { const next = !ajustesOpen; if (next) setSubOpen(false); if (next && !isAjustes) goto('ajustes-loader'); setAjustesOpen(next); }}>
                 <i className="fa-solid fa-sliders"></i>
                 <span>Ajustes del sitio <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: 'auto', width: 'auto', transform: ajustesOpen ? 'rotate(180deg)' : undefined }}></i></span>
               </button>
@@ -141,7 +149,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="admin-nav-group">
-              <button type="button" className={`admin-nav-item${isContenidos ? ' active' : ''}`} onClick={() => setSubOpen((o) => !o)}>
+              <button type="button" className={`admin-nav-item${isContenidos ? ' active' : ''}`} onClick={() => { const next = !subOpen; if (next) setAjustesOpen(false); setSubOpen(next); }}>
                 <i className="fa-solid fa-photo-film"></i>
                 <span>Contenidos <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: 'auto', width: 'auto', transform: subOpen ? 'rotate(180deg)' : undefined }}></i></span>
               </button>

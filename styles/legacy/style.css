@@ -5699,9 +5699,12 @@ body.cms-modal-open { overflow: hidden; }
     transition: border-color 0.18s ease, background 0.18s ease;
     cursor: pointer;
 }
-.cms-mlib-item:hover {
+.cms-mlib-item:hover,
+.cms-mlib-item:focus-within,
+.cms-mlib-item:has(.cms-dropdown:hover) {
     border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
     background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+    z-index: 100;
 }
 
 .cms-mlib-item .cms-mlib-thumb-wrap {

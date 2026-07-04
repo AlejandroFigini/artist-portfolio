@@ -13,7 +13,7 @@ import { fileToDataURL } from '@/lib/media'
 import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
-  loadJSON, saveJSON, LS, persistUsed, persistUnused,
+  loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
@@ -305,6 +305,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
             type: isVid ? 'video/webm' : 'image/webp', ts: Date.now(),
             label: finalName, section: '', original: true, reason: 'upload',
           })
+          recordMediaMeta('', data.secure_url, { name: finalName, size: data.final_bytes, type: isVid ? 'video/webm' : 'image/webp', label: finalName, section: 'Subidas directas' })
           uploaded.push({ ...data, original_name: finalName, isVid })
         }
         

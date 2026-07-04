@@ -11,10 +11,17 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, saveJSON, LS, type FieldValue,
+  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, saveJSON, LS, type FieldValue,
 } from '@/lib/cms/store'
 import { BASE_LANG, type Lang } from '@/lib/i18n'
 import { basename } from '@/lib/utils'
+
+function resolveMediaName(src: string | undefined, key?: string): string {
+  if (!src && !key) return ''
+  if (key && state.mediaMeta[key]?.name) return state.mediaMeta[key].name
+  if (src && state.mediaMeta[src]?.name) return state.mediaMeta[src].name
+  return src ? basename(src) : ''
+}
 
 // ----- Definiciones de campos (port de ANIM_FIELDS / ILLU_FIELDS / WAVE_FIELDS)
 
@@ -535,9 +542,9 @@ export function seedUsedContent() {
       return
     }
     if (!src) return // contenedor vacío: no es contenido usado, no sembrar
-    let name = basename(src), size: number | null = null, original = true
-    const mm = state.mediaMeta[key]
-    if (mm) { name = mm.name; size = mm.size; original = false }
+    let name = resolveMediaName(src, key), size: number | null = null, original = true
+    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
+    if (mm) { name = mm.name || name; size = mm.size ?? null; original = false }
     state.usedContent[key] = {
       key, label: meta.label, section: meta.section,
       kind: meta.kind as 'image' | 'video', src, name, size, original,
@@ -631,16 +638,13 @@ export function moveToUnusedSite(key: string) {
     const meta = metaByKey[key]
     if (!meta) return
     const s = currentSrcOf(el)
+    const mm = state.mediaMeta[key] || (s ? state.mediaMeta[s] : undefined)
     entry = {
       key, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-      src: s, name: basename(s), size: null, original: true,
+      src: s, name: mm?.name || resolveMediaName(s, key), size: mm?.size ?? null, original: mm ? false : true,
     }
   }
-  state.unused.push({
-    key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
-    type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-    label: entry.label, section: entry.section, original: entry.original, reason: 'retired',
-  })
+  retireUsedEntryToUnused(entry, 'retired', [key])
   delete state.usedContent[key]
   delete state.items[key]
   applyMedia(key, '')
@@ -726,13 +730,10 @@ function archiveMediaKey(key: string) {
     const label = meta?.label || state.containerNames[key] || key
     const section = meta?.section || 'Otros'
     const kind: 'image' | 'video' = meta?.kind === 'video' ? 'video' : 'image'
-    entry = { key, label, section, kind, src, name: basename(src), size: null, original: true }
+    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
+    entry = { key, label, section, kind, src, name: mm?.name || resolveMediaName(src, key), size: mm?.size ?? null, original: mm ? false : true }
   }
-  state.unused.push({
-    key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
-    type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-    label: entry.label, section: entry.section, original: entry.original, reason: 'retired',
-  })
+  retireUsedEntryToUnused(entry, 'retired', [key])
   delete state.usedContent[key]
   if (!state.retired.includes(key)) state.retired.push(key)
 }

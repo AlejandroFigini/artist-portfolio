@@ -116,9 +116,19 @@ function useMenus({ openModal }: Pick<Ctx, 'openModal'>) {
   const usedMenu = (e: AnyEntry): MenuAction[] => [
     { icon: 'fa-pen', color: '#22c55e', label: 'Editar información', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
     { icon: 'fa-box-archive', color: '#eab308', label: 'Mover a Sin Usar', onClick: () => {
-      confirm('Mover a Sin Usar',
-        <>¿Mover <strong>{e.label || (e as { key?: string }).key}</strong> a Sin Usar? Se quitará del sitio.</>,
-        () => moveUsedToUnused((e as { key: string }).key))
+      const k = (e as { key: string }).key
+      const otherUses = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src && u.key !== k) : []
+      if (otherUses.length > 0) {
+        const otherNames = otherUses.map(u => u.label || u.key).join(', ')
+        confirm('Vaciar Contenedor',
+          <>El contenido está en uso en: <strong>{otherNames}</strong>.<br /><br />
+            Se vaciará el contenedor <strong>{e.label || k}</strong>, pero el archivo <strong>no se moverá a sin usar</strong> porque sigue activo en los otros contenedores.</>,
+          () => moveUsedToUnused(k))
+      } else {
+        confirm('Mover a Sin Usar',
+          <>¿Mover <strong>{e.label || k}</strong> a Sin Usar? Se quitará del sitio.</>,
+          () => moveUsedToUnused(k))
+      }
     } },
     { icon: 'fa-link', color: '#a855f7', label: 'Asociar a otro contenedor', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
     { icon: 'fa-signature', color: '#3b82f6', label: 'Renombrar contenedor', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },

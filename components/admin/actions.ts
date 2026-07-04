@@ -9,7 +9,7 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit,
   persistUsed, persistUnused, persistRetired, persistTrash, persistOverridesLocal,
-  type UnusedEntry,
+  retireUsedEntryToUnused, type UnusedEntry,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
@@ -85,14 +85,10 @@ export function batchMoveUsedToUnused(keys: string[]): number {
   keys.forEach((key) => {
     const entry = state.usedContent[key]
     if (!entry) return
+    retireUsedEntryToUnused(entry, 'retired', keys)
     delete state.usedContent[key]
     delete state.items[key]
     if (!state.retired.includes(key)) state.retired.push(key)
-    state.unused.push({
-      key: entry.key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
-      type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-      label: entry.label, section: entry.section, original: entry.original, reason: 'retired',
-    })
     count++
   })
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()

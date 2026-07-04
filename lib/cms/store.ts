@@ -43,6 +43,7 @@ export type UsedEntry = {
   original: boolean
   fields?: FieldValue[] | null
   ts?: number
+  type?: string
 }
 
 export type UnusedEntry = {
@@ -143,11 +144,29 @@ export function loadState() {
 // ----- Persistencia ----------------------------------------------------------
 
 export const persistAudit = () => saveJSON(LS.AUDIT, state.audit.slice(-300))
-export const persistUnused = () => saveJSON(LS.UNUSED, state.unused)
-export const persistUsed = () => saveJSON(LS.USED, state.usedContent)
+export const persistUnused = () => { saveJSON(LS.UNUSED, state.unused); saveJSON(LS.MEDIA, state.mediaMeta) }
+export const persistUsed = () => { saveJSON(LS.USED, state.usedContent); saveJSON(LS.MEDIA, state.mediaMeta) }
 export const persistRetired = () => saveJSON(LS.RETIRED, state.retired)
 export const persistTrash = () => saveJSON(LS.TRASH, state.trash)
 export const persistOverridesLocal = () => saveJSON(LS.OVERRIDES, state.items)
+export const persistMediaMeta = () => saveJSON(LS.MEDIA, state.mediaMeta)
+
+export function recordMediaMeta(key: string, src: string | undefined, meta: { name?: string; size?: number | null; type?: string; ts?: number; label?: string; section?: string }) {
+  if (!meta.name && !meta.size) return
+  const existing = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined) || {}
+  const entry = {
+    name: meta.name || existing.name || '',
+    size: meta.size ?? existing.size ?? 0,
+    type: meta.type || existing.type || '',
+    ts: meta.ts || existing.ts || Date.now(),
+    label: meta.label || existing.label || '',
+    section: meta.section || existing.section || '',
+  }
+  if (key) state.mediaMeta[key] = entry
+  if (src) state.mediaMeta[src] = entry
+  persistMediaMeta()
+}
+
 
 export function recordAudit(entry: Partial<AuditEntry> & { user?: string }) {
   state.audit.push({
@@ -232,14 +251,25 @@ export function getContainerMeta(key: string): { label: string; section: string;
 
 // ----- Operaciones de gestión (port de admin.js) -----------------------------
 
+export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' = 'retired', ignoreKeys: string[] = []) {
+  if (!entry || !entry.src) return
+  const otherUses = Object.values(state.usedContent).filter(u => u.src === entry.src && u.key !== entry.key && !ignoreKeys.includes(u.key))
+  if (otherUses.length === 0) {
+    const alreadyInUnused = state.unused.some(u => u.src === entry.src)
+    if (!alreadyInUnused) {
+      state.unused.push({
+        key: entry.key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
+        type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
+        label: entry.label, section: entry.section, original: entry.original, reason,
+      })
+    }
+  }
+}
+
 export function moveUsedToUnused(key: string) {
   const entry = state.usedContent[key]
   if (!entry) return
-  state.unused.push({
-    key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
-    type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-    label: entry.label, section: entry.section, original: entry.original, reason: 'retired',
-  })
+  retireUsedEntryToUnused(entry, 'retired', [key])
   delete state.usedContent[key]
   delete state.items[key]
   if (!state.retired.includes(key)) state.retired.push(key)
@@ -272,11 +302,7 @@ export function performRestore(idx: number) {
   state.unused.splice(idx, 1)
   const cur = state.usedContent[key]
   if (cur) {
-    state.unused.push({
-      key, src: cur.src, dataUrl: cur.src, name: cur.name, size: cur.size,
-      type: cur.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-      label: cur.label, section: cur.section, original: cur.original, reason: 'replaced',
-    })
+    retireUsedEntryToUnused(cur, 'replaced', [key])
   }
   state.usedContent[key] = {
     key, label: entry.label, section: entry.section, kind: kindOf(entry),
@@ -312,11 +338,7 @@ export function performRenameContainer(key: string, newLabel: string) {
 function occupyTarget(targetKey: string) {
   const cur = state.usedContent[targetKey]
   if (cur) {
-    state.unused.push({
-      key: targetKey, src: cur.src, dataUrl: cur.src, name: cur.name, size: cur.size,
-      type: cur.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-      label: cur.label, section: cur.section, original: cur.original, reason: 'replaced',
-    })
+    retireUsedEntryToUnused(cur, 'replaced', [targetKey])
   } else {
     const ri = state.retired.indexOf(targetKey)
     if (ri >= 0) state.retired.splice(ri, 1)

@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
@@ -112,6 +112,8 @@ type RepoEntry = {
   kind: 'image' | 'video'
   _state: 'usado' | 'sin usar'
   _key?: string
+  ts?: number
+  type?: string
 }
 
 const FILTERS = [
@@ -126,18 +128,19 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
   const isVideoSlot = meta?.kind === 'video'
   const [filter, setFilter] = useState<string>('all')
   const [selected, setSelected] = useState<RepoEntry | null>(null)
+  const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
 
   const [all] = useState<RepoEntry[]>(() => {
     const list: RepoEntry[] = []
     Object.keys(state.usedContent).forEach((k) => {
       const e = state.usedContent[k]
       if (isVideoSlot !== (e.kind === 'video')) return
-      list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k })
+      list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
     })
     state.unused.forEach((e) => {
       const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
       if (isVideoSlot !== eIsVid) return
-      list.push({ src: e.src || e.dataUrl || '', name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key })
+      list.push({ src: e.src || e.dataUrl || '', name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
     })
     return list
   })
@@ -145,19 +148,21 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
   if (!meta) return null
   const filtered = filter === 'all' ? all : all.filter((e) => e._state === filter)
 
-  const assign = (): void | false => {
-    if (!selected) { toast('Seleccioná un contenido primero', 'error'); return false }
+  const performAssign = (moveFromOld: boolean) => {
+    if (!selected) return
     const src = selected.src
-    if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
+    if (!src) return
+
+    if (moveFromOld && selected._key && selected._key !== cmsKey) {
+      delete state.usedContent[selected._key]
+      delete state.items[selected._key]
+      if (!state.retired.includes(selected._key)) state.retired.push(selected._key)
+      applyMedia(selected._key, '')
+    }
 
     const prev = state.usedContent[cmsKey]
     if (prev && prev.src) {
-      state.unused.push({
-        key: cmsKey, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
-        type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-        label: prev.label, section: prev.section, original: prev.original, reason: 'replaced',
-      })
-      persistUnused()
+      retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
     }
 
     state.items[cmsKey] = src
@@ -167,8 +172,19 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
       key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
       src, name: selected.name, size: selected.size, original: false,
       fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
+      ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
     }
+
+    if (selected._state === 'sin usar') {
+      const idx = state.unused.findIndex(u => u.src === src)
+      if (idx !== -1) {
+        state.unused.splice(idx, 1)
+        persistUnused()
+      }
+    }
+
     persistUsed()
+    recordMediaMeta(cmsKey, src, { name: selected.name, size: selected.size, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
     persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
 
     const ri = state.retired.indexOf(cmsKey)
@@ -179,10 +195,24 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
 
     recordAudit({
       section: meta.section, label: meta.label, kind: meta.kind === 'video' ? 'video' : 'imagen',
-      summary: `Contenido asignado desde repositorio (${selected.name || 'archivo existente'})`,
+      summary: moveFromOld ? `Contenido movido desde contenedor anterior (${selected.name || 'archivo existente'})` : `Contenido asignado/reusado desde repositorio (${selected.name || 'archivo existente'})`,
     })
-    toast('Contenido asignado correctamente')
+    toast(moveFromOld ? 'Contenido movido correctamente' : 'Contenido asignado correctamente')
+    setConfirmEntry(null)
     if (onSuccess) onSuccess()
+  }
+
+  const assign = (): void | false => {
+    if (!selected) { toast('Seleccioná un contenido primero', 'error'); return false }
+    const src = selected.src
+    if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
+
+    if (selected._state === 'usado' && selected._key && selected._key !== cmsKey) {
+      setConfirmEntry(selected)
+      return false
+    }
+
+    performAssign(false)
   }
 
   return (
@@ -224,6 +254,13 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
               className={`cms-repo-thumb${selected === entry ? ' selected' : ''}`}
               onClick={() => setSelected(entry)}
             >
+              <div className="cms-mlib-tag-top" style={{ padding: '0.35rem 0.35rem 0 0.35rem' }}>
+                {entry._state === 'usado' ? (
+                  <span className="cms-tag cms-tag--uso">En Uso</span>
+                ) : (
+                  <span className="cms-tag cms-tag--nouso">Sin Usar</span>
+                )}
+              </div>
               {entry.kind === 'video' ? (
                 entry.src ? (
                   entry.src.includes('res.cloudinary.com') ? (
@@ -244,12 +281,35 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
               <div className="cms-repo-thumb-info">
                 <span style={{ fontWeight: 400 }}>{entry.name || entry.label || '—'}</span><br />
                 {entry.size ? <><strong>Tamaño:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
-                <span style={{ opacity: 0.7, fontWeight: 400 }}>· {entry._state}</span>
               </div>
             </div>
           ))}
         </div>
       </div>
+      {confirmEntry && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1.5rem'
+        }}>
+          <div style={{ background: '#1e1e24', border: '1px solid #333', borderRadius: '8px', padding: '1.5rem', maxWidth: '420px', width: '100%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+            <div style={{ fontSize: '2rem', color: '#eab308', marginBottom: '1rem' }}><i className="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.15rem', color: '#fff' }}>Contenido en uso</h3>
+            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.95rem', color: '#ccc', lineHeight: 1.5 }}>
+              Este contenido ya se está usando en el contenedor <strong>{confirmEntry.label || confirmEntry._key}</strong>.<br /><br />
+              ¿Deseas <strong>moverlo</strong> (se quitará del contenedor anterior) o <strong>reusarlo</strong> (se mantendrá en ambos)?
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button type="button" className="cms-btn cms-btn--ghost" onClick={() => setConfirmEntry(null)}>Cancelar</button>
+              <button type="button" className="cms-btn" style={{ background: '#3b82f6', color: '#fff' }} onClick={() => performAssign(false)}>
+                <i className="fa-solid fa-copy"></i> Reusar
+              </button>
+              <button type="button" className="cms-btn" style={{ background: '#eab308', color: '#000' }} onClick={() => performAssign(true)}>
+                <i className="fa-solid fa-arrow-right-arrow-left"></i> Mover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CmsModal>
   )
 }

@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, type FieldValue,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools,
@@ -90,8 +90,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         state.usedContent[cmsKey] = {
           key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
           src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
+          ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
         }
         persistUsed()
+        recordMediaMeta(cmsKey, data.secure_url, { name: finalName, size: data.final_bytes, type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
 
         const ri = state.retired.indexOf(cmsKey)
         if (ri >= 0) { state.retired.splice(ri, 1); persistRetired() }
