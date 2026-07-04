@@ -27,18 +27,6 @@ export default function PageLoader() {
     const loader = ref.current
     if (!loader) return
 
-    // Admin: mantener el loader montado y visible para poder editar el
-    // contenedor CMS. Se ignora el auto-hide y el skip de sesión.
-    if (admin) {
-      if (!adminDismissed) {
-        try { sessionStorage.removeItem('cms_skip_loader') } catch {}
-        document.body.classList.add('loading-active')
-        loader.classList.remove('loader-hidden')
-        setGone(false)
-      }
-      return () => { document.body.classList.remove('loading-active') }
-    }
-
     let skip = false
     try {
       skip = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1'
@@ -49,6 +37,17 @@ export default function PageLoader() {
       document.body.classList.remove('loading-active')
       setGone(true)
       return
+    }
+
+    // Admin: mantener el loader montado y visible en la primera visita de
+    // la sesión para poder editar el contenedor CMS.
+    if (admin) {
+      if (!adminDismissed) {
+        document.body.classList.add('loading-active')
+        loader.classList.remove('loader-hidden')
+        setGone(false)
+      }
+      return () => { document.body.classList.remove('loading-active') }
     }
 
     // idempotente: cubre la navegación SPA a '/', donde el boot script no corre
@@ -91,7 +90,7 @@ export default function PageLoader() {
             className="loader-admin-dismiss"
             aria-label="Cerrar pantalla de carga"
             title="Cerrar (solo admin)"
-            onClick={() => { setAdminDismissed(true); setGone(true) }}
+            onClick={() => { document.body.classList.remove('loading-active'); setAdminDismissed(true); setGone(true) }}
           >
             <i className="fa-solid fa-xmark"></i>
           </button>

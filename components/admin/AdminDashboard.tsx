@@ -45,7 +45,7 @@ export default function AdminDashboard() {
   const [subOpen, setSubOpen] = useState(false)
   const [ajustesOpen, setAjustesOpen] = useState(false)
   const [modal, setModal] = useState<AdminModal | null>(null)
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadFiles, setUploadFiles] = useState<File[]>([])
 
   // loadState emite → useCmsStore re-renderiza; el render deriva de state.loaded
   useEffect(() => {
@@ -206,18 +206,18 @@ export default function AdminDashboard() {
               <p className="cms-admin-sub">Sube una imagen o video a Cloudinary de manera directa y obtén su optimización automática con IA.</p>
               <div className="cms-upload" style={{ maxWidth: 800, margin: '2rem auto', border: '2px dashed var(--border)', padding: '3rem 1.5rem', borderRadius: 16, textAlign: 'center', background: 'var(--bg-secondary)' }}>
                 <label className="cms-btn cms-btn--primary" style={{ display: 'inline-block', cursor: 'pointer', padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: 12 }}>
-                  <i className="fa-solid fa-file-arrow-up fa-xl" style={{ marginRight: '0.5rem' }}></i> Seleccionar archivo de tu PC
+                  <i className="fa-solid fa-file-arrow-up fa-xl" style={{ marginRight: '0.5rem' }}></i> Seleccionar archivo(s) de tu PC
                   <input
-                    type="file" accept="image/*,video/*" style={{ display: 'none' }}
-                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setUploadFile(f) }}
+                    type="file" multiple accept="image/*,video/*" style={{ display: 'none' }}
+                    onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length > 0) setUploadFiles(f) }}
                   />
                 </label>
               </div>
               {uploadHist.length > 0 && (
                 <>
-                  <h3 style={{ marginTop: '2rem' }}>Últimas 4 subidas</h3>
+                  <h3 style={{ marginTop: '2rem' }}>Últimas 3 subidas</h3>
                   <div className="cms-mlib-grid" style={{ marginTop: '1rem' }}>
-                    {uploadHist.map((h, i) => {
+                    {uploadHist.slice(0, 3).map((h, i) => {
                       const entry = {
                         src: h.secure_url, dataUrl: h.secure_url, name: h.originalName || 'archivo',
                         size: h.final_bytes, type: h.origType || `image/${h.final_format}`,
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
       {modal?.kind === 'rename' && <RenameContainerModal cmsKey={modal.key} onClose={() => setModal(null)} />}
       {modal?.kind === 'associate' && <AssociateContainerModal item={modal.item} isUnused={modal.isUnused} unusedIdx={modal.idx} onClose={() => setModal(null)} />}
       {modal?.kind === 'editInfo' && <AdminEditInfoModal cmsKey={modal.key} onClose={() => setModal(null)} />}
-      {uploadFile && <AdminUploadModal file={uploadFile} onClose={() => setUploadFile(null)} />}
+      {uploadFiles.length > 0 && <AdminUploadModal files={uploadFiles} onClose={() => setUploadFiles([])} />}
     </>
   )
 }

@@ -40,7 +40,7 @@ export function Thumb({ e }: { e: AnyEntry }) {
         /* eslint-disable-next-line @next/next/no-img-element */
         <img src={cloudinaryThumb(src, vid)} alt="" loading="lazy" style={{ objectFit: 'cover' }} />
       ) : vid ? (
-        <span className="cms-mlib-noimg"><i className="fa-solid fa-film"></i></span>
+        <video src={src} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img src={src} alt="" loading="lazy" style={{ objectFit: 'cover' }} />

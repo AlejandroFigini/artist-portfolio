@@ -16,7 +16,7 @@ import {
   loadJSON, saveJSON, LS, persistUsed, persistUnused,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
-import type { AnyEntry } from './cards'
+import { Thumb, type AnyEntry } from './cards'
 
 type CloseProp = { onClose: () => void }
 
@@ -83,9 +83,15 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
   return (
     <CmsModal title="Asociar a nuevo contenedor" wide onClose={onClose} actions={[{ label: 'Cancelar', onClick: () => {} }]}>
       <div className="cms-upload" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-        <p className="cms-admin-sub" style={{ marginBottom: '1rem' }}>
-          Asociar el archivo <strong>{item.name || '—'}</strong> a un contenedor.
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem', padding: '0.6rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
+            <Thumb e={item} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name || item.label || '—'}</strong>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{kindOf(item) === 'video' ? 'Video / Animación' : 'Imagen'} {item.size ? `· ${fmtBytes(item.size)}` : ''}</span>
+          </div>
+        </div>
         <div className="admin-tree">
           {tree.map((page) => {
             const pOpen = openPages.has(page.id)
@@ -265,36 +271,53 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
 
 // ----- Subida directa (sección "Subir contenido") --------------------------------------
 
-export function AdminUploadModal({ file, onClose }: CloseProp & { file: File }) {
+export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[] }) {
   const [phase, setPhase] = useState<'form' | 'uploading' | 'done' | 'error'>('form')
-  const [result, setResult] = useState<UploadResponse | null>(null)
+  const [results, setResults] = useState<(UploadResponse & { original_name: string; isVid: boolean })[]>([])
   const [errorMsg, setErrorMsg] = useState('')
+  const [progressIndex, setProgressIndex] = useState(0)
   const nameRef = useRef<HTMLInputElement>(null)
-  const isVid = file.type.includes('video')
 
   const doUpload = () => {
-    const finalName = nameRef.current?.value.trim() || file.name
-    setPhase('uploading')
-    fileToDataURL(file)
-      .then((base64) => uploadMedia(base64, file.size, finalName, 'Subidas directas'))
-      .then((data) => {
-        // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
-        const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
-        hist.unshift({ ...data, origSize: file.size, origType: file.type, originalName: finalName, ts: Date.now() })
-        if (hist.length > 4) hist.length = 4
-        saveJSON(LS.UPLOAD_TEST, hist)
-        // entra al repositorio como "sin usar"
-        state.unused.push({
-          src: data.secure_url, dataUrl: data.secure_url, name: finalName, size: data.final_bytes,
-          type: isVid ? 'video/webm' : 'image/webp', ts: Date.now(),
-          label: finalName, section: '', original: true, reason: 'upload',
-        })
+    void (async () => {
+      setPhase('uploading')
+      setErrorMsg('')
+      const uploaded: (UploadResponse & { original_name: string; isVid: boolean })[] = []
+      
+      try {
+        for (let i = 0; i < files.length; i++) {
+          setProgressIndex(i + 1)
+          const file = files[i]
+          const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
+          const finalName = (files.length === 1 && nameRef.current?.value.trim()) || file.name
+          const base64 = await fileToDataURL(file)
+          const data = await uploadMedia(base64, file.size, finalName, 'Subidas directas')
+          
+          // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
+          const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
+          hist.unshift({ ...data, origSize: file.size, origType: file.type, originalName: finalName, ts: Date.now() })
+          if (hist.length > 3) hist.length = 3
+          saveJSON(LS.UPLOAD_TEST, hist)
+          
+          // entra al repositorio como "sin usar"
+          state.unused.push({
+            src: data.secure_url, dataUrl: data.secure_url, name: finalName, size: data.final_bytes,
+            type: isVid ? 'video/webm' : 'image/webp', ts: Date.now(),
+            label: finalName, section: '', original: true, reason: 'upload',
+          })
+          uploaded.push({ ...data, original_name: finalName, isVid })
+        }
+        
         persistUnused()
         emit()
-        setResult({ ...data, original_name: finalName })
+        setResults(uploaded)
         setPhase('done')
-      })
-      .catch((err: Error) => { setErrorMsg(err.message); setPhase('error') })
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        setErrorMsg(msg)
+        setPhase('error')
+      }
+    })()
     return false as const
   }
 
@@ -302,7 +325,7 @@ export function AdminUploadModal({ file, onClose }: CloseProp & { file: File }) 
     phase === 'form'
       ? [
           { label: 'Cancelar', onClick: () => {} },
-          { label: 'Comprimir y subir en Cloudinary', primary: true, onClick: doUpload },
+          { label: files.length > 1 ? `Comprimir y subir ${files.length} archivos` : 'Comprimir y subir en Cloudinary', primary: true, onClick: doUpload },
         ]
       : phase === 'uploading'
         ? []
@@ -312,48 +335,78 @@ export function AdminUploadModal({ file, onClose }: CloseProp & { file: File }) 
     <CmsModal title="Subir nuevo contenido" wide locked={phase === 'uploading'} onClose={onClose} actions={actions}>
       {phase === 'form' && (
         <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Nombre del archivo</label>
-            <input ref={nameRef} type="text" className="cms-field" defaultValue={file.name}
-              style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <div><strong>Tamaño:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(file.size)}</span></div>
-            <div><strong>Tipo de contenido:</strong> {isVid ? 'Video' : 'Imagen'}</div>
-            <div><strong>Formato:</strong> {file.type || 'Archivo'}</div>
-          </div>
-          <p className="cms-admin-sub" style={{ margin: '1rem 0 0' }}>Se procesará con IA en la nube para máxima optimización.</p>
+          {files.length === 1 ? (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Nombre del archivo</label>
+                <input ref={nameRef} type="text" className="cms-field" defaultValue={files[0].name}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                <div><strong>Tamaño:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files[0].size)}</span></div>
+                <div><strong>Tipo de contenido:</strong> {files[0].type.includes('video') ? 'Video' : 'Imagen'}</div>
+                <div><strong>Formato:</strong> {files[0].type || 'Archivo'}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.6rem' }}>
+                  <i className="fa-solid fa-layer-group" style={{ color: 'var(--accent)', marginRight: '0.4rem' }}></i>
+                  {files.length} archivos seleccionados para subir:
+                </label>
+                <div style={{ maxHeight: '250px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {files.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', paddingBottom: '0.4rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <span style={{ fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                        <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
+                        {f.name}
+                      </span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                <strong>Tamaño total:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
+              </div>
+            </>
+          )}
+          <p className="cms-admin-sub" style={{ margin: '1rem 0 0' }}>Se procesarán con IA en la nube para máxima optimización.</p>
         </div>
       )}
       {phase === 'uploading' && (
         <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
           <i className="fa-solid fa-circle-notch fa-spin fa-3x" style={{ color: 'var(--accent)' }}></i>
-          <h3 style={{ marginTop: '1rem', color: 'var(--text-primary)' }}>Subiendo y comprimiendo...</h3>
+          <h3 style={{ marginTop: '1rem', color: 'var(--text-primary)' }}>
+            {files.length > 1 ? `Subiendo archivo ${progressIndex} de ${files.length}...` : 'Subiendo y comprimiendo...'}
+          </h3>
           <p className="cms-admin-sub">Esto puede tardar unos segundos dependiendo del tamaño.</p>
         </div>
       )}
-      {phase === 'done' && result && (
-        <div style={{ padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+      {phase === 'done' && results.length > 0 && (
+        <div style={{ padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', maxHeight: '65vh', overflowY: 'auto' }}>
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="fa-solid fa-cloud-arrow-up" style={{ color: 'var(--accent)' }}></i> Subida exitosa
+            <i className="fa-solid fa-cloud-arrow-up" style={{ color: 'var(--accent)' }}></i>{' '}
+            {results.length > 1 ? `${results.length} archivos subidos exitosamente` : 'Subida exitosa'}
           </h3>
-          <div style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            <div><strong style={{ color: 'var(--text-primary)' }}>Archivo:</strong> {result.original_name}</div>
-            <div><strong style={{ color: 'var(--text-primary)' }}>Tamaño:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(result.final_bytes)}</span> <span style={{ fontSize: '0.8rem' }}>(inicial: {fmtBytes(file.size)})</span></div>
-            <div><strong style={{ color: 'var(--text-primary)' }}>Formato:</strong> {result.final_format}</div>
-            <div style={{ marginTop: '0.4rem' }}>
-              <strong style={{ color: 'var(--accent)' }}>Ahorro de tamaño:</strong>{' '}
-              <strong style={{ color: 'var(--accent)', fontFamily: "'Fira Code', monospace" }}>
-                {file.size > result.final_bytes ? Math.round((1 - result.final_bytes / file.size) * 100) + '%' : '0%'}
-              </strong>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {results.map((result, i) => (
+              <div key={i} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Archivo:</strong> {result.original_name}</div>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Tamaño final:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(result.final_bytes)}</span></div>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Formato:</strong> {result.final_format}</div>
+                </div>
+                {result.isVid ? (
+                  <video src={result.secure_url} controls style={{ maxWidth: '100%', maxHeight: '30vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={result.secure_url} alt="Subida" style={{ maxWidth: '100%', maxHeight: '30vh', objectFit: 'contain', borderRadius: 8, display: 'block', margin: '0 auto' }} />
+                )}
+              </div>
+            ))}
           </div>
-          {isVid ? (
-            <video src={result.secure_url} controls style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}></video>
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={result.secure_url} alt="Subida" style={{ maxWidth: '100%', maxHeight: '40vh', objectFit: 'contain', borderRadius: 8, display: 'block', margin: '0 auto' }} />
-          )}
         </div>
       )}
       {phase === 'error' && (

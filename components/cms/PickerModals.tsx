@@ -225,10 +225,19 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
               onClick={() => setSelected(entry)}
             >
               {entry.kind === 'video' ? (
-                <div className="cms-repo-thumb-icon"><i className="fa-solid fa-film"></i></div>
+                entry.src ? (
+                  entry.src.includes('res.cloudinary.com') ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img className="cms-repo-thumb-img" src={cloudinaryThumb(entry.src, true)} alt="" loading="lazy" />
+                  ) : (
+                    <video className="cms-repo-thumb-img" src={entry.src} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  )
+                ) : (
+                  <div className="cms-repo-thumb-icon"><i className="fa-solid fa-film"></i></div>
+                )
               ) : entry.src ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img className="cms-repo-thumb-img" src={entry.src.startsWith('data:') ? entry.src : cloudinaryThumb(entry.src)} alt="" loading="lazy" />
+                <img className="cms-repo-thumb-img" src={entry.src.startsWith('data:') ? entry.src : cloudinaryThumb(entry.src, false)} alt="" loading="lazy" />
               ) : (
                 <div className="cms-repo-thumb-icon"><i className="fa-solid fa-image"></i></div>
               )}
