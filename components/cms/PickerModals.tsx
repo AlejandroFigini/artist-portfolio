@@ -48,47 +48,39 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
 
   return (
     <CmsModal title="Seleccionar contenido" onClose={onClose} actions={[{ label: 'Cancelar', onClick: onClose }]}>
-      <div className="cms-picker-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-          {editingName ? (
-            <div style={{ display: 'flex', gap: '0.4rem', flex: 1, marginRight: '0.5rem' }}>
-              <input ref={nameRef} type="text" defaultValue={state.containerNames[cmsKey] || meta.label} className="cms-input" style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }} autoFocus />
-              <button type="button" className="cms-btn cms-btn--primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={handleRename}>Guardar</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                <i className="fa-solid fa-layer-group" style={{ marginRight: '0.4rem', opacity: 0.7 }}></i>
-                {state.containerNames[cmsKey] || meta.label}
-              </span>
-              <button type="button" onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.8rem', opacity: 0.8 }} title="Renombrar contenedor">
-                <i className="fa-solid fa-pen"></i>
-              </button>
-            </div>
-          )}
-          <span style={{ fontSize: '0.75rem', background: 'var(--bg-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
-            {meta.section || 'General'}
-          </span>
-        </div>
-        <div className="cms-picker-preview">
-          {currentSrc ? (
-            isVideo ? <video src={currentSrc} muted playsInline loop autoPlay /> : <img src={currentSrc} alt={meta.label} />
-          ) : (
-            <div className="cms-picker-empty"><i className="fa-regular fa-image"></i><span>Contenedor vacío</span></div>
-          )}
-        </div>
-        <div className="cms-picker-options">
-          <button type="button" className="cms-picker-option" onClick={onLocal}>
-            <i className="fa-solid fa-desktop"></i>
-            <span className="cms-picker-opt-title">Subir archivo desde PC</span>
-            <span className="cms-picker-opt-desc">El archivo se optimizará (WebP/WebM) y subirá al servidor.</span>
-          </button>
-          <button type="button" className="cms-picker-option" onClick={onRepo}>
-            <i className="fa-solid fa-cloud-arrow-up"></i>
-            <span className="cms-picker-opt-title">Seleccionar contenido ya subido</span>
-            <span className="cms-picker-opt-desc">Elegir de la biblioteca de medios en el servidor.</span>
-          </button>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', padding: '0 0.2rem' }}>
+        {editingName ? (
+          <div style={{ display: 'flex', gap: '0.4rem', flex: 1, marginRight: '0.5rem' }}>
+            <input ref={nameRef} type="text" defaultValue={state.containerNames[cmsKey] || meta.label} className="cms-input" style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }} autoFocus />
+            <button type="button" className="cms-btn cms-btn--primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={handleRename}>Guardar</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <i className="fa-solid fa-layer-group" style={{ marginRight: '0.4rem', color: 'var(--accent)' }}></i>
+              {state.containerNames[cmsKey] || meta.label}
+            </span>
+            <button type="button" onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.8rem', opacity: 0.8 }} title="Renombrar contenedor">
+              <i className="fa-solid fa-pen"></i>
+            </button>
+          </div>
+        )}
+        <span style={{ fontSize: '0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          {meta.section || 'General'}
+        </span>
+      </div>
+
+      <div className="cms-picker-grid">
+        <button type="button" className="cms-picker-option" onClick={onLocal}>
+          <i className="fa-solid fa-desktop"></i>
+          <span className="cms-picker-title">Subir archivo desde PC</span>
+          <span className="cms-picker-desc">El archivo se optimizará (WebP/WebM) y subirá al servidor.</span>
+        </button>
+        <button type="button" className="cms-picker-option" onClick={onRepo}>
+          <i className="fa-solid fa-cloud-arrow-up"></i>
+          <span className="cms-picker-title">Seleccionar contenido ya subido</span>
+          <span className="cms-picker-desc">Elegir de la biblioteca de medios en el servidor.</span>
+        </button>
       </div>
     </CmsModal>
   )
