@@ -187,6 +187,12 @@ export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyn
 export const persistOverridesLocal = () => { saveJSON(LS.OVERRIDES, state.items); scheduleSyncToServer('overrides') }
 export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
 
+export function clearDbOverrides(keys: string[]) {
+  const payload: Record<string, string> = {}
+  keys.forEach(k => payload[k] = '')
+  saveContent(payload).catch(() => {})
+}
+
 /* Aplica el estado del servidor sobre el local. El server SIEMPRE gana:
    si el server devuelve un array vacío o un objeto vacío, eso significa que
    no hay datos — no que "se conserve lo local". localStorage se actualiza
@@ -219,6 +225,10 @@ export function mergeServerState(server: CmsStatePayload) {
   if ('container_names' in server) {
     state.containerNames = (server.container_names || {}) as typeof state.containerNames
     saveJSON(LS.CONTAINER_NAMES, state.containerNames)
+  }
+  if ('overrides' in server) {
+    state.items = (server.overrides || {}) as Record<string, string>
+    saveJSON(LS.OVERRIDES, state.items)
   }
   emit()
 }
@@ -410,9 +420,12 @@ export function clearItemOverrides(keys: string[]) {
     })
   })
   persistOverridesLocal()
+  // Persist removal to DB (DB first strategy)
   saveContent(cleared).catch(() => {})
 }
 
+/** Alias used when we want to clear overrides without persisting to localStorage first */
+export const clearOverridesForKeys = clearItemOverrides
 export function purgeUrlsFromAllState(urls: string[]) {
   if (!urls || !urls.length) return
   const urlSet = new Set(urls.filter(Boolean))
