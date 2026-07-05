@@ -43,3 +43,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI / IDE / graphify
+/.agent/
+/.agents/
+/.claude/
+/.gemini/
+/graphify-out/
+skills-lock.json
