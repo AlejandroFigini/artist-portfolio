@@ -34,53 +34,67 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
 
   if (!meta) return null
   const isVideo = meta.kind === 'video'
-  const currentSrc = state.items[cmsKey] || (elementsByKey[cmsKey] ? (elementsByKey[cmsKey] as HTMLImageElement | HTMLVideoElement).src : '')
 
-  const handleRename = () => {
-    const newLabel = nameRef.current?.value.trim()
-    if (!newLabel || newLabel === meta.label) { setEditingName(false); return }
-    performRenameContainer(cmsKey, newLabel)
-    meta.label = newLabel
-    refreshContainerLabel(cmsKey)
-    toast('Nombre del contenedor actualizado')
+  const commitRename = () => {
+    const newName = nameRef.current?.value.trim()
+    if (newName && newName !== meta.label) {
+      performRenameContainer(cmsKey, newName)
+      meta.label = newName
+      refreshContainerLabel(cmsKey)
+      toast('Contenedor actualizado')
+    }
     setEditingName(false)
   }
 
   return (
-    <CmsModal title="Seleccionar contenido" onClose={onClose} actions={[{ label: 'Cancelar', onClick: onClose }]}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', padding: '0 0.2rem' }}>
-        {editingName ? (
-          <div style={{ display: 'flex', gap: '0.4rem', flex: 1, marginRight: '0.5rem' }}>
-            <input ref={nameRef} type="text" defaultValue={state.containerNames[cmsKey] || meta.label} className="cms-input" style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }} autoFocus />
-            <button type="button" className="cms-btn cms-btn--primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={handleRename}>Guardar</button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              <i className="fa-solid fa-layer-group" style={{ marginRight: '0.4rem', color: 'var(--accent)' }}></i>
-              {state.containerNames[cmsKey] || meta.label}
-            </span>
-            <button type="button" onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.8rem', opacity: 0.8 }} title="Renombrar contenedor">
-              <i className="fa-solid fa-pen"></i>
+    <CmsModal title="¿Qué deseas hacer?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancelar', onClick: () => { commitRename() } }]}>
+      <div>
+        <div className="cms-up-head">
+          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
+          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Tipo requerido:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Imagen'}</span></div>
+          <div className="cms-container-name-row" style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {editingName ? (
+              <label className="cms-field" style={{ flex: 1, margin: 0 }}>
+                <span>Nombre del contenedor</span>
+                <input ref={nameRef} type="text" defaultValue={meta.label} autoFocus style={{ fontWeight: 400 }} onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename() }} />
+              </label>
+            ) : (
+              <div className="cms-meta-line" style={{ flex: 1 }}>
+                <strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
+              style={{
+                background: 'none', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+                borderRadius: '6px', padding: '0.35rem 0.5rem', cursor: 'pointer',
+                color: 'var(--accent)', fontSize: '0.78rem', flexShrink: 0,
+                transition: 'background 0.2s, border-color 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+            >
+              <i className={`fa-solid ${editingName ? 'fa-check' : 'fa-pen'}`} />
             </button>
           </div>
-        )}
-        <span style={{ fontSize: '0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          {meta.section || 'General'}
-        </span>
-      </div>
-
-      <div className="cms-picker-grid">
-        <button type="button" className="cms-picker-option" onClick={onLocal}>
-          <i className="fa-solid fa-desktop"></i>
-          <span className="cms-picker-title">Subir archivo desde PC</span>
-          <span className="cms-picker-desc">El archivo se optimizará (WebP/WebM) y subirá al servidor.</span>
-        </button>
-        <button type="button" className="cms-picker-option" onClick={onRepo}>
-          <i className="fa-solid fa-cloud-arrow-up"></i>
-          <span className="cms-picker-title">Seleccionar contenido ya subido</span>
-          <span className="cms-picker-desc">Elegir de la biblioteca de medios en el servidor.</span>
-        </button>
+        </div>
+        <div className="cms-picker-grid">
+          <button type="button" className="cms-picker-option" onClick={onLocal}>
+            <i className="fa-solid fa-file-arrow-up"></i>
+            <span className="cms-picker-title">Subir desde tu PC</span>
+            <span className="cms-picker-desc">Selecciona un archivo nuevo de tu computadora para subirlo y asignarlo aquí.</span>
+          </button>
+          <button type="button" className="cms-picker-option" onClick={onRepo}>
+            <i className="fa-solid fa-cloud"></i>
+            <span className="cms-picker-title">Usar desde repositorio</span>
+            <span className="cms-picker-desc">Elige un archivo que ya fue subido previamente al repositorio de contenidos.</span>
+          </button>
+        </div>
       </div>
     </CmsModal>
   )
