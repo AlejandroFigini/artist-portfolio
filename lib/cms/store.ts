@@ -94,6 +94,7 @@ export function simpleHash(str: string): number {
 
 export const state = {
   loaded: false,                              // loadState() ya corrió en este cliente
+  serverReady: false,                         // merge con el servidor completado
   items: {} as Record<string, string>,        // overrides (clave -> valor)
   audit: [] as AuditEntry[],
   mediaMeta: {} as Record<string, { name: string; size: number; type: string; ts: number; label: string; section: string }>,
@@ -218,6 +219,7 @@ export function mergeServerState(server: CmsStatePayload) {
   const localHash = loadJSON(LS.GLOBAL_HASH, null)
   // If hashes match, nothing changed – keep local cache
   if (localHash !== null && serverHash === localHash) {
+    state.serverReady = true
     emit()
     return
   }
@@ -264,7 +266,11 @@ export function mergeServerState(server: CmsStatePayload) {
 
   // Persist the new global hash for future comparisons
   saveJSON(LS.GLOBAL_HASH, serverHash)
+  state.serverReady = true
   emit()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cms:contentChanged'))
+  }
 }
 
 /* Carga el estado completo desde el server y lo aplica. La DB es la fuente
@@ -399,7 +405,7 @@ import { getCloudinaryFolder } from '@/lib/cms/pages'
 
 /** Mueve un asset en Cloudinary de forma fire-and-forget y actualiza la URL
  *  en todos los arrays del estado donde aparezca. */
-function cloudinaryMove(oldUrl: string, newFolder: string) {
+export function cloudinaryMove(oldUrl: string, newFolder: string) {
   if (!oldUrl || !oldUrl.includes('cloudinary.com')) return
   moveMedia(oldUrl, newFolder).then(({ newUrl }) => {
     if (newUrl === oldUrl) return // sin cambios
@@ -421,6 +427,40 @@ function cloudinaryMove(oldUrl: string, newFolder: string) {
     persistUsed(); persistUnused(); persistTrash(); persistOverridesLocal()
     emit()
   }).catch(() => {})
+}
+
+/** Sincroniza automáticamente las carpetas de Cloudinary (en-uso, sin-usar, basurero)
+ *  según el estado actual del CMS para corregir archivos que hayan quedado en carpetas incorrectas. */
+export function syncCloudinaryFolders(): number {
+  if (!state.isAdmin) return 0
+  let count = 0
+  // 1. Contenidos en uso -> portfolio/en-uso
+  Object.values(state.usedContent).forEach((entry) => {
+    if (entry && entry.src && entry.src.includes('cloudinary.com') && !entry.src.includes('/portfolio/en-uso/')) {
+      cloudinaryMove(entry.src, 'portfolio/en-uso')
+      count++
+    }
+  })
+  // 2. Contenidos sin usar -> portfolio/sin-usar
+  state.unused.forEach((entry) => {
+    const src = entry.src || entry.dataUrl
+    if (src && src.includes('cloudinary.com') && !src.includes('/portfolio/sin-usar/')) {
+      cloudinaryMove(src, 'portfolio/sin-usar')
+      count++
+    }
+  })
+  // 3. Contenidos en basurero -> portfolio/basurero
+  state.trash.forEach((entry) => {
+    const src = entry.src || entry.dataUrl
+    if (src && src.includes('cloudinary.com') && !src.includes('/portfolio/basurero/')) {
+      cloudinaryMove(src, 'portfolio/basurero')
+      count++
+    }
+  })
+  if (count > 0) {
+    console.log(`[syncCloudinaryFolders] Sincronizando ${count} archivos a sus carpetas correctas...`)
+  }
+  return count
 }
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {

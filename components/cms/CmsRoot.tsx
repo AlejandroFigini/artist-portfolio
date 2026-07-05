@@ -40,7 +40,7 @@ export default function CmsRoot() {
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
   // al nodo definitivo del DOM (patrón estándar de portales)
   const [authHost, setAuthHost] = useState<HTMLElement | null>(null)
-  const [serverReady, setServerReady] = useState(false) // flag indicating server merge completed
+  const serverReady = state.serverReady
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingKeyRef = useRef<string>('')
 
@@ -118,7 +118,7 @@ export default function CmsRoot() {
           cleanOrphanOverrides()
           engine.refreshRetired()
           engine.seedUsedContent()
-          setServerReady(true) // indicate UI can render
+          state.serverReady = true
           emit()
         })
 
@@ -170,13 +170,7 @@ export default function CmsRoot() {
 
   return (
     <CommandContext.Provider value={dispatch}>
-      {/* Mostrar carga mientras el server aún no ha sido fusionado */}
-      {!serverReady && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem', color: '#555' }}>
-          Cargando contenido…
-        </div>
-      )}
-      {/* Sólo renderizamos el UI principal una vez que el estado del servidor está listo */}
+      {/* Sólo renderizamos el UI principal de admin una vez que el estado del servidor está listo */}
       {serverReady && (
         <>
           {/* botón de sesión en la navbar (port renderAuth) */}

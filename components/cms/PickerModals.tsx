@@ -9,8 +9,9 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove,
 } from '@/lib/cms/store'
+import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
   syncWaveGroups, refreshTools, refreshContainerLabel,
@@ -33,67 +34,59 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
 
   if (!meta) return null
   const isVideo = meta.kind === 'video'
+  const currentSrc = state.items[cmsKey] || (elementsByKey[cmsKey] ? (elementsByKey[cmsKey] as HTMLImageElement | HTMLVideoElement).src : '')
 
-  const commitRename = () => {
-    const newName = nameRef.current?.value.trim()
-    if (newName && newName !== meta.label) {
-      performRenameContainer(cmsKey, newName)
-      meta.label = newName
-      refreshContainerLabel(cmsKey) // refresca overlay + tooltips en vivo (sin recargar)
-      toast('Contenedor actualizado')
-    }
+  const handleRename = () => {
+    const newLabel = nameRef.current?.value.trim()
+    if (!newLabel || newLabel === meta.label) { setEditingName(false); return }
+    performRenameContainer(cmsKey, newLabel)
+    meta.label = newLabel
+    refreshContainerLabel(cmsKey)
+    toast('Nombre del contenedor actualizado')
     setEditingName(false)
   }
 
   return (
-    <CmsModal title="¿Qué deseas hacer?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancelar', onClick: () => { commitRename() } }]}>
-      <div>
-        <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
-          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
-          <div className="cms-meta-line"><strong>Tipo requerido:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Imagen'}</span></div>
-          <div className="cms-container-name-row" style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {editingName ? (
-              <label className="cms-field" style={{ flex: 1, margin: 0 }}>
-                <span>Nombre del contenedor</span>
-                <input ref={nameRef} type="text" defaultValue={meta.label} autoFocus style={{ fontWeight: 400 }} onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename() }} />
-              </label>
-            ) : (
-              <div className="cms-meta-line" style={{ flex: 1 }}>
-                <strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span>
-              </div>
-            )}
-            <button
-              type="button"
-              title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
-              aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
-              // mousedown preventDefault → el input no pierde foco antes del click,
-              // evita el doble disparo onBlur+onClick que dejaba la edición abierta.
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
-              style={{
-                background: 'none', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
-                borderRadius: '6px', padding: '0.35rem 0.5rem', cursor: 'pointer',
-                color: 'var(--accent)', fontSize: '0.78rem', flexShrink: 0,
-                transition: 'background 0.2s, border-color 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
-            >
-              <i className={`fa-solid ${editingName ? 'fa-check' : 'fa-pen'}`} />
-            </button>
-          </div>
+    <CmsModal title="Seleccionar contenido" onClose={onClose} actions={[{ label: 'Cancelar', onClick: onClose }]}>
+      <div className="cms-picker-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+          {editingName ? (
+            <div style={{ display: 'flex', gap: '0.4rem', flex: 1, marginRight: '0.5rem' }}>
+              <input ref={nameRef} type="text" defaultValue={state.containerNames[cmsKey] || meta.label} className="cms-input" style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }} autoFocus />
+              <button type="button" className="cms-btn cms-btn--primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={handleRename}>Guardar</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <i className="fa-solid fa-layer-group" style={{ marginRight: '0.4rem', opacity: 0.7 }}></i>
+                {state.containerNames[cmsKey] || meta.label}
+              </span>
+              <button type="button" onClick={() => setEditingName(true)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.8rem', opacity: 0.8 }} title="Renombrar contenedor">
+                <i className="fa-solid fa-pen"></i>
+              </button>
+            </div>
+          )}
+          <span style={{ fontSize: '0.75rem', background: 'var(--bg-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+            {meta.section || 'General'}
+          </span>
         </div>
-        <div className="cms-picker-grid">
+        <div className="cms-picker-preview">
+          {currentSrc ? (
+            isVideo ? <video src={currentSrc} muted playsInline loop autoPlay /> : <img src={currentSrc} alt={meta.label} />
+          ) : (
+            <div className="cms-picker-empty"><i className="fa-regular fa-image"></i><span>Contenedor vacío</span></div>
+          )}
+        </div>
+        <div className="cms-picker-options">
           <button type="button" className="cms-picker-option" onClick={() => { onClose(); onLocal() }}>
-            <i className="fa-solid fa-file-arrow-up"></i>
-            <span className="cms-picker-title">Subir desde tu PC</span>
-            <span className="cms-picker-desc">Selecciona un archivo nuevo de tu computadora para subirlo y asignarlo aquí.</span>
+            <i className="fa-solid fa-desktop"></i>
+            <span className="cms-picker-opt-title">Subir archivo desde PC</span>
+            <span className="cms-picker-opt-desc">El archivo se optimizará (WebP/WebM) y subirá al servidor.</span>
           </button>
-          <button type="button" className="cms-picker-option" onClick={onRepo}>
-            <i className="fa-solid fa-cloud"></i>
-            <span className="cms-picker-title">Usar desde repositorio</span>
-            <span className="cms-picker-desc">Elige un archivo que ya fue subido previamente al repositorio de contenidos.</span>
+          <button type="button" className="cms-picker-option" onClick={() => { onClose(); onRepo() }}>
+            <i className="fa-solid fa-cloud-arrow-up"></i>
+            <span className="cms-picker-opt-title">Seleccionar contenido ya subido</span>
+            <span className="cms-picker-opt-desc">Elegir de la biblioteca de medios en el servidor.</span>
           </button>
         </div>
       </div>
@@ -101,19 +94,17 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
   )
 }
 
-// ----- Repo Picker --------------------------------------------------------------
+// ----- Repo Picker ------------------------------------------------------------
 
 type RepoEntry = {
-  src: string
-  name: string
-  size: number | null
-  label: string
-  section: string
-  kind: 'image' | 'video'
-  _state: 'usado' | 'sin usar'
-  _key?: string
-  ts?: number
-  type?: string
+  src: string; name?: string; size?: number | null; label?: string; section?: string;
+  kind: 'image' | 'video'; _state: 'usado' | 'sin usar'; _key?: string; ts?: number; type?: string;
+}
+
+type RepoPickerProps = {
+  cmsKey: string
+  onClose: () => void
+  onSuccess?: () => void
 }
 
 const FILTERS = [
@@ -122,25 +113,31 @@ const FILTERS = [
   { value: 'sin usar', label: 'Sin usar', icon: 'fa-box-archive', colorClass: 'cms-filter-unused' },
 ] as const
 
-export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string; onClose: () => void; onSuccess?: () => void }) {
+export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps) {
   const toast = useToast()
   const meta = metaByKey[cmsKey]
   const isVideoSlot = meta?.kind === 'video'
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useState<'all' | 'usado' | 'sin usar'>('all')
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
 
   const [all] = useState<RepoEntry[]>(() => {
     const list: RepoEntry[] = []
+    const seenSrc = new Set<string>()
     Object.keys(state.usedContent).forEach((k) => {
       const e = state.usedContent[k]
       if (isVideoSlot !== (e.kind === 'video')) return
+      if (!e.src || seenSrc.has(e.src)) return
+      seenSrc.add(e.src)
       list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
     })
     state.unused.forEach((e) => {
       const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
       if (isVideoSlot !== eIsVid) return
-      list.push({ src: e.src || e.dataUrl || '', name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
+      const src = e.src || e.dataUrl || ''
+      if (!src || seenSrc.has(src)) return
+      seenSrc.add(src)
+      list.push({ src, name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
     })
     return list
   })
@@ -170,7 +167,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
 
     state.usedContent[cmsKey] = {
       key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-      src, name: selected.name, size: selected.size, original: false,
+      src, name: selected.name || 'media', size: selected.size ?? null, original: false,
       fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
       ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
     }
@@ -184,7 +181,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: { cmsKey: string
     }
 
     persistUsed()
-    recordMediaMeta(cmsKey, src, { name: selected.name, size: selected.size, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
+    cloudinaryMove(src, getCloudinaryFolder(meta.section))
+    recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
     persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
 
     const ri = state.retired.indexOf(cmsKey)

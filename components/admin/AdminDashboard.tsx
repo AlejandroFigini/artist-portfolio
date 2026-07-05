@@ -7,9 +7,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useModal } from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders,
 } from '@/lib/cms/store'
 import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
@@ -41,6 +42,7 @@ function Stat({ label, count, size, warn }: { label: string; count: number; size
 export default function AdminDashboard() {
   useCmsStore()
   const { confirm } = useModal()
+  const toast = useToast()
   const [section, setSection] = useState('resumen')
   const [subOpen, setSubOpen] = useState(false)
   const [ajustesOpen, setAjustesOpen] = useState(false)
@@ -206,6 +208,7 @@ export default function AdminDashboard() {
               <div className="admin-quick">
                 <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Ajustes del sitio</button>
                 <button type="button" className="cms-btn" onClick={() => goto('contenidos-usado')}><i className="fa-solid fa-photo-film"></i> Gestionar contenidos</button>
+                <button type="button" className="cms-btn" onClick={() => { const c = syncCloudinaryFolders(); toast(c > 0 ? `Sincronizando ${c} archivos en Cloudinary...` : 'Las carpetas de Cloudinary ya están sincronizadas'); }}><i className="fa-solid fa-arrows-rotate"></i> Sincronizar Cloudinary</button>
                 <button type="button" className="cms-btn" onClick={() => goto('auditoria')}><i className="fa-solid fa-clipboard-list"></i> Ver auditoría</button>
               </div>
             </div>

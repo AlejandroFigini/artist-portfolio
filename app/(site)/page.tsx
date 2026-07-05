@@ -1,5 +1,3 @@
-import PageLoader from '@/components/ui/PageLoader'
-import CmsRoot from '@/components/cms/CmsRoot'
 import HomeFx from '@/components/home/HomeFx'
 import HeroSlideshow from '@/components/home/Slideshow'
 import Hero from '@/components/home/Hero'
@@ -17,8 +15,6 @@ import IllustrationsShowcase from '@/components/home/IllustrationsShowcase'
 export default function HomePage() {
   return (
     <>
-      <PageLoader />
-      <CmsRoot />
       <HomeFx />
       <HeroSlideshow />
       <main>
