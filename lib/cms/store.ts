@@ -148,7 +148,7 @@ export function loadState() {
 // del server, se sobreescribe por completo. Las funciones persist*() guardan
 // en ambos lados: localStorage inmediato (UX) + DB con debounce (persistencia).
 
-import { saveState, getState, type CmsStatePayload, moveMedia } from '@/lib/api'
+import { saveState, getState, saveContent, type CmsStatePayload, moveMedia } from '@/lib/api'
 
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 const _pendingKeys = new Set<string>()
@@ -163,6 +163,7 @@ function flushSyncToServer() {
   _syncTimer = null
   if (!state.isAdmin || _pendingKeys.size === 0) return
   const payload: CmsStatePayload = {}
+  let syncOverrides = false
   for (const k of _pendingKeys) {
     if (k === 'used_content') payload.used_content = state.usedContent
     if (k === 'unused') payload.unused = state.unused
@@ -171,9 +172,11 @@ function flushSyncToServer() {
     if (k === 'media_meta') payload.media_meta = state.mediaMeta
     if (k === 'audit') payload.audit = state.audit.slice(-300)
     if (k === 'container_names') payload.container_names = state.containerNames
+    if (k === 'overrides') syncOverrides = true
   }
   _pendingKeys.clear()
-  saveState(payload).catch(() => {})
+  if (Object.keys(payload).length > 0) saveState(payload).catch(() => {})
+  if (syncOverrides) saveContent(state.items).catch(() => {})
 }
 
 export const persistAudit = () => { saveJSON(LS.AUDIT, state.audit.slice(-300)); scheduleSyncToServer('audit') }
@@ -181,7 +184,7 @@ export const persistUnused = () => { saveJSON(LS.UNUSED, state.unused); saveJSON
 export const persistUsed = () => { saveJSON(LS.USED, state.usedContent); saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('used_content', 'media_meta') }
 export const persistRetired = () => { saveJSON(LS.RETIRED, state.retired); scheduleSyncToServer('retired') }
 export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyncToServer('trash') }
-export const persistOverridesLocal = () => saveJSON(LS.OVERRIDES, state.items)
+export const persistOverridesLocal = () => { saveJSON(LS.OVERRIDES, state.items); scheduleSyncToServer('overrides') }
 export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
 
 /* Aplica el estado del servidor sobre el local. El server SIEMPRE gana:
@@ -393,14 +396,80 @@ export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'r
   }
 }
 
+export function clearItemOverrides(keys: string[]) {
+  if (!keys.length) return
+  const cleared: Record<string, string> = {}
+  keys.forEach((key) => {
+    delete state.items[key]
+    cleared[key] = ''
+    Object.keys(state.items).forEach((k) => {
+      if (k.startsWith(key + '::')) {
+        delete state.items[k]
+        cleared[k] = ''
+      }
+    })
+  })
+  persistOverridesLocal()
+  saveContent(cleared).catch(() => {})
+}
+
+export function purgeUrlsFromAllState(urls: string[]) {
+  if (!urls || !urls.length) return
+  const urlSet = new Set(urls.filter(Boolean))
+  if (!urlSet.size) return
+
+  const keysToClear: string[] = []
+  let usedChanged = false
+  let unusedChanged = false
+  let trashChanged = false
+
+  Object.keys(state.usedContent).forEach((key) => {
+    const entry = state.usedContent[key]
+    if (entry && (urlSet.has(entry.src) || ('dataUrl' in entry && typeof (entry as { dataUrl?: string }).dataUrl === 'string' && urlSet.has((entry as { dataUrl?: string }).dataUrl!)))) {
+      delete state.usedContent[key]
+      keysToClear.push(key)
+      if (!state.retired.includes(key)) state.retired.push(key)
+      usedChanged = true
+    }
+  })
+
+  Object.keys(state.items).forEach((key) => {
+    const val = state.items[key]
+    if (val && urlSet.has(val)) {
+      if (!keysToClear.includes(key)) {
+        keysToClear.push(key)
+        if (!state.retired.includes(key) && !key.includes('::') && !key.endsWith('.settings')) {
+          state.retired.push(key)
+        }
+      }
+    }
+  })
+
+  const initialUnusedLen = state.unused.length
+  state.unused = state.unused.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
+  if (state.unused.length !== initialUnusedLen) unusedChanged = true
+
+  const initialTrashLen = state.trash.length
+  state.trash = state.trash.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
+  if (state.trash.length !== initialTrashLen) trashChanged = true
+
+  if (keysToClear.length > 0) {
+    clearItemOverrides(keysToClear)
+  }
+  if (usedChanged) { persistUsed(); persistRetired() }
+  if (unusedChanged) { persistUnused() }
+  if (trashChanged) { persistTrash() }
+  if (usedChanged || keysToClear.length > 0) { emit() }
+}
+
 export function moveUsedToUnused(key: string) {
   const entry = state.usedContent[key]
   if (!entry) return
   retireUsedEntryToUnused(entry, 'retired', [key])
   delete state.usedContent[key]
-  delete state.items[key]
   if (!state.retired.includes(key)) state.retired.push(key)
-  persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
+  clearItemOverrides([key])
+  persistUsed(); persistUnused(); persistRetired()
   recordAudit({ section: entry.section, label: entry.label, summary: 'Contenido movido a no usados' })
 }
 
@@ -502,8 +571,8 @@ export function associateUsedToContainer(oldKey: string, targetKey: string) {
   if (!entry) return
   const targetMeta = getContainerMeta(targetKey)
   delete state.usedContent[oldKey]
-  delete state.items[oldKey]
   if (!state.retired.includes(oldKey)) state.retired.push(oldKey)
+  clearItemOverrides([oldKey])
   occupyTarget(targetKey)
   state.usedContent[targetKey] = {
     key: targetKey, label: targetMeta.label, section: targetMeta.section, kind: kindOf(entry),

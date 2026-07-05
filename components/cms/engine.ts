@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, saveJSON, LS, type FieldValue,
+  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, type FieldValue,
 } from '@/lib/cms/store'
 import { BASE_LANG, type Lang } from '@/lib/i18n'
 import { basename } from '@/lib/utils'
@@ -646,15 +646,14 @@ export function moveToUnusedSite(key: string) {
   }
   retireUsedEntryToUnused(entry, 'retired', [key])
   delete state.usedContent[key]
-  delete state.items[key]
   applyMedia(key, '')
-  // Limpiar campos asociados
+  // Limpiar campos asociados en el DOM
   Object.keys(state.items).forEach(k => {
     if (k.startsWith(key + '::')) {
-      delete state.items[k]
       if (fieldSetters[k]) fieldSetters[k]('')
     }
   })
+  clearItemOverrides([key])
   if (!state.retired.includes(key)) state.retired.push(key)
   persistUnused(); persistUsed(); persistRetired()
   showEmptySlot(key)

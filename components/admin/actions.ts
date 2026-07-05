@@ -9,14 +9,16 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit,
   persistUsed, persistUnused, persistRetired, persistTrash, persistOverridesLocal,
-  retireUsedEntryToUnused, type UnusedEntry,
+  retireUsedEntryToUnused, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
-  const entry = state.trash.splice(idx, 1)[0]
+  const entry = state.trash[idx]
   if (!entry) return
+  const url = entry.src || entry.dataUrl || ''
+  state.trash.splice(idx, 1)
   persistTrash()
-  const url = entry.src || entry.dataUrl
+  if (url) purgeUrlsFromAllState([url])
   if (url && url.includes('cloudinary.com')) {
     await deleteMedia(url).catch(() => {})
     recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Eliminado de Cloudinary' })
@@ -35,27 +37,36 @@ export function autoCleanTrash() {
   if (!maxMs) return
   const now = Date.now()
   const kept: UnusedEntry[] = []
-  let deletedAny = false
+  const urlsToDelete: string[] = []
   state.trash.forEach((item) => {
     if (now - (item.deletedAt || now) > maxMs) {
-      deletedAny = true
       const url = item.src || item.dataUrl
-      if (url) deleteMedia(url).catch(() => {})
+      if (url) {
+        urlsToDelete.push(url)
+        if (url.includes('cloudinary.com')) deleteMedia(url).catch(() => {})
+      }
     } else {
       kept.push(item)
     }
   })
-  if (deletedAny) {
+  if (urlsToDelete.length > 0) {
     state.trash = kept
     persistTrash()
+    purgeUrlsFromAllState(urlsToDelete)
     emit()
   }
 }
 
 export async function emptyTrash() {
   const items = state.trash.slice()
+  const urls: string[] = []
+  items.forEach((item) => {
+    const url = item.src || item.dataUrl
+    if (url) urls.push(url)
+  })
   state.trash = []
   persistTrash()
+  if (urls.length > 0) purgeUrlsFromAllState(urls)
   emit()
   await Promise.all(items.map((item) => {
     const url = item.src || item.dataUrl
@@ -87,11 +98,11 @@ export function batchMoveUsedToUnused(keys: string[]): number {
     if (!entry) return
     retireUsedEntryToUnused(entry, 'retired', keys)
     delete state.usedContent[key]
-    delete state.items[key]
     if (!state.retired.includes(key)) state.retired.push(key)
     count++
   })
-  persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
+  clearItemOverrides(keys)
+  persistUsed(); persistUnused(); persistRetired()
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Movidos a sin usar (Batch)' })
   return count
 }
@@ -118,13 +129,14 @@ export async function batchDeletePermanent(indices: number[]): Promise<number> {
     const entry = state.trash.splice(idx, 1)[0]
     if (entry) {
       const url = entry.src || entry.dataUrl
-      if (url && url.includes('cloudinary.com')) urls.push(url)
+      if (url) urls.push(url)
       count++
     }
   })
   persistTrash()
+  if (urls.length > 0) purgeUrlsFromAllState(urls)
   emit()
-  await Promise.all(urls.map((u) => deleteMedia(u).catch(() => {})))
+  await Promise.all(urls.map((u) => u && u.includes('cloudinary.com') ? deleteMedia(u).catch(() => {}) : Promise.resolve()))
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Eliminados permanentemente (Batch)' })
   return count
 }

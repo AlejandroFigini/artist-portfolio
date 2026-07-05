@@ -46,19 +46,23 @@ export async function POST(req: Request) {
   try {
     await client.query('BEGIN')
     for (const [key, value] of Object.entries(items)) {
-      let finalValue = value as string
-      if (typeof value === 'string' && value.startsWith('data:image')) {
-        finalValue = (await uploadDataUrl(value, 'image', 'portfolio', key)).url
-      } else if (typeof value === 'string' && value.startsWith('data:video')) {
-        finalValue = (await uploadDataUrl(value, 'video', 'portfolio', key)).url
-      } else if (typeof value === 'string' && value.startsWith('data:application/pdf')) {
-        finalValue = (await uploadDataUrl(value, 'raw', 'portfolio', key)).url
+      if (value === '' || value === null || value === undefined) {
+        await client.query('DELETE FROM cms_data WHERE key = $1', [key])
+      } else {
+        let finalValue = value as string
+        if (typeof value === 'string' && value.startsWith('data:image')) {
+          finalValue = (await uploadDataUrl(value, 'image', 'portfolio', key)).url
+        } else if (typeof value === 'string' && value.startsWith('data:video')) {
+          finalValue = (await uploadDataUrl(value, 'video', 'portfolio', key)).url
+        } else if (typeof value === 'string' && value.startsWith('data:application/pdf')) {
+          finalValue = (await uploadDataUrl(value, 'raw', 'portfolio', key)).url
+        }
+        await client.query(
+          `INSERT INTO cms_data (key, value) VALUES ($1, $2)
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
+          [key, finalValue],
+        )
       }
-      await client.query(
-        `INSERT INTO cms_data (key, value) VALUES ($1, $2)
-         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
-        [key, finalValue],
-      )
     }
     await client.query('COMMIT')
     return NextResponse.json({ success: true, message: 'Contenido guardado correctamente' })
