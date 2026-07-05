@@ -100,33 +100,21 @@ function ensureSectionIndex() {
   }
 }
 
-/** Dado el nombre humano de una sección ("Portada", "Animations", "Sobre mí", …)
- *  devuelve la ruta de carpeta Cloudinary en la estructura en-uso.
- *  Fallback: `portfolio/en-uso/otros/{slug}`. */
+/** Dado el nombre humano de una sección, devuelve la ruta de carpeta en Cloudinary.
+ *  Simplificado a 3 carpetas principales: en-uso, sin-usar, basurero. */
 export function getCloudinaryFolder(sectionName: string): string {
-  ensureSectionIndex()
-  const mapping = _sectionIndex.get(sectionName)
-  if (mapping) return `portfolio/en-uso/${mapping.pageSlug}/${mapping.sectionSlug}`
-  // Fallback: buscar por slug parcial o colocar en "otros" bajo feed
-  return `portfolio/en-uso/feed/${slug(sectionName)}`
+  if (sectionName === 'basurero') return 'portfolio/basurero'
+  if (sectionName === 'sin-usar') return 'portfolio/sin-usar'
+  return 'portfolio/en-uso'
 }
 
-/** Devuelve la lista completa de rutas de carpeta que deben existir en Cloudinary.
- *  Incluye las tres carpetas raíz y todas las páginas/secciones de SITE_PAGES. */
+/** Devuelve la lista completa de rutas de carpeta que deben existir en Cloudinary. */
 export function getAllFolderPaths(): string[] {
-  const paths: string[] = [
+  return [
     'portfolio',
     'portfolio/en-uso',
     'portfolio/sin-usar',
     'portfolio/basurero',
   ]
-  for (const page of SITE_PAGES) {
-    const ps = slug(page.label)
-    paths.push(`portfolio/en-uso/${ps}`)
-    for (const sec of page.sections) {
-      paths.push(`portfolio/en-uso/${ps}/${slug(sec.label)}`)
-    }
-  }
-  return paths
 }
 

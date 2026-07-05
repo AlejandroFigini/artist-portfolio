@@ -55,18 +55,11 @@ function toSlug(s: string): string {
 }
 
 /** Genera la ruta de carpeta Cloudinary según el estado del contenido.
- *  - 'used'   → portfolio/en-uso/{page}/{section}  (requiere cloudinaryFolder o section)
- *  - 'unused' → portfolio/sin-usar
- *  - 'trash'  → portfolio/basurero
- *  - default  → portfolio (legacy compat) */
+ *  Simplificado a 3 carpetas principales: en-uso, sin-usar, basurero. */
 export function folderSlug(section?: string, mediaState?: 'used' | 'unused' | 'trash', cloudinaryFolder?: string): string {
   if (mediaState === 'unused') return 'portfolio/sin-usar'
   if (mediaState === 'trash') return 'portfolio/basurero'
-  // Si ya viene la ruta completa de Cloudinary (desde getCloudinaryFolder), usarla
-  if (cloudinaryFolder) return cloudinaryFolder
-  // Legacy / fallback
-  const s = toSlug(section || '')
-  return s && s !== 'otros' ? `portfolio/en-uso/feed/${s}` : 'portfolio'
+  return 'portfolio/en-uso'
 }
 
 /** Limpia y normaliza el nombre del archivo para que sea un ID seguro en Cloudinary / storage local. */
@@ -214,5 +207,71 @@ export async function scaffoldFolders(folderPaths: string[]): Promise<{ created:
       }
     }
   }
+  await cleanupLegacyFolders()
   return { created, skipped }
 }
+
+/** Migra recursos de subcarpetas viejas a las 3 carpetas principales y elimina las carpetas vacías. */
+async function cleanupLegacyFolders(): Promise<void> {
+  if (!hasCloudinary) return
+  try {
+    await cleanSubFoldersRecursively('portfolio/en-uso', 'portfolio/en-uso')
+    await cleanSubFoldersRecursively('portfolio/sin-usar', 'portfolio/sin-usar')
+    await cleanSubFoldersRecursively('portfolio/basurero', 'portfolio/basurero')
+
+    const rootSub: { folders?: { name?: string; path: string }[] } | null = await cloudinary.api.sub_folders('portfolio').catch(() => null)
+    if (rootSub && rootSub.folders) {
+      for (const f of rootSub.folders) {
+        const folderName = f.name || f.path.split('/').pop()
+        if (folderName !== 'en-uso' && folderName !== 'sin-usar' && folderName !== 'basurero') {
+          await cleanSubFoldersRecursively(f.path, 'portfolio/en-uso')
+          await cloudinary.api.delete_folder(f.path).catch(() => {})
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[cleanupLegacyFolders] error:', err)
+  }
+}
+
+async function cleanSubFoldersRecursively(parentFolder: string, targetFolder: string): Promise<void> {
+  const subRes: { folders?: { path: string }[] } | null = await cloudinary.api.sub_folders(parentFolder).catch(() => null)
+  if (!subRes || !subRes.folders || subRes.folders.length === 0) return
+
+  for (const f of subRes.folders) {
+    const fPath = f.path
+    await cleanSubFoldersRecursively(fPath, targetFolder)
+
+    try {
+      let cursor: string | undefined = undefined
+      do {
+        const resourcesRes: { resources?: { public_id: string; resource_type?: string }[]; next_cursor?: string } | null = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: `${fPath}/`,
+          max_results: 100,
+          next_cursor: cursor,
+        }).catch(() => null)
+
+        if (resourcesRes && resourcesRes.resources) {
+          for (const r of resourcesRes.resources) {
+            const filename = r.public_id.split('/').pop()
+            const newPublicId = `${targetFolder}/${filename}`
+            if (r.public_id !== newPublicId) {
+              await cloudinary.uploader.rename(r.public_id, newPublicId, {
+                resource_type: r.resource_type || 'image',
+                overwrite: true,
+                invalidate: true,
+              }).catch(() => {})
+            }
+          }
+        }
+        cursor = resourcesRes?.next_cursor
+      } while (cursor)
+
+      await cloudinary.api.delete_folder(fPath).catch(() => {})
+    } catch (e) {
+      console.warn(`[cleanSubFoldersRecursively] error in ${fPath}:`, e)
+    }
+  }
+}
+
