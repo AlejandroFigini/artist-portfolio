@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image', folderSlug(typeof section === 'string' ? section : ''))
+    const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image', folderSlug(typeof section === 'string' ? section : ''), originalName)
     return NextResponse.json({
       success: true,
       secure_url: media.url,

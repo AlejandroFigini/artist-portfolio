@@ -55,24 +55,62 @@ export function folderSlug(section?: string): string {
   return s ? `portfolio/${s}` : 'portfolio'
 }
 
+/** Limpia y normaliza el nombre del archivo para que sea un ID seguro en Cloudinary / storage local. */
+function cleanFilename(name: string): string {
+  const lastDot = name.lastIndexOf('.')
+  const base = lastDot > 0 ? name.slice(0, lastDot) : name
+  const ext = lastDot > 0 ? name.slice(lastDot + 1) : ''
+
+  const cleanBase = base
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'archivo'
+
+  const cleanExt = ext
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
+
+  return cleanExt ? `${cleanBase}.${cleanExt}` : cleanBase
+}
+
 /** Sube una data URL (base64). Devuelve la URL servible + metadatos.
     kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar.
     folder = carpeta destino en Cloudinary (por sección de la página). */
-export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video' | 'raw', folder = 'portfolio'): Promise<StoredMedia> {
+export async function uploadDataUrl(
+  dataUrl: string,
+  kind: 'image' | 'video' | 'raw',
+  folder = 'portfolio',
+  originalName?: string,
+): Promise<StoredMedia> {
+  const filename = originalName ? cleanFilename(originalName) : undefined
+
   if (hasCloudinary) {
+    const commonOptions: Record<string, unknown> = { folder }
+    if (filename) {
+      const lastDot = filename.lastIndexOf('.')
+      const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
+      commonOptions.public_id = kind === 'raw' ? filename : base
+      commonOptions.use_filename = true
+      commonOptions.unique_filename = false
+      commonOptions.overwrite = true
+      commonOptions.filename_override = filename
+    }
     if (kind === 'raw') {
-      const res = await cloudinary.uploader.upload(dataUrl, { folder, resource_type: 'raw' })
+      const res = await cloudinary.uploader.upload(dataUrl, { ...commonOptions, resource_type: 'raw' })
       return { url: res.secure_url, bytes: res.bytes, format: res.format || 'pdf', assetId: res.asset_id }
     }
     if (kind === 'video') {
       // Sin transformación entrante: transcodear sync (format/quality) hace fallar
       // videos medianos por límite de procesamiento de Cloudinary. Se guarda el
       // original; la optimización se aplica en la URL de entrega (f_auto/q_auto).
-      const res = await cloudinary.uploader.upload(dataUrl, { folder, resource_type: 'video' })
+      const res = await cloudinary.uploader.upload(dataUrl, { ...commonOptions, resource_type: 'video' })
       return { url: res.secure_url, bytes: res.bytes, format: res.format, assetId: res.asset_id }
     }
     const res = await cloudinary.uploader.upload(dataUrl, {
-      folder,
+      ...commonOptions,
       resource_type: 'image',
       format: 'webp',
       quality: 'auto',
@@ -81,7 +119,12 @@ export async function uploadDataUrl(dataUrl: string, kind: 'image' | 'video' | '
   }
   // Local: escribir a public/uploads y devolver una ruta servible (/uploads/..).
   const { buffer, ext } = decodeDataUrl(dataUrl)
-  const name = `${randomUUID()}.${ext}`
+  let name = `${randomUUID()}.${ext}`
+  if (filename) {
+    const lastDot = filename.lastIndexOf('.')
+    const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
+    name = `${base}.${ext}`
+  }
   await mkdir(LOCAL_DIR, { recursive: true })
   await writeFile(path.join(LOCAL_DIR, name), buffer)
   return { url: `/uploads/${name}`, bytes: buffer.length, format: ext, assetId: `local_${name}` }

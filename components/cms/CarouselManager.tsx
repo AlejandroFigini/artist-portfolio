@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf } from './engine'
 
 const MIN_SLIDES = 1
@@ -77,11 +77,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
       if (finalSlides.includes(k)) return
       const prev = state.usedContent[k]
       if (prev) {
-        state.unused.push({
-          key: k, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
-          type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-          label: prev.label, section: prev.section, original: prev.original, reason: 'deleted',
-        })
+        retireUsedEntryToUnused(prev, 'deleted', [k])
         delete state.usedContent[k]
       }
     })

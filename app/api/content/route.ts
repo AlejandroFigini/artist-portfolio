@@ -48,11 +48,11 @@ export async function POST(req: Request) {
     for (const [key, value] of Object.entries(items)) {
       let finalValue = value as string
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        finalValue = (await uploadDataUrl(value, 'image')).url
+        finalValue = (await uploadDataUrl(value, 'image', 'portfolio', key)).url
       } else if (typeof value === 'string' && value.startsWith('data:video')) {
-        finalValue = (await uploadDataUrl(value, 'video')).url
+        finalValue = (await uploadDataUrl(value, 'video', 'portfolio', key)).url
       } else if (typeof value === 'string' && value.startsWith('data:application/pdf')) {
-        finalValue = (await uploadDataUrl(value, 'raw')).url
+        finalValue = (await uploadDataUrl(value, 'raw', 'portfolio', key)).url
       }
       await client.query(
         `INSERT INTO cms_data (key, value) VALUES ($1, $2)

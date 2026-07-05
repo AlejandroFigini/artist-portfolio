@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, type FieldValue,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools,
@@ -64,11 +64,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         // versión anterior → no usados (solo si tenía contenido real)
         const prev = state.usedContent[cmsKey]
         if (prev && prev.src) {
-          state.unused.push({
-            key: cmsKey, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
-            type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-            label: prev.label, section: prev.section, original: prev.original, reason: 'replaced',
-          })
+          retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
           persistUnused()
         }
 

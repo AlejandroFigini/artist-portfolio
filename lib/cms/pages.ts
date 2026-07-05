@@ -66,8 +66,9 @@ export function buildPageTree<T extends TreeEntry>(arr: T[]): PageNode<T>[] {
     feed.sections.push({ id: 'otros', label: 'Otros', items: unmatched, count: unmatched.length, size: sumSizes(unmatched) })
   }
   pages.forEach((p) => {
+    const allItems = p.sections.flatMap((s) => s.items)
     p.count = p.sections.reduce((a, s) => a + s.count, 0)
-    p.size = p.sections.reduce((a, s) => a + s.size, 0)
+    p.size = sumSizes(allItems)
   })
   return pages
 }

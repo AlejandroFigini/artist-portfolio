@@ -168,7 +168,7 @@ export default function AdminDashboard() {
                   <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', trashArr.length, sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-repo' ? ' active' : ''}`} onClick={() => goto('contenidos-repo')}>
-                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', usedArr.length + unusedArr.length + trashArr.length, sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))}
+                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', usedArr.length + unusedArr.length + trashArr.length, sumSizes([...usedArr, ...unusedArr, ...trashArr]))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'subircontenido' ? ' active' : ''}`} onClick={() => goto('subircontenido')}>
                   <i className="fa-solid fa-vial c-subir"></i><span>Subir contenido</span>
@@ -197,7 +197,7 @@ export default function AdminDashboard() {
                 <Stat label="contenidos usados" count={usedArr.length} size={fmtBytes(sumSizes(usedArr))} />
                 <Stat label="contenidos no usados" count={unusedArr.length} size={fmtBytes(sumSizes(unusedArr))} />
                 <Stat label="en el basurero" count={trashArr.length} size={fmtBytes(sumSizes(trashArr))} warn />
-                <Stat label="repositorio total" count={usedArr.length + unusedArr.length + trashArr.length} size={fmtBytes(sumSizes(usedArr) + sumSizes(unusedArr) + sumSizes(trashArr))} />
+                <Stat label="repositorio total" count={usedArr.length + unusedArr.length + trashArr.length} size={fmtBytes(sumSizes([...usedArr, ...unusedArr, ...trashArr]))} />
               </div>
               <div className="admin-quick">
                 <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Ajustes del sitio</button>

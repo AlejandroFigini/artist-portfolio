@@ -279,8 +279,17 @@ export function getFormat(e: { type?: string; src?: string; dataUrl?: string; na
   return e.type && e.type !== 'image' && e.type !== 'video' ? e.type : '—'
 }
 
-export const sumSizes = (arr: { size?: number | null }[]) =>
-  arr.reduce((s, e) => s + (e.size || 0), 0)
+export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: string; url?: string }[]) => {
+  const seen = new Set<string>()
+  return arr.reduce((s, e) => {
+    const id = (e as { src?: string }).src || (e as { dataUrl?: string }).dataUrl || (e as { url?: string }).url
+    if (id) {
+      if (seen.has(id)) return s
+      seen.add(id)
+    }
+    return s + (e.size || 0)
+  }, 0)
+}
 
 
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
@@ -328,7 +337,7 @@ export function getContainerMeta(key: string): { label: string; section: string;
 
 // ----- Operaciones de gestión (port de admin.js) -----------------------------
 
-export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' = 'retired', ignoreKeys: string[] = []) {
+export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {
   if (!entry || !entry.src) return
   const otherUses = Object.values(state.usedContent).filter(u => u.src === entry.src && u.key !== entry.key && !ignoreKeys.includes(u.key))
   if (otherUses.length === 0) {

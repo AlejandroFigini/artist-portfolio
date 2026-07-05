@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan } from './engine'
 
 type Props = { show?: boolean; onClose: () => void; onPickImage: (key: string) => void }
@@ -91,11 +91,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
       if (finalProjects.includes(k)) return
       const prev = state.usedContent[k]
       if (prev) {
-        state.unused.push({
-          key: k, src: prev.src, dataUrl: prev.src, name: prev.name, size: prev.size,
-          type: prev.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
-          label: prev.label, section: prev.section, original: prev.original, reason: 'deleted',
-        })
+        retireUsedEntryToUnused(prev, 'retired', [k])
         delete state.usedContent[k]
       }
     })
