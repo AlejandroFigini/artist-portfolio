@@ -72,3 +72,61 @@ export function buildPageTree<T extends TreeEntry>(arr: T[]): PageNode<T>[] {
   })
   return pages
 }
+
+// ----- Cloudinary folder helpers -------------------------------------------------
+
+/** Genera un slug seguro para rutas de carpeta: "Sobre mí" → "sobre-mi". */
+function slug(s: string): string {
+  return s
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'otros'
+}
+
+// Índice inverso: nombre de sección → { pageSlug, sectionSlug }
+type FolderMapping = { pageSlug: string; sectionSlug: string }
+const _sectionIndex = new Map<string, FolderMapping>()
+
+function ensureSectionIndex() {
+  if (_sectionIndex.size > 0) return
+  for (const page of SITE_PAGES) {
+    const ps = slug(page.label)
+    for (const sec of page.sections) {
+      const ss = slug(sec.label)
+      // Extraer los nombres literales de sección del matcher (bySection guarda los
+      // strings en el closure; acá mapeamos por el label de la SectionDef).
+      _sectionIndex.set(sec.label, { pageSlug: ps, sectionSlug: ss })
+    }
+  }
+}
+
+/** Dado el nombre humano de una sección ("Portada", "Animations", "Sobre mí", …)
+ *  devuelve la ruta de carpeta Cloudinary en la estructura en-uso.
+ *  Fallback: `portfolio/en-uso/otros/{slug}`. */
+export function getCloudinaryFolder(sectionName: string): string {
+  ensureSectionIndex()
+  const mapping = _sectionIndex.get(sectionName)
+  if (mapping) return `portfolio/en-uso/${mapping.pageSlug}/${mapping.sectionSlug}`
+  // Fallback: buscar por slug parcial o colocar en "otros" bajo feed
+  return `portfolio/en-uso/feed/${slug(sectionName)}`
+}
+
+/** Devuelve la lista completa de rutas de carpeta que deben existir en Cloudinary.
+ *  Incluye las tres carpetas raíz y todas las páginas/secciones de SITE_PAGES. */
+export function getAllFolderPaths(): string[] {
+  const paths: string[] = [
+    'portfolio',
+    'portfolio/en-uso',
+    'portfolio/sin-usar',
+    'portfolio/basurero',
+  ]
+  for (const page of SITE_PAGES) {
+    const ps = slug(page.label)
+    paths.push(`portfolio/en-uso/${ps}`)
+    for (const sec of page.sections) {
+      paths.push(`portfolio/en-uso/${ps}/${slug(sec.label)}`)
+    }
+  }
+  return paths
+}
+

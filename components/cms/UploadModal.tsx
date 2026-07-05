@@ -13,6 +13,7 @@ import { fileToDataURL } from '@/lib/media'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, type FieldValue,
 } from '@/lib/cms/store'
+import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools,
 } from './engine'
@@ -60,7 +61,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     setPhase('uploading')
 
     fileToDataURL(file)
-      .then((base64) => uploadMedia(base64, file.size, finalName, getContainerMeta(cmsKey).section))
+      .then((base64) => {
+        const meta = getContainerMeta(cmsKey)
+        return uploadMedia(base64, file.size, finalName, meta.section, 'used', getCloudinaryFolder(meta.section))
+      })
       .then((data) => {
         // versión anterior → no usados (solo si tenía contenido real)
         const prev = state.usedContent[cmsKey]

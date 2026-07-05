@@ -148,7 +148,7 @@ export function loadState() {
 // del server, se sobreescribe por completo. Las funciones persist*() guardan
 // en ambos lados: localStorage inmediato (UX) + DB con debounce (persistencia).
 
-import { saveState, getState, type CmsStatePayload } from '@/lib/api'
+import { saveState, getState, type CmsStatePayload, moveMedia } from '@/lib/api'
 
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 const _pendingKeys = new Set<string>()
@@ -348,6 +348,34 @@ export function getContainerMeta(key: string): { label: string; section: string;
 
 // ----- Operaciones de gestión (port de admin.js) -----------------------------
 
+import { getCloudinaryFolder } from '@/lib/cms/pages'
+
+/** Mueve un asset en Cloudinary de forma fire-and-forget y actualiza la URL
+ *  en todos los arrays del estado donde aparezca. */
+function cloudinaryMove(oldUrl: string, newFolder: string) {
+  if (!oldUrl || !oldUrl.includes('cloudinary.com')) return
+  moveMedia(oldUrl, newFolder).then(({ newUrl }) => {
+    if (newUrl === oldUrl) return // sin cambios
+    // Actualizar la URL en usedContent
+    for (const k of Object.keys(state.usedContent)) {
+      if (state.usedContent[k].src === oldUrl) {
+        state.usedContent[k].src = newUrl
+        if (state.items[k] === oldUrl) state.items[k] = newUrl
+      }
+    }
+    // Actualizar en unused
+    state.unused.forEach((e) => {
+      if (e.src === oldUrl) { e.src = newUrl; if (e.dataUrl === oldUrl) e.dataUrl = newUrl }
+    })
+    // Actualizar en trash
+    state.trash.forEach((e) => {
+      if (e.src === oldUrl) { e.src = newUrl; if (e.dataUrl === oldUrl) e.dataUrl = newUrl }
+    })
+    persistUsed(); persistUnused(); persistTrash(); persistOverridesLocal()
+    emit()
+  }).catch(() => {})
+}
+
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {
   if (!entry || !entry.src) return
   const otherUses = Object.values(state.usedContent).filter(u => u.src === entry.src && u.key !== entry.key && !ignoreKeys.includes(u.key))
@@ -359,6 +387,8 @@ export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'r
         type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
         label: entry.label, section: entry.section, original: entry.original, reason,
       })
+      // Mover en Cloudinary: en-uso → sin-usar
+      cloudinaryMove(entry.src, 'portfolio/sin-usar')
     }
   }
 }
@@ -381,6 +411,8 @@ export function moveUnusedToTrash(idx: number) {
   state.trash.push(entry)
   persistUnused(); persistTrash()
   recordAudit({ section: entry.section, label: entry.label, summary: 'Movido al basurero' })
+  // Mover en Cloudinary: sin-usar → basurero
+  cloudinaryMove(entry.src || entry.dataUrl || '', 'portfolio/basurero')
 }
 
 export function restoreTrashToUnused(idx: number) {
@@ -389,6 +421,8 @@ export function restoreTrashToUnused(idx: number) {
   state.unused.push(entry)
   persistTrash(); persistUnused()
   recordAudit({ section: entry.section, label: entry.label, summary: 'Restaurado desde basurero a sin usar' })
+  // Mover en Cloudinary: basurero → sin-usar
+  cloudinaryMove(entry.src || entry.dataUrl || '', 'portfolio/sin-usar')
 }
 
 /** Restaura un "sin usar" a su ubicación original; lo que hubiera ahí pasa a no usados. */
@@ -410,6 +444,8 @@ export function performRestore(idx: number) {
   if (ri >= 0) state.retired.splice(ri, 1)
   persistUnused(); persistUsed(); persistRetired(); persistOverridesLocal()
   recordAudit({ section: entry.section, label: entry.label, summary: 'Contenido restaurado a su ubicación' })
+  // Mover en Cloudinary: sin-usar → en-uso/pagina/seccion
+  cloudinaryMove(entry.src, getCloudinaryFolder(entry.section))
 }
 
 export function performRenameContainer(key: string, newLabel: string) {
@@ -448,13 +484,16 @@ export function associateUnusedToContainer(unusedIdx: number, targetKey: string)
   if (!entry) return
   const targetMeta = getContainerMeta(targetKey)
   occupyTarget(targetKey)
+  const src = entry.src || entry.dataUrl || ''
   state.usedContent[targetKey] = {
     key: targetKey, label: targetMeta.label, section: targetMeta.section, kind: kindOf(entry),
-    src: entry.src || entry.dataUrl || '', name: entry.name, size: entry.size, original: !!entry.original, ts: entry.ts,
+    src, name: entry.name, size: entry.size, original: !!entry.original, ts: entry.ts,
   }
-  state.items[targetKey] = entry.src || entry.dataUrl || ''
+  state.items[targetKey] = src
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: 'Contenido sin usar asociado a contenedor' })
+  // Mover en Cloudinary: sin-usar → en-uso/pagina/seccion
+  cloudinaryMove(src, getCloudinaryFolder(targetMeta.section))
 }
 
 export function associateUsedToContainer(oldKey: string, targetKey: string) {
@@ -473,4 +512,8 @@ export function associateUsedToContainer(oldKey: string, targetKey: string) {
   state.items[targetKey] = entry.src
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: `Contenido movido de contenedor ${oldKey} a ${targetKey}` })
+  // Mover en Cloudinary: en-uso/paginaA/seccionA → en-uso/paginaB/seccionB
+  if (entry.section !== targetMeta.section) {
+    cloudinaryMove(entry.src, getCloudinaryFolder(targetMeta.section))
+  }
 }

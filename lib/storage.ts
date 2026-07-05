@@ -47,12 +47,26 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: st
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
 
 /** Slug seguro para carpeta de Cloudinary: "Sobre mí" → "sobre-mi". */
-export function folderSlug(section?: string): string {
-  const s = (section || '')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+function toSlug(s: string): string {
+  return s
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-  return s ? `portfolio/${s}` : 'portfolio'
+    .slice(0, 40) || 'otros'
+}
+
+/** Genera la ruta de carpeta Cloudinary según el estado del contenido.
+ *  - 'used'   → portfolio/en-uso/{page}/{section}  (requiere cloudinaryFolder o section)
+ *  - 'unused' → portfolio/sin-usar
+ *  - 'trash'  → portfolio/basurero
+ *  - default  → portfolio (legacy compat) */
+export function folderSlug(section?: string, mediaState?: 'used' | 'unused' | 'trash', cloudinaryFolder?: string): string {
+  if (mediaState === 'unused') return 'portfolio/sin-usar'
+  if (mediaState === 'trash') return 'portfolio/basurero'
+  // Si ya viene la ruta completa de Cloudinary (desde getCloudinaryFolder), usarla
+  if (cloudinaryFolder) return cloudinaryFolder
+  // Legacy / fallback
+  const s = toSlug(section || '')
+  return s && s !== 'otros' ? `portfolio/en-uso/feed/${s}` : 'portfolio'
 }
 
 /** Limpia y normaliza el nombre del archivo para que sea un ID seguro en Cloudinary / storage local. */
@@ -130,23 +144,75 @@ export async function uploadDataUrl(
   return { url: `/uploads/${name}`, bytes: buffer.length, format: ext, assetId: `local_${name}` }
 }
 
+/** Extrae resource_type y public_id de una URL de Cloudinary. */
+function parseCloudinaryUrl(url: string): { resourceType: 'image' | 'video' | 'raw'; publicId: string } | null {
+  const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?v\d+\/(.+)$/)
+  if (!match) return null
+  const resourceType = match[1] as 'image' | 'video' | 'raw'
+  const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '')
+  return { resourceType, publicId }
+}
+
 /** Borra un asset por su URL (Cloudinary o archivo local). No lanza si no existe. */
 export async function deleteAsset(url: string): Promise<void> {
   try {
     if (url.includes('cloudinary.com')) {
       if (!hasCloudinary) return
-      // El resource_type real viene en la URL (/image|video|raw/upload/); adivinarlo
-      // por extensión rompía el borrado de PDFs (raw) y de videos sin extensión típica.
-      const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?v\d+\/(.+)$/)
-      if (!match) return
-      const resourceType = match[1] as 'image' | 'video' | 'raw'
-      // En raw el public_id conserva la extensión; en image/video se recorta.
-      const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '')
-      await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+      const parsed = parseCloudinaryUrl(url)
+      if (!parsed) return
+      await cloudinary.uploader.destroy(parsed.publicId, { resource_type: parsed.resourceType })
     } else if (url.startsWith('/uploads/')) {
       await unlink(path.join(process.cwd(), 'public', url.replace(/^\//, ''))).catch(() => {})
     }
   } catch {
     // borrar es best-effort; no romper el flujo si falla
   }
+}
+
+/** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id).
+ *  Devuelve la nueva URL. Si falla, devuelve la URL original sin romper. */
+export async function moveAssetFolder(url: string, newFolder: string): Promise<string> {
+  if (!hasCloudinary || !url.includes('cloudinary.com')) return url
+  try {
+    const parsed = parseCloudinaryUrl(url)
+    if (!parsed) return url
+    // Extraer solo el nombre del archivo (última parte del public_id)
+    const parts = parsed.publicId.split('/')
+    const filename = parts[parts.length - 1]
+    const newPublicId = `${newFolder}/${filename}`
+    if (parsed.publicId === newPublicId) return url // ya está en la carpeta correcta
+    const result = await cloudinary.uploader.rename(parsed.publicId, newPublicId, {
+      resource_type: parsed.resourceType,
+      overwrite: true,
+      invalidate: true,
+    })
+    return result.secure_url || url
+  } catch (err) {
+    console.error('[moveAssetFolder] error:', err)
+    return url // devolver la original si falla — no romper el flujo
+  }
+}
+
+/** Crea la estructura de carpetas vacías en Cloudinary según la taxonomía del sitio.
+ *  Es idempotente: si una carpeta ya existe, no falla. */
+export async function scaffoldFolders(folderPaths: string[]): Promise<{ created: number; skipped: number }> {
+  if (!hasCloudinary) return { created: 0, skipped: 0 }
+  let created = 0
+  let skipped = 0
+  for (const folderPath of folderPaths) {
+    try {
+      await cloudinary.api.create_folder(folderPath)
+      created++
+    } catch (err: unknown) {
+      // Cloudinary devuelve error si la carpeta ya existe — eso está bien
+      const message = err instanceof Error ? err.message : String(err)
+      if (message.includes('already exists')) {
+        skipped++
+      } else {
+        console.error(`[scaffoldFolders] error creating ${folderPath}:`, err)
+        skipped++
+      }
+    }
+  }
+  return { created, skipped }
 }

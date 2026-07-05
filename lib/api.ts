@@ -119,7 +119,7 @@ export async function twoFa(payload:
   return data as { secret?: string; uri?: string }
 }
 
-export async function uploadMedia(base64Data: string, originalSize: number, originalName: string, section?: string): Promise<UploadResponse> {
+export async function uploadMedia(base64Data: string, originalSize: number, originalName: string, section?: string, mediaState?: 'used' | 'unused' | 'trash', cloudinaryFolder?: string): Promise<UploadResponse> {
   // Fallback local: si el backend (Cloudinary) no está disponible, se usa el
   // propio dataURL como fuente. Permite seleccionar/subir imágenes sin backend
   // en desarrollo (se persisten en los overrides locales).
@@ -137,7 +137,7 @@ export async function uploadMedia(base64Data: string, originalSize: number, orig
     r = await fetch('/api/upload-test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base64Data, originalSize, originalName, section }),
+      body: JSON.stringify({ base64Data, originalSize, originalName, section, mediaState, cloudinaryFolder }),
     })
   } catch {
     return localFallback() // backend no corre → usar dataURL local
@@ -160,6 +160,31 @@ export async function deleteMedia(url: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
   })
+}
+
+/** Mueve un asset de Cloudinary a una nueva carpeta. Devuelve la nueva URL. */
+export async function moveMedia(url: string, newFolder: string): Promise<{ newUrl: string }> {
+  try {
+    const r = await fetch('/api/move-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, newFolder }),
+    })
+    if (!r.ok) return { newUrl: url }
+    const data = await r.json()
+    return { newUrl: (data as { newUrl?: string }).newUrl || url }
+  } catch {
+    return { newUrl: url }
+  }
+}
+
+/** Crea la estructura de carpetas vacías en Cloudinary según la taxonomía del sitio. */
+export async function scaffoldCloudinaryFolders(): Promise<void> {
+  try {
+    await fetch('/api/scaffold-folders', { method: 'POST' })
+  } catch {
+    // best-effort: no romper si falla
+  }
 }
 
 export type LangMaps = Record<string, Record<string, string>>

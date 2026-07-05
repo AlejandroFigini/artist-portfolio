@@ -11,7 +11,7 @@ import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
   state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState,
 } from '@/lib/cms/store'
-import { getAccount } from '@/lib/api'
+import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
@@ -59,6 +59,8 @@ export default function AdminDashboard() {
       if (state.isAdmin) {
         autoCleanTrash()
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
+        // Crear estructura de carpetas vacías en Cloudinary (idempotente)
+        scaffoldCloudinaryFolders()
       }
     })
   }, [])
