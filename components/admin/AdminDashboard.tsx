@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useModal } from '@/components/ui/Modal'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides,
 } from '@/lib/cms/store'
 import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
@@ -56,6 +56,7 @@ export default function AdminDashboard() {
     // Sincronizar estado compartido desde el server (usedContent, unused,
     // retired, etc.) para reflejar cambios de otros dispositivos/usuarios.
     loadServerState().then(() => {
+      cleanOrphanOverrides()
       if (state.isAdmin) {
         autoCleanTrash()
         resolveSizes([...Object.values(state.usedContent), ...state.unused])

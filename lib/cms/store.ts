@@ -462,6 +462,41 @@ export function purgeUrlsFromAllState(urls: string[]) {
   if (usedChanged || keysToClear.length > 0) { emit() }
 }
 
+export function cleanOrphanOverrides() {
+  const validUrls = new Set<string>()
+  Object.values(state.usedContent).forEach((e) => { if (e && e.src) validUrls.add(e.src) })
+  state.unused.forEach((e) => {
+    if (e && e.src) validUrls.add(e.src)
+    if (e && 'dataUrl' in e && typeof (e as { dataUrl?: string }).dataUrl === 'string' && (e as { dataUrl?: string }).dataUrl) {
+      validUrls.add((e as { dataUrl?: string }).dataUrl!)
+    }
+  })
+  state.trash.forEach((e) => {
+    if (e && e.src) validUrls.add(e.src)
+    if (e && 'dataUrl' in e && typeof (e as { dataUrl?: string }).dataUrl === 'string' && (e as { dataUrl?: string }).dataUrl) {
+      validUrls.add((e as { dataUrl?: string }).dataUrl!)
+    }
+  })
+
+  const keysToClear: string[] = []
+  Object.entries(state.items).forEach(([key, val]) => {
+    if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
+      if (!validUrls.has(val)) {
+        keysToClear.push(key)
+        if (!state.retired.includes(key) && !key.includes('::') && !key.endsWith('.settings')) {
+          state.retired.push(key)
+        }
+      }
+    }
+  })
+
+  if (keysToClear.length > 0) {
+    clearItemOverrides(keysToClear)
+    persistRetired()
+    emit()
+  }
+}
+
 export function moveUsedToUnused(key: string) {
   const entry = state.usedContent[key]
   if (!entry) return

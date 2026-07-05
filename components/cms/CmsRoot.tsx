@@ -11,7 +11,7 @@ import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
-import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, saveJSON, loadLang, loadServerState, LS } from '@/lib/cms/store'
+import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, saveJSON, loadLang, loadServerState, cleanOrphanOverrides, LS } from '@/lib/cms/store'
 import { BASE_LANG } from '@/lib/i18n'
 import * as engine from './engine'
 import dynamic from 'next/dynamic'
@@ -117,6 +117,7 @@ export default function CmsRoot() {
         // Sincronizar estado compartido (usedContent, retired, etc.) desde el
         // server — resuelve el bug de "cambios no visibles en otro dispositivo".
         loadServerState().then(() => {
+          cleanOrphanOverrides()
           engine.refreshRetired()
           engine.seedUsedContent()
           emit()
