@@ -13,6 +13,8 @@ import { BASE_LANG, type Lang } from '@/lib/i18n'
 export const LS = {
   ADMIN: 'cms_admin_v1',
   OVERRIDES: 'cms_overrides_v1',
+  OVERRIDES_HASH: 'cms_overrides_hash_v1',
+  GLOBAL_HASH: 'cms_global_hash_v1',
   AUDIT: 'cms_audit_v1',
   MEDIA: 'cms_media_meta_v1',
   UNUSED: 'cms_unused_v1',
@@ -77,6 +79,15 @@ export function loadJSON<T>(key: string, def: T): T {
 }
 export function saveJSON(key: string, v: unknown) {
   try { localStorage.setItem(key, JSON.stringify(v)) } catch {}
+}
+
+export function simpleHash(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash |= 0
+  }
+  return hash
 }
 
 // ----- Estado + suscripción -------------------------------------------------
@@ -184,7 +195,11 @@ export const persistUnused = () => { saveJSON(LS.UNUSED, state.unused); saveJSON
 export const persistUsed = () => { saveJSON(LS.USED, state.usedContent); saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('used_content', 'media_meta') }
 export const persistRetired = () => { saveJSON(LS.RETIRED, state.retired); scheduleSyncToServer('retired') }
 export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyncToServer('trash') }
-export const persistOverridesLocal = () => { saveJSON(LS.OVERRIDES, state.items); scheduleSyncToServer('overrides') }
+export const persistOverridesLocal = () => {
+  saveJSON(LS.OVERRIDES, state.items)
+  saveJSON(LS.OVERRIDES_HASH, simpleHash(JSON.stringify(state.items)))
+  scheduleSyncToServer('overrides')
+}
 export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
 
 export function clearDbOverrides(keys: string[]) {
@@ -198,6 +213,16 @@ export function clearDbOverrides(keys: string[]) {
    no hay datos — no que "se conserve lo local". localStorage se actualiza
    como caché para el próximo arranque rápido. */
 export function mergeServerState(server: CmsStatePayload) {
+  // Compute a global deterministic hash of the whole payload
+  const serverHash = simpleHash(JSON.stringify(server))
+  const localHash = loadJSON(LS.GLOBAL_HASH, null)
+  // If hashes match, nothing changed – keep local cache
+  if (localHash !== null && serverHash === localHash) {
+    emit()
+    return
+  }
+
+  // Otherwise, overwrite all persisted sections with server data
   if ('used_content' in server) {
     state.usedContent = (server.used_content || {}) as typeof state.usedContent
     saveJSON(LS.USED, state.usedContent)
@@ -206,30 +231,39 @@ export function mergeServerState(server: CmsStatePayload) {
     state.unused = (Array.isArray(server.unused) ? server.unused : []) as typeof state.unused
     saveJSON(LS.UNUSED, state.unused)
   }
-  if ('retired' in server) {
-    state.retired = (Array.isArray(server.retired) ? server.retired : []) as typeof state.retired
-    saveJSON(LS.RETIRED, state.retired)
+  if (['retired', 'trash', 'media_meta', 'audit', 'container_names', 'overrides'].some(k => k in server)) {
+    if ('retired' in server) {
+      state.retired = (Array.isArray(server.retired) ? server.retired : []) as typeof state.retired
+      saveJSON(LS.RETIRED, state.retired)
+    }
+    if ('trash' in server) {
+      state.trash = (Array.isArray(server.trash) ? server.trash : []) as typeof state.trash
+      saveJSON(LS.TRASH, state.trash)
+    }
+    if ('media_meta' in server) {
+      state.mediaMeta = (server.media_meta || {}) as typeof state.mediaMeta
+      saveJSON(LS.MEDIA, state.mediaMeta)
+    }
+    if ('audit' in server) {
+      state.audit = (Array.isArray(server.audit) ? server.audit : []) as typeof state.audit
+      saveJSON(LS.AUDIT, state.audit)
+    }
+    if ('container_names' in server) {
+      state.containerNames = (server.container_names || {}) as typeof state.containerNames
+      saveJSON(LS.CONTAINER_NAMES, state.containerNames)
+    }
+    if ('overrides' in server) {
+      const newItems = (server.overrides || {}) as Record<string, string>
+      const newHash = simpleHash(JSON.stringify(newItems))
+      // Store overrides and its hash regardless of previous value, because global change already detected
+      state.items = newItems
+      saveJSON(LS.OVERRIDES, state.items)
+      saveJSON(LS.OVERRIDES_HASH, newHash)
+    }
   }
-  if ('trash' in server) {
-    state.trash = (Array.isArray(server.trash) ? server.trash : []) as typeof state.trash
-    saveJSON(LS.TRASH, state.trash)
-  }
-  if ('media_meta' in server) {
-    state.mediaMeta = (server.media_meta || {}) as typeof state.mediaMeta
-    saveJSON(LS.MEDIA, state.mediaMeta)
-  }
-  if ('audit' in server) {
-    state.audit = (Array.isArray(server.audit) ? server.audit : []) as typeof state.audit
-    saveJSON(LS.AUDIT, state.audit)
-  }
-  if ('container_names' in server) {
-    state.containerNames = (server.container_names || {}) as typeof state.containerNames
-    saveJSON(LS.CONTAINER_NAMES, state.containerNames)
-  }
-  if ('overrides' in server) {
-    state.items = (server.overrides || {}) as Record<string, string>
-    saveJSON(LS.OVERRIDES, state.items)
-  }
+
+  // Persist the new global hash for future comparisons
+  saveJSON(LS.GLOBAL_HASH, serverHash)
   emit()
 }
 
