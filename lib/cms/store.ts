@@ -291,6 +291,17 @@ export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: st
   }, 0)
 }
 
+export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url?: string }>(arr: T[]): T[] => {
+  const seen = new Set<string>()
+  return arr.filter((e) => {
+    const id = (e as { src?: string }).src || (e as { dataUrl?: string }).dataUrl || (e as { url?: string }).url
+    if (!id) return true
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 

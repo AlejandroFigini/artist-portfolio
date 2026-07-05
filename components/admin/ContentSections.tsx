@@ -9,7 +9,7 @@ import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes } from '@/lib/utils'
 import {
-  state, sumSizes, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
+  state, sumSizes, deduplicateMedia, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
   performRestore, loadJSON, saveJSON, LS,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
@@ -484,11 +484,11 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const { usedMenu, unusedMenu, trashMenu } = useMenus({ openModal })
   const [filter, setFilter] = useState(() => loadJSON<string>(LS.REPO_FILTER, 'all'))
 
-  const all: AnyEntry[] = [
+  const all: AnyEntry[] = deduplicateMedia([
     ...usedArr.map((x) => ({ ...x, _state: 'used' as const })),
     ...unusedArr.map((x) => ({ ...x, _state: 'unused' as const })),
     ...trashArr.map((x) => ({ ...x, _state: 'trash' as const })),
-  ]
+  ])
   const filtered = filter === 'all' ? all : all.filter((x) => x._state === filter)
 
   const stateTag = (s?: string) =>

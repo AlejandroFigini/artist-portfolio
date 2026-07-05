@@ -8,7 +8,7 @@ import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
-import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo } from '@/lib/utils'
+import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
@@ -236,6 +236,10 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
   if (!src || src === 'null' || src === 'undefined') return null
   const vid = isVideo(e.type || (e as { kind?: string }).kind, e.name)
   const ts = cardType === 'trash' || (cardType === 'repo' && e._state === 'trash') ? e.deletedAt : e.ts
+  const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
+  const containerBase = e.key ? getContainerMeta(e.key).label : ((e as { reason?: string }).reason === 'upload' ? 'Recién subido' : '')
+  const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
+  const containerLabel = isUnusedOrTrash ? 'Contenedor previo:' : 'Contenedor:'
 
   return (
     <CmsModal
@@ -262,6 +266,8 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
             <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
+            <div><strong>Usos:</strong> <span style={occCount >= 2 ? { fontWeight: 600, color: 'var(--accent)' } : undefined}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
+            <div><strong>{containerLabel}</strong> {containerBase || '—'}</div>
           </div>
         </div>
       </div>
@@ -289,7 +295,8 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
           setProgressIndex(i + 1)
           const file = files[i]
           const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
-          const finalName = (files.length === 1 && nameRef.current?.value.trim()) || file.name
+          const rawName = (files.length === 1 && nameRef.current?.value.trim()) || getFileBasename(file.name)
+          const finalName = ensureExtension(rawName, file.name)
           const base64 = await fileToDataURL(file)
           const data = await uploadMedia(base64, file.size, finalName, 'Subidas directas')
           
@@ -340,8 +347,15 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
             <>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Nombre del archivo</label>
-                <input ref={nameRef} type="text" className="cms-field" defaultValue={files[0].name}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <input ref={nameRef} type="text" className="cms-field" defaultValue={getFileBasename(files[0].name)}
+                    style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
+                  {getFileExtension(files[0].name) && (
+                    <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                      {getFileExtension(files[0].name)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 <div><strong>Tamaño:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files[0].size)}</span></div>

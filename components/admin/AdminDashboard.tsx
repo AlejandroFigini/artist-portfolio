@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useModal } from '@/components/ui/Modal'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, loadJSON, LS, setAdminFlag, loadServerState,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState,
 } from '@/lib/cms/store'
 import { getAccount } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
@@ -66,6 +66,7 @@ export default function AdminDashboard() {
   const usedArr: AnyEntry[] = Object.values(state.usedContent)
   const unusedArr: AnyEntry[] = state.unused.map((e, i) => ({ ...e, _idx: i }))
   const trashArr: AnyEntry[] = state.trash.map((e, i) => ({ ...e, _idx: i }))
+  const repoArr = deduplicateMedia([...usedArr, ...unusedArr, ...trashArr])
 
   if (!state.loaded) return null
   if (!state.isAdmin) {
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
                   <i className="fa-solid fa-trash-can c-basurero"></i>{navBadge('Basurero', trashArr.length, sumSizes(trashArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-repo' ? ' active' : ''}`} onClick={() => goto('contenidos-repo')}>
-                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', usedArr.length + unusedArr.length + trashArr.length, sumSizes([...usedArr, ...unusedArr, ...trashArr]))}
+                  <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repositorio', repoArr.length, sumSizes(repoArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'subircontenido' ? ' active' : ''}`} onClick={() => goto('subircontenido')}>
                   <i className="fa-solid fa-vial c-subir"></i><span>Subir contenido</span>
@@ -197,7 +198,7 @@ export default function AdminDashboard() {
                 <Stat label="contenidos usados" count={usedArr.length} size={fmtBytes(sumSizes(usedArr))} />
                 <Stat label="contenidos no usados" count={unusedArr.length} size={fmtBytes(sumSizes(unusedArr))} />
                 <Stat label="en el basurero" count={trashArr.length} size={fmtBytes(sumSizes(trashArr))} warn />
-                <Stat label="repositorio total" count={usedArr.length + unusedArr.length + trashArr.length} size={fmtBytes(sumSizes([...usedArr, ...unusedArr, ...trashArr]))} />
+                <Stat label="repositorio total" count={repoArr.length} size={fmtBytes(sumSizes(repoArr))} />
               </div>
               <div className="admin-quick">
                 <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Ajustes del sitio</button>

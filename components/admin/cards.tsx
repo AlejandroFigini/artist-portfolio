@@ -69,7 +69,8 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
   const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
   const containerBase = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Recién subido' : '')
-  const container = containerBase ? `${containerBase}${occCount >= 2 ? ` (${occCount} usos)` : ''}` : ''
+  const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
+  const containerLabel = isUnusedOrTrash ? 'Contenedor previo:' : 'Contenedor:'
   return (
     <div
       className="cms-mlib-item"
@@ -105,7 +106,8 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
           <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
           <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-          <div className="cms-mlib-meta-truncate"><strong>Contenedor:</strong> <span title={container}>{container || '—'}</span></div>
+          <div><strong>Usos:</strong> <span style={occCount >= 2 ? { fontWeight: 600, color: 'var(--accent)' } : undefined}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
+          <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase}>{containerBase || '—'}</span></div>
         </div>
         {actions.length > 0 && (
           <div className="cms-mlib-actions">

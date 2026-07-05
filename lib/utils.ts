@@ -56,3 +56,36 @@ export function cloudinaryThumb(src: string, video?: boolean): string {
   if (video) t = t.replace(/\.webm|\.mp4|\.mov/i, '.jpg')
   return t
 }
+
+export function getFileExtension(filename?: string | null): string {
+  if (!filename) return ''
+  const lastDot = filename.lastIndexOf('.')
+  return lastDot > 0 ? filename.slice(lastDot) : ''
+}
+
+export function getFileBasename(filename?: string | null): string {
+  if (!filename) return ''
+  const lastDot = filename.lastIndexOf('.')
+  return lastDot > 0 ? filename.slice(0, lastDot) : filename
+}
+
+export function ensureExtension(name: string, originalFilename: string): string {
+  if (!name || !name.trim()) return originalFilename
+  const trimmed = name.trim()
+  const ext = getFileExtension(originalFilename)
+  if (!ext) return trimmed
+  
+  if (trimmed.toLowerCase().endsWith(ext.toLowerCase())) {
+    return trimmed
+  }
+  
+  const nameLastDot = trimmed.lastIndexOf('.')
+  if (nameLastDot > 0) {
+    const possibleExt = trimmed.slice(nameLastDot)
+    if (/^\.[a-zA-Z0-9]{1,5}$/.test(possibleExt)) {
+      return trimmed.slice(0, nameLastDot) + ext
+    }
+  }
+  
+  return trimmed + ext
+}
