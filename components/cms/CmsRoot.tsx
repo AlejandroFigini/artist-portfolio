@@ -216,6 +216,7 @@ export default function CmsRoot() {
               const meta = engine.metaByKey[key]
               const err = validateFile(f, meta?.accept)
               if (err) { toast(err, 'error'); return }
+              close()
               setUploadFile({ key, file: f })
             }}
           />

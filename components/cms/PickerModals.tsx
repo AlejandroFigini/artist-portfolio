@@ -78,12 +78,12 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
           )}
         </div>
         <div className="cms-picker-options">
-          <button type="button" className="cms-picker-option" onClick={() => { onClose(); onLocal() }}>
+          <button type="button" className="cms-picker-option" onClick={onLocal}>
             <i className="fa-solid fa-desktop"></i>
             <span className="cms-picker-opt-title">Subir archivo desde PC</span>
             <span className="cms-picker-opt-desc">El archivo se optimizará (WebP/WebM) y subirá al servidor.</span>
           </button>
-          <button type="button" className="cms-picker-option" onClick={() => { onClose(); onRepo() }}>
+          <button type="button" className="cms-picker-option" onClick={onRepo}>
             <i className="fa-solid fa-cloud-arrow-up"></i>
             <span className="cms-picker-opt-title">Seleccionar contenido ya subido</span>
             <span className="cms-picker-opt-desc">Elegir de la biblioteca de medios en el servidor.</span>

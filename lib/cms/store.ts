@@ -434,6 +434,13 @@ export function cloudinaryMove(oldUrl: string, newFolder: string) {
 export function syncCloudinaryFolders(): number {
   if (!state.isAdmin) return 0
   let count = 0
+  // 0. Contenidos activos en overrides del sitio (state.items) -> portfolio/en-uso
+  Object.values(state.items).forEach((val) => {
+    if (typeof val === 'string' && val.includes('cloudinary.com') && !val.includes('/portfolio/en-uso/') && !val.includes('/portfolio/basurero/')) {
+      cloudinaryMove(val, 'portfolio/en-uso')
+      count++
+    }
+  })
   // 1. Contenidos en uso -> portfolio/en-uso
   Object.values(state.usedContent).forEach((entry) => {
     if (entry && entry.src && entry.src.includes('cloudinary.com') && !entry.src.includes('/portfolio/en-uso/')) {

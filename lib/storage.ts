@@ -139,7 +139,7 @@ export async function uploadDataUrl(
 
 /** Extrae resource_type y public_id de una URL de Cloudinary. */
 function parseCloudinaryUrl(url: string): { resourceType: 'image' | 'video' | 'raw'; publicId: string } | null {
-  const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?v\d+\/(.+)$/)
+  const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
   if (!match) return null
   const resourceType = match[1] as 'image' | 'video' | 'raw'
   const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '')
