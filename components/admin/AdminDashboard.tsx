@@ -10,7 +10,7 @@ import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders, validateCloudinaryContent,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders, validateCloudinaryContent,
 } from '@/lib/cms/store'
 import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
