@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import AdminDashboard from '@/components/admin/AdminDashboard'
+import CmsRoot from '@/components/cms/CmsRoot'
 
 export const metadata: Metadata = {
   title: 'Gestión — Lucia Montaña',
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export default function AdminPage() {
   return (
     <div className="admin-page">
+      <CmsRoot />
       <AdminDashboard />
     </div>
   )
