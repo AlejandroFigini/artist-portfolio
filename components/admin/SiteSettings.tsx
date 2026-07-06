@@ -15,7 +15,7 @@ import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
-import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot } from '@/components/cms/engine'
+import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
@@ -97,6 +97,13 @@ export function LoaderSettings() {
     attachEditControls()
     if (!currentVideo) {
       showEmptySlot('loader.gallop')
+    } else {
+      const parent = elementsByKey['loader.gallop']?.parentElement
+      if (parent) {
+        parent.classList.remove('cms-empty-slot')
+        parent.querySelector('.cms-empty-overlay')?.remove()
+      }
+      refreshTools('loader.gallop')
     }
   }, [currentVideo])
 
@@ -130,26 +137,16 @@ export function LoaderSettings() {
           onClick={() => triggerContentPicker('loader.gallop')}
           title="Haz clic para seleccionar desde el repositorio o subir contenido"
         >
-          {currentVideo ? (
-            <video
-              data-cms-key="loader.gallop"
-              className="loader-gallop"
-              src={currentVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
-            />
-          ) : (
-            <div
-              className="cms-empty-overlay"
-              style={{ position: 'absolute', inset: 0 }}
-            >
-              <i className="fa-solid fa-cloud-arrow-up"></i>
-              <span>Video del loader — Página de carga</span>
-            </div>
-          )}
+          <video
+            data-cms-key="loader.gallop"
+            className="loader-gallop"
+            src={currentVideo || undefined}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: currentVideo ? 'block' : 'none', pointerEvents: 'none' }}
+          />
         </div>
         <div className="site-setting-fields">
           <label className="setting-item" style={{ maxWidth: 320, marginTop: '0.5rem' }}>
