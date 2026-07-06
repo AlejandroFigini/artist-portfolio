@@ -162,6 +162,45 @@ export async function deleteAsset(url: string): Promise<void> {
   }
 }
 
+/** Verifica si un asset de Cloudinary existe. Devuelve true si existe, false si no.
+ *  Para URLs no-Cloudinary (locales), devuelve true siempre. */
+export async function verifyAssetExists(url: string): Promise<boolean> {
+  if (!url || !url.includes('cloudinary.com')) return true
+  if (!hasCloudinary) return true
+  try {
+    const parsed = parseCloudinaryUrl(url)
+    if (!parsed) return true // no se pudo parsear → asumir que existe
+    await cloudinary.api.resource(parsed.publicId, { resource_type: parsed.resourceType })
+    return true
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('not found') || message.includes('Not Found')) return false
+    // Otro error (rate limit, etc.) → asumir que existe para no borrar datos por error
+    console.warn('[verifyAssetExists] error no concluyente:', message)
+    return true
+  }
+}
+
+/** Verifica en lote si múltiples assets de Cloudinary existen.
+ *  Procesa en paralelo con Promise.allSettled (máx 10 concurrentes). */
+export async function verifyAssetsExist(urls: string[]): Promise<{ url: string; exists: boolean }[]> {
+  if (!hasCloudinary) return urls.map((url) => ({ url, exists: true }))
+  const results: { url: string; exists: boolean }[] = []
+  // Procesar en lotes de 10 para no sobrecargar la API
+  const BATCH_SIZE = 10
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE)
+    const settled = await Promise.allSettled(
+      batch.map(async (url) => ({ url, exists: await verifyAssetExists(url) }))
+    )
+    for (const r of settled) {
+      if (r.status === 'fulfilled') results.push(r.value)
+      else results.push({ url: batch[settled.indexOf(r)], exists: true }) // error → asumir existe
+    }
+  }
+  return results
+}
+
 /** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id).
  *  Devuelve la nueva URL. Si falla, devuelve la URL original sin romper. */
 export async function moveAssetFolder(url: string, newFolder: string): Promise<string> {

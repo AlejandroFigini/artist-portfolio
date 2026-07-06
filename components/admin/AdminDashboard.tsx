@@ -10,7 +10,7 @@ import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders, validateCloudinaryContent,
 } from '@/lib/cms/store'
 import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
@@ -64,9 +64,17 @@ export default function AdminDashboard() {
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
         // Crear estructura de carpetas vacías en Cloudinary (idempotente)
         scaffoldCloudinaryFolders()
+        // Sincronizar carpetas de Cloudinary (mover archivos a sus carpetas correctas)
+        syncCloudinaryFolders()
+        // Validar que los contenidos sigan existiendo en Cloudinary (async, background)
+        validateCloudinaryContent().then((purged) => {
+          if (purged > 0) {
+            toast(`Se eliminaron ${purged} contenido(s) que ya no existen en Cloudinary`, 'error')
+          }
+        })
       }
     })
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const usedArr: AnyEntry[] = Object.values(state.usedContent)
   const unusedArr: AnyEntry[] = state.unused.map((e, i) => ({ ...e, _idx: i }))

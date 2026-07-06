@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
@@ -126,6 +126,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const [filter, setFilter] = useState<'all' | 'usado' | 'sin usar'>('all')
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
+  const [verifying, setVerifying] = useState(false)
 
   const [all] = useState<RepoEntry[]>(() => {
     const list: RepoEntry[] = []
@@ -211,6 +212,26 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     const src = selected.src
     if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
 
+    // Verificar que el contenido siga existiendo en Cloudinary antes de asignar
+    if (src.includes('cloudinary.com')) {
+      setVerifying(true)
+      verifySingleUrl(src).then((exists) => {
+        setVerifying(false)
+        if (!exists) {
+          toast('Este contenido ya no existe en Cloudinary y fue eliminado del repositorio', 'error')
+          purgeUrlsFromAllState([src])
+          emit()
+          return
+        }
+        if (selected._state === 'usado' && selected._key && selected._key !== cmsKey) {
+          setConfirmEntry(selected)
+        } else {
+          performAssign(false)
+        }
+      })
+      return false
+    }
+
     if (selected._state === 'usado' && selected._key && selected._key !== cmsKey) {
       setConfirmEntry(selected)
       return false
@@ -224,7 +245,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       title="Elegir del repositorio" wide onClose={onClose}
       actions={[
         { label: 'Cancelar', onClick: () => {} },
-        { label: 'Usar este contenido', primary: true, onClick: assign },
+        { label: verifying ? 'Verificando...' : 'Usar este contenido', primary: true, onClick: verifying ? () => false as const : assign },
       ]}
     >
       <div>

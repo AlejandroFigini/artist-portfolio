@@ -160,7 +160,7 @@ export function loadState() {
 // del server, se sobreescribe por completo. Las funciones persist*() guardan
 // en ambos lados: localStorage inmediato (UX) + DB con debounce (persistencia).
 
-import { saveState, getState, saveContent, type CmsStatePayload, moveMedia } from '@/lib/api'
+import { saveState, getState, saveContent, type CmsStatePayload, moveMedia, verifyMedia } from '@/lib/api'
 
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 const _pendingKeys = new Set<string>()
@@ -468,6 +468,46 @@ export function syncCloudinaryFolders(): number {
     console.log(`[syncCloudinaryFolders] Sincronizando ${count} archivos a sus carpetas correctas...`)
   }
   return count
+}
+
+/** Valida que las URLs de Cloudinary del CMS sigan existiendo.
+ *  Las que ya no existen se purgan del estado con purgeUrlsFromAllState().
+ *  Devuelve la cantidad de contenidos eliminados. */
+export async function validateCloudinaryContent(): Promise<number> {
+  if (!state.isAdmin) return 0
+  // Recopilar todas las URLs de Cloudinary únicas del estado
+  const urls = new Set<string>()
+  Object.values(state.usedContent).forEach((e) => {
+    if (e?.src?.includes('cloudinary.com')) urls.add(e.src)
+  })
+  state.unused.forEach((e) => {
+    if (e.src?.includes('cloudinary.com')) urls.add(e.src)
+    if (e.dataUrl?.includes('cloudinary.com')) urls.add(e.dataUrl)
+  })
+  state.trash.forEach((e) => {
+    if (e.src?.includes('cloudinary.com')) urls.add(e.src)
+    if (e.dataUrl?.includes('cloudinary.com')) urls.add(e.dataUrl)
+  })
+  Object.values(state.items).forEach((val) => {
+    if (typeof val === 'string' && val.includes('cloudinary.com')) urls.add(val)
+  })
+  if (urls.size === 0) return 0
+  const results = await verifyMedia(Array.from(urls))
+  if (results.length === 0) return 0 // endpoint no disponible o error
+  const missing = results.filter((r) => !r.exists).map((r) => r.url)
+  if (missing.length === 0) return 0
+  console.warn(`[validateCloudinaryContent] ${missing.length} contenido(s) ya no existen en Cloudinary:`, missing)
+  purgeUrlsFromAllState(missing)
+  return missing.length
+}
+
+/** Verifica si una URL de Cloudinary específica sigue existiendo.
+ *  Para uso puntual (ej. antes de asignar desde repo). */
+export async function verifySingleUrl(url: string): Promise<boolean> {
+  if (!url || !url.includes('cloudinary.com')) return true
+  const results = await verifyMedia([url])
+  if (results.length === 0) return true // endpoint no disponible → asumir OK
+  return results[0].exists
 }
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {

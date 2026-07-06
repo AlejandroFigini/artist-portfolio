@@ -187,6 +187,24 @@ export async function scaffoldCloudinaryFolders(): Promise<void> {
   }
 }
 
+/** Verifica en lote si las URLs de Cloudinary existen. Devuelve las que no existen.
+ *  Silencioso si el backend no responde (devuelve array vacío = "todo OK"). */
+export async function verifyMedia(urls: string[]): Promise<{ url: string; exists: boolean }[]> {
+  if (!urls.length) return []
+  try {
+    const r = await fetch('/api/verify-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls }),
+    })
+    if (!r.ok) return []
+    const data = await r.json()
+    return (data as { results?: { url: string; exists: boolean }[] }).results || []
+  } catch {
+    return [] // backend no disponible → asumir todo OK
+  }
+}
+
 export type LangMaps = Record<string, Record<string, string>>
 
 /* Traducciones: trae todos los idiomas (es base + en/pt/fr). El cliente las
