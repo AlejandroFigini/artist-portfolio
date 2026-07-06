@@ -13,9 +13,9 @@ import { useRef, useState } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
-import { saveContent, getTranslations, importTranslations } from '@/lib/api'
+import { saveContent, getTranslations, importTranslations, uploadMedia } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, moveUsedToUnused } from '@/lib/cms/store'
-import { setLanguage } from '@/components/cms/engine'
+import { setLanguage, applyMedia } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
@@ -71,6 +71,9 @@ function useSaveSettings() {
     setSettings(final)
     // persistir valores finales (URLs, no base64) en el store home + localStorage
     Object.assign(state.items, toItems(final))
+    if (final.loaderVideo !== undefined) {
+      applyMedia('loader.gallop', final.loaderVideo)
+    }
     persistOverridesLocal()
     recordAudit({ section: 'Ajustes del sitio', label: 'Ajustes', summary })
     toast('Guardado')
@@ -85,6 +88,7 @@ export function LoaderSettings() {
   const save = useSaveSettings()
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null) // dataURL o string vacío sin guardar
   const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
   const [saving, setSaving] = useState(false)
@@ -94,24 +98,46 @@ export function LoaderSettings() {
   const pick = async (file: File) => {
     const err = validateFile(file, 'webm')
     if (err) { toast(err, 'error'); return }
+    setSelectedFile(file)
     setPreview(await fileToDataURL(file))
   }
 
   const onSave = async () => {
     setSaving(true)
+    let finalVideoUrl = currentVideo
+    if (selectedFile && preview && preview.startsWith('data:')) {
+      toast('Subiendo video, por favor espera...', 'info')
+      try {
+        const res = await uploadMedia(preview, selectedFile.size, selectedFile.name, 'Contenedores', 'used', 'portfolio/en-uso')
+        if (res && res.secure_url) {
+          finalVideoUrl = res.secure_url
+        } else if (res && res.error) {
+          toast(res.error, 'error')
+          setSaving(false)
+          return
+        }
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Error subiendo video', 'error')
+        setSaving(false)
+        return
+      }
+    }
+
     const patch: Partial<SiteSettings> = {
       loaderDuration: String(parseFloat(duration) || 3),
-      loaderVideo: currentVideo,
+      loaderVideo: finalVideoUrl,
     }
-    if (currentVideo === '' && state.usedContent['loader.gallop']) {
+    if (finalVideoUrl === '' && state.usedContent['loader.gallop']) {
       moveUsedToUnused('loader.gallop')
     }
     await save(patch, 'Pantalla de carga actualizada')
+    setSelectedFile(null)
     setPreview(null)
     setSaving(false)
   }
 
   const removeVideo = () => {
+    setSelectedFile(null)
     setPreview('')
   }
 
