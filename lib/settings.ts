@@ -3,6 +3,7 @@
    el endpoint /api/site, el SiteSettingsProvider y el panel de Ajustes. */
 
 export const SETTINGS_KEYS = {
+  loaderVideo: 'settings.loaderVideo',
   loaderImage: 'settings.loaderImage',
   loaderDuration: 'settings.loaderDuration',
   cvUrl: 'settings.cvUrl',
@@ -11,6 +12,7 @@ export const SETTINGS_KEYS = {
 } as const
 
 export type SiteSettings = {
+  loaderVideo?: string
   loaderImage: string
   loaderDuration: string // segundos, como string (valor crudo de cms_data)
   cvUrl: string
@@ -18,7 +20,7 @@ export type SiteSettings = {
   faviconUrl: string
 }
 
-export const EMPTY_SETTINGS: SiteSettings = { loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '' }
+export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '' }
 
 /** Duración del loader en ms, con default 3s y clamp defensivo (1s–15s). */
 export function loaderDurationMs(raw: string): number {

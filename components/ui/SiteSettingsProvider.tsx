@@ -21,6 +21,7 @@ function fromLocalOverrides(): Partial<SiteSettings> {
   try {
     const ov = JSON.parse(localStorage.getItem('cms_overrides_v1') || '{}') as Record<string, string>
     return {
+      loaderVideo: ov[SETTINGS_KEYS.loaderVideo] || ov['loader.gallop'] || '',
       loaderImage: ov[SETTINGS_KEYS.loaderImage] || '',
       loaderDuration: ov[SETTINGS_KEYS.loaderDuration] || '',
       cvUrl: ov[SETTINGS_KEYS.cvUrl] || '',
@@ -44,6 +45,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       .then((d: SiteSettings | null) => {
         if (!d) return
         setSettings((s) => ({
+          loaderVideo: d.loaderVideo || s.loaderVideo,
           loaderImage: d.loaderImage || s.loaderImage,
           loaderDuration: d.loaderDuration || s.loaderDuration,
           cvUrl: d.cvUrl || s.cvUrl,

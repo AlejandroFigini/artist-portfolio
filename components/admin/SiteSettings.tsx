@@ -14,7 +14,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
-import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
+import { state, persistOverridesLocal, recordAudit, moveUsedToUnused } from '@/lib/cms/store'
 import { setLanguage } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
@@ -25,6 +25,11 @@ const CV_MAX_BYTES = 10 * 1024 * 1024
 // Mapea el patch (camelCase) a claves cms_data settings.*
 function toItems(patch: Partial<SiteSettings>): Record<string, string> {
   const items: Record<string, string> = {}
+  if (patch.loaderVideo !== undefined) {
+    items[SETTINGS_KEYS.loaderVideo] = patch.loaderVideo
+    items['loader.gallop'] = patch.loaderVideo
+    items[SETTINGS_KEYS.loaderImage] = '' // limpiar imagen estática heredada
+  }
   if (patch.loaderImage !== undefined) items[SETTINGS_KEYS.loaderImage] = patch.loaderImage
   if (patch.loaderDuration !== undefined) items[SETTINGS_KEYS.loaderDuration] = patch.loaderDuration
   if (patch.cvUrl !== undefined) items[SETTINGS_KEYS.cvUrl] = patch.cvUrl
@@ -56,6 +61,7 @@ function useSaveSettings() {
 
     const optimistic = { ...settings, ...patch }
     const final: SiteSettings = {
+      loaderVideo: server?.loaderVideo !== undefined ? server.loaderVideo : (optimistic.loaderVideo || ''),
       loaderImage: server?.loaderImage || optimistic.loaderImage,
       loaderDuration: server?.loaderDuration || optimistic.loaderDuration,
       cvUrl: server?.cvUrl || optimistic.cvUrl,
@@ -79,32 +85,34 @@ export function LoaderSettings() {
   const save = useSaveSettings()
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [preview, setPreview] = useState<string | null>(null) // dataURL sin guardar
+  const [preview, setPreview] = useState<string | null>(null) // dataURL o string vacío sin guardar
   const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
   const [saving, setSaving] = useState(false)
 
-  const shown = preview || settings.loaderImage
+  const currentVideo = preview !== null ? preview : (settings.loaderVideo || state.items['loader.gallop'] || '')
 
   const pick = async (file: File) => {
-    const err = validateFile(file, 'webp')
+    const err = validateFile(file, 'webm')
     if (err) { toast(err, 'error'); return }
     setPreview(await fileToDataURL(file))
   }
 
   const onSave = async () => {
     setSaving(true)
-    const patch: Partial<SiteSettings> = { loaderDuration: String(parseFloat(duration) || 3) }
-    if (preview) patch.loaderImage = preview
+    const patch: Partial<SiteSettings> = {
+      loaderDuration: String(parseFloat(duration) || 3),
+      loaderVideo: currentVideo,
+    }
+    if (currentVideo === '' && state.usedContent['loader.gallop']) {
+      moveUsedToUnused('loader.gallop')
+    }
     await save(patch, 'Pantalla de carga actualizada')
     setPreview(null)
     setSaving(false)
   }
 
-  const removeImage = async () => {
-    setSaving(true)
-    await save({ loaderImage: '' }, 'Imagen del loader quitada')
-    setPreview(null)
-    setSaving(false)
+  const removeVideo = () => {
+    setPreview('')
   }
 
   return (
@@ -113,36 +121,77 @@ export function LoaderSettings() {
         <h2><i className="fa-solid fa-spinner"></i> Pantalla de carga</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Elegí la imagen que se muestra mientras el sitio carga y por
-        cuántos segundos permanece visible. Sin imagen, se usa el video del loader por defecto.
+        <i className="fa-solid fa-circle-info"></i> Elegí el video que se reproduce mientras el sitio carga y por
+        cuántos segundos permanece visible. Sin video asignado, el contenedor se mostrará vacío o con el valor por defecto.
       </p>
       <div className="site-setting-row">
-        <div className="site-setting-media">
-          {shown
-            ? /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={shown} alt="Vista previa del loader" />
-            : <span className="site-setting-media-empty"><i className="fa-solid fa-image"></i> Sin imagen</span>}
+        <div
+          className="site-setting-media"
+          style={{
+            position: 'relative',
+            width: 'clamp(260px, 40vw, 360px)',
+            aspectRatio: '16 / 9',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: currentVideo ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+          }}
+        >
+          {currentVideo ? (
+            <video
+              src={currentVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div
+              className="cms-empty-overlay"
+              style={{ position: 'absolute', inset: 0 }}
+              onClick={() => fileRef.current?.click()}
+              title="Subir o asignar video aquí"
+            >
+              <i className="fa-solid fa-cloud-arrow-up"></i>
+              <span>Video del loader — Página de carga</span>
+            </div>
+          )}
         </div>
         <div className="site-setting-fields">
-          <div className="admin-quick" style={{ marginTop: 0 }}>
-            <label className="cms-btn" style={{ cursor: 'pointer' }}>
-              <i className="fa-solid fa-image"></i> {shown ? 'Cambiar imagen' : 'Seleccionar imagen'}
+          <div className="admin-quick" style={{ marginTop: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <label className="cms-btn" style={{ cursor: 'pointer', margin: 0 }}>
+              <i className={currentVideo ? "fa-solid fa-arrow-up-from-bracket" : "fa-solid fa-cloud-arrow-up"}></i>{' '}
+              {currentVideo ? 'Reemplazar' : 'Subir video'}
               <input
-                ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pick(f) }}
+                ref={fileRef}
+                type="file"
+                accept="video/*,video/mp4,video/webm"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  e.target.value = ''
+                  if (f) pick(f)
+                }}
               />
             </label>
-            {(settings.loaderImage || preview) && (
-              <button type="button" className="cms-btn" onClick={removeImage} disabled={saving}>
-                <i className="fa-solid fa-xmark"></i> Quitar imagen
+            {currentVideo && (
+              <button type="button" className="cms-btn" onClick={removeVideo} disabled={saving}>
+                <i className="fa-solid fa-box-archive"></i> Retirar
               </button>
             )}
           </div>
-          <label className="setting-item" style={{ maxWidth: 320 }}>
+          <label className="setting-item" style={{ maxWidth: 320, marginTop: '0.5rem' }}>
             <span>Duración (segundos)</span>
             <input
-              type="number" min={1} max={15} step={0.5} className="social-input" style={{ maxWidth: 120 }}
-              value={duration} onChange={(e) => setDuration(e.target.value)}
+              type="number"
+              min={1}
+              max={15}
+              step={0.5}
+              className="social-input"
+              style={{ maxWidth: 120 }}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
             />
           </label>
         </div>

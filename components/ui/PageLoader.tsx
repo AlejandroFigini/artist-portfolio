@@ -15,7 +15,6 @@ const FADE_MS = 800
 
 export default function PageLoader() {
   const [gone, setGone] = useState(false)
-  const [adminDismissed, setAdminDismissed] = useState(false)
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
@@ -28,7 +27,6 @@ export default function PageLoader() {
   // 1. Escuchar cuando cambia el contenido en el servidor (ej: refrescar caché / nuevo contenido)
   useEffect(() => {
     const onContentChanged = () => {
-      if (admin && adminDismissed) return // Si admin ya lo cerró en su sesión, no molestar
       try { sessionStorage.removeItem('lm_seen_loader') } catch {}
       setMinTimeElapsed(false)
       setGone(false)
@@ -37,7 +35,7 @@ export default function PageLoader() {
     }
     window.addEventListener('cms:contentChanged', onContentChanged)
     return () => window.removeEventListener('cms:contentChanged', onContentChanged)
-  }, [admin, adminDismissed])
+  }, [])
 
   // 2. Control del temporizador mínimo de visualización
   useEffect(() => {
@@ -79,15 +77,6 @@ export default function PageLoader() {
       return
     }
 
-    // Admin: mantener visible para poder editar el video, hasta que lo cierre con la X
-    if (admin) {
-      if (!adminDismissed) {
-        document.body.classList.add('loading-active')
-        loader.classList.remove('loader-hidden')
-      }
-      return () => { if (adminDismissed) document.body.classList.remove('loading-active') }
-    }
-
     // Si no se ha visto (o si se reactivó por nuevo contenido), esperar a que se cumpla minTimeElapsed Y serverReady
     document.body.classList.add('loading-active')
 
@@ -98,7 +87,7 @@ export default function PageLoader() {
       const t = window.setTimeout(() => setGone(true), FADE_MS)
       return () => clearTimeout(t)
     }
-  }, [admin, adminDismissed, gone, minTimeElapsed, serverReady])
+  }, [gone, minTimeElapsed, serverReady])
 
   if (gone) return null
 
@@ -106,17 +95,6 @@ export default function PageLoader() {
     <>
       {/* body.loading-active lo agrega el boot script del layout (pre-paint) */}
       <div id="page-loader" className="page-loader" ref={ref}>
-        {admin && (
-          <button
-            type="button"
-            className="loader-admin-dismiss"
-            aria-label="Cerrar pantalla de carga"
-            title="Cerrar (solo admin)"
-            onClick={() => { document.body.classList.remove('loading-active'); setAdminDismissed(true); setGone(true) }}
-          >
-            <i className="fa-solid fa-xmark"></i>
-          </button>
-        )}
         <div className="loader-stage">
           <div className="loader-media">
             {settings.loaderImage ? (
@@ -125,8 +103,12 @@ export default function PageLoader() {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img className="loader-still" src={settings.loaderImage} alt="" />
             ) : (
-              /* contenedor CMS .loader-gallop — el admin sube/reemplaza el video acá */
-              <video className="loader-gallop" autoPlay loop muted playsInline preload="auto"></video>
+              /* contenedor CMS .loader-gallop — administrado desde Gestión → Pantalla de carga */
+              <video
+                className="loader-gallop"
+                src={settings.loaderVideo || state.items['loader.gallop'] || ''}
+                autoPlay loop muted playsInline preload="auto"
+              ></video>
             )}
             <div className="loader-media-glow"></div>
           </div>

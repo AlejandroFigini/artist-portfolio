@@ -19,6 +19,7 @@ export async function GET() {
     const byKey: Record<string, string> = {}
     for (const row of res.rows as { key: string; value: string }[]) byKey[row.key] = row.value
     return NextResponse.json({
+      loaderVideo: byKey[SETTINGS_KEYS.loaderVideo] || byKey['loader.gallop'] || '',
       loaderImage: byKey[SETTINGS_KEYS.loaderImage] || '',
       loaderDuration: byKey[SETTINGS_KEYS.loaderDuration] || '',
       cvUrl: byKey[SETTINGS_KEYS.cvUrl] || '',
