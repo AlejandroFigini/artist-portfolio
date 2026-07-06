@@ -172,11 +172,17 @@ export async function verifyAssetExists(url: string): Promise<boolean> {
     if (!parsed) return true // no se pudo parsear → asumir que existe
     await cloudinary.api.resource(parsed.publicId, { resource_type: parsed.resourceType })
     return true
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('not found') || message.includes('Not Found')) return false
+  } catch (err: any) {
+    // El SDK de Cloudinary devuelve objetos puros con http_code en lugar de Error instances
+    const httpCode = err?.http_code || err?.error?.http_code || err?.status || err?.statusCode
+    if (httpCode === 404) return false
+
+    const message = err?.message || err?.error?.message || (typeof err === 'string' ? err : JSON.stringify(err))
+    if (typeof message === 'string' && (message.toLowerCase().includes('not found') || message.toLowerCase().includes('404'))) {
+      return false
+    }
     // Otro error (rate limit, etc.) → asumir que existe para no borrar datos por error
-    console.warn('[verifyAssetExists] error no concluyente:', message)
+    console.warn('[verifyAssetExists] error no concluyente:', message, err)
     return true
   }
 }

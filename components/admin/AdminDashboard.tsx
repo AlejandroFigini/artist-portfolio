@@ -216,7 +216,6 @@ export default function AdminDashboard() {
               <div className="admin-quick">
                 <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Ajustes del sitio</button>
                 <button type="button" className="cms-btn" onClick={() => goto('contenidos-usado')}><i className="fa-solid fa-photo-film"></i> Gestionar contenidos</button>
-                <button type="button" className="cms-btn" onClick={() => { const c = syncCloudinaryFolders(); toast(c > 0 ? `Sincronizando ${c} archivos en Cloudinary...` : 'Las carpetas de Cloudinary ya están sincronizadas'); }}><i className="fa-solid fa-arrows-rotate"></i> Sincronizar Cloudinary</button>
                 <button type="button" className="cms-btn" onClick={() => goto('auditoria')}><i className="fa-solid fa-clipboard-list"></i> Ver auditoría</button>
               </div>
             </div>

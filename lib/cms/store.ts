@@ -593,7 +593,7 @@ export function purgeUrlsFromAllState(urls: string[]) {
   if (usedChanged) { persistUsed(); persistRetired() }
   if (unusedChanged) { persistUnused() }
   if (trashChanged) { persistTrash() }
-  if (usedChanged || keysToClear.length > 0) { emit() }
+  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0) { emit() }
 }
 
 export function cleanOrphanOverrides() {
