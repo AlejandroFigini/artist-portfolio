@@ -241,7 +241,12 @@ export default function AdminDashboard() {
               </div>
               {uploadHist.length > 0 && (
                 <>
-                  <h3 style={{ marginTop: '2rem' }}>Últimas 3 subidas</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
+                    <h3 style={{ margin: 0 }}>Últimas 3 subidas</h3>
+                    <button type="button" className="cms-btn cms-btn--sm" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => { saveJSON(LS.UPLOAD_TEST, []); emit(); }}>
+                      Limpiar historial
+                    </button>
+                  </div>
                   <div className="cms-mlib-grid" style={{ marginTop: '1rem' }}>
                     {uploadHist.slice(0, 3).map((h, i) => {
                       const entry = {

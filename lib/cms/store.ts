@@ -491,6 +491,10 @@ export async function validateCloudinaryContent(): Promise<number> {
   Object.values(state.items).forEach((val) => {
     if (typeof val === 'string' && val.includes('cloudinary.com')) urls.add(val)
   })
+  const uploadHist = loadJSON<{ secure_url?: string }[]>(LS.UPLOAD_TEST, [])
+  uploadHist.forEach((h) => {
+    if (h?.secure_url?.includes('cloudinary.com')) urls.add(h.secure_url)
+  })
   if (urls.size === 0) return 0
   const results = await verifyMedia(Array.from(urls))
   if (results.length === 0) return 0 // endpoint no disponible o error
@@ -590,10 +594,17 @@ export function purgeUrlsFromAllState(urls: string[]) {
   if (keysToClear.length > 0) {
     clearItemOverrides(keysToClear)
   }
+  const hist = loadJSON<{ secure_url?: string }[]>(LS.UPLOAD_TEST, [])
+  if (hist.length > 0) {
+    const newHist = hist.filter((h) => !h.secure_url || !urlSet.has(h.secure_url))
+    if (newHist.length !== hist.length) {
+      saveJSON(LS.UPLOAD_TEST, newHist)
+    }
+  }
   if (usedChanged) { persistUsed(); persistRetired() }
   if (unusedChanged) { persistUnused() }
   if (trashChanged) { persistTrash() }
-  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0) { emit() }
+  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0 || hist.length > 0) { emit() }
 }
 
 export function cleanOrphanOverrides() {
