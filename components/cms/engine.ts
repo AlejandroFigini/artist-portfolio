@@ -582,6 +582,7 @@ function visualHosts(key: string): HTMLElement[] {
 
 export function showEmptySlot(key: string) {
   visualHosts(key).forEach((h) => {
+    if (key === 'loader.gallop' && !h.closest('#ajustes-loader')) return
     h.classList.add('cms-empty-slot')
     h.classList.remove('wave-has-content')
     if (!h.querySelector('.cms-empty-overlay')) {
@@ -911,6 +912,7 @@ export function attachEditControls() {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el) => {
       const key = el.getAttribute('data-cms-key')
       if (!key) return
+      if (entry.base === 'loader.gallop' && !el.closest('#ajustes-loader')) return
       
       // Ensure empty wave slots always get the upload button overlay
       if (key.startsWith('hero.marquee#') && !state.items[key]) {
@@ -950,6 +952,7 @@ export function refreshTools(key: string) {
         return [meta.mount === 'parent' && el.parentElement ? el.parentElement : el]
       })()
   hosts.forEach((host) => {
+    if (key === 'loader.gallop' && !host.closest('#ajustes-loader')) return
     host.querySelector(':scope > .cms-tools')?.remove()
     host.classList.add('cms-mount')
     ensurePositioned(host)
