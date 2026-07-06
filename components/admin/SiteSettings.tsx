@@ -9,13 +9,13 @@
    Todo persiste en cms_data (claves settings.*) vía POST /api/content y se
    refleja en vivo en el sitio a través del SiteSettingsProvider. */
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
-import { saveContent, getTranslations, importTranslations, uploadMedia } from '@/lib/api'
-import { state, persistOverridesLocal, recordAudit, moveUsedToUnused } from '@/lib/cms/store'
-import { setLanguage, applyMedia } from '@/components/cms/engine'
+import { saveContent, getTranslations, importTranslations } from '@/lib/api'
+import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
+import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
@@ -86,59 +86,24 @@ function useSaveSettings() {
 export function LoaderSettings() {
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
-  const toast = useToast()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null) // dataURL o string vacío sin guardar
   const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
   const [saving, setSaving] = useState(false)
 
-  const currentVideo = preview !== null ? preview : (settings.loaderVideo || state.items['loader.gallop'] || '')
+  const currentVideo = state.items['loader.gallop'] || settings.loaderVideo || ''
+  const isDurationChanged = duration !== (settings.loaderDuration || '3')
 
-  const pick = async (file: File) => {
-    const err = validateFile(file, 'webm')
-    if (err) { toast(err, 'error'); return }
-    setSelectedFile(file)
-    setPreview(await fileToDataURL(file))
-  }
+  useEffect(() => {
+    indexEditables()
+    attachEditControls()
+    if (!currentVideo) {
+      showEmptySlot('loader.gallop')
+    }
+  }, [currentVideo])
 
-  const onSave = async () => {
+  const onSaveDuration = async () => {
     setSaving(true)
-    let finalVideoUrl = currentVideo
-    if (selectedFile && preview && preview.startsWith('data:')) {
-      toast('Subiendo video, por favor espera...', 'info')
-      try {
-        const res = await uploadMedia(preview, selectedFile.size, selectedFile.name, 'Contenedores', 'used', 'portfolio/en-uso')
-        if (res && res.secure_url) {
-          finalVideoUrl = res.secure_url
-        } else if (res && res.error) {
-          toast(res.error, 'error')
-          setSaving(false)
-          return
-        }
-      } catch (e) {
-        toast(e instanceof Error ? e.message : 'Error subiendo video', 'error')
-        setSaving(false)
-        return
-      }
-    }
-
-    const patch: Partial<SiteSettings> = {
-      loaderDuration: String(parseFloat(duration) || 3),
-      loaderVideo: finalVideoUrl,
-    }
-    if (finalVideoUrl === '' && state.usedContent['loader.gallop']) {
-      moveUsedToUnused('loader.gallop')
-    }
-    await save(patch, 'Pantalla de carga actualizada')
-    setSelectedFile(null)
-    setPreview(null)
+    await save({ loaderDuration: String(parseFloat(duration) || 3) }, 'Duración de pantalla de carga actualizada')
     setSaving(false)
-  }
-
-  const removeVideo = () => {
-    setSelectedFile(null)
-    setPreview('')
   }
 
   return (
@@ -147,8 +112,7 @@ export function LoaderSettings() {
         <h2><i className="fa-solid fa-spinner"></i> Pantalla de carga</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Elegí el video que se reproduce mientras el sitio carga y por
-        cuántos segundos permanece visible. Sin video asignado, el contenedor se mostrará vacío o con el valor por defecto.
+        <i className="fa-solid fa-circle-info"></i> Haz clic sobre el contenedor para abrir el selector de contenido (subir un video nuevo o elegir desde el repositorio), con el mismo flujo que los demás contenedores del sitio.
       </p>
       <div className="site-setting-row">
         <div
@@ -161,23 +125,26 @@ export function LoaderSettings() {
             overflow: 'hidden',
             backgroundColor: 'rgba(255, 255, 255, 0.03)',
             border: currentVideo ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+            cursor: 'pointer',
           }}
+          onClick={() => triggerContentPicker('loader.gallop')}
+          title="Haz clic para seleccionar desde el repositorio o subir contenido"
         >
           {currentVideo ? (
             <video
+              data-cms-key="loader.gallop"
+              className="loader-gallop"
               src={currentVideo}
               autoPlay
               loop
               muted
               playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
             />
           ) : (
             <div
               className="cms-empty-overlay"
               style={{ position: 'absolute', inset: 0 }}
-              onClick={() => fileRef.current?.click()}
-              title="Subir o asignar video aquí"
             >
               <i className="fa-solid fa-cloud-arrow-up"></i>
               <span>Video del loader — Página de carga</span>
@@ -185,28 +152,6 @@ export function LoaderSettings() {
           )}
         </div>
         <div className="site-setting-fields">
-          <div className="admin-quick" style={{ marginTop: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <label className="cms-btn" style={{ cursor: 'pointer', margin: 0 }}>
-              <i className={currentVideo ? "fa-solid fa-arrow-up-from-bracket" : "fa-solid fa-cloud-arrow-up"}></i>{' '}
-              {currentVideo ? 'Reemplazar' : 'Subir video'}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="video/*,video/mp4,video/webm"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  e.target.value = ''
-                  if (f) pick(f)
-                }}
-              />
-            </label>
-            {currentVideo && (
-              <button type="button" className="cms-btn" onClick={removeVideo} disabled={saving}>
-                <i className="fa-solid fa-box-archive"></i> Retirar
-              </button>
-            )}
-          </div>
           <label className="setting-item" style={{ maxWidth: 320, marginTop: '0.5rem' }}>
             <span>Duración (segundos)</span>
             <input
@@ -223,8 +168,8 @@ export function LoaderSettings() {
         </div>
       </div>
       <div className="admin-quick" style={{ marginTop: '1.5rem' }}>
-        <button type="button" className="cms-btn cms-btn--primary" onClick={onSave} disabled={saving}>
-          <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar pantalla de carga'}
+        <button type="button" className="cms-btn cms-btn--primary" onClick={onSaveDuration} disabled={!isDurationChanged || saving}>
+          <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
         </button>
       </div>
     </div>

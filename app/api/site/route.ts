@@ -14,12 +14,12 @@ export async function GET() {
   try {
     await ensureDb()
     const pool = getPool()!
-    const keys = Object.values(SETTINGS_KEYS)
+    const keys = [...Object.values(SETTINGS_KEYS), 'loader.gallop']
     const res = await pool.query('SELECT key, value FROM cms_data WHERE key = ANY($1)', [keys])
     const byKey: Record<string, string> = {}
     for (const row of res.rows as { key: string; value: string }[]) byKey[row.key] = row.value
     return NextResponse.json({
-      loaderVideo: byKey[SETTINGS_KEYS.loaderVideo] || byKey['loader.gallop'] || '',
+      loaderVideo: byKey['loader.gallop'] || byKey[SETTINGS_KEYS.loaderVideo] || '',
       loaderImage: byKey[SETTINGS_KEYS.loaderImage] || '',
       loaderDuration: byKey[SETTINGS_KEYS.loaderDuration] || '',
       cvUrl: byKey[SETTINGS_KEYS.cvUrl] || '',

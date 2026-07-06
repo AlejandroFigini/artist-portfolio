@@ -237,6 +237,7 @@ const fieldSetters: Record<string, (v: string) => void> = {}
 
 let dispatch: Dispatch = () => {}
 export function setDispatch(d: Dispatch) { dispatch = d }
+export function triggerContentPicker(key: string) { dispatch({ type: 'contentPicker', key }) }
 
 const resolveLabel = (entry: RegistryEntry, el: Element, i: number) =>
   typeof entry.label === 'function' ? entry.label(el, i) : entry.label
