@@ -97,19 +97,12 @@ export default function PageLoader() {
       <div id="page-loader" className="page-loader" ref={ref}>
         <div className="loader-stage">
           <div className="loader-media">
-            {settings.loaderImage ? (
-              /* imagen elegida en Ajustes → Pantalla de carga (clase propia para
-                 no colisionar con el contenedor CMS .loader-gallop del engine) */
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img className="loader-still" src={settings.loaderImage} alt="" />
-            ) : (
-              /* contenedor CMS .loader-gallop — administrado desde Gestión → Pantalla de carga */
-              <video
-                className="loader-gallop"
-                src={settings.loaderVideo || state.items['loader.gallop'] || ''}
-                autoPlay loop muted playsInline preload="auto"
-              ></video>
-            )}
+            <video
+              data-cms-key="loader.gallop"
+              className="loader-gallop"
+              src={settings.loaderVideo || state.items['loader.gallop'] || undefined}
+              autoPlay loop muted playsInline preload="auto"
+            ></video>
             <div className="loader-media-glow"></div>
           </div>
           <div className="loader-info">
