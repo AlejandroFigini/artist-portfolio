@@ -250,7 +250,7 @@ export function indexEditables() {
         key = entry.base + '#' + i
         el.setAttribute('data-cms-key', key)
       }
-      if (elementsByKey[key]) return // ya indexado en esta sesión
+      if (elementsByKey[key] && document.contains(elementsByKey[key])) return // ya indexado y activo en el DOM
 
       elementsByKey[key] = el
       typeByKey[key] = entry.kind === 'text' ? 'text' : 'media'

@@ -14,7 +14,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
-import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
+import { state, persistOverridesLocal, recordAudit, useCmsStore } from '@/lib/cms/store'
 import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
@@ -84,6 +84,7 @@ function useSaveSettings() {
 // ----- 1) Pantalla de carga --------------------------------------------------
 
 export function LoaderSettings() {
+  useCmsStore()
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
   const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
