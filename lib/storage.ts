@@ -95,7 +95,7 @@ export async function uploadDataUrl(
   const filename = originalName ? cleanFilename(originalName) : undefined
 
   if (hasCloudinary) {
-    const commonOptions: Record<string, unknown> = { folder }
+    const commonOptions: Record<string, unknown> = { folder, asset_folder: folder }
     if (filename) {
       const lastDot = filename.lastIndexOf('.')
       const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
@@ -207,7 +207,7 @@ export async function verifyAssetsExist(urls: string[]): Promise<{ url: string; 
   return results
 }
 
-/** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id).
+/** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id y update de asset_folder).
  *  Devuelve la nueva URL. Si falla, devuelve la URL original sin romper. */
 export async function moveAssetFolder(url: string, newFolder: string): Promise<string> {
   if (!hasCloudinary || !url.includes('cloudinary.com')) return url
@@ -218,12 +218,29 @@ export async function moveAssetFolder(url: string, newFolder: string): Promise<s
     const parts = parsed.publicId.split('/')
     const filename = parts[parts.length - 1]
     const newPublicId = `${newFolder}/${filename}`
-    if (parsed.publicId === newPublicId) return url // ya está en la carpeta correcta
+    
+    if (parsed.publicId === newPublicId) {
+      // Si el public_id ya tiene la ruta correcta, actualizamos asset_folder en la UI de Cloudinary por si quedó desfasado
+      await cloudinary.api.update(newPublicId, {
+        resource_type: parsed.resourceType,
+        asset_folder: newFolder,
+      }).catch(() => {})
+      return url
+    }
+
     const result = await cloudinary.uploader.rename(parsed.publicId, newPublicId, {
       resource_type: parsed.resourceType,
       overwrite: true,
       invalidate: true,
     })
+
+    // En cuentas modernas de Cloudinary (con Dynamic/Asset Folders), rename cambia el public_id
+    // pero no mueve la ubicación visual en la biblioteca de medios. Actualizamos asset_folder explícitamente:
+    await cloudinary.api.update(newPublicId, {
+      resource_type: parsed.resourceType,
+      asset_folder: newFolder,
+    }).catch((e) => console.warn('[moveAssetFolder] no se pudo actualizar asset_folder:', e))
+
     return result.secure_url || url
   } catch (err) {
     console.error('[moveAssetFolder] error:', err)
