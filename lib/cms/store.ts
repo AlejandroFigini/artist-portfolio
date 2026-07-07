@@ -199,7 +199,6 @@ export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyn
 export const persistOverridesLocal = () => {
   saveJSON(LS.OVERRIDES, state.items)
   saveJSON(LS.OVERRIDES_HASH, simpleHash(JSON.stringify(state.items)))
-  scheduleSyncToServer('overrides')
 }
 export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
 
@@ -268,9 +267,6 @@ export function mergeServerState(server: CmsStatePayload) {
   saveJSON(LS.GLOBAL_HASH, serverHash)
   state.serverReady = true
   emit()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('cms:contentChanged'))
-  }
 }
 
 /* Carga el estado completo desde el server y lo aplica. La DB es la fuente
@@ -625,6 +621,7 @@ export function cleanOrphanOverrides() {
 
   const keysToClear: string[] = []
   Object.entries(state.items).forEach(([key, val]) => {
+    if (key.startsWith('settings.') || key === 'loader.gallop') return
     if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
       if (!validUrls.has(val)) {
         keysToClear.push(key)

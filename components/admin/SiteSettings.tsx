@@ -14,7 +14,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
-import { state, persistOverridesLocal, recordAudit, useCmsStore } from '@/lib/cms/store'
+import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
 import { isTranslatableEntry } from '@/lib/i18n'
@@ -69,11 +69,58 @@ function useSaveSettings() {
       faviconUrl: server?.faviconUrl || optimistic.faviconUrl,
     }
     setSettings(final)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cms:favicon-updated', { detail: final.faviconUrl || '' }))
+    }
     // persistir valores finales (URLs, no base64) en el store home + localStorage
     Object.assign(state.items, toItems(final))
     if (final.loaderVideo !== undefined) {
       applyMedia('loader.gallop', final.loaderVideo)
+      if (final.loaderVideo !== '') {
+        const prev = state.usedContent['loader.gallop']
+        if (prev && prev.src !== final.loaderVideo) {
+          retireUsedEntryToUnused(prev, 'replaced', ['loader.gallop'])
+        }
+        const mm = state.mediaMeta['loader.gallop'] || state.mediaMeta[final.loaderVideo]
+        state.usedContent['loader.gallop'] = {
+          key: 'loader.gallop', label: 'Video de fondo (.loader-gallop)', section: 'Configuración del sitio', kind: 'video',
+          src: final.loaderVideo, name: mm?.name || 'video', size: mm?.size ?? null, original: false,
+          ts: Date.now(), type: mm?.type || 'video/webm',
+        }
+        const idx = state.unused.findIndex(u => u.src === final.loaderVideo)
+        if (idx !== -1) state.unused.splice(idx, 1)
+      } else {
+        const prev = state.usedContent['loader.gallop']
+        if (prev) {
+          retireUsedEntryToUnused(prev, 'retired', ['loader.gallop'])
+          delete state.usedContent['loader.gallop']
+        }
+      }
     }
+    if (final.faviconUrl !== undefined) {
+      applyMedia('settings.faviconUrl', final.faviconUrl)
+      if (final.faviconUrl !== '') {
+        const prev = state.usedContent['settings.faviconUrl']
+        if (prev && prev.src !== final.faviconUrl) {
+          retireUsedEntryToUnused(prev, 'replaced', ['settings.faviconUrl'])
+        }
+        const mm = state.mediaMeta['settings.faviconUrl'] || state.mediaMeta[final.faviconUrl]
+        state.usedContent['settings.faviconUrl'] = {
+          key: 'settings.faviconUrl', label: 'Icono de pestaña (Favicon)', section: 'Configuración del sitio', kind: 'image',
+          src: final.faviconUrl, name: mm?.name || 'favicon', size: mm?.size ?? null, original: false,
+          ts: Date.now(), type: mm?.type || 'image/webp',
+        }
+        const idx = state.unused.findIndex(u => u.src === final.faviconUrl)
+        if (idx !== -1) state.unused.splice(idx, 1)
+      } else {
+        const prev = state.usedContent['settings.faviconUrl']
+        if (prev) {
+          retireUsedEntryToUnused(prev, 'retired', ['settings.faviconUrl'])
+          delete state.usedContent['settings.faviconUrl']
+        }
+      }
+    }
+    persistUsed(); persistUnused()
     persistOverridesLocal()
     recordAudit({ section: 'Ajustes del sitio', label: 'Ajustes', summary })
     toast('Guardado')
@@ -87,11 +134,12 @@ export function LoaderSettings() {
   useCmsStore()
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
+  const videoRef = useRef<HTMLVideoElement>(null)
   const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
   const [saving, setSaving] = useState(false)
 
-  const currentVideo = state.items['loader.gallop'] || settings.loaderVideo || ''
-  const isDurationChanged = duration !== (settings.loaderDuration || '3')
+  const currentVideo = state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : (settings.loaderVideo || '')
+  const isChanged = duration !== (settings.loaderDuration || '3') || currentVideo !== (settings.loaderVideo || '')
 
   useEffect(() => {
     indexEditables()
@@ -108,10 +156,19 @@ export function LoaderSettings() {
     }
   }, [currentVideo])
 
-  const onSaveDuration = async () => {
+  const onSaveConfiguration = async () => {
     setSaving(true)
-    await save({ loaderDuration: String(parseFloat(duration) || 3) }, 'Duración de pantalla de carga actualizada')
+    await save({
+      loaderDuration: String(parseFloat(duration) || 3),
+      loaderVideo: currentVideo,
+    }, 'Configuración de pantalla de carga actualizada')
     setSaving(false)
+  }
+
+  const onPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cms:previewLoader'))
+    }
   }
 
   return (
@@ -120,14 +177,14 @@ export function LoaderSettings() {
         <h2><i className="fa-solid fa-spinner"></i> Pantalla de carga</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Haz clic sobre el contenedor para abrir el selector de contenido (subir un video nuevo o elegir desde el repositorio), con el mismo flujo que los demás contenedores del sitio.
+        Personaliza el video de introducción y su tiempo en pantalla.
       </p>
-      <div className="site-setting-row">
+      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
           className="site-setting-media"
           style={{
             position: 'relative',
-            width: 'clamp(260px, 40vw, 360px)',
+            width: 'clamp(260px, 40vw, 340px)',
             aspectRatio: '16 / 9',
             borderRadius: '14px',
             overflow: 'hidden',
@@ -136,39 +193,60 @@ export function LoaderSettings() {
             cursor: 'pointer',
           }}
           onClick={() => triggerContentPicker('loader.gallop')}
-          title="Haz clic para seleccionar desde el repositorio o subir contenido"
+          onMouseEnter={() => videoRef.current?.play()}
+          onMouseLeave={() => {
+            if (videoRef.current) {
+              videoRef.current.pause()
+              videoRef.current.currentTime = 0
+            }
+          }}
         >
           <video
+            ref={videoRef}
             data-cms-key="loader.gallop"
             className="loader-gallop"
             src={currentVideo || undefined}
-            autoPlay
             loop
             muted
             playsInline
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: currentVideo ? 'block' : 'none', pointerEvents: 'none' }}
           />
         </div>
-        <div className="site-setting-fields">
-          <label className="setting-item" style={{ maxWidth: 320, marginTop: '0.5rem' }}>
+        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <label className="setting-item" style={{ maxWidth: 300 }}>
             <span>Duración (segundos)</span>
-            <input
-              type="number"
-              min={1}
-              max={15}
-              step={0.5}
-              className="social-input"
-              style={{ maxWidth: 120 }}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                step={0.5}
+                className="social-input"
+                style={{ maxWidth: 90 }}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+              />
+              <i className="fa-solid fa-clock" style={{ color: '#a78bfa', fontSize: '1.1rem' }}></i>
+            </div>
           </label>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="cms-btn cms-btn--primary"
+              onClick={onSaveConfiguration}
+              disabled={!isChanged || saving}
+            >
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
+            </button>
+            <button
+              type="button"
+              className="cms-btn cms-btn--primary"
+              onClick={onPreview}
+            >
+              <i className="fa-solid fa-play"></i> Vista previa
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="admin-quick" style={{ marginTop: '1.5rem' }}>
-        <button type="button" className="cms-btn cms-btn--primary" onClick={onSaveDuration} disabled={!isDurationChanged || saving}>
-          <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
-        </button>
       </div>
     </div>
   )
@@ -177,39 +255,32 @@ export function LoaderSettings() {
 // ----- 2) Icono de pestaña (Favicon) -----------------------------------------
 
 export function FaviconSettings() {
+  useCmsStore()
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
-  const toast = useToast()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [preview, setPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const current = preview || settings.faviconUrl
+  const currentFavicon = state.items['settings.faviconUrl'] !== undefined ? state.items['settings.faviconUrl'] : (settings.faviconUrl || '')
+  const isChanged = currentFavicon !== (settings.faviconUrl || '')
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      toast('El icono no debe superar los 2MB', 'error')
-      return
+  useEffect(() => {
+    indexEditables()
+    attachEditControls()
+    if (!currentFavicon) {
+      showEmptySlot('settings.faviconUrl')
+    } else {
+      const parent = elementsByKey['settings.faviconUrl']?.parentElement
+      if (parent) {
+        parent.classList.remove('cms-empty-slot')
+        parent.querySelector('.cms-empty-overlay')?.remove()
+      }
+      refreshTools('settings.faviconUrl')
     }
-    const reader = new FileReader()
-    reader.onload = () => setPreview(String(reader.result))
-    reader.readAsDataURL(file)
-  }
+  }, [currentFavicon])
 
-  const handleSave = async () => {
-    if (!preview) return
+  const onSaveConfiguration = async () => {
     setSaving(true)
-    await save({ faviconUrl: preview }, 'Icono actualizado')
-    setPreview(null)
-    setSaving(false)
-  }
-
-  const handleRemove = async () => {
-    setSaving(true)
-    setPreview(null)
-    await save({ faviconUrl: '' }, 'Icono restablecido al por defecto')
+    await save({ faviconUrl: currentFavicon }, 'Icono de la página actualizado')
     setSaving(false)
   }
 
@@ -219,48 +290,55 @@ export function FaviconSettings() {
         <h2><i className="fa-solid fa-compass"></i> Icono de la página (Favicon)</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Elegí la imagen (PNG, ICO, SVG o JPG) que aparecerá en la pestaña del navegador junto al título del sitio. Se recomienda un formato cuadrado (ej. 64x64 o 512x512 px).
+        Personaliza la imagen que aparecerá en la pestaña del navegador y marcadores.
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', margin: '1.5rem 0' }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 12, border: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)',
-          overflow: 'hidden', position: 'relative'
-        }}>
-          {current ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={current} alt="Favicon" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src="/favicon.ico" alt="Default favicon" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-          )}
+      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+        <div
+          className="site-setting-media"
+          style={{
+            position: 'relative',
+            width: 'clamp(140px, 20vw, 180px)',
+            aspectRatio: '1 / 1',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: currentFavicon ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => triggerContentPicker('settings.faviconUrl')}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            data-cms-key="settings.faviconUrl"
+            className="favicon-preview-img"
+            src={currentFavicon || '/favicon.ico'}
+            alt="Favicon preview"
+            style={{ width: '60%', height: '60%', objectFit: 'contain', pointerEvents: 'none' }}
+          />
         </div>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-            {settings.faviconUrl ? 'Icono personalizado activo' : 'Icono por defecto (/favicon.ico)'}
+        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              {currentFavicon ? 'Icono personalizado activo' : 'Icono por defecto (/favicon.ico)'}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+              {isChanged ? 'Cambio pendiente de guardar...' : 'Se muestra en todas las pestañas y marcadores'}
+            </div>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-            {preview ? 'Cambio pendiente de guardar...' : 'Se muestra en todas las pestañas y marcadores'}
+          <div>
+            <button
+              type="button"
+              className="cms-btn cms-btn--primary"
+              onClick={onSaveConfiguration}
+              disabled={!isChanged || saving}
+            >
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
+            </button>
           </div>
         </div>
-      </div>
-
-      <input ref={fileRef} type="file" accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp,.ico" style={{ display: 'none' }} onChange={onFile} />
-
-      <div className="cms-form-actions" style={{ marginTop: '1.5rem' }}>
-        <button type="button" className="cms-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
-          <i className="fa-solid fa-upload"></i> Elegir imagen...
-        </button>
-        {preview && (
-          <button type="button" className="cms-btn cms-btn--primary" onClick={handleSave} disabled={saving}>
-            <i className="fa-solid fa-floppy-disk"></i> Guardar icono
-          </button>
-        )}
-        {(settings.faviconUrl || preview) && (
-          <button type="button" className="cms-btn cms-btn--danger" onClick={handleRemove} disabled={saving}>
-            <i className="fa-solid fa-trash"></i> Restablecer por defecto
-          </button>
-        )}
       </div>
     </div>
   )

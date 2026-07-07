@@ -2,11 +2,24 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import '@/styles/globals.css'
 import Providers from '@/components/ui/Providers'
+import { getSiteSettingsServer } from '@/lib/site-server'
 
-export const metadata: Metadata = {
-  title: 'Lucia Montaña | Portfolio',
-  description:
-    'Animation, illustration and 3D art portfolio of Lucia Montaña — 2D/3D artist based in Montevideo, Uruguay.',
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettingsServer()
+  const iconUrl = settings.faviconUrl || '/favicon.ico'
+  return {
+    title: 'Lucia Montaña | Portfolio',
+    description:
+      'Animation, illustration and 3D art portfolio of Lucia Montaña — 2D/3D artist based in Montevideo, Uruguay.',
+    icons: {
+      icon: iconUrl,
+      shortcut: iconUrl,
+      apple: iconUrl,
+    },
+  }
 }
 
 // Corre antes del primer paint: tema guardado + tier de performance +
@@ -50,26 +63,16 @@ const BOOT_SCRIPT = `
     skipLoader = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1';
   } catch (e) {}
   if (skipLoader) document.documentElement.classList.add('skip-loader');
-  // Solo el index tiene pantalla de carga; bloquear scroll antes del paint.
   if (!skipLoader && location.pathname === '/') document.body.classList.add('loading-active');
-  try {
-    var ov = JSON.parse(localStorage.getItem('cms_overrides_v1') || '{}');
-    var fav = ov['settings.faviconUrl'];
-    if (fav) {
-      var links = document.querySelectorAll('link[rel*="icon"]');
-      for (var i = 0; i < links.length; i++) links[i].parentNode.removeChild(links[i]);
-      var l = document.createElement('link');
-      l.rel = 'icon'; l.href = fav; document.head.appendChild(l);
-      var s = document.createElement('link');
-      s.rel = 'shortcut icon'; s.href = fav; document.head.appendChild(s);
-    }
-  } catch (e) {}
 })();
 `
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialSettings = await getSiteSettingsServer()
+  const iconUrl = initialSettings.faviconUrl || '/favicon.ico'
   return (
     <html lang="en" data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head></head>
       <body suppressHydrationWarning>
         <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${BOOT_SCRIPT}</script>` }} style={{ display: 'none' }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -89,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           precedence="default"
           href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
         />
-        <Providers>{children}</Providers>
+        <Providers initialSettings={initialSettings}>{children}</Providers>
       </body>
     </html>
   )

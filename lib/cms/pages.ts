@@ -21,9 +21,15 @@ const bySection = (...names: string[]) => (e: TreeEntry) => names.includes(e.sec
 // placeholders hasta que esas páginas existan.
 export const SITE_PAGES: PageDef[] = [
   {
+    id: 'config', label: 'Configuración del sitio', route: '/admin', icon: 'fa-gear',
+    sections: [
+      { id: 'loader', label: 'Pantalla de carga', match: bySection('Configuración del sitio', 'Página de carga', 'Pantalla de carga') },
+      { id: 'favicon', label: 'Icono de la página', match: bySection('Configuración del sitio', 'Ajustes del sitio', 'Icono de la página', 'Favicon') },
+    ],
+  },
+  {
     id: 'feed', label: 'Feed', route: '/', icon: 'fa-house',
     sections: [
-      { id: 'loader', label: 'Página de carga', match: bySection('Página de carga') },
       { id: 'portada', label: 'Portada', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos') },
       { id: 'about', label: 'Sobre mí', match: bySection('Sobre mí') },
       { id: 'animations', label: 'Animations', match: bySection('Animations', 'Animaciones') },

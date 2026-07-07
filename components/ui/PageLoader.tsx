@@ -14,8 +14,14 @@ import { loaderDurationMs } from '@/lib/settings'
 const FADE_MS = 800
 
 export default function PageLoader() {
-  const [gone, setGone] = useState(false)
+  const [gone, setGone] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      return true
+    }
+    return false
+  })
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+  const [isPreview, setIsPreview] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
   const { settings } = useSiteSettings()
@@ -24,22 +30,23 @@ export default function PageLoader() {
   const minDisplay = loaderDurationMs(settings.loaderDuration) // duración configurable
   const failsafe = minDisplay + 6000
 
-  // 1. Escuchar cuando cambia el contenido en el servidor (ej: refrescar caché / nuevo contenido)
+  // 1. Escuchar cuando se solicita vista previa de la pantalla de carga desde gestión
   useEffect(() => {
-    const onContentChanged = () => {
+    const onPreviewLoader = () => {
       try { sessionStorage.removeItem('lm_seen_loader') } catch {}
+      setIsPreview(true)
       setMinTimeElapsed(false)
       setGone(false)
       document.body.classList.add('loading-active')
       if (ref.current) ref.current.classList.remove('loader-hidden')
     }
-    window.addEventListener('cms:contentChanged', onContentChanged)
-    return () => window.removeEventListener('cms:contentChanged', onContentChanged)
+    window.addEventListener('cms:previewLoader', onPreviewLoader)
+    return () => window.removeEventListener('cms:previewLoader', onPreviewLoader)
   }, [])
 
   // 2. Control del temporizador mínimo de visualización
   useEffect(() => {
-    if (gone) return
+    if (gone || isPreview) return
     const timer = window.setTimeout(() => {
       setMinTimeElapsed(true)
     }, minDisplay)
@@ -50,12 +57,12 @@ export default function PageLoader() {
       clearTimeout(timer)
       clearTimeout(failsafeTimer)
     }
-  }, [gone, minDisplay, failsafe])
+  }, [gone, minDisplay, failsafe, isPreview])
 
   // 3. Decidir cuándo ocultar el preloader (debe cumplirse tiempo mínimo + servidor listo)
   useEffect(() => {
     const loader = ref.current
-    if (!loader || gone) return
+    if (!loader || gone || isPreview) return
 
     let skip = false
     try {
@@ -87,12 +94,28 @@ export default function PageLoader() {
       const t = window.setTimeout(() => setGone(true), FADE_MS)
       return () => clearTimeout(t)
     }
-  }, [gone, minTimeElapsed, serverReady])
+  }, [gone, minTimeElapsed, serverReady, isPreview])
 
   if (gone) return null
 
   return (
     <>
+      {isPreview && (
+        <button
+          type="button"
+          className="loader-preview-close"
+          onClick={() => {
+            const loader = ref.current
+            if (loader) loader.classList.add('loader-hidden')
+            document.body.classList.remove('loading-active')
+            setIsPreview(false)
+            setTimeout(() => setGone(true), FADE_MS)
+          }}
+          aria-label="Cerrar vista previa"
+        >
+          <i className="fa-solid fa-xmark" />
+        </button>
+      )}
       {/* body.loading-active lo agrega el boot script del layout (pre-paint) */}
       <div id="page-loader" className="page-loader" ref={ref}>
         <div className="loader-stage">
@@ -100,8 +123,8 @@ export default function PageLoader() {
             <video
               data-cms-key="loader.gallop"
               className="loader-gallop"
-              src={settings.loaderVideo || state.items['loader.gallop'] || undefined}
-              autoPlay loop muted playsInline preload="auto"
+              src={(state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : settings.loaderVideo) || undefined}
+              autoPlay loop muted playsInline preload="auto" fetchPriority="high"
             ></video>
             <div className="loader-media-glow"></div>
           </div>

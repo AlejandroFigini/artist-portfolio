@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, persistOverridesLocal,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
@@ -157,40 +157,45 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     const src = selected.src
     if (!src) return
 
-    if (moveFromOld && selected._key && selected._key !== cmsKey) {
-      delete state.usedContent[selected._key]
-      delete state.items[selected._key]
-      if (!state.retired.includes(selected._key)) state.retired.push(selected._key)
-      applyMedia(selected._key, '')
-    }
-
-    const prev = state.usedContent[cmsKey]
-    if (prev && prev.src) {
-      retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
-    }
-
     state.items[cmsKey] = src
     applyMedia(cmsKey, src)
 
-    state.usedContent[cmsKey] = {
-      key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-      src, name: selected.name || 'media', size: selected.size ?? null, original: false,
-      fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
-      ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
-    }
-
-    if (selected._state === 'sin usar') {
-      const idx = state.unused.findIndex(u => u.src === src)
-      if (idx !== -1) {
-        state.unused.splice(idx, 1)
-        persistUnused()
+    if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+      if (moveFromOld && selected._key && selected._key !== cmsKey) {
+        delete state.usedContent[selected._key]
+        delete state.items[selected._key]
+        if (!state.retired.includes(selected._key)) state.retired.push(selected._key)
+        applyMedia(selected._key, '')
       }
-    }
 
-    persistUsed()
-    cloudinaryMove(src, getCloudinaryFolder(meta.section))
-    recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
-    persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+      const prev = state.usedContent[cmsKey]
+      if (prev && prev.src) {
+        retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
+      }
+
+      state.usedContent[cmsKey] = {
+        key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+        src, name: selected.name || 'media', size: selected.size ?? null, original: false,
+        fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
+        ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+      }
+
+      if (selected._state === 'sin usar') {
+        const idx = state.unused.findIndex(u => u.src === src)
+        if (idx !== -1) {
+          state.unused.splice(idx, 1)
+          persistUnused()
+        }
+      }
+
+      persistUsed()
+      cloudinaryMove(src, getCloudinaryFolder(meta.section))
+      recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
+      persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+    } else {
+      recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
+      emit()
+    }
 
     const ri = state.retired.indexOf(cmsKey)
     if (ri >= 0) { state.retired.splice(ri, 1); persistRetired() }

@@ -3594,18 +3594,53 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 .loader-admin-dismiss:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
 
+/* Botón para cerrar la vista previa del loader (estilo flotante premium) */
+.loader-preview-close {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 10000000;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loader-preview-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+}
+
+.loader-preview-close:active {
+    transform: scale(0.95);
+}
+
 .loader-stage {
     display: flex;
     align-items: center;
     gap: clamp(2rem, 5vw, 5rem);
     max-width: 1000px;
     width: 100%;
-    animation: loaderIntro 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: loaderIntro 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes loaderIntro {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* --- Costado: video de galope --- */
@@ -3617,7 +3652,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(124, 58, 237, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    background: radial-gradient(circle at center, rgba(124, 58, 237, 0.2) 0%, rgba(10, 1, 24, 0.8) 100%);
 }
 
 .loader-gallop,
@@ -4873,6 +4908,18 @@ body.is-admin .cms-mount.cms-empty-slot {
 
 .cms-btn--primary:hover {
     background: var(--accent-hover);
+}
+
+.cms-btn--secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--text-primary);
+}
+
+.cms-btn--secondary:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
 }
 
 .cms-btn--sm {

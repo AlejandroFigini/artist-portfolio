@@ -158,7 +158,9 @@ type RegistryEntry = {
 
 const REGISTRY: RegistryEntry[] = [
   // Página de carga (loader del index — el video de galope se sube por CMS)
-  { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Página de carga', label: 'Video del loader — Página de carga' },
+  { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Configuración del sitio', label: 'Pantalla de carga' },
+  // Ajustes del sitio
+  { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Configuración del sitio', label: 'Icono de la página' },
   // Portada
   { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Principal)', label: (el, i) => `Imagen Carrusel Principal #${i + 1}` },
   { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Secundario)', label: (el, i) => `Imagen Carrusel Secundario #${i + 1}` },
@@ -340,7 +342,7 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     try {
       const v = el as HTMLVideoElement
       v.load()
-      if (value) v.play().catch(() => {})
+      if (value && v.autoplay) v.play().catch(() => {})
     } catch {}
   }
 }
@@ -525,6 +527,7 @@ export function seedUsedContent() {
   Object.keys(elementsByKey).forEach((key) => {
     if (typeByKey[key] !== 'media') return
     if (state.retired.includes(key)) return
+    if (key === 'loader.gallop' || key === 'settings.faviconUrl') return
     const el = elementsByKey[key]
     const meta = metaByKey[key]
     const src = currentSrcOf(el)
@@ -556,6 +559,74 @@ export function seedUsedContent() {
   if (changed) { persistUsed(); emit() }
 }
 
+export function syncSettingsUsedContent(settings: { loaderVideo?: string; faviconUrl?: string }) {
+  let changed = false
+  if (settings.loaderVideo !== undefined) {
+    const src = settings.loaderVideo
+    const prev = state.usedContent['loader.gallop']
+    if (src && prev?.src !== src) {
+      if (prev && prev.src) {
+        retireUsedEntryToUnused(prev, 'replaced', ['loader.gallop'])
+      }
+      const idx = state.unused.findIndex(u => u.src === src)
+      if (idx !== -1) {
+        state.unused.splice(idx, 1)
+        persistUnused()
+      }
+      state.usedContent['loader.gallop'] = {
+        key: 'loader.gallop',
+        label: 'Pantalla de carga',
+        section: 'Configuración del sitio',
+        kind: 'video',
+        src,
+        name: resolveMediaName(src, 'loader.gallop'),
+        size: null,
+        original: true,
+      }
+      changed = true
+    } else if (!src && prev) {
+      retireUsedEntryToUnused(prev, 'retired', ['loader.gallop'])
+      delete state.usedContent['loader.gallop']
+      changed = true
+    }
+  }
+
+  if (settings.faviconUrl !== undefined) {
+    const src = settings.faviconUrl
+    const prev = state.usedContent['settings.faviconUrl']
+    if (src && prev?.src !== src) {
+      if (prev && prev.src) {
+        retireUsedEntryToUnused(prev, 'replaced', ['settings.faviconUrl'])
+      }
+      const idx = state.unused.findIndex(u => u.src === src)
+      if (idx !== -1) {
+        state.unused.splice(idx, 1)
+        persistUnused()
+      }
+      state.usedContent['settings.faviconUrl'] = {
+        key: 'settings.faviconUrl',
+        label: 'Icono de la página',
+        section: 'Configuración del sitio',
+        kind: 'image',
+        src,
+        name: resolveMediaName(src, 'settings.faviconUrl'),
+        size: null,
+        original: true,
+      }
+      changed = true
+    } else if (!src && prev) {
+      retireUsedEntryToUnused(prev, 'retired', ['settings.faviconUrl'])
+      delete state.usedContent['settings.faviconUrl']
+      changed = true
+    }
+  }
+
+  if (changed) {
+    persistUsed()
+    emit()
+  }
+}
+
 // ----- Slots retirados / vacíos ---------------------------------------------------
 
 function isIconSlot(el: HTMLElement) {
@@ -582,7 +653,7 @@ function visualHosts(key: string): HTMLElement[] {
 
 export function showEmptySlot(key: string) {
   visualHosts(key).forEach((h) => {
-    if (key === 'loader.gallop' && !h.closest('#ajustes-loader')) return
+    if ((key === 'loader.gallop' && !h.closest('#ajustes-loader')) || (key === 'settings.faviconUrl' && !h.closest('#ajustes-favicon'))) return
     h.classList.add('cms-empty-slot')
     h.classList.remove('wave-has-content')
     if (!h.querySelector('.cms-empty-overlay')) {
@@ -655,7 +726,13 @@ export function moveToUnusedSite(key: string) {
       if (fieldSetters[k]) fieldSetters[k]('')
     }
   })
-  clearItemOverrides([key])
+  if (key === 'loader.gallop' || key === 'settings.faviconUrl') {
+    state.items[key] = ''
+    persistOverridesLocal()
+    emit()
+  } else {
+    clearItemOverrides([key])
+  }
   if (!state.retired.includes(key)) state.retired.push(key)
   persistUnused(); persistUsed(); persistRetired()
   showEmptySlot(key)
@@ -912,7 +989,7 @@ export function attachEditControls() {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el) => {
       const key = el.getAttribute('data-cms-key')
       if (!key) return
-      if (entry.base === 'loader.gallop' && !el.closest('#ajustes-loader')) return
+      if ((entry.base === 'loader.gallop' && !el.closest('#ajustes-loader')) || (entry.base === 'settings.faviconUrl' && !el.closest('#ajustes-favicon'))) return
       
       // Ensure empty wave slots always get the upload button overlay
       if (key.startsWith('hero.marquee#') && !state.items[key]) {
@@ -952,7 +1029,7 @@ export function refreshTools(key: string) {
         return [meta.mount === 'parent' && el.parentElement ? el.parentElement : el]
       })()
   hosts.forEach((host) => {
-    if (key === 'loader.gallop' && !host.closest('#ajustes-loader')) return
+    if ((key === 'loader.gallop' && !host.closest('#ajustes-loader')) || (key === 'settings.faviconUrl' && !host.closest('#ajustes-favicon'))) return
     host.querySelector(':scope > .cms-tools')?.remove()
     host.classList.add('cms-mount')
     ensurePositioned(host)

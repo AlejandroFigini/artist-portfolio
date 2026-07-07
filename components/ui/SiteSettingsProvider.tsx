@@ -8,6 +8,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { EMPTY_SETTINGS, SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
+import { syncSettingsUsedContent } from '@/components/cms/engine'
 
 const SiteSettingsContext = createContext<{
   settings: SiteSettings
@@ -20,21 +21,59 @@ export const useSiteSettings = () => useContext(SiteSettingsContext)
 function fromLocalOverrides(): Partial<SiteSettings> {
   try {
     const ov = JSON.parse(localStorage.getItem('cms_overrides_v1') || '{}') as Record<string, string>
-    return {
-      loaderVideo: ov[SETTINGS_KEYS.loaderVideo] || ov['loader.gallop'] || '',
-      loaderImage: ov[SETTINGS_KEYS.loaderImage] || '',
-      loaderDuration: ov[SETTINGS_KEYS.loaderDuration] || '',
-      cvUrl: ov[SETTINGS_KEYS.cvUrl] || '',
-      cvName: ov[SETTINGS_KEYS.cvName] || '',
-      faviconUrl: ov[SETTINGS_KEYS.faviconUrl] || '',
-    }
+    const res: Partial<SiteSettings> = {}
+    if (ov[SETTINGS_KEYS.loaderVideo] || ov['loader.gallop']) res.loaderVideo = ov[SETTINGS_KEYS.loaderVideo] || ov['loader.gallop']
+    if (ov[SETTINGS_KEYS.loaderImage]) res.loaderImage = ov[SETTINGS_KEYS.loaderImage]
+    if (ov[SETTINGS_KEYS.loaderDuration]) res.loaderDuration = ov[SETTINGS_KEYS.loaderDuration]
+    if (ov[SETTINGS_KEYS.cvUrl]) res.cvUrl = ov[SETTINGS_KEYS.cvUrl]
+    if (ov[SETTINGS_KEYS.cvName]) res.cvName = ov[SETTINGS_KEYS.cvName]
+    if (ov[SETTINGS_KEYS.faviconUrl]) res.faviconUrl = ov[SETTINGS_KEYS.faviconUrl]
+    return res
   } catch {
     return {}
   }
 }
 
-export function SiteSettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<SiteSettings>(EMPTY_SETTINGS)
+/** Actualiza o inyecta el favicon en el DOM cambiando el href sin remover elementos
+ *  (para evitar que Chrome Incógnito revierta al ícono por defecto) y usando cache-buster
+ *  cuando se guarda de forma dinámica. */
+function applyFaviconToDOM(targetUrl: string, forceCacheBuster = false) {
+  if (typeof document === 'undefined') return
+  const url = targetUrl || '/favicon.ico'
+  const existing = document.querySelectorAll<HTMLLinkElement>('link[rel*="icon"]')
+
+  if (!forceCacheBuster && existing.length > 0) {
+    const allMatch = Array.from(existing).every((el) => {
+      try {
+        return new URL(el.href, window.location.origin).pathname === new URL(url, window.location.origin).pathname
+      } catch {
+        return el.getAttribute('href') === url
+      }
+    })
+    if (allMatch) {
+      return
+    }
+  }
+
+  const cacheBusterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`
+
+  if (existing.length > 0) {
+    existing.forEach((el) => {
+      el.href = cacheBusterUrl
+    })
+  } else {
+    const rels = ['icon', 'shortcut icon', 'apple-touch-icon']
+    rels.forEach((rel) => {
+      const link = document.createElement('link')
+      link.rel = rel
+      link.href = cacheBusterUrl
+      document.head.appendChild(link)
+    })
+  }
+}
+
+export function SiteSettingsProvider({ children, initialSettings }: { children: React.ReactNode; initialSettings?: SiteSettings }) {
+  const [settings, setSettings] = useState<SiteSettings>(initialSettings || EMPTY_SETTINGS)
 
   useEffect(() => {
     // 1) fallback local inmediato (sin flash en dev sin DB)
@@ -44,33 +83,34 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       .then((r) => (r.ok ? r.json() : null))
       .then((d: SiteSettings | null) => {
         if (!d) return
+        const local = fromLocalOverrides()
         setSettings((s) => ({
-          loaderVideo: d.loaderVideo || s.loaderVideo,
-          loaderImage: d.loaderImage || s.loaderImage,
-          loaderDuration: d.loaderDuration || s.loaderDuration,
-          cvUrl: d.cvUrl || s.cvUrl,
-          cvName: d.cvName || s.cvName,
-          faviconUrl: d.faviconUrl || s.faviconUrl,
+          loaderVideo: local.loaderVideo || d.loaderVideo || s.loaderVideo,
+          loaderImage: local.loaderImage || d.loaderImage || s.loaderImage,
+          loaderDuration: local.loaderDuration || d.loaderDuration || s.loaderDuration,
+          cvUrl: local.cvUrl || d.cvUrl || s.cvUrl,
+          cvName: local.cvName || d.cvName || s.cvName,
+          faviconUrl: local.faviconUrl || d.faviconUrl || s.faviconUrl,
         }))
       })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
-    if (typeof document === 'undefined') return
-    const url = settings.faviconUrl || '/favicon.ico'
-    const existing = document.querySelectorAll('link[rel*="icon"]')
-    existing.forEach((el) => el.remove())
+    syncSettingsUsedContent(settings)
+  }, [settings.loaderVideo, settings.faviconUrl])
 
-    const link = document.createElement('link')
-    link.rel = 'icon'
-    link.href = url
-    document.head.appendChild(link)
+  useEffect(() => {
+    applyFaviconToDOM(settings.faviconUrl || '', false)
+  }, [settings.faviconUrl])
 
-    const shortcut = document.createElement('link')
-    shortcut.rel = 'shortcut icon'
-    shortcut.href = url
-    document.head.appendChild(shortcut)
+  useEffect(() => {
+    const handleFaviconUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      applyFaviconToDOM(customEvent.detail || settings.faviconUrl || '', true)
+    }
+    window.addEventListener('cms:favicon-updated', handleFaviconUpdate)
+    return () => window.removeEventListener('cms:favicon-updated', handleFaviconUpdate)
   }, [settings.faviconUrl])
 
   return (

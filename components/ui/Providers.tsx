@@ -7,13 +7,18 @@ import { ToastProvider } from './Toast'
 import { ModalProvider } from './Modal'
 import { SocialProvider } from './SocialProvider'
 import { SiteSettingsProvider } from './SiteSettingsProvider'
+import PageLoader from './PageLoader'
+import type { SiteSettings } from '@/lib/settings'
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({ children, initialSettings }: { children: React.ReactNode; initialSettings?: SiteSettings }) {
   return (
     <ToastProvider>
       <ModalProvider>
         <SocialProvider>
-          <SiteSettingsProvider>{children}</SiteSettingsProvider>
+          <SiteSettingsProvider initialSettings={initialSettings}>
+            <PageLoader />
+            {children}
+          </SiteSettingsProvider>
         </SocialProvider>
       </ModalProvider>
     </ToastProvider>

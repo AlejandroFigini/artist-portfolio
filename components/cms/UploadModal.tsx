@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, emit, persistOverridesLocal, type FieldValue,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
@@ -86,14 +86,30 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Campo "${f.label}" actualizado` })
           }
         })
-        persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
-
-        state.usedContent[cmsKey] = {
-          key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-          src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
-          ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+        if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+          persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+        } else {
+          emit()
         }
-        persistUsed()
+
+        if (cmsKey === 'loader.gallop' || cmsKey === 'settings.faviconUrl') {
+          const entry = {
+            key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+            src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
+            ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+          }
+          if (!state.unused.some(u => u.src === data.secure_url)) {
+            state.unused.unshift(entry)
+            persistUnused()
+          }
+        } else {
+          state.usedContent[cmsKey] = {
+            key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+            src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
+            ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+          }
+          persistUsed()
+        }
         recordMediaMeta(cmsKey, data.secure_url, { name: finalName, size: data.final_bytes, type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
 
         const ri = state.retired.indexOf(cmsKey)
