@@ -317,28 +317,46 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
         </div>
       </div>
       {confirmEntry && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1.5rem'
-        }}>
-          <div style={{ background: '#1e1e24', border: '1px solid #333', borderRadius: '8px', padding: '1.5rem', maxWidth: '420px', width: '100%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-            <div style={{ fontSize: '2rem', color: '#eab308', marginBottom: '1rem' }}><i className="fa-solid fa-triangle-exclamation"></i></div>
-            <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.15rem', color: '#fff' }}>Contenido en uso</h3>
-            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.95rem', color: '#ccc', lineHeight: 1.5 }}>
-              Este contenido ya se está usando en el contenedor <strong>{confirmEntry.label || confirmEntry._key}</strong>.<br /><br />
+        <CmsModal
+          title="Contenido en uso"
+          onClose={() => setConfirmEntry(null)}
+          actions={[
+            { label: 'Cancelar', onClick: () => { setConfirmEntry(null); return false } },
+            {
+              label: (
+                <>
+                  <i className="fa-solid fa-copy" style={{ marginRight: '0.4rem' }}></i> Reusar
+                </>
+              ),
+              primary: true,
+              onClick: () => { performAssign(false) }
+            },
+            {
+              label: (
+                <>
+                  <i className="fa-solid fa-arrow-right-arrow-left" style={{ marginRight: '0.4rem' }}></i> Mover
+                </>
+              ),
+              primary: true,
+              onClick: () => { performAssign(true) }
+            }
+          ]}
+        >
+          <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+            <div style={{ fontSize: '2.5rem', color: 'var(--c-nouso, #f59e0b)', marginBottom: '0.8rem' }}>
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--text-primary)', fontWeight: 500 }}>
+              Este contenido ya se está usando en el contenedor:
+            </p>
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.6rem', marginBottom: '1.2rem', fontFamily: 'var(--font-display, inherit)', fontWeight: 600, color: 'var(--accent)' }}>
+              {confirmEntry.label || confirmEntry._key}
+            </div>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               ¿Deseas <strong>moverlo</strong> (se quitará del contenedor anterior) o <strong>reusarlo</strong> (se mantendrá en ambos)?
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button type="button" className="cms-btn cms-btn--ghost" onClick={() => setConfirmEntry(null)}>Cancelar</button>
-              <button type="button" className="cms-btn" style={{ background: '#3b82f6', color: '#fff' }} onClick={() => performAssign(false)}>
-                <i className="fa-solid fa-copy"></i> Reusar
-              </button>
-              <button type="button" className="cms-btn" style={{ background: '#eab308', color: '#000' }} onClick={() => performAssign(true)}>
-                <i className="fa-solid fa-arrow-right-arrow-left"></i> Mover
-              </button>
-            </div>
           </div>
-        </div>
+        </CmsModal>
       )}
     </CmsModal>
   )
