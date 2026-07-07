@@ -13,7 +13,7 @@ import { fileToDataURL } from '@/lib/media'
 import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
-  loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta,
+  loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta, getAllKnownContainerKeys,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
@@ -62,11 +62,10 @@ type AssociateProps = CloseProp & { item: AnyEntry; isUnused: boolean; unusedIdx
 
 export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: AssociateProps) {
   const itemKind = kindOf(item)
-  const allKeys = Array.from(new Set([...Object.keys(state.usedContent), ...state.retired]))
+  const allKeys = getAllKnownContainerKeys()
   // contenedores compatibles → entradas del árbol Página → Sección (mismo orden que "En uso")
   const containers = allKeys
     .map((k) => { const meta = getContainerMeta(k); return { key: k, section: meta.section, size: 0, meta, occ: state.usedContent[k] } })
-    .filter((c) => c.meta.kind === itemKind)
   const tree = buildPageTree(containers)
 
   const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
@@ -84,7 +83,7 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
     <CmsModal title="Asociar a nuevo contenedor" wide onClose={onClose} actions={[{ label: 'Cancelar', onClick: () => {} }]}>
       <div className="cms-upload" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem', padding: '0.6rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <Thumb e={item} />
           </div>
           <div style={{ overflow: 'hidden' }}>
@@ -95,6 +94,7 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
         <div className="admin-tree">
           {tree.map((page) => {
             const pOpen = openPages.has(page.id)
+            const pageOcc = page.sections.reduce((acc, sec) => acc + sec.items.filter(c => c.occ).length, 0)
             return (
               <div className="admin-tree-page" key={page.id}>
                 <div className={`admin-tree-row admin-tree-row--page${pOpen ? ' open' : ''}`}>
@@ -102,7 +102,14 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
                     <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
                     <i className={`fa-solid ${page.icon} admin-tree-icon`}></i>
                     <span className="admin-tree-label">{page.label}</span>
-                    {page.count > 0 && <span className="admin-badge">{contBadge(page.count)}</span>}
+                    {page.count > 0 && (
+                      <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', marginLeft: 'auto' }}>
+                        <span className="admin-badge">{contBadge(page.count)}</span>
+                        <span className="admin-badge" style={{ background: 'color-mix(in srgb, var(--accent) 15%, var(--bg-secondary))', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, var(--border))' }}>
+                          {pageOcc} ocupado{pageOcc === 1 ? '' : 's'}
+                        </span>
+                      </span>
+                    )}
                   </button>
                 </div>
                 {pOpen && (
@@ -113,39 +120,68 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
                     {page.sections.map((s) => {
                       const sid = `${page.id}:${s.id}`
                       const sOpen = openSecs.has(sid)
+                      const secOcc = s.items.filter(c => c.occ).length
                       return (
                         <div className="admin-tree-section" key={sid}>
                           <div className={`admin-tree-row admin-tree-row--section${sOpen ? ' open' : ''}`}>
                             <button type="button" className="admin-tree-rowbtn" onClick={() => toggleSet(setOpenSecs, sid)} aria-expanded={sOpen}>
                               <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
                               <span className="admin-tree-label">{s.label}</span>
-                              {s.count > 0 && <span className="admin-badge">{contBadge(s.count)}</span>}
+                              {s.count > 0 && (
+                                <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', marginLeft: 'auto' }}>
+                                  <span className="admin-badge">{contBadge(s.count)}</span>
+                                  <span className="admin-badge" style={{ background: 'color-mix(in srgb, var(--accent) 15%, var(--bg-secondary))', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, var(--border))' }}>
+                                    {secOcc} ocupado{secOcc === 1 ? '' : 's'}
+                                  </span>
+                                </span>
+                              )}
                             </button>
                           </div>
                           {sOpen && (
                             <div className="admin-tree-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                               {s.count === 0
-                                ? <p className="cms-admin-sub admin-tree-empty">Sin contenedores compatibles en esta sección.</p>
-                                : s.items.map((c) => (
-                                <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', minWidth: 0, flex: 1 }}>
-                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{c.meta.label}</span>
-                                    <div style={{ fontSize: '0.75rem' }}>
-                                      {c.occ ? (
-                                        <>
-                                          <span className="cms-tag" style={{ background: '#eab308', color: '#000' }}>Ocupado</span>{' '}
-                                          <span style={{ opacity: 0.7 }} title={c.occ.name}>({c.occ.name || 'archivo'})</span>
-                                        </>
-                                      ) : (
-                                        <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Libre</span>
+                                ? <p className="cms-admin-sub admin-tree-empty">Sin contenedores en esta sección.</p>
+                                : s.items.map((c) => {
+                                  const isCompat = c.meta.kind === itemKind
+                                  return (
+                                  <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', minWidth: 0, flex: 1 }}>
+                                      {c.occ && (
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                          <Thumb e={c.occ} />
+                                        </div>
                                       )}
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', minWidth: 0, flex: 1 }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{c.meta.label}</span>
+                                        <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                          {!isCompat && (
+                                            <span className="cms-tag" style={{ background: '#ef4444', color: '#fff' }}>
+                                              Incompatible ({c.meta.kind === 'video' ? 'requiere video' : 'requiere imagen'})
+                                            </span>
+                                          )}
+                                          {c.occ ? (
+                                            <>
+                                              <span className="cms-tag" style={{ background: '#eab308', color: '#000' }}>Ocupado</span>
+                                              <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.occ.name}>({c.occ.name || 'archivo'})</span>
+                                            </>
+                                          ) : (
+                                            <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Libre</span>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
+                                    <button
+                                      type="button"
+                                      className="cms-btn cms-btn--sm"
+                                      style={{ padding: '4px 10px', flexShrink: 0, opacity: isCompat ? 1 : 0.4, cursor: isCompat ? 'pointer' : 'not-allowed' }}
+                                      disabled={!isCompat}
+                                      onClick={() => { if (isCompat) choose(c.key) }}
+                                    >
+                                      Seleccionar
+                                    </button>
                                   </div>
-                                  <button type="button" className="cms-btn cms-btn--sm" style={{ padding: '4px 10px' }} onClick={() => choose(c.key)}>
-                                    Seleccionar
-                                  </button>
-                                </div>
-                              ))}
+                                  )
+                                })}
                             </div>
                           )}
                         </div>

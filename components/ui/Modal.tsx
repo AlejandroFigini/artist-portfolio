@@ -22,7 +22,7 @@ export type ModalAction = {
 }
 
 type CmsModalProps = {
-  title: string
+  title: React.ReactNode
   children: React.ReactNode
   actions?: ModalAction[]
   wide?: boolean
@@ -66,7 +66,7 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
             barra nunca quede pegada a las esquinas redondeadas del contenedor */}
         <div className="cms-modal-inner">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-            <h3 className="cms-modal-title" style={{ margin: 0 }}>{title}</h3>
+            <h3 className="cms-modal-title" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>{title}</h3>
             {!locked && (
               <button
                 type="button"
@@ -110,7 +110,7 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
 // ----- API imperativa (open / close / confirm) --------------------------------
 
 export type ModalSpec = {
-  title: string
+  title: React.ReactNode
   body: React.ReactNode
   actions?: ModalAction[]
   wide?: boolean

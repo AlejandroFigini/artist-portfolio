@@ -133,14 +133,12 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     const seenSrc = new Set<string>()
     Object.keys(state.usedContent).forEach((k) => {
       const e = state.usedContent[k]
-      if (isVideoSlot !== (e.kind === 'video')) return
       if (!e.src || seenSrc.has(e.src)) return
       seenSrc.add(e.src)
       list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
     })
     state.unused.forEach((e) => {
       const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
-      if (isVideoSlot !== eIsVid) return
       const src = e.src || e.dataUrl || ''
       if (!src || seenSrc.has(src)) return
       seenSrc.add(src)
@@ -214,6 +212,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   const assign = (): void | false => {
     if (!selected) { toast('Seleccioná un contenido primero', 'error'); return false }
+    if ((selected.kind === 'video') !== isVideoSlot) {
+      toast(`Este contenido es incompatible (requiere ${isVideoSlot ? 'video' : 'imagen'})`, 'error')
+      return false
+    }
     const src = selected.src
     if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
 
@@ -278,13 +280,19 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               No hay contenido disponible de este tipo.
             </div>
           )}
-          {filtered.map((entry, i) => (
+          {filtered.map((entry, i) => {
+            const isCompat = (entry.kind === 'video') === isVideoSlot
+            return (
             <div
               key={i}
               className={`cms-repo-thumb${selected === entry ? ' selected' : ''}`}
-              onClick={() => setSelected(entry)}
+              style={{ opacity: isCompat ? 1 : 0.45, cursor: isCompat ? 'pointer' : 'not-allowed' }}
+              onClick={() => { if (isCompat) setSelected(entry); else toast(`Contenido incompatible (requiere ${isVideoSlot ? 'video' : 'imagen'})`, 'error') }}
             >
-              <div className="cms-mlib-tag-top" style={{ padding: '0.35rem 0.35rem 0 0.35rem' }}>
+              <div className="cms-mlib-tag-top" style={{ padding: '0.35rem 0.35rem 0 0.35rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                {!isCompat && (
+                  <span className="cms-tag" style={{ background: '#ef4444', color: '#fff' }}>Incompatible</span>
+                )}
                 {entry._state === 'usado' ? (
                   <span className="cms-tag cms-tag--uso">En Uso</span>
                 ) : (
@@ -313,7 +321,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
                 {entry.size ? <><strong>Tamaño:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
       {confirmEntry && (

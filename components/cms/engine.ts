@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, type FieldValue,
+  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
 } from '@/lib/cms/store'
 import { BASE_LANG, type Lang } from '@/lib/i18n'
 import { basename } from '@/lib/utils'
@@ -524,13 +524,14 @@ export function computeFields(key: string, el: HTMLElement, meta: Meta): FieldVa
 // Registra como "usado" cada media indexada que aún no esté (port seedUsedContent)
 export function seedUsedContent() {
   let changed = false
-  Object.keys(elementsByKey).forEach((key) => {
-    if (typeByKey[key] !== 'media') return
+  const allKeys = new Set([...Object.keys(elementsByKey), ...getAllKnownContainerKeys()])
+  allKeys.forEach((key) => {
     if (state.retired.includes(key)) return
     if (key === 'loader.gallop' || key === 'settings.faviconUrl') return
-    const el = elementsByKey[key]
-    const meta = metaByKey[key]
-    const src = currentSrcOf(el)
+    const el = elementsByKey[key] || null
+    const meta = metaByKey[key] || getContainerMeta(key)
+    if (!meta || (meta.kind !== 'image' && meta.kind !== 'video')) return
+    const src = state.items[key] || (el ? currentSrcOf(el) : '')
     if (state.usedContent[key]) {
       // Contenedor vacío marcado por error como "usado" (seed sin contenido):
       // purgar para que no contamine el repositorio ni se evacúe a "sin usar".
@@ -538,6 +539,10 @@ export function seedUsedContent() {
         delete state.usedContent[key]
         changed = true
         return
+      }
+      if (src && state.usedContent[key].src !== src) {
+        state.usedContent[key].src = src
+        changed = true
       }
       if (meta.fields && !state.usedContent[key].fields) {
         state.usedContent[key].fields = computeFields(key, el, meta)

@@ -16,6 +16,7 @@ import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
+import { seedUsedContent } from '../cms/engine'
 import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
 import SocialSettings from './SocialSettings'
 import UsersSection from './UsersSection'
@@ -61,6 +62,7 @@ export default function AdminDashboard() {
       cleanOrphanOverrides()
       if (state.isAdmin) {
         autoCleanTrash()
+        seedUsedContent()
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
         // Crear estructura de carpetas vacías en Cloudinary (idempotente)
         scaffoldCloudinaryFolders()

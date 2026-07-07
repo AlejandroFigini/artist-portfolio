@@ -5754,6 +5754,29 @@ body.cms-modal-open { overflow: hidden; }
     z-index: 100;
 }
 
+.cms-mlib-thumb-wrap {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+}
+
+.cms-mlib-thumb-wrap img,
+.cms-mlib-thumb-wrap video,
+.cms-mlib-thumb-wrap .cms-mlib-noimg {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    display: block;
+}
+
 .cms-mlib-item .cms-mlib-thumb-wrap {
     width: 80px;
     height: 80px;

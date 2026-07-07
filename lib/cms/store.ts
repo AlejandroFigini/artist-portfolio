@@ -317,8 +317,13 @@ export function setAdminFlag(on: boolean, username?: string) {
   emit()
 }
 
-export const kindOf = (e: { kind?: string; type?: string; name?: string }): 'image' | 'video' =>
-  e.kind === 'video' || isVideo(e.type, e.name) ? 'video' : 'image'
+export const kindOf = (e: { kind?: string; type?: string; name?: string; key?: string }): 'image' | 'video' => {
+  if (e.key) {
+    const meta = getContainerMeta(e.key)
+    if (meta && (meta.kind === 'image' || meta.kind === 'video')) return meta.kind
+  }
+  return e.kind === 'video' || isVideo(e.type, e.name) ? 'video' : 'image'
+}
 
 export function getFormat(e: { type?: string; src?: string; dataUrl?: string; name?: string }): string {
   if (e.type && e.type.includes('/')) return e.type.split('/')[1]
@@ -355,8 +360,13 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 
 const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' }> = {
+  'loader.gallop': { section: 'Configuración del sitio', label: () => 'Pantalla de carga', kind: 'video' },
+  'settings.faviconUrl': { section: 'Configuración del sitio', label: () => 'Icono de la página', kind: 'image' },
+  'hero-main.slide': { section: 'Portada', label: (n) => `Imagen Carrusel Principal #${n}`, kind: 'image' },
+  'hero-sub.slide': { section: 'Portada', label: (n) => `Imagen Carrusel Secundario #${n}`, kind: 'image' },
   'hero.slide': { section: 'Portada', label: (n) => `Imagen Carrusel #${n}`, kind: 'image' },
   'hero.wave': { section: 'Portada', label: (n) => `Herramienta Wave #${n}`, kind: 'image' },
+  'hero.marquee': { section: 'Portada', label: (n) => `Herramienta Wave #${n}`, kind: 'image' },
   'soft.hero': { section: 'Portada', label: (n) => `Logo Stack Portada #${n}`, kind: 'image' },
   'soft.global': { section: 'Animaciones', label: (n) => `Logo Stack Animaciones #${n}`, kind: 'image' },
   'anim.bg': { section: 'Animaciones', label: (n) => `Video Fondo Animaciones #${n}`, kind: 'video' },
@@ -373,6 +383,8 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'anim.soft': { section: 'Animations', label: (n) => `Logo de software #${n}`, kind: 'image' },
   'anim.softname': { section: 'Animations', label: (n) => `Nombre de software #${n}`, kind: 'text' },
   'anim': { section: 'Animations', label: (n) => `Animación #${n}`, kind: 'video' },
+  'proj': { section: 'Proyectos', label: (n) => `Proyecto #${n}`, kind: 'image' },
+  'proj.soft': { section: 'Proyectos', label: (n) => `Logo de software #${n}`, kind: 'image' },
   'char.title': { section: 'Characters', label: () => 'Título de sección — Characters', kind: 'text' },
   'char.sectiondesc': { section: 'Characters', label: () => 'Descripción — Characters', kind: 'text' },
   'char.soft': { section: 'Characters', label: (n) => `Logo de software #${n}`, kind: 'image' },
@@ -384,6 +396,7 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'model3d.title': { section: '3D Models', label: (n) => `Título bloque #${n} — 3D`, kind: 'text' },
   'model3d.desc': { section: '3D Models', label: (n) => `Texto bloque #${n} — 3D`, kind: 'text' },
   'model3d': { section: '3D Models', label: (n) => `Video 3D #${n}`, kind: 'video' },
+  'model3d.gallery': { section: '3D Models', label: (n) => `Imagen 3D #${n}`, kind: 'image' },
 }
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' } {
@@ -393,6 +406,57 @@ export function getContainerMeta(key: string): { label: string; section: string;
   const def = CONTAINER_BASES[base]
   if (!def) return { label: customLabel || key, section: 'Otros', kind: 'image' }
   return { label: customLabel || def.label(n), section: def.section, kind: def.kind }
+}
+
+function tryParseCount(jsonStr: string | undefined): number {
+  if (!jsonStr) return 6
+  try {
+    const p = JSON.parse(jsonStr)
+    if (p && typeof p.count === 'number' && p.count > 0) return p.count
+  } catch {}
+  return 6
+}
+
+export function getAllKnownContainerKeys(): string[] {
+  const keys = new Set<string>()
+  // 1) Claves estándar del sitio
+  const standard: string[] = [
+    'loader.gallop',
+    'settings.faviconUrl',
+    'anim.bg',
+    'about.photo',
+    'about.video',
+    ...Array.from({ length: 5 }, (_, i) => `hero-main.slide#${i}`),
+    ...Array.from({ length: 5 }, (_, i) => `hero-sub.slide#${i}`),
+    ...Array.from({ length: 5 }, (_, i) => `hero.slide#${i}`),
+    ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
+    ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
+    ...Array.from({ length: Math.max(6, tryParseCount(state.items['char.settings'])) }, (_, i) => `char#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `char.soft#${i}`),
+    ...Array.from({ length: 15 }, (_, i) => `illustration#${i}`),
+    ...Array.from({ length: Math.max(6, tryParseCount(state.items['anim.settings'])) }, (_, i) => `anim#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `anim.soft#${i}`),
+    ...Array.from({ length: Math.max(6, tryParseCount(state.items['proj.settings'])) }, (_, i) => `proj#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `proj.soft#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `model3d#${i}`),
+    ...Array.from({ length: 12 }, (_, i) => `model3d.gallery#${i}`),
+    ...Array.from({ length: 6 }, (_, i) => `model3d.soft#${i}`),
+  ]
+  standard.forEach(k => keys.add(k))
+  // 2) Claves en uso, retiradas, sin usar o en papelera
+  Object.keys(state.usedContent).forEach(k => keys.add(k))
+  state.retired.forEach(k => keys.add(k))
+  state.unused.forEach(u => { if (u.key) keys.add(u.key) })
+  state.trash.forEach(t => { if (t.key) keys.add(t.key) })
+  Object.keys(state.containerNames).forEach(k => keys.add(k))
+  // 3) Claves en items que correspondan a contenedores de media conocidos
+  Object.keys(state.items).forEach(k => {
+    if (/^(?:char|proj|anim|illustration|model3d|hero|hero-main|hero-sub|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
+      keys.add(k)
+    }
+  })
+  return Array.from(keys)
 }
 
 // ----- Operaciones de gestión (port de admin.js) -----------------------------

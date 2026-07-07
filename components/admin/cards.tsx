@@ -32,18 +32,19 @@ export type MenuAction = {
 export function Thumb({ e }: { e: AnyEntry }) {
   const src = e.src || e.dataUrl
   const vid = isVideo(e.type || (e as UsedEntry).kind, e.name)
+  const thumbStyle: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }
   return (
-    <div className="cms-mlib-thumb-wrap">
+    <div className="cms-mlib-thumb-wrap" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {!src ? (
-        <span className="cms-mlib-noimg"><i className={`fa-solid fa-${vid ? 'film' : 'image'}`}></i></span>
+        <span className="cms-mlib-noimg" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'inherit' }}><i className={`fa-solid fa-${vid ? 'film' : 'image'}`}></i></span>
       ) : src.includes('res.cloudinary.com') ? (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={cloudinaryThumb(src, vid)} alt="" loading="lazy" style={{ objectFit: 'cover' }} />
+        <img src={cloudinaryThumb(src, vid)} alt="" loading="lazy" style={thumbStyle} />
       ) : vid ? (
-        <video src={src} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <video src={src} muted playsInline preload="metadata" style={thumbStyle} />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={src} alt="" loading="lazy" style={{ objectFit: 'cover' }} />
+        <img src={src} alt="" loading="lazy" style={thumbStyle} />
       )}
       <div className="cms-mlib-thumb-overlay"><i className="fa-solid fa-magnifying-glass-plus"></i></div>
     </div>
