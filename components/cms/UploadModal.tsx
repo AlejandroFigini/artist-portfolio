@@ -50,7 +50,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
 
   const doUpload = (): false => {
     const rawName = nameRef.current?.value.trim() || getFileBasename(file.name)
-    const finalName = ensureExtension(rawName, file.name)
+    const isFavicon = cmsKey === 'settings.faviconUrl'
+    const finalName = isFavicon ? ensureExtension(rawName, 'icon.png') : ensureExtension(rawName, file.name)
     const newContainerName = containerRef.current?.value.trim()
     if (newContainerName && newContainerName !== meta.label) {
       performRenameContainer(cmsKey, newContainerName)
@@ -61,9 +62,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     setPhase('uploading')
 
     fileToDataURL(file)
-      .then((base64) => {
+      .then(async (base64) => {
+        const uploadBase64 = isFavicon ? await cropToCircle(base64) : base64
         const meta = getContainerMeta(cmsKey)
-        return uploadMedia(base64, file.size, finalName, meta.section, 'used', getCloudinaryFolder(meta.section))
+        return uploadMedia(uploadBase64, file.size, finalName, meta.section, 'used', getCloudinaryFolder(meta.section))
       })
       .then((data) => {
         // versión anterior → no usados (solo si tenía contenido real)
@@ -92,11 +94,12 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           emit()
         }
 
+        const finalType = isFavicon ? 'image/png' : (file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'))
         if (cmsKey === 'loader.gallop' || cmsKey === 'settings.faviconUrl') {
           const entry = {
             key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
             src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
-            ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+            ts: Date.now(), type: finalType,
           }
           if (!state.unused.some(u => u.src === data.secure_url)) {
             state.unused.unshift(entry)
@@ -106,11 +109,11 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           state.usedContent[cmsKey] = {
             key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
             src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
-            ts: Date.now(), type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+            ts: Date.now(), type: finalType,
           }
           persistUsed()
         }
-        recordMediaMeta(cmsKey, data.secure_url, { name: finalName, size: data.final_bytes, type: file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
+        recordMediaMeta(cmsKey, data.secure_url, { name: finalName, size: data.final_bytes, type: finalType, label: meta.label, section: meta.section })
 
         const ri = state.retired.indexOf(cmsKey)
         if (ri >= 0) { state.retired.splice(ri, 1); persistRetired() }
@@ -265,4 +268,48 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
       )}
     </CmsModal>
   )
+}
+
+/** Recorta una imagen en base64 en un círculo perfecto de borde a borde y la exporta como PNG transparente. */
+function cropToCircle(base64DataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = base64DataUrl
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const size = 256 // Resolución óptima para favicons de alta definición
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(base64DataUrl)
+          return
+        }
+
+        ctx.clearRect(0, 0, size, size)
+
+        // Crear una máscara circular perfecta
+        ctx.beginPath()
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+        ctx.clip()
+
+        // Ajuste tipo 'cover' para que la imagen mantenga su relación de aspecto y llene el círculo centrado
+        const minSide = Math.min(img.width, img.height)
+        const sx = (img.width - minSide) / 2
+        const sy = (img.height - minSide) / 2
+
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size)
+
+        resolve(canvas.toDataURL('image/png'))
+      } catch (e) {
+        console.error('[cropToCircle] Error al recortar circularmente:', e)
+        resolve(base64DataUrl)
+      }
+    }
+    img.onerror = () => {
+      resolve(base64DataUrl)
+    }
+  })
 }
