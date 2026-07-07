@@ -259,15 +259,16 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
           <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', margin: '0 auto' }} />
         )}
         <div style={{ marginTop: '1.5rem', textAlign: 'left', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-          {e.label && <h4 style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>{e.label}</h4>}
+          <h4 style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>{e.name || e.label || 'Sin nombre'}</h4>
           <div className="cms-mlib-meta" style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-            <div><strong>Nombre:</strong> {e.name || '—'}</div>
+            <div><strong>Nombre del archivo:</strong> {e.name || '—'}</div>
+            <div><strong>Contenedor original:</strong> {e.label || '—'}</div>
             <div><strong>Formato:</strong> {getFormat(e)}</div>
             <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
             <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-            <div><strong>Usos:</strong> <span style={occCount >= 2 ? { fontWeight: 600, color: 'var(--accent)' } : undefined}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
-            <div><strong>{containerLabel}</strong> {containerBase || '—'}</div>
+            <div><strong>Usos:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
+            <div><strong>{containerLabel}</strong> <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
           </div>
         </div>
       </div>

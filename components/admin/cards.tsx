@@ -95,7 +95,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
         <Thumb e={e} />
       </div>
       <div className="cms-mlib-info">
-        <div className="cms-mlib-label">
+        <div className="cms-mlib-label" style={{ color: 'var(--accent)' }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={title}>
             {title}
           </span>
@@ -106,8 +106,8 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
           <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
           <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-          <div><strong>Usos:</strong> <span style={occCount >= 2 ? { fontWeight: 600, color: 'var(--accent)' } : undefined}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
-          <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase}>{containerBase || '—'}</span></div>
+          <div><strong>Usos:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
+          <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase} style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
         </div>
         {actions.length > 0 && (
           <div className="cms-mlib-actions">
