@@ -46,6 +46,38 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     isComplete((k) => fields.find((f) => f.key === k)?.value ?? ''))
   const recheckFields = () => setFieldsComplete(isComplete((k) => fieldRefs.current[k]?.value ?? ''))
 
+  const [isDuplicate, setIsDuplicate] = useState(() => {
+    const rawName = getFileBasename(file.name)
+    const isFavicon = cmsKey === 'settings.faviconUrl'
+    const finalName = isFavicon ? ensureExtension(rawName, 'icon.png') : ensureExtension(rawName, file.name)
+    const nameLower = finalName.toLowerCase()
+    const existsInUsed = Object.values(state.usedContent).some(
+      (entry) => entry?.name?.toLowerCase() === nameLower
+    )
+    const existsInUnused = state.unused.some(
+      (entry) => entry?.name?.toLowerCase() === nameLower
+    )
+    return existsInUsed || existsInUnused
+  })
+
+  const checkDuplicate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawName = e.target.value.trim()
+    if (!rawName) {
+      setIsDuplicate(false)
+      return
+    }
+    const isFavicon = cmsKey === 'settings.faviconUrl'
+    const finalName = isFavicon ? ensureExtension(rawName, 'icon.png') : ensureExtension(rawName, file.name)
+    const nameLower = finalName.toLowerCase()
+    const existsInUsed = Object.values(state.usedContent).some(
+      (entry) => entry?.name?.toLowerCase() === nameLower
+    )
+    const existsInUnused = state.unused.some(
+      (entry) => entry?.name?.toLowerCase() === nameLower
+    )
+    setIsDuplicate(existsInUsed || existsInUnused)
+  }
+
   if (!meta) return null
 
   const doUpload = (): false => {
@@ -144,8 +176,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           { label: 'Cancelar', onClick: () => onClose(false) },
           {
             label: 'Comprimir y subir a Cloudinary', primary: true,
-            disabled: !fieldsComplete,
-            title: fieldsComplete ? undefined : `Completá los campos obligatorios (${requiredLabels}) antes de subir`,
+            disabled: !fieldsComplete || isDuplicate,
+            title: isDuplicate
+              ? 'Ya existe un archivo con ese nombre'
+              : fieldsComplete ? undefined : `Completá los campos obligatorios (${requiredLabels}) antes de subir`,
             onClick: doUpload,
           },
         ]
@@ -168,13 +202,19 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           <label className="cms-field" style={{ marginTop: '0.6rem' }}>
             <span>Nombre del archivo</span>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <input ref={nameRef} type="text" defaultValue={getFileBasename(file.name)} style={{ flex: 1, borderTopRightRadius: getFileExtension(file.name) ? 0 : undefined, borderBottomRightRadius: getFileExtension(file.name) ? 0 : undefined }} />
+              <input ref={nameRef} type="text" defaultValue={getFileBasename(file.name)} onChange={checkDuplicate} style={{ flex: 1, borderTopRightRadius: getFileExtension(file.name) ? 0 : undefined, borderBottomRightRadius: getFileExtension(file.name) ? 0 : undefined }} />
               {getFileExtension(file.name) && (
                 <span style={{ padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
                   {getFileExtension(file.name)}
                 </span>
               )}
             </div>
+            {isDuplicate && (
+              <div style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                Ya existe un archivo con este nombre. Por favor, elige uno diferente.
+              </div>
+            )}
           </label>
           <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
             <div><span style={{ fontWeight: 400 }}>Tamaño:</span> <span style={{ fontFamily: "'Fira Code', monospace", fontWeight: 400 }}>{fmtBytes(file.size)}</span></div>
