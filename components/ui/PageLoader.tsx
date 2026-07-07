@@ -124,7 +124,7 @@ export default function PageLoader() {
               data-cms-key="loader.gallop"
               className="loader-gallop"
               src={(state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : settings.loaderVideo) || undefined}
-              autoPlay loop muted playsInline preload="auto" fetchPriority="high"
+              autoPlay loop muted playsInline preload="auto"
             ></video>
             <div className="loader-media-glow"></div>
           </div>
