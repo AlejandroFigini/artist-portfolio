@@ -23,8 +23,20 @@ export const SITE_PAGES: PageDef[] = [
   {
     id: 'config', label: 'Configuración del sitio', route: '/admin', icon: 'fa-gear',
     sections: [
-      { id: 'loader', label: 'Pantalla de carga', match: bySection('Configuración del sitio', 'Página de carga', 'Pantalla de carga') },
-      { id: 'favicon', label: 'Icono de la página', match: bySection('Configuración del sitio', 'Ajustes del sitio', 'Icono de la página', 'Favicon') },
+      {
+        id: 'loader',
+        label: 'Pantalla de carga',
+        match: (e) =>
+          bySection('Página de carga', 'Pantalla de carga')(e) ||
+          (e.section === 'Configuración del sitio' && e.key === 'loader.gallop'),
+      },
+      {
+        id: 'favicon',
+        label: 'Icono de la página',
+        match: (e) =>
+          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon')(e) ||
+          (e.section === 'Configuración del sitio' && e.key === 'settings.faviconUrl'),
+      },
     ],
   },
   {
