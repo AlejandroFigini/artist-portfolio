@@ -70,7 +70,7 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
             {!locked && (
               <button
                 type="button"
-                title="Cerrar"
+                title="Close"
                 onClick={onClose}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.4rem', cursor: 'pointer' }}
               >
@@ -138,8 +138,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       title,
       body: <div className="cms-confirm-body">{body}</div>,
       actions: [
-        { label: 'Cancelar', onClick: () => {} },
-        { label: 'Confirmar', primary: true, onClick: onConfirm },
+        { label: 'Cancel', onClick: () => {} },
+        { label: 'Confirm', primary: true, onClick: onConfirm },
       ],
     })
   }, [open])

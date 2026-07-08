@@ -23,7 +23,7 @@ import UsersSection from './UsersSection'
 import { MediaCard, type AnyEntry } from './cards'
 
 const NAV_BOTTOM = [
-  { id: 'auditoria', icon: 'fa-clipboard-list', label: 'Auditoría' },
+  { id: 'auditoria', icon: 'fa-clipboard-list', label: 'Audit' },
 ]
 
 const markSkipLoader = () => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }

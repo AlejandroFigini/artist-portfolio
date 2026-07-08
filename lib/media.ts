@@ -19,9 +19,9 @@ export function realMedia(el: HTMLImageElement | HTMLVideoElement | null): boole
 
 /** null si es válido; mensaje de error si no. accept: 'webp' (imagen) | 'webm' (video) */
 export function validateFile(file: File, accept?: string): string | null {
-  if (file.size > MAX_BYTES) return 'El archivo supera el límite de 25 MB.'
-  if (accept === 'webp' && !file.type.startsWith('image/')) return 'Debe ser un archivo de imagen válido.'
-  if (accept === 'webm' && !file.type.startsWith('video/')) return 'Debe ser un archivo de video válido.'
+  if (file.size > MAX_BYTES) return 'File exceeds the 25 MB limit.'
+  if (accept === 'webp' && !file.type.startsWith('image/')) return 'Must be a valid image file.'
+  if (accept === 'webm' && !file.type.startsWith('video/')) return 'Must be a valid video file.'
   return null
 }
 

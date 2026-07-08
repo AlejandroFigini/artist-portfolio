@@ -173,7 +173,7 @@ export default function Nav() {
           <button
             className="nav-toggle"
             id="nav-toggle"
-            aria-label="Abrir menú"
+            aria-label="Open menu"
             aria-expanded={navOpen}
             onClick={() => setNavOpen((o) => !o)}
           >
@@ -233,11 +233,12 @@ export default function Nav() {
               href={settings.cvUrl || undefined}
               download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
               target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-              title={settings.cvUrl ? 'Download CV' : 'CV no disponible aún'}
+              title={settings.cvUrl ? 'Download CV' : 'CV not available yet'}
               aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
+              data-i18n-title="download_cv" data-i18n-aria="download_cv"
             >
               <i className="fa-solid fa-file-arrow-down"></i>
-              <span>CV</span>
+              <span data-i18n="cv">CV</span>
             </a>
             {/* cms.js renderiza aquí el botón de login / menú de sesión (Sesión 3) */}
             <div id="cms-auth-nav"></div>

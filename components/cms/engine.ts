@@ -13,7 +13,8 @@ import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
 } from '@/lib/cms/store'
-import { BASE_LANG, isTranslatableEntry, type Lang } from '@/lib/i18n'
+import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
+export { applyStaticTranslations }
 import { basename } from '@/lib/utils'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
@@ -352,10 +353,10 @@ export function ensureProjectMeta(key: string) {
   if (metaByKey[key]) return
   const m = key.match(/^proj#(\d+)$/)
   if (!m && !key.startsWith('proj#new')) return
-  const n = m ? Number(m[1]) + 1 : 'Nuevo'
+  const n = m ? Number(m[1]) + 1 : 'New'
   metaByKey[key] = {
-    label: state.containerNames[key] || `Proyecto #${n}`,
-    section: 'Proyectos',
+    label: state.containerNames[key] || `Project #${n}`,
+    section: 'Projects',
     kind: 'image',
     accept: 'webp',
     mount: 'none',
@@ -380,9 +381,9 @@ export function ensureCharacterMeta(key: string) {
   }
   if (!/^char#(?:new_)?\w+$/.test(key)) return
   const m = key.match(/^char#(\d+)$/)
-  const n = m ? Number(m[1]) + 1 : 'Nuevo'
+  const n = m ? Number(m[1]) + 1 : 'New'
   metaByKey[key] = {
-    label: state.containerNames[key] || `Personaje #${n}`,
+    label: state.containerNames[key] || `Character #${n}`,
     section: 'Characters', kind: 'image', accept: 'webp', mount: 'none', fields: CHARACTER_FIELDS,
   }
   typeByKey[key] = 'media'
@@ -510,6 +511,7 @@ export function setLanguage(lang: Lang) {
       : (dict[key] != null ? dict[key] : state.items[key])
     if (value != null) applyStored(key, value)
   })
+  applyStaticTranslations(lang)
   state.lang = lang
   persistLang()
   emit()
@@ -592,8 +594,8 @@ export function syncSettingsUsedContent(settings: { loaderVideo?: string; favico
       }
       state.usedContent['loader.gallop'] = {
         key: 'loader.gallop',
-        label: 'Pantalla de carga',
-        section: 'Configuración del sitio',
+        label: 'Loading Screen',
+        section: 'Site Configuration',
         kind: 'video',
         src,
         name: resolveMediaName(src, 'loader.gallop'),
@@ -622,8 +624,8 @@ export function syncSettingsUsedContent(settings: { loaderVideo?: string; favico
       }
       state.usedContent['settings.faviconUrl'] = {
         key: 'settings.faviconUrl',
-        label: 'Icono de la página',
-        section: 'Configuración del sitio',
+        label: 'Favicon',
+        section: 'Site Configuration',
         kind: 'image',
         src,
         name: resolveMediaName(src, 'settings.faviconUrl'),
@@ -678,8 +680,8 @@ export function showEmptySlot(key: string) {
       const ov = document.createElement('div')
       ov.className = 'cms-empty-overlay'
       ov.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span></span>'
-      ov.querySelector('span')!.textContent = meta ? meta.label : 'Asignar contenido'
-      ov.title = 'Subir o asignar contenido aquí'
+      ov.querySelector('span')!.textContent = meta ? meta.label : 'Assign content'
+      ov.title = 'Upload or assign content here'
       ov.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -754,7 +756,7 @@ export function moveToUnusedSite(key: string) {
   persistUnused(); persistUsed(); persistRetired()
   showEmptySlot(key)
   refreshTools(key)
-  recordAudit({ section: entry.section, label: entry.label, kind: 'gestión', summary: 'Contenido movido a no usados' })
+  recordAudit({ section: entry.section, label: entry.label, kind: 'gestión', summary: 'Content moved to unused' })
 }
 
 // Elimina una tarjeta de proyecto del carrusel: archiva su imagen a "no usados"
@@ -986,18 +988,18 @@ function makeTools(key: string) {
   const tools = document.createElement('div')
   tools.className = 'cms-tools'
   if (meta.kind === 'text') {
-    if (meta.fields) tools.appendChild(toolBtn('fa-pen', 'Editar: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
-    else tools.appendChild(toolBtn('fa-pen', 'Editar: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editText', key })))
+    if (meta.fields) tools.appendChild(toolBtn('fa-pen', 'Edit: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
+    else tools.appendChild(toolBtn('fa-pen', 'Edit: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editText', key })))
     return tools
   }
   const hasContent = !!state.items[key]
   const isProject = /^proj#\d+$/.test(key)
-  if (hasContent && meta.fields) tools.appendChild(toolBtn('fa-pen', 'Editar información: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
-  tools.appendChild(toolBtn('fa-arrow-up-from-bracket', hasContent ? 'Reemplazar: ' + meta.label : 'Subir contenido: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))
+  if (hasContent && meta.fields) tools.appendChild(toolBtn('fa-pen', 'Edit info: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
+  tools.appendChild(toolBtn('fa-arrow-up-from-bracket', hasContent ? 'Replace: ' + meta.label : 'Upload content: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))
   // Proyectos: papelera que ELIMINA la tarjeta (archivando su imagen a no usados).
   // Resto: archivar a no usados (vacía el slot, conserva la tarjeta).
-  if (isProject) tools.appendChild(toolBtn('fa-trash', 'Eliminar tarjeta: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
-  else if (hasContent) tools.appendChild(toolBtn('fa-box-archive', 'Mover a no usados: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
+  if (isProject) tools.appendChild(toolBtn('fa-trash', 'Delete card: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
+  else if (hasContent) tools.appendChild(toolBtn('fa-box-archive', 'Move to unused: ' + meta.label, 'cms-tool-move', () => dispatch({ type: 'confirmMove', key })))
   return tools
 }
 
@@ -1093,5 +1095,6 @@ export function rescan() {
   }
   refreshRetired()
   syncWaveGroups()
+  applyStaticTranslations(state.lang)
 }
 

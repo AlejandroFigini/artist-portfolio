@@ -18,11 +18,11 @@ export default function Footer() {
       <div className="footer-grid">
         <div className="footer-col branding-col">
           <h2 className="footer-name">Lucia <span>Montaña</span></h2>
-          <p className="footer-role">Bachelor&apos;s Degree in Animation &amp; Video Games</p>
+          <p className="footer-role" data-i18n="footer_role">Bachelor&apos;s Degree in Animation &amp; Video Games</p>
           <FooterSocial />
         </div>
         <div className="footer-col links-col">
-          <h3 className="footer-label">Exploration</h3>
+          <h3 className="footer-label" data-i18n="footer_exploration">Exploration</h3>
           <ul className="footer-links-list">
             {EXPLORE_LINKS.map((l) => (
               <li key={l.href}>
@@ -34,19 +34,19 @@ export default function Footer() {
           </ul>
         </div>
         <div className="footer-col contact-col">
-          <h3 className="footer-label">Connect</h3>
+          <h3 className="footer-label" data-i18n="footer_connect">Connect</h3>
           <p className="contact-item"><i className="fa-solid fa-location-dot"></i> Montevideo, Uruguay</p>
           <a href="mailto:lumontana23@gmail.com" className="contact-email">
             <i className="fa-solid fa-envelope"></i> lumontana23@gmail.com
           </a>
-          <button type="button" className="cv-btn cv-btn-footer" id="cv-download-footer" title="Download CV" aria-label="Download CV">
-            <i className="fa-solid fa-file-arrow-down"></i><span>CV</span>
+          <button type="button" className="cv-btn cv-btn-footer" id="cv-download-footer" title="Download CV" aria-label="Download CV" data-i18n-title="download_cv" data-i18n-aria="download_cv">
+            <i className="fa-solid fa-file-arrow-down"></i><span data-i18n="cv">CV</span>
           </button>
         </div>
       </div>
       <div className="footer-bottom-bar">
-        <p className="footer-copyright">&copy; <span id="year">{new Date().getFullYear()}</span> Lucia Montaña | All rights reserved</p>
-        <div className="legal-dots">Please do not repost my work without authorization</div>
+        <p className="footer-copyright">&copy; <span id="year">{new Date().getFullYear()}</span> Lucia Montaña | <span data-i18n="footer_rights">All rights reserved</span></p>
+        <div className="legal-dots" data-i18n="footer_no_repost">Please do not repost my work without authorization</div>
       </div>
     </footer>
   )

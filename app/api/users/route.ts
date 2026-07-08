@@ -26,6 +26,6 @@ export async function GET(req: Request) {
     })
   } catch (err) {
     console.error('[users GET] error:', err)
-    return NextResponse.json({ success: false, error: 'Error listando usuarios' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Error listing users' }, { status: 500 })
   }
 }

@@ -11,11 +11,11 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { url?: string; newFolder?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { url, newFolder } = body
 
   if (!url || typeof url !== 'string' || !newFolder || typeof newFolder !== 'string') {
-    return NextResponse.json({ error: 'Se requieren url y newFolder' }, { status: 400 })
+    return NextResponse.json({ error: 'url and newFolder are required' }, { status: 400 })
   }
 
   try {
@@ -23,6 +23,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, newUrl })
   } catch (err) {
     console.error('[move-media] error:', err)
-    return NextResponse.json({ error: 'Error moviendo el asset' }, { status: 500 })
+    return NextResponse.json({ error: 'Error moving asset' }, { status: 500 })
   }
 }

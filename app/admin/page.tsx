@@ -3,7 +3,7 @@ import AdminDashboard from '@/components/admin/AdminDashboard'
 import CmsRoot from '@/components/cms/CmsRoot'
 
 export const metadata: Metadata = {
-  title: 'Gestión — Lucia Montaña',
+  title: 'Management — Lucia Montaña',
   robots: { index: false, follow: false },
 }
 

@@ -39,7 +39,7 @@ export function isVideo(type?: string | null, name?: string | null): boolean {
 
 export function basename(src?: string): string {
   if (!src) return ''
-  if (src.startsWith('data:')) return '(archivo subido)'
+  if (src.startsWith('data:')) return '(uploaded file)'
   try { return decodeURIComponent(src.split('/').pop()!.split('?')[0]) }
   catch { return src.split('/').pop() || '' }
 }

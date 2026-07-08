@@ -12,11 +12,11 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { urls?: string[] }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { urls } = body
 
   if (!Array.isArray(urls) || urls.length === 0) {
-    return NextResponse.json({ error: 'Se requiere un array de URLs' }, { status: 400 })
+    return NextResponse.json({ error: 'An array of URLs is required' }, { status: 400 })
   }
 
   // Limitar a 100 URLs por request para evitar abuso
@@ -27,6 +27,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ results })
   } catch (err) {
     console.error('[verify-media] error:', err)
-    return NextResponse.json({ error: 'Error verificando assets' }, { status: 500 })
+    return NextResponse.json({ error: 'Error verifying assets' }, { status: 500 })
   }
 }

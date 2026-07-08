@@ -39,13 +39,13 @@ function ProjectCard({ index }: { index: number }) {
           className="proj-card-img w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           loading="lazy" decoding="async"
           src={imgSrc || undefined}
-          alt={title || `Proyecto ${index + 1}`}
+          alt={title || `Project ${index + 1}`}
         />
         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
         {!hasImage && (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
-            <span className="text-sm tracking-widest uppercase">Sin imagen</span>
+            <span className="text-sm tracking-widest uppercase" data-i18n="no_image">No image</span>
           </div>
         )}
       </div>

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
   let body: Record<string, unknown>
   try { body = await req.json() } catch {
-    return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   if (!hasDb) return NextResponse.json({ success: true })
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('[state POST] error:', err)
-    return NextResponse.json({ error: 'Error guardando estado' }, { status: 500 })
+    return NextResponse.json({ error: 'Error saving state' }, { status: 500 })
   } finally {
     client.release()
   }

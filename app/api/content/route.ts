@@ -32,13 +32,13 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { items?: Record<string, unknown> }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const items = body.items
   if (!items || typeof items !== 'object') {
-    return NextResponse.json({ error: 'Formato inválido. Se esperaba un objeto items.' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid format. Expected an items object.' }, { status: 400 })
   }
 
-  if (!hasDb) return NextResponse.json({ success: true, message: 'Contenido guardado (mock, sin DB)' })
+  if (!hasDb) return NextResponse.json({ success: true, message: 'Content saved (mock, no DB)' })
 
   await ensureDb()
   const pool = getPool()!
@@ -65,11 +65,11 @@ export async function POST(req: Request) {
       }
     }
     await client.query('COMMIT')
-    return NextResponse.json({ success: true, message: 'Contenido guardado correctamente' })
+    return NextResponse.json({ success: true, message: 'Content saved successfully' })
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('[content POST] error:', err)
-    return NextResponse.json({ error: 'Error guardando contenido' }, { status: 500 })
+    return NextResponse.json({ error: 'Error saving content' }, { status: 500 })
   } finally {
     client.release()
   }

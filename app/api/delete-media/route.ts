@@ -11,11 +11,11 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { url?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { url } = body
 
   if (!url || typeof url !== 'string') {
-    return NextResponse.json({ error: 'URL inválida' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
   }
 
   try {
@@ -23,6 +23,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[delete-media] error:', err)
-    return NextResponse.json({ error: 'Error borrando el asset' }, { status: 500 })
+    return NextResponse.json({ error: 'Error deleting asset' }, { status: 500 })
   }
 }

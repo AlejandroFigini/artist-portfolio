@@ -47,11 +47,11 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { items?: Record<string, Record<string, unknown>> }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const incoming = body.items
   if (!incoming || typeof incoming !== 'object') {
-    return NextResponse.json({ error: 'Formato inválido. Se esperaba { items: { es, pt, fr } }.' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid format. Expected { items: { es, pt, fr } }.' }, { status: 400 })
   }
 
   // Recolectar filas válidas solo para los idiomas destino (es/pt/fr).
@@ -65,10 +65,10 @@ export async function POST(req: Request) {
     }
   }
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'No se encontraron traducciones válidas para es/pt/fr.' }, { status: 400 })
+    return NextResponse.json({ error: 'No valid translations found for es/pt/fr.' }, { status: 400 })
   }
 
-  if (!hasDb) return NextResponse.json({ success: true, imported: rows.length, message: 'Traducciones recibidas (mock, sin DB)' })
+  if (!hasDb) return NextResponse.json({ success: true, imported: rows.length, message: 'Translations received (mock, no DB)' })
 
   await ensureDb()
   const pool = getPool()!
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('[translations POST] error:', err)
-    return NextResponse.json({ error: 'Error guardando traducciones' }, { status: 500 })
+    return NextResponse.json({ error: 'Error saving translations' }, { status: 500 })
   } finally {
     client.release()
   }

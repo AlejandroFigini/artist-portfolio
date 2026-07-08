@@ -71,7 +71,7 @@ export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string
         onClick={() => setOpen((o) => !o)}
       >
         <i className="fa-solid fa-layer-group" aria-hidden="true" />
-        <span>Software</span>
+        <span data-i18n="software">Software</span>
         <i className="fa-solid fa-chevron-down sw-chev" aria-hidden="true" />
       </button>
       <ul className="sw-list" role="menu">

@@ -360,43 +360,43 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 
 const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' }> = {
-  'loader.gallop': { section: 'Configuración del sitio', label: () => 'Pantalla de carga', kind: 'video' },
-  'settings.faviconUrl': { section: 'Configuración del sitio', label: () => 'Icono de la página', kind: 'image' },
-  'hero-main.slide': { section: 'Portada', label: (n) => `Imagen Carrusel Principal #${n}`, kind: 'image' },
-  'hero-sub.slide': { section: 'Portada', label: (n) => `Imagen Carrusel Secundario #${n}`, kind: 'image' },
-  'hero.slide': { section: 'Portada', label: (n) => `Imagen Carrusel #${n}`, kind: 'image' },
-  'hero.wave': { section: 'Portada', label: (n) => `Herramienta Wave #${n}`, kind: 'image' },
-  'hero.marquee': { section: 'Portada', label: (n) => `Herramienta Wave #${n}`, kind: 'image' },
-  'soft.hero': { section: 'Portada', label: (n) => `Logo Stack Portada #${n}`, kind: 'image' },
-  'soft.global': { section: 'Animaciones', label: (n) => `Logo Stack Animaciones #${n}`, kind: 'image' },
-  'anim.bg': { section: 'Animaciones', label: (n) => `Video Fondo Animaciones #${n}`, kind: 'video' },
-  'hero.subtitle': { section: 'Portada', label: () => 'Bajada (debajo del título) — Portada', kind: 'text' },
-  'about.title': { section: 'Sobre mí', label: () => 'Título — Sobre mí', kind: 'text' },
-  'about.desc': { section: 'Sobre mí', label: () => 'Biografía — Sobre mí', kind: 'text' },
-  'about.photo': { section: 'Sobre mí', label: () => 'Foto de Lucía — Sobre mí', kind: 'image' },
-  'about.video': { section: 'Sobre mí', label: () => 'Video — Sobre mí', kind: 'video' },
-  'subtitle': { section: 'Subtítulos', label: (n) => `Subtítulo #${n}`, kind: 'text' },
-  'char': { section: 'Characters', label: (n) => `Personaje #${n}`, kind: 'image' },
-  'illustration': { section: 'Ilustraciones', label: (n) => `Ilustración #${n}`, kind: 'image' },
-  'anim.title': { section: 'Animations', label: () => 'Título de sección — Animations', kind: 'text' },
-  'anim.desc': { section: 'Animations', label: () => 'Descripción — Animations', kind: 'text' },
-  'anim.soft': { section: 'Animations', label: (n) => `Logo de software #${n}`, kind: 'image' },
-  'anim.softname': { section: 'Animations', label: (n) => `Nombre de software #${n}`, kind: 'text' },
-  'anim': { section: 'Animations', label: (n) => `Animación #${n}`, kind: 'video' },
-  'proj': { section: 'Proyectos', label: (n) => `Proyecto #${n}`, kind: 'image' },
-  'proj.soft': { section: 'Proyectos', label: (n) => `Logo de software #${n}`, kind: 'image' },
-  'char.title': { section: 'Characters', label: () => 'Título de sección — Characters', kind: 'text' },
-  'char.sectiondesc': { section: 'Characters', label: () => 'Descripción — Characters', kind: 'text' },
-  'char.soft': { section: 'Characters', label: (n) => `Logo de software #${n}`, kind: 'image' },
-  'char.softname': { section: 'Characters', label: (n) => `Nombre de software #${n}`, kind: 'text' },
-  'model3d.soft': { section: '3D Models', label: (n) => `Logo de software #${n}`, kind: 'image' },
-  'model3d.softname': { section: '3D Models', label: (n) => `Nombre de software #${n}`, kind: 'text' },
-  'model3d.heading': { section: '3D Models', label: () => 'Nombre de la sección — 3D', kind: 'text' },
-  'model3d.intro': { section: '3D Models', label: () => 'Texto introductorio — 3D', kind: 'text' },
-  'model3d.title': { section: '3D Models', label: (n) => `Título bloque #${n} — 3D`, kind: 'text' },
-  'model3d.desc': { section: '3D Models', label: (n) => `Texto bloque #${n} — 3D`, kind: 'text' },
-  'model3d': { section: '3D Models', label: (n) => `Video 3D #${n}`, kind: 'video' },
-  'model3d.gallery': { section: '3D Models', label: (n) => `Imagen 3D #${n}`, kind: 'image' },
+  'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
+  'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
+  'hero-main.slide': { section: 'Hero', label: (n) => `Main Carousel Image #${n}`, kind: 'image' },
+  'hero-sub.slide': { section: 'Hero', label: (n) => `Secondary Carousel Image #${n}`, kind: 'image' },
+  'hero.slide': { section: 'Hero', label: (n) => `Carousel Image #${n}`, kind: 'image' },
+  'hero.wave': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
+  'hero.marquee': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
+  'soft.hero': { section: 'Hero', label: (n) => `Hero Stack Logo #${n}`, kind: 'image' },
+  'soft.global': { section: 'Animations', label: (n) => `Animations Stack Logo #${n}`, kind: 'image' },
+  'anim.bg': { section: 'Animations', label: (n) => `Animations Background Video #${n}`, kind: 'video' },
+  'hero.subtitle': { section: 'Hero', label: () => 'Subtitle (below title) — Hero', kind: 'text' },
+  'about.title': { section: 'About me', label: () => 'Title — About me', kind: 'text' },
+  'about.desc': { section: 'About me', label: () => 'Biography — About me', kind: 'text' },
+  'about.photo': { section: 'About me', label: () => 'Photo — About me', kind: 'image' },
+  'about.video': { section: 'About me', label: () => 'Video — About me', kind: 'video' },
+  'subtitle': { section: 'Subtitles', label: (n) => `Subtitle #${n}`, kind: 'text' },
+  'char': { section: 'Characters', label: (n) => `Character #${n}`, kind: 'image' },
+  'illustration': { section: 'Illustrations', label: (n) => `Illustration #${n}`, kind: 'image' },
+  'anim.title': { section: 'Animations', label: () => 'Section Title — Animations', kind: 'text' },
+  'anim.desc': { section: 'Animations', label: () => 'Description — Animations', kind: 'text' },
+  'anim.soft': { section: 'Animations', label: (n) => `Software Logo #${n}`, kind: 'image' },
+  'anim.softname': { section: 'Animations', label: (n) => `Software Name #${n}`, kind: 'text' },
+  'anim': { section: 'Animations', label: (n) => `Animation #${n}`, kind: 'video' },
+  'proj': { section: 'Projects', label: (n) => `Project #${n}`, kind: 'image' },
+  'proj.soft': { section: 'Projects', label: (n) => `Software Logo #${n}`, kind: 'image' },
+  'char.title': { section: 'Characters', label: () => 'Section Title — Characters', kind: 'text' },
+  'char.sectiondesc': { section: 'Characters', label: () => 'Description — Characters', kind: 'text' },
+  'char.soft': { section: 'Characters', label: (n) => `Software Logo #${n}`, kind: 'image' },
+  'char.softname': { section: 'Characters', label: (n) => `Software Name #${n}`, kind: 'text' },
+  'model3d.soft': { section: '3D Models', label: (n) => `Software Logo #${n}`, kind: 'image' },
+  'model3d.softname': { section: '3D Models', label: (n) => `Software Name #${n}`, kind: 'text' },
+  'model3d.heading': { section: '3D Models', label: () => 'Section Name — 3D', kind: 'text' },
+  'model3d.intro': { section: '3D Models', label: () => 'Introductory Text — 3D', kind: 'text' },
+  'model3d.title': { section: '3D Models', label: (n) => `Block Title #${n} — 3D`, kind: 'text' },
+  'model3d.desc': { section: '3D Models', label: (n) => `Block Text #${n} — 3D`, kind: 'text' },
+  'model3d': { section: '3D Models', label: (n) => `3D Video #${n}`, kind: 'video' },
+  'model3d.gallery': { section: '3D Models', label: (n) => `3D Image #${n}`, kind: 'image' },
 }
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' } {
@@ -720,7 +720,7 @@ export function moveUnusedToTrash(idx: number) {
   entry.deletedAt = Date.now()
   state.trash.push(entry)
   persistUnused(); persistTrash()
-  recordAudit({ section: entry.section, label: entry.label, summary: 'Movido al basurero' })
+  recordAudit({ section: entry.section, label: entry.label, summary: 'Moved to trash' })
   // Mover en Cloudinary: sin-usar → basurero
   cloudinaryMove(entry.src || entry.dataUrl || '', 'portfolio/basurero')
 }
@@ -730,7 +730,7 @@ export function restoreTrashToUnused(idx: number) {
   if (!entry) return
   state.unused.push(entry)
   persistTrash(); persistUnused()
-  recordAudit({ section: entry.section, label: entry.label, summary: 'Restaurado desde basurero a sin usar' })
+  recordAudit({ section: entry.section, label: entry.label, summary: 'Restored from trash to unused' })
   // Mover en Cloudinary: basurero → sin-usar
   cloudinaryMove(entry.src || entry.dataUrl || '', 'portfolio/sin-usar')
 }
@@ -801,7 +801,7 @@ export function associateUnusedToContainer(unusedIdx: number, targetKey: string)
   }
   state.items[targetKey] = src
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
-  recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: 'Contenido sin usar asociado a contenedor' })
+  recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: 'Unused content associated with container' })
   // Mover en Cloudinary: sin-usar → en-uso/pagina/seccion
   cloudinaryMove(src, getCloudinaryFolder(targetMeta.section))
 }

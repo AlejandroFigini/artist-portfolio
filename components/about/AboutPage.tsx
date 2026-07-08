@@ -17,10 +17,10 @@ import { useEffect, useRef } from 'react'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const SPECS = [
-  { k: 'ROLE',      v: '3D Generalist & Animator' },
-  { k: 'BASE',      v: 'Montevideo · GMT-3' },
-  { k: 'PRACTICE',  v: 'Freelance, est. 2019' },
-  { k: 'EDUCATION', v: 'B.A. Animation' },
+  { k: 'ROLE',      v: '3D Generalist & Animator', i18nK: 'spec_role_k', i18nV: 'spec_role_v' },
+  { k: 'BASE',      v: 'Montevideo · GMT-3', i18nK: 'spec_base_k', i18nV: 'spec_base_v' },
+  { k: 'PRACTICE',  v: 'Freelance, est. 2019', i18nK: 'spec_practice_k', i18nV: 'spec_practice_v' },
+  { k: 'EDUCATION', v: 'B.A. Animation', i18nK: 'spec_edu_k', i18nV: 'spec_edu_v' },
 ]
 
 const TOOLS = [
@@ -38,24 +38,32 @@ const TIMELINE = [
     role: 'Senior 3D Generalist',
     place: 'Freelance',
     desc: 'Character direction and lookdev for animated short films and commercial pieces.',
+    i18nRole: 'tl_2024_role',
+    i18nDesc: 'tl_2024_desc',
   },
   {
     year: '2022',
     role: '3D Artist & Animator',
     place: 'Studio · Game Art',
     desc: 'Modeling, rigging, and animation pipeline for game art and motion projects.',
+    i18nRole: 'tl_2022_role',
+    i18nDesc: 'tl_2022_desc',
   },
   {
     year: '2019',
     role: 'Freelance Start',
     place: 'Montevideo',
     desc: 'Early illustration and 3D modeling commissions combining traditional techniques and digital pipeline.',
+    i18nRole: 'tl_2019_role',
+    i18nDesc: 'tl_2019_desc',
   },
   {
     year: '2017',
     role: 'B.A. in Animation',
     place: 'Education',
     desc: 'Foundation in animation, visual storytelling, and cinematic language.',
+    i18nRole: 'tl_2017_role',
+    i18nDesc: 'tl_2017_desc',
   },
 ]
 
@@ -142,7 +150,7 @@ export default function AboutPage() {
 
       {/* 1 · INTRO */}
       <header className="ab-hero ab-wrap">
-        <span className="ab-eyebrow ab-hero-eyebrow">FILE 00 — ABOUT / LUCÍA MONTAÑA</span>
+        <span className="ab-eyebrow ab-hero-eyebrow" data-i18n="ab_file_00">FILE 00 — ABOUT / LUCÍA MONTAÑA</span>
         <h1 className="ab-hero-name">
           <span className="ab-line-mask"><span className="ab-line">Lucía</span></span>
           <span className="ab-line-mask"><span className="ab-line ab-line--accent">Montaña</span></span>
@@ -153,8 +161,8 @@ export default function AboutPage() {
         </p>
         <div className="ab-hero-meta">
           <span>Montevideo · UY</span>
-          <span>3D Generalist</span>
-          <span className="ab-meta-live">Available for projects</span>
+          <span data-i18n="ab_generalist">3D Generalist</span>
+          <span className="ab-meta-live" data-i18n="ab_available">Available for projects</span>
         </div>
       </header>
 
@@ -168,11 +176,11 @@ export default function AboutPage() {
             <span className="ab-corner br" />
             {/* contenedor CMS: about.photo (engine indexa por .artist-photo-img) */}
             <img className="artist-photo-img" alt="Lucía Montaña Portrait" />
-            <figcaption className="ab-portrait-cap">FIG. 01 — Subject</figcaption>
+            <figcaption className="ab-portrait-cap" data-i18n="ab_fig_01">FIG. 01 — Subject</figcaption>
           </figure>
 
           <div className="ab-bio">
-            <span className="ab-eyebrow">// Biography</span>
+            <span className="ab-eyebrow" data-i18n="ab_bio_title">// Biography</span>
             <div className="ab-bio-text">
               <p>
                 I am <strong>Lucía Montaña</strong>. I have spent years shaping characters and environments, combining traditional techniques with a modern 3D pipeline. Every piece begins with a hand-drawn sketch and finishes lookdev&apos;d for production integration.
@@ -185,8 +193,8 @@ export default function AboutPage() {
             <ul className="ab-specs">
               {SPECS.map((s) => (
                 <li key={s.k} className="ab-spec">
-                  <span className="ab-spec-k">{s.k}</span>
-                  <span className="ab-spec-v">{s.v}</span>
+                  <span className="ab-spec-k" data-i18n={s.i18nK}>{s.k}</span>
+                  <span className="ab-spec-v" data-i18n={s.i18nV}>{s.v}</span>
                 </li>
               ))}
             </ul>
@@ -197,8 +205,8 @@ export default function AboutPage() {
       {/* 3 · SOFTWARE / TOOLKIT */}
       <section className="ab-section ab-tools ab-wrap" aria-label="Software and tools">
         <div className="ab-section-head">
-          <span className="ab-eyebrow">// Toolkit</span>
-          <h2 className="ab-section-title">Day-to-day Software</h2>
+          <span className="ab-eyebrow" data-i18n="ab_toolkit_title">// Toolkit</span>
+          <h2 className="ab-section-title" data-i18n="ab_toolkit_h2">Day-to-day Software</h2>
         </div>
         <div className="ab-tools-grid">
           {TOOLS.map((t, i) => (
@@ -214,8 +222,8 @@ export default function AboutPage() {
       {/* 4 · EXPERIENCIA / TIMELINE */}
       <section className="ab-section ab-timeline-sec ab-wrap" aria-label="Career Timeline">
         <div className="ab-section-head">
-          <span className="ab-eyebrow">// Career Timeline</span>
-          <h2 className="ab-section-title">Where I come from</h2>
+          <span className="ab-eyebrow" data-i18n="ab_timeline_title">// Career Timeline</span>
+          <h2 className="ab-section-title" data-i18n="ab_timeline_h2">Where I come from</h2>
         </div>
         <div className="ab-timeline">
           <span className="ab-tl-track" aria-hidden="true"><span className="ab-tl-fill" /></span>
@@ -224,9 +232,9 @@ export default function AboutPage() {
               <span className="ab-tl-node" aria-hidden="true" />
               <span className="ab-tl-year">{e.year}</span>
               <div className="ab-tl-content">
-                <h3 className="ab-tl-role">{e.role}</h3>
+                <h3 className="ab-tl-role" data-i18n={e.i18nRole}>{e.role}</h3>
                 <span className="ab-tl-place">{e.place}</span>
-                <p className="ab-tl-desc">{e.desc}</p>
+                <p className="ab-tl-desc" data-i18n={e.i18nDesc}>{e.desc}</p>
               </div>
             </article>
           ))}
@@ -235,15 +243,15 @@ export default function AboutPage() {
 
       {/* 5 · CONTACTO */}
       <section className="ab-section ab-contact ab-wrap" aria-label="Contact">
-        <span className="ab-eyebrow">// Contact</span>
-        <h2 className="ab-contact-title">Let&apos;s work <em>together</em>.</h2>
+        <span className="ab-eyebrow" data-i18n="ab_contact_title">// Contact</span>
+        <h2 className="ab-contact-title" data-i18n="ab_contact_h2">Let&apos;s work <em>together</em>.</h2>
         <p className="ab-contact-lede">
           Have an animation, character, or 3D project in mind? Drop me a message and let&apos;s talk.
         </p>
         <div className="ab-contact-actions">
           <a className="ab-cta" href="mailto:hola@luciamontana.com">
             <i className="fa-solid fa-paper-plane" aria-hidden="true" />
-            Get in touch
+            <span data-i18n="ab_get_in_touch">Get in touch</span>
           </a>
           <ul className="ab-socials">
             {SOCIALS.map((s) => (

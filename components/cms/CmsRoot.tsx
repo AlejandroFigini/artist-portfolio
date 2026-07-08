@@ -128,8 +128,7 @@ export default function CmsRoot() {
           .then((tr) => {
             state.translations = tr
             const lang = loadLang()
-            if (lang !== BASE_LANG) engine.setLanguage(lang)
-            else { state.lang = BASE_LANG; emit() }
+            engine.setLanguage(lang)
           })
           .catch(() => {})
       })

@@ -34,7 +34,7 @@ export const SITE_PAGES: PageDef[] = [
         id: 'favicon',
         label: 'Favicon',
         match: (e) =>
-          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon', 'Site Settings')(e) ||
+          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon', 'Site Settings', 'Site Configuration')(e) ||
           ((e.section === 'Configuración del sitio' || e.section === 'Site Configuration') && e.key === 'settings.faviconUrl'),
       },
     ],
@@ -42,7 +42,7 @@ export const SITE_PAGES: PageDef[] = [
   {
     id: 'feed', label: 'Feed', route: '/', icon: 'fa-house',
     sections: [
-      { id: 'portada', label: 'Hero / Cover', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos', 'Hero / Cover', 'Cover') },
+      { id: 'portada', label: 'Hero / Cover', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos', 'Hero / Cover', 'Cover', 'Hero', 'Subtitles') },
       { id: 'about', label: 'About me', match: bySection('Sobre mí', 'About me') },
       { id: 'animations', label: 'Animations', match: bySection('Animations', 'Animaciones') },
       { id: 'projects', label: 'Projects', match: bySection('Proyectos', 'Projects') },

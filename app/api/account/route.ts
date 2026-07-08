@@ -24,7 +24,7 @@ export async function PATCH(req: Request) {
   const me = auth.user
 
   let body: { username?: string; currentPassword?: string; newPassword?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
 
   const pool = getPool()!
   const updates: string[] = []
@@ -33,11 +33,11 @@ export async function PATCH(req: Request) {
   if (body.username !== undefined) {
     const username = String(body.username).trim()
     if (username.length < 3 || username.length > 64) {
-      return NextResponse.json({ success: false, error: 'El usuario debe tener entre 3 y 64 caracteres' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Username must be between 3 and 64 characters' }, { status: 400 })
     }
     const dup = await pool.query('SELECT 1 FROM users WHERE username = $1 AND id <> $2', [username, me.id])
     if (dup.rows.length) {
-      return NextResponse.json({ success: false, error: 'Ese nombre de usuario ya está en uso' }, { status: 409 })
+      return NextResponse.json({ success: false, error: 'Username is already in use' }, { status: 409 })
     }
     values.push(username)
     updates.push(`username = $${values.length}`)
@@ -47,12 +47,12 @@ export async function PATCH(req: Request) {
   if (body.newPassword !== undefined) {
     const newPassword = String(body.newPassword)
     if (newPassword.length < 8) {
-      return NextResponse.json({ success: false, error: 'La nueva contraseña debe tener al menos 8 caracteres' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'New password must be at least 8 characters long' }, { status: 400 })
     }
     const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
     const ok = await verifyPassword(String(body.currentPassword || ''), rows[0].password_hash)
     if (!ok) {
-      return NextResponse.json({ success: false, error: 'La contraseña actual es incorrecta' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 401 })
     }
     values.push(await hashPassword(newPassword))
     updates.push(`password_hash = $${values.length}`)
@@ -60,7 +60,7 @@ export async function PATCH(req: Request) {
   }
 
   if (!updates.length) {
-    return NextResponse.json({ success: false, error: 'Nada para actualizar' }, { status: 400 })
+    return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
   }
 
   values.push(me.id)

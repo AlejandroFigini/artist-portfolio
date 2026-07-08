@@ -13,16 +13,16 @@ export async function POST(req: Request) {
   if ('deny' in auth) return auth.deny
 
   let body: { base64Data?: string; originalSize?: number; originalName?: string; section?: string; mediaState?: 'used' | 'unused' | 'trash'; cloudinaryFolder?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { base64Data, originalSize = 0, originalName = 'archivo', section, mediaState, cloudinaryFolder } = body
 
   if (!base64Data || typeof base64Data !== 'string') {
-    return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   }
   const isVideo = base64Data.startsWith('data:video')
   const isImage = base64Data.startsWith('data:image')
   if (!isVideo && !isImage) {
-    return NextResponse.json({ error: 'Tipo de archivo no soportado' }, { status: 400 })
+    return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 })
   }
 
   try {
@@ -39,6 +39,6 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     console.error('[upload-test] error:', err)
-    return NextResponse.json({ error: 'Error subiendo el archivo' }, { status: 500 })
+    return NextResponse.json({ error: 'Error uploading file' }, { status: 500 })
   }
 }

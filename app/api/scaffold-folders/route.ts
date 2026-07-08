@@ -18,6 +18,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, ...result, total: paths.length })
   } catch (err) {
     console.error('[scaffold-folders] error:', err)
-    return NextResponse.json({ error: 'Error creando carpetas' }, { status: 500 })
+    return NextResponse.json({ error: 'Error creating folders' }, { status: 500 })
   }
 }

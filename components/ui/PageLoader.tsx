@@ -111,7 +111,7 @@ export default function PageLoader() {
             setIsPreview(false)
             setTimeout(() => setGone(true), FADE_MS)
           }}
-          aria-label="Cerrar vista previa"
+          aria-label="Close preview"
         >
           <i className="fa-solid fa-xmark" />
         </button>
