@@ -13,7 +13,7 @@ import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
 } from '@/lib/cms/store'
-import { BASE_LANG, type Lang } from '@/lib/i18n'
+import { BASE_LANG, isTranslatableEntry, type Lang } from '@/lib/i18n'
 import { basename } from '@/lib/utils'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
@@ -38,79 +38,78 @@ const txt = (e: Element | null) => (e ? (e.textContent || '').trim() : '')
 function setTxtKeepIcon(e: Element | null, v: string) {
   if (!e) return
   const icon = e.querySelector('i')
-  e.textContent = ''
-  if (icon) { e.appendChild(icon); e.appendChild(document.createTextNode(' ')) }
-  e.appendChild(document.createTextNode(v))
+  e.textContent = ' ' + v
+  if (icon) e.prepend(icon)
 }
 
 const ANIM_FIELDS: FieldDef[] = [
-  { key: 'title', label: 'Título',
+  { key: 'title', label: 'Title',
     get: (c) => txt(c.querySelector('.video-title')),
     set: (c, v) => { const e = c.querySelector('.video-title'); if (e) e.textContent = v; c.setAttribute('data-title', v) } },
-  { key: 'date', label: 'Fecha', optional: true,
+  { key: 'date', label: 'Date', optional: true,
     get: (c) => txt(c.querySelector('.video-date')) || c.getAttribute('data-date') || '',
     set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-date'), v); c.setAttribute('data-date', v) } },
-  { key: 'project', label: 'Proyecto', optional: true,
+  { key: 'project', label: 'Project', optional: true,
     get: (c) => txt(c.querySelector('.video-project')) || c.getAttribute('data-project') || '',
     set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-project'), v); c.setAttribute('data-project', v) } },
-  { key: 'inspiration', label: 'Inspiración', optional: true,
+  { key: 'inspiration', label: 'Inspiration', optional: true,
     get: (c) => c.getAttribute('data-inspiration') || '',
     set: (c, v) => c.setAttribute('data-inspiration', v) },
-  { key: 'fsdesc', label: 'Descripción (al ver en pantalla completa)', textarea: true, optional: true,
+  { key: 'fsdesc', label: 'Description (when viewing full screen)', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => c.setAttribute('data-desc', v) },
 ]
 
 const ILLU_FIELDS: FieldDef[] = [
-  { key: 'title', label: 'Título', get: (c) => c.dataset.title || '', set: (c, v) => { c.dataset.title = v } },
-  { key: 'date', label: 'Fecha', optional: true, get: (c) => c.dataset.date || '', set: (c, v) => { c.dataset.date = v } },
-  { key: 'project', label: 'Proyecto', optional: true, get: (c) => c.dataset.project || '', set: (c, v) => { c.dataset.project = v } },
-  { key: 'inspiration', label: 'Inspiración', optional: true, get: (c) => c.dataset.inspiration || '', set: (c, v) => { c.dataset.inspiration = v } },
-  { key: 'desc', label: 'Descripción (al ver en pantalla completa)', textarea: true, optional: true,
+  { key: 'title', label: 'Title', get: (c) => c.dataset.title || '', set: (c, v) => { c.dataset.title = v } },
+  { key: 'date', label: 'Date', optional: true, get: (c) => c.dataset.date || '', set: (c, v) => { c.dataset.date = v } },
+  { key: 'project', label: 'Project', optional: true, get: (c) => c.dataset.project || '', set: (c, v) => { c.dataset.project = v } },
+  { key: 'inspiration', label: 'Inspiration', optional: true, get: (c) => c.dataset.inspiration || '', set: (c, v) => { c.dataset.inspiration = v } },
+  { key: 'desc', label: 'Description (when viewing full screen)', textarea: true, optional: true,
     get: (c) => c.dataset.desc || '', set: (c, v) => { c.dataset.desc = v } },
-  { key: 'link', label: 'Link al repositorio (Instagram, ArtStation, etc.)', optional: true,
+  { key: 'link', label: 'Repository link (Instagram, ArtStation, etc.)', optional: true,
     get: (c) => c.dataset.link || '', set: (c, v) => { c.dataset.link = v } },
 ]
 
 export const PROJECT_FIELDS: FieldDef[] = [
-  { key: 'title', label: 'Título',
+  { key: 'title', label: 'Title',
     get: (c) => c.getAttribute('data-title') || '',
     set: (c, v) => { c.setAttribute('data-title', v); const e = c.querySelector('.proj-card-title'); if (e) e.textContent = v } },
-  { key: 'start_date', label: 'Fecha de inicio', optional: true,
+  { key: 'start_date', label: 'Start Date', optional: true,
     get: (c) => c.getAttribute('data-start-date') || '',
     set: (c, v) => { c.setAttribute('data-start-date', v); const e = c.querySelector('.proj-card-date'); if (e) e.textContent = v } },
-  { key: 'end_date', label: 'Fecha de finalización', optional: true,
+  { key: 'end_date', label: 'End Date', optional: true,
     get: (c) => c.getAttribute('data-end-date') || '',
     set: (c, v) => { c.setAttribute('data-end-date', v) } },
-  { key: 'duration', label: 'Duración', optional: true,
+  { key: 'duration', label: 'Duration', optional: true,
     get: (c) => c.getAttribute('data-duration') || '',
     set: (c, v) => { c.setAttribute('data-duration', v) } },
-  { key: 'theme', label: 'Temática del proyecto', optional: true,
+  { key: 'theme', label: 'Project Theme', optional: true,
     get: (c) => c.getAttribute('data-theme') || '',
     set: (c, v) => { c.setAttribute('data-theme', v) } },
-  { key: 'summary', label: 'Breve descripción', textarea: true, optional: true,
+  { key: 'summary', label: 'Short Description', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-summary') || '',
     set: (c, v) => { c.setAttribute('data-summary', v); const e = c.querySelector('.proj-card-summary'); if (e) e.textContent = v } },
-  { key: 'desc', label: 'Descripción completa', textarea: true, optional: true,
+  { key: 'desc', label: 'Full Description', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => { c.setAttribute('data-desc', v) } }
 ]
 
 const CHARACTER_FIELDS: FieldDef[] = [
-  { key: 'name', label: 'Nombre',
+  { key: 'name', label: 'Name',
     get: (c) => c.getAttribute('data-name') || '',
     set: (c, v) => { c.setAttribute('data-name', v); const e = c.querySelector('.ch-name'); if (e) e.textContent = v } },
-  { key: 'role', label: 'Rol', optional: true,
+  { key: 'role', label: 'Role', optional: true,
     get: (c) => c.getAttribute('data-role') || '',
     set: (c, v) => { c.setAttribute('data-role', v); const e = c.querySelector('.ch-role'); if (e) e.textContent = v } },
-  { key: 'desc', label: 'Descripción', textarea: true, optional: true,
+  { key: 'desc', label: 'Description', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => { c.setAttribute('data-desc', v); const e = c.querySelector('.ch-desc'); if (e) e.textContent = v } },
 ]
 
 
 const WAVE_FIELDS: FieldDef[] = [
-  { key: 'name', label: 'Nombre de Software',
+  { key: 'name', label: 'Software Name',
     get: (c) => txt(c.querySelector('.wave-text')),
     set: (c, v) => {
       const key = c.getAttribute('data-cms-key')
@@ -125,16 +124,16 @@ const WAVE_FIELDS: FieldDef[] = [
 ]
 
 const ABOUT_SPEC_FIELDS: FieldDef[] = [
-  { key: 'k', label: 'Etiqueta',
+  { key: 'k', label: 'Label',
     get: (c) => txt(c.querySelector('.about-spec-k')),
     set: (c, v) => { const e = c.querySelector('.about-spec-k'); if (e) e.textContent = v } },
-  { key: 'v', label: 'Valor',
+  { key: 'v', label: 'Value',
     get: (c) => txt(c.querySelector('.about-spec-v')),
     set: (c, v) => { const e = c.querySelector('.about-spec-v'); if (e) e.textContent = v } },
 ]
 
 const ABOUT_SOCIAL_FIELDS: FieldDef[] = [
-  { key: 'label', label: 'Nombre',
+  { key: 'label', label: 'Name',
     get: (c) => txt(c.querySelector('.about-social-label')),
     set: (c, v) => { const e = c.querySelector('.about-social-label'); if (e) e.textContent = v } },
   { key: 'url', label: 'URL',
@@ -157,67 +156,51 @@ type RegistryEntry = {
 }
 
 const REGISTRY: RegistryEntry[] = [
-  // Página de carga (loader del index — el video de galope se sube por CMS)
-  { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Configuración del sitio', label: 'Pantalla de carga' },
-  // Ajustes del sitio
-  { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Configuración del sitio', label: 'Icono de la página' },
-  // Portada
-  { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Principal)', label: (el, i) => `Imagen Carrusel Principal #${i + 1}` },
-  { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Portada (Secundario)', label: (el, i) => `Imagen Carrusel Secundario #${i + 1}` },
-  { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Portada', fields: WAVE_FIELDS, label: (el, i) => `Herramienta Wave #${(i % 11) + 1}` },
-  { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Portada', label: 'Bajada (debajo del título) — Portada' },
-  // Production Stack
-  { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animaciones', label: (el, i) => `Logo Stack Animaciones #${i + 1}` },
-  // Animaciones de fondo
-  { base: 'anim.bg', sel: '.decor-motion .decor-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animaciones', label: (el, i) => `Video Fondo Animaciones #${i + 1}` },
-  // Sobre mí
-  { base: 'about.title', sel: 'h2[data-i18n="about_title"]', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Título — Sobre mí' },
-  { base: 'about.lede', sel: '.about-lede', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Bajada (debajo del título) — Sobre mí' },
-  { base: 'about.desc', sel: '.bio-content', kind: 'text', mount: 'self', section: 'Sobre mí', label: 'Biografía — Sobre mí' },
-  { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'Sobre mí', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — Sobre mí` },
-  { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'Sobre mí', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Red social #${i + 1} — Sobre mí` },
-  { base: 'about.photo', sel: '.artist-photo-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Sobre mí', label: 'Foto de Lucía — Sobre mí' },
-  { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Sobre mí', label: 'Video / Animación — Sobre mí' },
-  // Subtítulos de sección
-  { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtítulos', label: (el) => {
+  { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Loading Screen' },
+  { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Page Favicon' },
+  { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Main)', label: (el, i) => `Main Carousel Image #${i + 1}` },
+  { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Secondary)', label: (el, i) => `Secondary Carousel Image #${i + 1}` },
+  { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Hero', fields: WAVE_FIELDS, label: (el, i) => `Wave Tool #${(i % 11) + 1}` },
+  { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Hero', label: 'Subtitle (below title) — Hero' },
+  { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animations', label: (el, i) => `Animation Stack Logo #${i + 1}` },
+  { base: 'anim.bg', sel: '.decor-motion .decor-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animations', label: (el, i) => `Animation Background Video #${i + 1}` },
+  { base: 'about.title', sel: 'h2[data-i18n="about_title"]', kind: 'text', mount: 'self', section: 'About me', label: 'Title — About me' },
+  { base: 'about.lede', sel: '.about-lede', kind: 'text', mount: 'self', section: 'About me', label: 'Subtitle (below title) — About me' },
+  { base: 'about.desc', sel: '.bio-content', kind: 'text', mount: 'self', section: 'About me', label: 'Biography — About me' },
+  { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — About me` },
+  { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
+  { base: 'about.photo', sel: '.artist-photo-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'About me', label: 'Lucia Photo — About me' },
+  { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
+  { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')
     const h = sec && sec.querySelector<HTMLElement>('.section-typewriter')
-    return 'Subtítulo — ' + (h ? (h.dataset.text || h.textContent || '').trim() : 'sección')
+    return 'Subtitle — ' + (h ? (h.dataset.text || h.textContent || '').trim() : 'section')
   } },
-  // Characters (sección nueva — paneles con scroll horizontal, dinámica vía CMS)
-  { base: 'char.title', sel: '.ch-showcase__title', kind: 'text', mount: 'self', section: 'Characters', label: 'Título de sección — Characters' },
-  { base: 'char.sectiondesc', sel: '.ch-showcase__desc', kind: 'text', mount: 'self', section: 'Characters', label: 'Descripción — Characters' },
-  { base: 'char.soft', sel: '.char-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Characters', label: (el, i) => `Logo de software #${i + 1}` },
-  { base: 'char.softname', sel: '.char-soft-name', kind: 'text', mount: 'self', section: 'Characters', label: (el, i) => `Nombre de software #${i + 1}` },
-  // Retrato del personaje: la key explícita (char#i) la fija el componente; el
-  // motor la respeta. Campos (nombre/rol/desc) viven en el contenedor .ch-panel.
-  { base: 'char', sel: '.ch-panel .ch-portrait', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', container: '.ch-panel', fields: CHARACTER_FIELDS, label: (el, i) => `Personaje #${i + 1}` },
-  // Concepts del personaje: key explícita (char#i::cM) fijada por el componente;
-  // host de edición/overlay = la celda contenedora (.ch-concept-cell).
+  { base: 'char.title', sel: '.ch-showcase__title', kind: 'text', mount: 'self', section: 'Characters', label: 'Section Title — Characters' },
+  { base: 'char.sectiondesc', sel: '.ch-showcase__desc', kind: 'text', mount: 'self', section: 'Characters', label: 'Description — Characters' },
+  { base: 'char.soft', sel: '.char-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Characters', label: (el, i) => `Software Logo #${i + 1}` },
+  { base: 'char.softname', sel: '.char-soft-name', kind: 'text', mount: 'self', section: 'Characters', label: (el, i) => `Software Name #${i + 1}` },
+  { base: 'char', sel: '.ch-panel .ch-portrait', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', container: '.ch-panel', fields: CHARACTER_FIELDS, label: (el, i) => `Character #${i + 1}` },
   { base: 'char.concept', sel: '.ch-panel .ch-concept', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', label: () => 'Concept' },
-  // Illustrations (sección nueva — contenedores fijos en .illu-masonry)
-  { base: 'illustration', sel: '.illu-masonry .illu-cell__img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Ilustraciones', container: '.illu-cell', fields: ILLU_FIELDS, label: (el, i) => `Ilustración #${i + 1}` },
-  // Animations
-  { base: 'anim.title', sel: '.anim-showcase__title', kind: 'text', mount: 'self', section: 'Animations', label: 'Título de sección — Animations' },
-  { base: 'anim.desc', sel: '.anim-showcase__desc', kind: 'text', mount: 'self', section: 'Animations', label: 'Descripción — Animations' },
-  { base: 'anim.soft', sel: '.anim-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Animations', label: (el, i) => `Logo de software #${i + 1}` },
-  { base: 'anim.softname', sel: '.anim-soft-name', kind: 'text', mount: 'self', section: 'Animations', label: (el, i) => `Nombre de software #${i + 1}` },
-  { base: 'anim', sel: '.animations-grid .anim-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animations', container: '.animation-item', fields: ANIM_FIELDS, label: (el, i) => `Animación #${i + 1}` },
-  // Projects (carrusel horizontal entre Animations y Character Design)
-  { base: 'proj.title', sel: '.proj-showcase__title', kind: 'text', mount: 'self', section: 'Proyectos', label: 'Título de sección — Proyectos' },
-  { base: 'proj.desc', sel: '.proj-showcase__desc', kind: 'text', mount: 'self', section: 'Proyectos', label: 'Descripción — Proyectos' },
-  { base: 'proj.soft', sel: '.proj-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Proyectos', label: (el, i) => `Logo de software #${i + 1}` },
-  { base: 'proj.softname', sel: '.proj-soft-name', kind: 'text', mount: 'self', section: 'Proyectos', label: (el, i) => `Nombre de software #${i + 1}` },
-  { base: 'proj', sel: '.proj-showcase .proj-card-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Proyectos', container: '.project-item', fields: PROJECT_FIELDS, label: (el, i) => `Proyecto #${i + 1}` },
-  // 3D Models (selectores → markup .m3d- de ModelsShowcase.tsx; bases conservadas)
-  { base: 'model3d.soft', sel: '.model3d-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: '3D Models', label: (el, i) => `Logo de software #${i + 1}` },
-  { base: 'model3d.softname', sel: '.model3d-soft-name', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Nombre de software #${i + 1}` },
-  { base: 'model3d.heading', sel: '.m3d-showcase__title', kind: 'text', mount: 'self', section: '3D Models', label: 'Nombre de la sección — 3D' },
-  { base: 'model3d.intro', sel: '.m3d-showcase__desc', kind: 'text', mount: 'self', section: '3D Models', label: 'Texto introductorio — 3D' },
-  { base: 'model3d.title', sel: '.m3d-text__title', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Título bloque #${i + 1} — 3D` },
-  { base: 'model3d.desc', sel: '.m3d-text__body', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Texto bloque #${i + 1} — 3D` },
-  { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `Video 3D #${i + 1}` },
-  { base: 'model3d.gallery', sel: '.m3d-gallery__img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `Imagen 3D #${i + 1}` },
+  { base: 'illustration', sel: '.illu-masonry .illu-cell__img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Illustrations', container: '.illu-cell', fields: ILLU_FIELDS, label: (el, i) => `Illustration #${i + 1}` },
+  { base: 'anim.title', sel: '.anim-showcase__title', kind: 'text', mount: 'self', section: 'Animations', label: 'Section Title — Animations' },
+  { base: 'anim.desc', sel: '.anim-showcase__desc', kind: 'text', mount: 'self', section: 'Animations', label: 'Description — Animations' },
+  { base: 'anim.soft', sel: '.anim-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Animations', label: (el, i) => `Software Logo #${i + 1}` },
+  { base: 'anim.softname', sel: '.anim-soft-name', kind: 'text', mount: 'self', section: 'Animations', label: (el, i) => `Software Name #${i + 1}` },
+  { base: 'anim', sel: '.animations-grid .anim-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'Animations', container: '.animation-item', fields: ANIM_FIELDS, label: (el, i) => `Animation #${i + 1}` },
+  { base: 'proj.title', sel: '.proj-showcase__title', kind: 'text', mount: 'self', section: 'Projects', label: 'Section Title — Projects' },
+  { base: 'proj.desc', sel: '.proj-showcase__desc', kind: 'text', mount: 'self', section: 'Projects', label: 'Description — Projects' },
+  { base: 'proj.soft', sel: '.proj-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Projects', label: (el, i) => `Software Logo #${i + 1}` },
+  { base: 'proj.softname', sel: '.proj-soft-name', kind: 'text', mount: 'self', section: 'Projects', label: (el, i) => `Software Name #${i + 1}` },
+  { base: 'proj', sel: '.proj-showcase .proj-card-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Projects', container: '.project-item', fields: PROJECT_FIELDS, label: (el, i) => `Project #${i + 1}` },
+  { base: 'model3d.soft', sel: '.model3d-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: '3D Models', label: (el, i) => `Software Logo #${i + 1}` },
+  { base: 'model3d.softname', sel: '.model3d-soft-name', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Software Name #${i + 1}` },
+  { base: 'model3d.heading', sel: '.m3d-showcase__title', kind: 'text', mount: 'self', section: '3D Models', label: 'Section Name — 3D' },
+  { base: 'model3d.intro', sel: '.m3d-showcase__desc', kind: 'text', mount: 'self', section: '3D Models', label: 'Introductory Text — 3D' },
+  { base: 'model3d.title', sel: '.m3d-text__title', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Block Title #${i + 1} — 3D` },
+  { base: 'model3d.desc', sel: '.m3d-text__body', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Block Text #${i + 1} — 3D` },
+  { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `3D Video #${i + 1}` },
+  { base: 'model3d.gallery', sel: '.m3d-gallery__img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `3D Image #${i + 1}` },
 ]
 
 // ----- Índices del motor ------------------------------------------------------
@@ -480,11 +463,40 @@ export function hydrate() {
 /** Claves de texto conocidas: campos (key::campo) + contenedores de texto. */
 function textKeys(extra: Record<string, string>): Set<string> {
   const keys = new Set<string>()
-  Object.keys(state.items).forEach((k) => {
-    if (fieldSetters[k] || typeByKey[k] === 'text') keys.add(k)
-  })
+  Object.keys(state.items).forEach((k) => keys.add(k))
+  Object.keys(typeByKey).forEach((k) => { if (typeByKey[k] === 'text') keys.add(k) })
+  Object.keys(fieldSetters).forEach((k) => keys.add(k))
   Object.keys(extra).forEach((k) => keys.add(k))
   return keys
+}
+
+/** Collects all translatable text from store, DOM elements, and container fields. */
+export function getAllTranslatableItems(baseFromStore: Record<string, string> = {}): Record<string, string> {
+  const result: Record<string, string> = { ...baseFromStore }
+  // 1. All existing state.items that are translatable
+  for (const [k, v] of Object.entries(state.items)) {
+    if (typeof v === 'string' && isTranslatableEntry(k, v)) result[k] = v
+  }
+  // 2. All text elements registered in elementsByKey / metaByKey
+  for (const [k, el] of Object.entries(elementsByKey)) {
+    const meta = metaByKey[k]
+    if (!meta) continue
+    if (meta.kind === 'text') {
+      const val = state.items[k] || (el ? (el.getAttribute('data-text') || el.textContent || '').trim() : '')
+      if (val && isTranslatableEntry(k, val)) result[k] = val
+    }
+    if (meta.fields) {
+      const cont = meta.container ? el.closest<HTMLElement>(meta.container) : el
+      meta.fields.forEach((f) => {
+        const compKey = k + '::' + f.key
+        const val = state.items[compKey] != null ? state.items[compKey] : (cont ? f.get(cont) : '')
+        if (val && typeof val === 'string' && isTranslatableEntry(compKey, val)) {
+          result[compKey] = val
+        }
+      })
+    }
+  }
+  return result
 }
 
 /* Aplica un idioma a todo el texto del DOM. base (es) restaura state.items;

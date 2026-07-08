@@ -32,10 +32,10 @@ export default function SocialSettings() {
       const map: Record<string, string> = {}
       SOCIAL_NETWORKS.forEach((n) => { map[n.id] = items[socialKey(n.id)] })
       setLinks(map)
-      recordAudit({ section: 'Redes sociales', label: 'Enlaces', summary: 'Enlaces sociales actualizados' })
-      toast('Enlaces guardados')
+      recordAudit({ section: 'Social networks', label: 'Links', summary: 'Social links updated' })
+      toast('Links saved')
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error guardando', 'error')
+      toast(e instanceof Error ? e.message : 'Error saving', 'error')
     } finally {
       setSaving(false)
     }
@@ -44,11 +44,11 @@ export default function SocialSettings() {
   return (
     <div className="admin-card" id="ajustes-social">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-share-nodes"></i> Redes sociales</h2>
+        <h2><i className="fa-solid fa-share-nodes"></i> Social Networks</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Definí los enlaces a tus redes. Se aplican a los iconos del menú,
-        el pie de página y cualquier sección que redirija a tus redes. Dejá un campo vacío para ocultar esa red.
+        <i className="fa-solid fa-circle-info"></i> Define links to your social networks. They apply to menu icons,
+        footer, and any section linking to your socials. Leave a field empty to hide that network.
       </p>
       <div className="social-settings">
         {SOCIAL_NETWORKS.map((n) => (
@@ -66,7 +66,7 @@ export default function SocialSettings() {
       </div>
       <div className="admin-quick" style={{ marginTop: '1.5rem' }}>
         <button type="button" className="cms-btn cms-btn--primary" onClick={save} disabled={saving}>
-          <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar enlaces'}
+          <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save links'}
         </button>
       </div>
     </div>

@@ -57,18 +57,18 @@ function ProjectCard({ index }: { index: number }) {
         <div className="flex items-center gap-3" style={{ marginBottom: '1.25rem' }}>
           <span className="w-8 h-[1px] bg-[var(--accent)]"></span>
           <span className="proj-card-date text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-            {startDate || 'En curso'}
+            {startDate || 'In progress'}
           </span>
         </div>
 
         {/* 2. Título */}
         <h3 className="proj-card-title text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300" style={{ marginBottom: '1rem' }}>
-          {title || `Título del Proyecto ${index + 1}`}
+          {title || `Project Title ${index + 1}`}
         </h3>
 
         {/* 3. Breve descriptivo */}
         <p className="proj-card-summary text-gray-500 text-[0.95rem] leading-relaxed line-clamp-3" style={{ marginBottom: '2.5rem' }}>
-          {summary || "Este es un texto breve descriptivo de prueba para el proyecto. Aquí se mostrará el resumen real una vez que agregues el contenido desde el panel."}
+          {summary || "This is a brief descriptive placeholder text for the project. The actual summary will appear here once you add content from the panel."}
         </p>
 
         {/* 4. Botón Leer Más (fijo abajo) */}
@@ -78,7 +78,7 @@ function ProjectCard({ index }: { index: number }) {
             type="button"
             onClick={(e) => e.preventDefault()}
           >
-            Leer más
+            Read more
             <i className="fa-solid fa-arrow-right text-[9px] transition-transform duration-300 group-hover/link:translate-x-1.5" />
             <span className="absolute left-0 bottom-0 w-full h-[1px] bg-[var(--accent)] origin-left scale-x-0 transition-transform duration-300 ease-out group-hover/link:scale-x-100" />
           </button>
@@ -183,7 +183,7 @@ export default function ProjectsShowcase() {
           </h2>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <p className="proj-showcase__desc text-gray-600 max-w-[60ch] text-base md:text-lg">
-              Una selección de mis proyectos más destacados.
+              A curated selection of my featured projects and artwork.
             </p>
             {isAdmin && (
               <button 

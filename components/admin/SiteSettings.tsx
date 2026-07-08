@@ -15,12 +15,12 @@ import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL, validateFile } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
+import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey, getAllTranslatableItems } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
-import { isTranslatableEntry } from '@/lib/i18n'
+import { isTranslatableEntry, BASE_LANG } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
 
-const CV_MAX_BYTES = 10 * 1024 * 1024
+export const CV_MAX_BYTES = 10 * 1024 * 1024
 
 // Mapea el patch (camelCase) a claves cms_data settings.*
 function toItems(patch: Partial<SiteSettings>): Record<string, string> {
@@ -41,7 +41,7 @@ function toItems(patch: Partial<SiteSettings>): Record<string, string> {
 /* Persiste un patch de ajustes: POST /api/content (sube dataURLs → URLs),
    canonicaliza desde /api/site (para no dejar base64 en localStorage) y
    refleja en vivo vía setSettings. Devuelve los valores finales. */
-function useSaveSettings() {
+export function useSaveSettings() {
   const { settings, setSettings } = useSiteSettings()
   const toast = useToast()
 
@@ -49,7 +49,7 @@ function useSaveSettings() {
     try {
       await saveContent(toItems(patch))
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error guardando', 'error')
+      toast(e instanceof Error ? e.message : 'Error saving settings', 'error')
       return null
     }
     // canonicalizar (URLs finales del backend); fallback a lo optimista
@@ -83,7 +83,7 @@ function useSaveSettings() {
         }
         const mm = state.mediaMeta['loader.gallop'] || state.mediaMeta[final.loaderVideo]
         state.usedContent['loader.gallop'] = {
-          key: 'loader.gallop', label: 'Video de fondo (.loader-gallop)', section: 'Configuración del sitio', kind: 'video',
+          key: 'loader.gallop', label: 'Background Video (.loader-gallop)', section: 'Site Settings', kind: 'video',
           src: final.loaderVideo, name: mm?.name || 'video', size: mm?.size ?? null, original: false,
           ts: Date.now(), type: mm?.type || 'video/webm',
         }
@@ -106,7 +106,7 @@ function useSaveSettings() {
         }
         const mm = state.mediaMeta['settings.faviconUrl'] || state.mediaMeta[final.faviconUrl]
         state.usedContent['settings.faviconUrl'] = {
-          key: 'settings.faviconUrl', label: 'Icono de pestaña (Favicon)', section: 'Configuración del sitio', kind: 'image',
+          key: 'settings.faviconUrl', label: 'Favicon (.favicon-preview-img)', section: 'Site Settings', kind: 'image',
           src: final.faviconUrl, name: mm?.name || 'favicon', size: mm?.size ?? null, original: false,
           ts: Date.now(), type: mm?.type || 'image/webp',
         }
@@ -122,8 +122,8 @@ function useSaveSettings() {
     }
     persistUsed(); persistUnused()
     persistOverridesLocal()
-    recordAudit({ section: 'Ajustes del sitio', label: 'Ajustes', summary })
-    toast('Guardado')
+    recordAudit({ section: 'Site Settings', label: 'Settings', summary })
+    toast('Saved')
     return final
   }
 }
@@ -161,7 +161,7 @@ export function LoaderSettings() {
     await save({
       loaderDuration: String(parseFloat(duration) || 3),
       loaderVideo: currentVideo,
-    }, 'Configuración de pantalla de carga actualizada')
+    }, 'Loading screen settings updated')
     setSaving(false)
   }
 
@@ -174,10 +174,10 @@ export function LoaderSettings() {
   return (
     <div className="admin-card" id="ajustes-loader">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-spinner"></i> Pantalla de carga</h2>
+        <h2><i className="fa-solid fa-spinner"></i> Loading Screen</h2>
       </div>
       <p className="cms-admin-sub">
-        Personaliza el video de introducción y su tiempo en pantalla.
+        Customize the introductory loading video and its duration.
       </p>
       <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
@@ -214,7 +214,7 @@ export function LoaderSettings() {
         </div>
         <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <label className="setting-item" style={{ maxWidth: 300 }}>
-            <span>Duración (segundos)</span>
+            <span>Duration (seconds)</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="number"
@@ -236,14 +236,14 @@ export function LoaderSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save configuration'}
             </button>
             <button
               type="button"
               className="cms-btn cms-btn--primary"
               onClick={onPreview}
             >
-              <i className="fa-solid fa-play"></i> Vista previa
+              <i className="fa-solid fa-play"></i> Preview
             </button>
           </div>
         </div>
@@ -280,17 +280,17 @@ export function FaviconSettings() {
 
   const onSaveConfiguration = async () => {
     setSaving(true)
-    await save({ faviconUrl: currentFavicon }, 'Icono de la página actualizado')
+    await save({ faviconUrl: currentFavicon }, 'Page favicon updated')
     setSaving(false)
   }
 
   return (
     <div className="admin-card" id="ajustes-favicon">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-compass"></i> Icono de la página (Favicon)</h2>
+        <h2><i className="fa-solid fa-compass"></i> Page Favicon</h2>
       </div>
       <p className="cms-admin-sub">
-        Personaliza la imagen que aparecerá en la pestaña del navegador y marcadores.
+        Customize the icon displayed in browser tabs and bookmarks.
       </p>
       <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
@@ -322,10 +322,10 @@ export function FaviconSettings() {
         <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-              {currentFavicon ? 'Icono personalizado activo' : 'Icono por defecto (/favicon.ico)'}
+              {currentFavicon ? 'Custom favicon active' : 'Default favicon (/favicon.ico)'}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-              {isChanged ? 'Cambio pendiente de guardar...' : 'Se muestra en todas las pestañas y marcadores'}
+              {isChanged ? 'Unsaved changes pending...' : 'Displayed in all tabs and bookmarks'}
             </div>
           </div>
           <div>
@@ -335,7 +335,7 @@ export function FaviconSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save configuration'}
             </button>
           </div>
         </div>
@@ -353,41 +353,41 @@ export function CvSettings() {
   const [saving, setSaving] = useState(false)
 
   const upload = async (file: File) => {
-    if (file.type !== 'application/pdf') { toast('El CV debe ser un PDF.', 'error'); return }
-    if (file.size > CV_MAX_BYTES) { toast('El PDF supera el límite de 10 MB.', 'error'); return }
+    if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
+    if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
     setSaving(true)
     const dataUrl = await fileToDataURL(file)
-    await save({ cvUrl: dataUrl, cvName: file.name }, `CV actualizado (${file.name})`)
+    await save({ cvUrl: dataUrl, cvName: file.name }, `CV updated (${file.name})`)
     setSaving(false)
   }
 
   const remove = async () => {
     setSaving(true)
-    await save({ cvUrl: '', cvName: '' }, 'CV quitado')
+    await save({ cvUrl: '', cvName: '' }, 'CV removed')
     setSaving(false)
   }
 
   return (
     <div className="admin-card" id="ajustes-cv">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-file-pdf"></i> Curriculum (CV)</h2>
+        <h2><i className="fa-solid fa-file-pdf"></i> Curriculum Vitae (CV)</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Subí el CV en PDF. Es el archivo que descargan el botón &quot;CV&quot;
-        del menú y el del panel de ajustes, en todas las páginas.
+        <i className="fa-solid fa-circle-info"></i> Upload your CV in PDF format. This file is downloaded from the &quot;CV&quot;
+        button in the menu and settings panel across all pages.
       </p>
       {settings.cvUrl ? (
         <div className="site-setting-file">
           <i className="fa-solid fa-file-pdf"></i>
           <a href={settings.cvUrl} target="_blank" rel="noopener noreferrer">{settings.cvName || 'CV.pdf'}</a>
-          <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Activo</span>
+          <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Active</span>
         </div>
       ) : (
-        <p className="cms-admin-sub">Todavía no hay un CV cargado.</p>
+        <p className="cms-admin-sub">No CV uploaded yet.</p>
       )}
       <div className="admin-quick" style={{ marginTop: '1.5rem' }}>
         <label className="cms-btn cms-btn--primary" style={{ cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-          <i className="fa-solid fa-file-arrow-up"></i> {saving ? 'Subiendo…' : (settings.cvUrl ? 'Reemplazar CV' : 'Subir CV')}
+          <i className="fa-solid fa-file-arrow-up"></i> {saving ? 'Uploading…' : (settings.cvUrl ? 'Replace CV' : 'Upload CV')}
           <input
             type="file" accept="application/pdf" style={{ display: 'none' }} disabled={saving}
             onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f) }}
@@ -395,7 +395,7 @@ export function CvSettings() {
         </label>
         {settings.cvUrl && (
           <button type="button" className="cms-btn" onClick={remove} disabled={saving}>
-            <i className="fa-solid fa-trash"></i> Quitar CV
+            <i className="fa-solid fa-trash"></i> Remove CV
           </button>
         )}
       </div>
@@ -410,28 +410,23 @@ export function TranslationSettings() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const onExport = async () => {
-    // Base ES = BD + estado vivo del CMS (texto recién editado que puede no
-    // haber llegado aún a cms_data). El filtro excluye media/URLs/settings.
     const server = await getTranslations()
-    const es: Record<string, string> = { ...(server.es || {}) }
-    for (const [key, value] of Object.entries(state.items)) {
-      if (typeof value === 'string' && isTranslatableEntry(key, value)) es[key] = value
-    }
-    if (Object.keys(es).length === 0) {
-      toast('No hay texto para traducir todavía. Cargá contenido en español primero.', 'error')
+    const baseItems = getAllTranslatableItems(server[BASE_LANG] || {})
+    if (Object.keys(baseItems).length === 0) {
+      toast('No text available for translation yet. Add English content first.', 'error')
       return
     }
     const prompt = [
-      'Traduce el siguiente contenido de un portfolio de artista (animación, ilustración y 3D) del español a inglés (en), portugués (pt) y francés (fr).',
-      'Mantené un tono profesional y artístico. No traduzcas nombres propios ni marcas.',
+      'Translate the following artist portfolio content (animation, illustration, and 3D) from English (en) to Spanish (es), Portuguese (pt), and French (fr).',
+      'Maintain a professional and artistic tone. Do not translate proper names or software brands.',
       '',
-      'Respondé SOLO con un JSON válido, sin texto extra ni markdown, con esta estructura exacta (mismas claves que el original en cada idioma):',
-      '{ "items": { "en": { ... }, "pt": { ... }, "fr": { ... } } }',
+      'Respond ONLY with valid JSON, without extra text or markdown formatting, with this exact structure (same keys as the original for each language):',
+      '{ "items": { "es": { ... }, "pt": { ... }, "fr": { ... } } }',
       '',
-      'Guardá tu respuesta como archivo .json e importalo en el panel con "Importar traducciones".',
+      'Save your response as a .json file and import it in the panel using "Import translations".',
       '',
-      '--- CONTENIDO (español) ---',
-      JSON.stringify({ items: { es } }, null, 2),
+      '--- CONTENT (English) ---',
+      JSON.stringify({ items: { [BASE_LANG]: baseItems } }, null, 2),
     ].join('\n')
     const blob = new Blob([prompt], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
@@ -440,38 +435,38 @@ export function TranslationSettings() {
     a.download = 'translations-prompt.txt'
     a.click()
     URL.revokeObjectURL(url)
-    toast(`Prompt exportado con ${Object.keys(es).length} textos. Pegalo entero en Claude.`)
+    toast(`Prompt exported with ${Object.keys(baseItems).length} texts. Paste it entirely into Claude.`)
   }
 
   const onImport = async (file: File) => {
     let parsed: { items?: Record<string, Record<string, string>> }
-    try { parsed = JSON.parse(await file.text()) } catch { toast('Archivo JSON inválido', 'error'); return }
+    try { parsed = JSON.parse(await file.text()) } catch { toast('Invalid JSON file', 'error'); return }
     const items = parsed.items || (parsed as Record<string, Record<string, string>>)
     try {
       const { imported } = await importTranslations(items)
       state.translations = await getTranslations()
       setLanguage(state.lang) // reaplica con las traducciones nuevas
-      toast(`${imported} traducciones importadas`)
+      toast(`${imported} translations imported`)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error importando', 'error')
+      toast(e instanceof Error ? e.message : 'Error importing translations', 'error')
     }
   }
 
   return (
     <div className="admin-card" id="ajustes-traducciones">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-language"></i> Traducciones</h2>
+        <h2><i className="fa-solid fa-language"></i> Translations</h2>
       </div>
       <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Exportá el prompt listo (instrucciones + texto del sitio),
-        pegalo entero en Claude, y después importá el JSON que te devuelva (inglés, portugués y francés).
+        <i className="fa-solid fa-circle-info"></i> Export the translation prompt (instructions + site text),
+        paste it entirely into Claude, and then import the resulting JSON (Spanish, Portuguese, and French).
       </p>
       <div className="admin-quick" style={{ marginTop: '1rem' }}>
         <button type="button" className="cms-btn" onClick={onExport}>
-          <i className="fa-solid fa-download"></i> Exportar para traducir
+          <i className="fa-solid fa-download"></i> Export for translation
         </button>
         <button type="button" className="cms-btn cms-btn--primary" onClick={() => fileRef.current?.click()}>
-          <i className="fa-solid fa-upload"></i> Importar traducciones
+          <i className="fa-solid fa-upload"></i> Import translations
         </button>
         <input
           ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }}
@@ -479,7 +474,7 @@ export function TranslationSettings() {
         />
       </div>
       <p className="cms-admin-sub" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
-        Idioma base: Español. Los nuevos contenedores de texto se incluyen automáticamente en la próxima exportación.
+        Base language: English. New text containers are automatically included in the next export.
       </p>
     </div>
   )

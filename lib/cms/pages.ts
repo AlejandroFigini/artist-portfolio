@@ -21,34 +21,34 @@ const bySection = (...names: string[]) => (e: TreeEntry) => names.includes(e.sec
 // placeholders hasta que esas páginas existan.
 export const SITE_PAGES: PageDef[] = [
   {
-    id: 'config', label: 'Configuración del sitio', route: '/admin', icon: 'fa-gear',
+    id: 'config', label: 'Site Configuration', route: '/admin', icon: 'fa-gear',
     sections: [
       {
         id: 'loader',
-        label: 'Pantalla de carga',
+        label: 'Loading Screen',
         match: (e) =>
-          bySection('Página de carga', 'Pantalla de carga')(e) ||
-          (e.section === 'Configuración del sitio' && e.key === 'loader.gallop'),
+          bySection('Página de carga', 'Pantalla de carga', 'Loading Screen')(e) ||
+          ((e.section === 'Configuración del sitio' || e.section === 'Site Configuration') && e.key === 'loader.gallop'),
       },
       {
         id: 'favicon',
-        label: 'Icono de la página',
+        label: 'Favicon',
         match: (e) =>
-          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon')(e) ||
-          (e.section === 'Configuración del sitio' && e.key === 'settings.faviconUrl'),
+          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon', 'Site Settings')(e) ||
+          ((e.section === 'Configuración del sitio' || e.section === 'Site Configuration') && e.key === 'settings.faviconUrl'),
       },
     ],
   },
   {
     id: 'feed', label: 'Feed', route: '/', icon: 'fa-house',
     sections: [
-      { id: 'portada', label: 'Portada', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos') },
-      { id: 'about', label: 'Sobre mí', match: bySection('Sobre mí') },
+      { id: 'portada', label: 'Hero / Cover', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos', 'Hero / Cover', 'Cover') },
+      { id: 'about', label: 'About me', match: bySection('Sobre mí', 'About me') },
       { id: 'animations', label: 'Animations', match: bySection('Animations', 'Animaciones') },
-      { id: 'projects', label: 'Projects', match: bySection('Proyectos') },
+      { id: 'projects', label: 'Projects', match: bySection('Proyectos', 'Projects') },
       { id: 'characters', label: 'Characters', match: bySection('Characters') },
       { id: 'models3d', label: '3D Models', match: bySection('3D Models') },
-      { id: 'illustrations', label: 'Ilustraciones', match: bySection('Ilustraciones') },
+      { id: 'illustrations', label: 'Illustrations', match: bySection('Ilustraciones', 'Illustrations') },
     ],
   },
   { id: 'illustrations', label: 'Illustrations', route: '/illustrations', icon: 'fa-paintbrush', sections: [] },
@@ -81,7 +81,7 @@ export function buildPageTree<T extends TreeEntry>(arr: T[]): PageNode<T>[] {
   const unmatched = arr.filter((e) => !matched.has(e))
   const feed = pages.find((p) => p.id === 'feed')
   if (unmatched.length && feed) {
-    feed.sections.push({ id: 'otros', label: 'Otros', items: unmatched, count: unmatched.length, size: sumSizes(unmatched) })
+    feed.sections.push({ id: 'otros', label: 'Other', items: unmatched, count: unmatched.length, size: sumSizes(unmatched) })
   }
   pages.forEach((p) => {
     const allItems = p.sections.flatMap((s) => s.items)

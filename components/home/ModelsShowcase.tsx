@@ -20,16 +20,16 @@ const AUTOPLAY_MS = 5000
 /* Bloques de texto (3). Contenido por defecto, editable desde el CMS. */
 const TEXT_BLOCKS: { title: string; body: string }[] = [
   {
-    title: 'Proceso',
-    body: 'Del concepto al modelo final: blocking de formas, escultura, retopología, UVs y texturizado. Cada pieza se construye con topología limpia y materiales listos para producción.',
+    title: 'Process',
+    body: 'From concept to final model: shape blocking, sculpting, retopology, UVs, and texturing. Every piece is built with clean topology and production-ready materials.',
   },
   {
-    title: 'Enfoque',
-    body: 'Personajes, props y entornos con foco en silueta, proporción y lectura de volumen. La estética guía la técnica — no al revés.',
+    title: 'Approach',
+    body: 'Characters, props, and environments focused on silhouette, proportion, and volume readability. Aesthetics drive the technique — not the other way around.',
   },
   {
-    title: 'Herramientas',
-    body: 'Blender y ZBrush para modelado y escultura; Substance para texturizado PBR; render y lookdev para integrar cada modelo en su escena.',
+    title: 'Tools',
+    body: 'Blender and ZBrush for modeling and sculpting; Substance for PBR texturing; rendering and lookdev to integrate each model into its scene.',
   },
 ]
 
@@ -388,8 +388,8 @@ export default function ModelsShowcase() {
           <span className="m3d-showcase__fig">FIG. 05 — Models</span>
           <h2 id="m3d-showcase-title" className="m3d-showcase__title">3D</h2>
           <p className="m3d-showcase__desc">
-            Modelado y escultura digital — personajes, props y entornos
-            construidos con foco en forma, topología y materiales para producción.
+            Digital modeling and sculpting — characters, props, and environments
+            built with a focus on form, topology, and production-ready materials.
           </p>
           <SoftwareDropdown prefix="model3d" />
         </div>

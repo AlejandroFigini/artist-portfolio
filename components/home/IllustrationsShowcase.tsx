@@ -98,8 +98,8 @@ export default function IllustrationsShowcase() {
           <span className="illu-showcase__fig">FIG. 06 — Illustration</span>
           <h2 id="illu-showcase-title" className="illu-showcase__title">Illustrations</h2>
           <p className="illu-showcase__desc">
-            Una colección de ilustraciones — exploraciones de color, forma y
-            narrativa visual a través de personajes, escenas y estudios.
+            A collection of illustrations — color, shape, and visual storytelling
+            explorations through characters, scenes, and studies.
           </p>
         </div>
 

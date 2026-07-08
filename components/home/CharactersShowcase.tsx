@@ -95,10 +95,10 @@ function CharacterPanel({ index, total, onOpen }: { index: number; total: number
       <div className="ch-panel__info">
         <span className="ch-ghost" aria-hidden="true">{num}</span>
         <span className="ch-counter"><b>{num}</b> / {tot}</span>
-        <h3 className="ch-name">{name || `Personaje ${num}`}</h3>
-        <div className="ch-role">{role || 'Rol del personaje'}</div>
+        <h3 className="ch-name">{name || `Character ${num}`}</h3>
+        <div className="ch-role">{role || 'Character Role'}</div>
         <p className="ch-desc">
-          {desc || 'Breve descripción del personaje: del concept inicial al diseño final, explorando forma, color y carácter.'}
+          {desc || 'Brief character description: from early concept to final design, exploring form, color, and personality.'}
         </p>
       </div>
     </article>
@@ -184,8 +184,8 @@ export default function CharactersShowcase() {
           <span className="ch-showcase__fig">FIG. 04 — Cast</span>
           <h2 id="ch-showcase-title" className="ch-showcase__title">Characters</h2>
           <p className="ch-showcase__desc" data-i18n="characters_desc">
-            Galería de personajes: cada uno recorre su proceso completo — del concept
-            inicial al diseño final, explorando forma, color y carácter.
+            Character gallery: each piece explores its complete process — from early concept
+            to final design, focusing on form, color, and personality.
           </p>
           <SoftwareDropdown prefix="char" />
           {isAdmin && (
@@ -204,7 +204,7 @@ export default function CharactersShowcase() {
         {count === 0 ? (
           <div className="ch-empty">
             <i className="fa-solid fa-user-plus" />
-            <span>{isAdmin ? 'Añadí personajes desde "Gestionar".' : 'Próximamente.'}</span>
+            <span>{isAdmin ? 'Add characters from "Manage".' : 'Coming soon.'}</span>
           </div>
         ) : (
           <Carousel

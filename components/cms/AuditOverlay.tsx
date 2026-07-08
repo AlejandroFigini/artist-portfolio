@@ -21,26 +21,26 @@ export default function AuditOverlay({ onClose }: { onClose: () => void }) {
     <div className={`cms-admin-overlay${show ? ' show' : ''}`}>
       <div className="cms-admin-panel">
         <div className="cms-admin-head">
-          <h2><i className="fa-solid fa-clipboard-list"></i> Gestión — Auditoría de cambios</h2>
+          <h2><i className="fa-solid fa-clipboard-list"></i> Management — Change Audit</h2>
           <div className="cms-admin-head-actions">
             <button
               type="button" className="cms-btn cms-btn--sm"
-              onClick={() => { state.audit = []; persistAudit(); emit(); toast('Registro vaciado') }}
+              onClick={() => { state.audit = []; persistAudit(); emit(); toast('Log cleared') }}
             >
-              Vaciar registro
+              Clear log
             </button>
-            <button type="button" className="cms-btn cms-btn--sm cms-btn--primary" onClick={close}>Cerrar</button>
+            <button type="button" className="cms-btn cms-btn--sm cms-btn--primary" onClick={close}>Close</button>
           </div>
         </div>
-        <p className="cms-admin-sub">{state.audit.length} cambio(s) registrado(s). (En producción esto vendrá de la BD vía el backend.)</p>
+        <p className="cms-admin-sub">{state.audit.length} change(s) logged. (In production this will come from the DB via backend.)</p>
         <div className="cms-audit-table-wrap">
           <table className="cms-audit-table">
             <thead>
-              <tr><th>Fecha</th><th>Usuario</th><th>Sección</th><th>Contenedor</th><th>Qué cambió</th><th>Archivo</th></tr>
+              <tr><th>Date</th><th>User</th><th>Section</th><th>Container</th><th>Change</th><th>File</th></tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={6} className="cms-audit-empty">Todavía no hay cambios registrados.</td></tr>
+                <tr><td colSpan={6} className="cms-audit-empty">No changes logged yet.</td></tr>
               )}
               {rows.map((a, i) => (
                 <tr key={i}>

@@ -6,9 +6,9 @@ import AboutPage from '@/components/about/AboutPage'
    editable desde el panel, igual que en la home. */
 
 export const metadata: Metadata = {
-  title: 'Sobre mí | Lucía Montaña',
+  title: 'About | Lucía Montaña',
   description:
-    'Lucía Montaña — 3D Generalist & Animator basada en Montevideo. Biografía, software y trayectoria.',
+    'Lucía Montaña — 3D Generalist & Animator based in Montevideo. Biography, software, and career timeline.',
 }
 
 export default function AboutRoute() {

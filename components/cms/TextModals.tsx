@@ -34,18 +34,18 @@ function ContainerNameRow({ editingName, setEditingName, nameRef, label, commitR
     <div style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
       {editingName ? (
         <label className="cms-field" style={{ flex: 1, margin: 0 }}>
-          <span>Nombre del contenedor</span>
+          <span>Container name</span>
           <input ref={nameRef} type="text" defaultValue={label} autoFocus style={{ fontWeight: 400 }} onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename() }} />
         </label>
       ) : (
         <div className="cms-meta-line" style={{ flex: 1 }}>
-          <strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{label}</span>
+          <strong>Container:</strong> <span style={{ opacity: 0.85 }}>{label}</span>
         </div>
       )}
       <button
         type="button"
-        title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
-        aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+        title={editingName ? 'Save name' : 'Rename container'}
+        aria-label={editingName ? 'Save name' : 'Rename container'}
         onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
         style={{
           background: 'none', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
@@ -85,29 +85,29 @@ export function EditTextModal({ cmsKey, onClose }: KeyProps) {
 
   return (
     <CmsModal
-      title="Editar texto"
+      title="Edit text"
       onClose={() => { commitRename(); onClose() }}
       actions={[
-        { label: 'Cancelar', onClick: () => { commitRename() } },
-        { label: 'Guardar', primary: true, onClick: () => {
+        { label: 'Cancel', onClick: () => { commitRename() } },
+        { label: 'Save', primary: true, onClick: () => {
           commitRename()
           const v = taRef.current?.value ?? ''
           state.items[cmsKey] = v
           applyStored(cmsKey, v)
-          persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
-          recordAudit({ section: meta.section, label: meta.label, kind: 'texto', summary: 'Contenedor actualizado' })
-          toast('Contenedor actualizado')
+          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+          recordAudit({ section: meta.section, label: meta.label, kind: 'text', summary: 'Container updated' })
+          toast('Container updated')
         } },
       ]}
     >
       <div className="cms-upload">
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>{page}</span></div>
-          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>{page}</span></div>
+          <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
           <ContainerNameRow editingName={editingName} setEditingName={setEditingName} nameRef={nameRef} label={meta.label} commitRename={commitRename} />
         </div>
         <label className="cms-field" style={{ marginTop: '0.75rem' }}>
-          <span>Texto</span>
+          <span>Text</span>
           <textarea ref={taRef} rows={4} defaultValue={initial} autoFocus />
         </label>
       </div>
@@ -140,12 +140,12 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
 
   return (
     <CmsModal
-      title="Editar información"
+      title="Edit information"
       wide
       onClose={() => { commitRename(); onClose() }}
       actions={[
-        { label: 'Cancelar', onClick: () => { commitRename() } },
-        { label: 'Guardar', primary: true, onClick: () => {
+        { label: 'Cancel', onClick: () => { commitRename() } },
+        { label: 'Save', primary: true, onClick: () => {
           commitRename()
           let changed = false
           fields.forEach((f) => {
@@ -160,24 +160,24 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
               const used = state.usedContent[cmsKey]
               const ff = used?.fields?.find((z) => z.key === f.key)
               if (ff) ff.value = v
-              recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Campo "${f.label}" actualizado` })
+              recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Field "${f.label}" updated` })
               changed = true
             }
           })
-          persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
           persistUsed()
-          toast(changed ? 'Contenedor actualizado' : 'Sin cambios')
+          toast(changed ? 'Container updated' : 'No changes')
         } },
       ]}
     >
       <div className="cms-upload">
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>{page}</span></div>
-          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>{page}</span></div>
+          <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
           <ContainerNameRow editingName={editingName} setEditingName={setEditingName} nameRef={nameRef} label={meta.label} commitRename={commitRename} />
         </div>
         <div className="cms-up-fields" style={{ marginTop: '0.75rem' }}>
-          <div className="cms-fields-title">Información</div>
+          <div className="cms-fields-title">Information</div>
           {fields.map((f) => (
             <label className="cms-field" key={f.key}>
               <span>{f.label}</span>
@@ -207,20 +207,20 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
   if (isProject) {
     return (
       <CmsModal
-        title="Eliminar tarjeta"
+        title="Delete card"
         onClose={onClose}
         actions={[
-          { label: 'Cancelar', onClick: () => {} },
-          { label: 'Eliminar tarjeta', primary: true, onClick: () => {
-            deleteProjectSite(cmsKey).catch(() => toast('Error eliminando', 'error'))
-            toast('Tarjeta eliminada · imagen movida a no usados')
+          { label: 'Cancel', onClick: () => {} },
+          { label: 'Delete card', primary: true, onClick: () => {
+            deleteProjectSite(cmsKey).catch(() => toast('Error deleting', 'error'))
+            toast('Card deleted · image moved to unused')
           } },
         ]}
       >
         <div className="cms-confirm-body">
-          Vas a <strong>eliminar esta tarjeta de proyecto</strong>. La imagen se moverá a
-          <strong> contenidos no usados</strong> (podrás restaurarla desde Gestión); el resto
-          de los proyectos se reordena para ocupar el lugar.
+          You are about to <strong>delete this project card</strong>. The image will be moved to
+          <strong> unused content</strong> (you can restore it from Management); the remaining
+          projects will reorder to fill the space.
         </div>
       </CmsModal>
     )
@@ -228,21 +228,21 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
 
   return (
     <CmsModal
-      title="Mover a no usados"
+      title="Move to unused"
       onClose={onClose}
       actions={[
-        { label: 'Cancelar', onClick: () => {} },
-        { label: 'Mover a no usados', primary: true, onClick: () => {
+        { label: 'Cancel', onClick: () => {} },
+        { label: 'Move to unused', primary: true, onClick: () => {
           moveToUnusedSite(cmsKey)
-          toast('Movido a no usados')
+          toast('Moved to unused')
         } },
       ]}
     >
       <div className="cms-confirm-body">
-        Vas a mover «<strong>{fileName}</strong>» a <strong>contenidos no usados</strong>.
+        You are about to move "<strong>{fileName}</strong>" to <strong>unused content</strong>.
         <div className="cms-confirm-warn">
-          <i className="fa-solid fa-triangle-exclamation"></i> Se quitará del sitio; el espacio queda libre
-          para subir otro contenido. Podrás restaurarlo desde Gestión.
+          <i className="fa-solid fa-triangle-exclamation"></i> It will be removed from the site; the space will become free
+          to upload other content. You can restore it from Management.
         </div>
       </div>
     </CmsModal>
@@ -254,15 +254,15 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
   const value = JSON.stringify({ version: 1, items: state.items }, null, 2)
   return (
     <CmsModal
-      title="Contenido (lo que el backend guardaría)"
+      title="Content (what backend would save)"
       wide
       onClose={onClose}
       actions={[
-        { label: 'Copiar', onClick: () => {
-          navigator.clipboard?.writeText(value).then(() => toast('Copiado')).catch(() => {})
+        { label: 'Copy', onClick: () => {
+          navigator.clipboard?.writeText(value).then(() => toast('Copied')).catch(() => {})
           return false
         } },
-        { label: 'Cerrar', primary: true, onClick: () => {} },
+        { label: 'Close', primary: true, onClick: () => {} },
       ]}
     >
       <textarea className="cms-textarea" readOnly rows={12} value={value} />

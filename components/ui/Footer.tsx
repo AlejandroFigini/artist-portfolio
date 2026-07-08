@@ -14,11 +14,11 @@ const EXPLORE_LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="main-footer">
+    <footer className="main-footer" id="contacto">
       <div className="footer-grid">
         <div className="footer-col branding-col">
           <h2 className="footer-name">Lucia <span>Montaña</span></h2>
-          <p className="footer-role">Licenciada en Animación y Videojuegos</p>
+          <p className="footer-role">Bachelor&apos;s Degree in Animation &amp; Video Games</p>
           <FooterSocial />
         </div>
         <div className="footer-col links-col">

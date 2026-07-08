@@ -188,18 +188,18 @@ export default function CmsRoot() {
                     style={{ textDecoration: 'none', display: 'inline-block' }}
                     onClick={() => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }}
                   >
-                    <i className="fa-solid fa-sliders"></i> Gestión
+                    <i className="fa-solid fa-sliders"></i> Admin
                   </a>
-                  <button type="button" className="cms-navauth-btn" title="Cerrar sesión"
-                    onClick={() => { logout().finally(() => { setAdmin(false); toast('Sesión cerrada') }) }}>
-                    <i className="fa-solid fa-right-from-bracket"></i> Salir
+                  <button type="button" className="cms-navauth-btn" title="Log out"
+                    onClick={() => { logout().finally(() => { setAdmin(false); toast('Logged out') }) }}>
+                    <i className="fa-solid fa-right-from-bracket"></i> Log out
                   </button>
                 </div>
               </div>
             ) : (
               <button type="button" className="login-min-btn" onClick={() => setCmd({ type: 'login' })}>
                 <i className="fa-solid fa-right-to-bracket"></i>
-                <span>Iniciar sesión</span>
+                <span>Log in</span>
               </button>
             ),
             authHost,

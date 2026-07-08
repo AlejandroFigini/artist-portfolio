@@ -69,9 +69,9 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   const title = stripExt(e.name) || e.label || '—'
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
   const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
-  const containerBase = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Recién subido' : '')
+  const containerBase = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Just uploaded' : '')
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
-  const containerLabel = isUnusedOrTrash ? 'Contenedor previo:' : 'Contenedor:'
+  const containerLabel = isUnusedOrTrash ? 'Previous container:' : 'Container:'
   return (
     <div
       className="cms-mlib-item"
@@ -102,12 +102,12 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           </span>
         </div>
         <div className="cms-mlib-meta">
-          <div className="cms-mlib-meta-truncate"><strong>Nombre:</strong> <span title={e.name || '—'}>{e.name || '—'}</span></div>
-          <div><strong>Formato:</strong> {getFormat(e)}</div>
-          <div><strong>Tamaño:</strong> {fmtBytes(e.size)}</div>
-          <div><strong>Fecha de subida:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
-          <div><strong>Hora de subida:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-          <div><strong>Usos:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 veces' : `${occCount} ${occCount === 1 ? 'vez' : 'veces'}`}</span></div>
+          <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || '—'}>{e.name || '—'}</span></div>
+          <div><strong>Format:</strong> {getFormat(e)}</div>
+          <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
+          <div><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
+          <div><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
+          <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span></div>
           <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase} style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
         </div>
         {actions.length > 0 && (

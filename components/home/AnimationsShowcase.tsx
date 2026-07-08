@@ -320,8 +320,8 @@ export default function AnimationsShowcase() {
           <span className="anim-showcase__fig">FIG. 03 — Motion</span>
           <h2 id="anim-showcase-title" className="anim-showcase__title">Animations</h2>
           <p className="anim-showcase__desc" data-i18n="anim_desc">
-            Una selección de animaciones, motion graphics y pruebas técnicas
-            que exploran movimiento, narrativa y expresión a través de personajes y escenarios.
+            A selection of animations, motion graphics, and technical tests
+            exploring movement, storytelling, and expression through characters and environments.
           </p>
           <SoftwareDropdown prefix="anim" />
         </div>

@@ -3,15 +3,15 @@
    traducciones (en/pt/fr) viven en cms_translations. Flujo admin-driven:
    exportar base → traducir con Claude → importar JSON → guardar en BD. */
 
-export const BASE_LANG = 'es' as const
-export const TARGET_LANGS = ['en', 'pt', 'fr'] as const
+export const BASE_LANG = 'en' as const
+export const TARGET_LANGS = ['es', 'pt', 'fr'] as const
 export const ALL_LANGS = [BASE_LANG, ...TARGET_LANGS] as const
 
 export type Lang = (typeof ALL_LANGS)[number]
 
 export const LANG_META: Record<Lang, { flag: string; label: string }> = {
-  es: { flag: 'es', label: 'Español' },
   en: { flag: 'us', label: 'English' },
+  es: { flag: 'es', label: 'Español' },
   pt: { flag: 'pt', label: 'Português' },
   fr: { flag: 'fr', label: 'Français' },
 }

@@ -16,10 +16,10 @@ import { fmtDate } from '@/lib/utils'
 type View = 'menu' | 'username' | 'password' | '2fa-setup' | '2fa-disable'
 
 const GUIDE_STEPS = [
-  { icon: 'fa-mobile-screen-button', text: 'Instalá una app autenticadora en tu teléfono: Google Authenticator, Microsoft Authenticator o Authy (gratis en App Store / Play Store).' },
-  { icon: 'fa-qrcode', text: 'En la app tocá "+" (agregar cuenta) → "Escanear código QR" y apuntá la cámara al QR de abajo. Si no podés escanear, elegí "Ingresar clave manualmente" y copiá la clave.' },
-  { icon: 'fa-clock-rotate-left', text: 'La app va a mostrar un código de 6 dígitos que cambia cada 30 segundos. Ese código es tu segundo factor.' },
-  { icon: 'fa-circle-check', text: 'Escribí el código actual en el campo de abajo y confirmá. A partir de ahí, cada inicio de sesión pedirá usuario + contraseña + código de la app.' },
+  { icon: 'fa-mobile-screen-button', text: 'Install an authenticator app on your phone: Google Authenticator, Microsoft Authenticator, or Authy (free on App Store / Play Store).' },
+  { icon: 'fa-qrcode', text: 'In the app tap "+" (add account) → "Scan QR code" and point your camera at the QR code below. If you cannot scan, choose "Enter key manually" and copy the key.' },
+  { icon: 'fa-clock-rotate-left', text: 'The app will show a 6-digit code that changes every 30 seconds. That code is your second factor.' },
+  { icon: 'fa-circle-check', text: 'Enter the current code in the field below and confirm. From then on, each login will require your username + password + app code.' },
 ]
 
 export default function UsersSection() {
@@ -51,16 +51,16 @@ export default function UsersSection() {
     const user = await updateAccount({ username: form.username })
     setAdminFlag(true, user.username)
     setForm((f) => ({ ...f, username: '' }))
-    toast('Nombre de usuario actualizado')
+    toast('Username updated')
     refresh()
     setView('menu')
   })
 
   const savePassword = () => run(async () => {
-    if (form.next !== form.repeat) throw new Error('Las contraseñas no coinciden')
+    if (form.next !== form.repeat) throw new Error('Passwords do not match')
     await updateAccount({ currentPassword: form.current, newPassword: form.next })
     setForm((f) => ({ ...f, current: '', next: '', repeat: '' }))
-    toast('Contraseña actualizada')
+    toast('Password updated')
     setView('menu')
   })
 
@@ -75,7 +75,7 @@ export default function UsersSection() {
     await twoFa({ action: 'enable', code: form.code })
     setQr(null)
     setForm((f) => ({ ...f, code: '' }))
-    toast('2FA activado')
+    toast('2FA enabled')
     refresh()
     setView('menu')
   })
@@ -83,34 +83,34 @@ export default function UsersSection() {
   const disable2fa = () => run(async () => {
     await twoFa({ action: 'disable', password: form.password })
     setForm((f) => ({ ...f, password: '' }))
-    toast('2FA desactivado')
+    toast('2FA disabled')
     refresh()
     setView('menu')
   })
 
   return (
     <div className="admin-card">
-      <h2><i className="fa-solid fa-users-gear"></i> Administrar usuarios</h2>
-      <p className="cms-admin-sub">Usuarios del sitio y credenciales de tu cuenta.</p>
+      <h2><i className="fa-solid fa-users-gear"></i> Manage Users</h2>
+      <p className="cms-admin-sub">Site users and your account credentials.</p>
 
       {/* ----- Lista de usuarios ----- */}
       <div className="cms-audit-table-wrap">
         <table className="cms-audit-table">
-          <thead><tr><th>Usuario</th><th>2FA</th><th>Último inicio de sesión</th><th>Creado</th></tr></thead>
+          <thead><tr><th>User</th><th>2FA</th><th>Last login</th><th>Created</th></tr></thead>
           <tbody>
-            {users.length === 0 && <tr><td colSpan={4} className="cms-audit-empty">Cargando usuarios…</td></tr>}
+            {users.length === 0 && <tr><td colSpan={4} className="cms-audit-empty">Loading users…</td></tr>}
             {users.map((u) => (
               <tr key={u.username}>
                 <td>
                   {u.username}
-                  {u.username === state.username && <span className="cms-tag" style={{ marginLeft: 8 }}>tu sesión</span>}
+                  {u.username === state.username && <span className="cms-tag" style={{ marginLeft: 8 }}>your session</span>}
                 </td>
                 <td>
                   <span className="cms-tag" style={{ color: u.totpEnabled ? 'var(--color-primary)' : undefined }}>
-                    <i className={`fa-solid ${u.totpEnabled ? 'fa-shield-halved' : 'fa-shield'}`}></i> {u.totpEnabled ? 'Activado' : 'Desactivado'}
+                    <i className={`fa-solid ${u.totpEnabled ? 'fa-shield-halved' : 'fa-shield'}`}></i> {u.totpEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </td>
-                <td>{u.lastLoginAt ? fmtDate(new Date(u.lastLoginAt).getTime()) : 'Nunca'}</td>
+                <td>{u.lastLoginAt ? fmtDate(new Date(u.lastLoginAt).getTime()) : 'Never'}</td>
                 <td>{fmtDate(new Date(u.createdAt).getTime())}</td>
               </tr>
             ))}
@@ -119,23 +119,23 @@ export default function UsersSection() {
       </div>
 
       {/* ----- Mi cuenta ----- */}
-      <h3 style={{ marginTop: '2rem' }}><i className="fa-solid fa-id-card"></i> Mi cuenta — {state.username}</h3>
+      <h3 style={{ marginTop: '2rem' }}><i className="fa-solid fa-id-card"></i> My account — {state.username}</h3>
 
       {view === 'menu' && (
         <div className="admin-quick" style={{ marginTop: '1rem' }}>
           <button type="button" className="cms-btn" onClick={() => setView('username')}>
-            <i className="fa-solid fa-user-pen"></i> Cambiar usuario
+            <i className="fa-solid fa-user-pen"></i> Change username
           </button>
           <button type="button" className="cms-btn" onClick={() => setView('password')}>
-            <i className="fa-solid fa-key"></i> Cambiar contraseña
+            <i className="fa-solid fa-key"></i> Change password
           </button>
           {me?.totpEnabled ? (
             <button type="button" className="cms-btn" onClick={() => setView('2fa-disable')}>
-              <i className="fa-solid fa-shield-halved"></i> Desactivar 2FA
+              <i className="fa-solid fa-shield-halved"></i> Disable 2FA
             </button>
           ) : (
             <button type="button" className="cms-btn cms-btn--primary" disabled={busy} onClick={start2fa}>
-              <i className="fa-solid fa-shield-halved"></i> Activar 2FA
+              <i className="fa-solid fa-shield-halved"></i> Enable 2FA
             </button>
           )}
         </div>
@@ -143,13 +143,13 @@ export default function UsersSection() {
 
       {view === 'username' && (
         <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <label className="cms-field"><span>Nuevo nombre de usuario</span>
+          <label className="cms-field"><span>New username</span>
             <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
           </label>
           <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancelar</button>
+            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
             <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.username.trim().length < 3} onClick={saveUsername}>
-              {busy ? 'Guardando…' : 'Guardar'}
+              {busy ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
@@ -157,23 +157,23 @@ export default function UsersSection() {
 
       {view === 'password' && (
         <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <label className="cms-field"><span>Contraseña actual</span>
+          <label className="cms-field"><span>Current password</span>
             <input type="password" value={form.current} onChange={set('current')} />
           </label>
-          <label className="cms-field"><span>Nueva contraseña (mínimo 8 caracteres)</span>
+          <label className="cms-field"><span>New password (min 8 characters)</span>
             <input type="password" value={form.next} onChange={set('next')} />
           </label>
-          <label className="cms-field"><span>Repetir nueva contraseña</span>
+          <label className="cms-field"><span>Repeat new password</span>
             <input type="password" value={form.repeat} onChange={set('repeat')} />
           </label>
           <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancelar</button>
+            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
             <button
               type="button" className="cms-btn cms-btn--primary"
               disabled={busy || !form.current || form.next.length < 8 || !form.repeat}
               onClick={savePassword}
             >
-              {busy ? 'Guardando…' : 'Guardar'}
+              {busy ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
@@ -181,7 +181,7 @@ export default function UsersSection() {
 
       {view === '2fa-setup' && qr && (
         <div style={{ marginTop: '1rem' }}>
-          <h4><i className="fa-solid fa-list-check"></i> Guía de activación</h4>
+          <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>
           <ol className="cms-2fa-guide" style={{ margin: '0.8rem 0 1.2rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.6rem' }}>
             {GUIDE_STEPS.map((s, i) => (
               <li key={i}><i className={`fa-solid ${s.icon}`} style={{ width: 20, marginRight: 6 }}></i>{s.text}</li>
@@ -191,17 +191,17 @@ export default function UsersSection() {
             <div style={{ textAlign: 'center' }}>
               {/* dataURL generado en el cliente desde el otpauth URI, no es media del CMS */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qr.img} alt="Código QR para configurar 2FA en tu app autenticadora" width={200} height={200} style={{ borderRadius: 10, display: 'block' }} />
-              <p className="cms-hint" style={{ wordBreak: 'break-all', maxWidth: 220 }}>Clave manual: <code>{qr.secret}</code></p>
+              <img src={qr.img} alt="QR code to set up 2FA in your authenticator app" width={200} height={200} style={{ borderRadius: 10, display: 'block' }} />
+              <p className="cms-hint" style={{ wordBreak: 'break-all', maxWidth: 220 }}>Manual key: <code>{qr.secret}</code></p>
             </div>
             <div className="cms-login-form" style={{ maxWidth: 320, flex: 1 }}>
-              <label className="cms-field"><span>Código de 6 dígitos de la app</span>
+              <label className="cms-field"><span>6-digit code from app</span>
                 <input type="text" maxLength={6} inputMode="numeric" value={form.code} onChange={set('code')} autoComplete="off" />
               </label>
               <div className="cms-confirm-actions">
-                <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancelar</button>
+                <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
                 <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.code.length !== 6} onClick={enable2fa}>
-                  {busy ? 'Verificando…' : 'Confirmar y activar'}
+                  {busy ? 'Verifying…' : 'Confirm and enable'}
                 </button>
               </div>
             </div>
@@ -211,14 +211,14 @@ export default function UsersSection() {
 
       {view === '2fa-disable' && (
         <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <p className="cms-hint">Ingresá tu contraseña para desactivar el 2FA. Tu cuenta quedará protegida solo por usuario y contraseña.</p>
-          <label className="cms-field"><span>Contraseña</span>
+          <p className="cms-hint">Enter your password to disable 2FA. Your account will be protected only by username and password.</p>
+          <label className="cms-field"><span>Password</span>
             <input type="password" value={form.password} onChange={set('password')} />
           </label>
           <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancelar</button>
+            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
             <button type="button" className="cms-btn cms-btn-danger" disabled={busy || !form.password} onClick={disable2fa}>
-              {busy ? 'Verificando…' : 'Desactivar 2FA'}
+              {busy ? 'Verifying…' : 'Disable 2FA'}
             </button>
           </div>
         </div>

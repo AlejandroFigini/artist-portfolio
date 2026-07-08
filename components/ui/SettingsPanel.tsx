@@ -6,10 +6,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { state, useCmsStore } from '@/lib/cms/store'
-import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from '@/components/cms/engine'
+import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage, getAllTranslatableItems } from '@/components/cms/engine'
 import { revealAllNow } from '@/components/home/HomeFx'
-import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
+import { ALL_LANGS, LANG_META, type Lang, isTranslatableEntry, BASE_LANG } from '@/lib/i18n'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { fileToDataURL } from '@/lib/media'
+import { getTranslations, importTranslations } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
+import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -49,6 +53,10 @@ function applyHideCms(hide: boolean) {
 
 export default function SettingsPanel() {
   const { settings } = useSiteSettings()
+  const saveSettings = useSaveSettings()
+  const toast = useToast()
+  const [savingCv, setSavingCv] = useState(false)
+  const transFileRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -76,6 +84,64 @@ export default function SettingsPanel() {
   const gearRef = useRef<HTMLButtonElement>(null)
   const adminPanelRef = useRef<HTMLDivElement>(null)
   const adminGearRef = useRef<HTMLButtonElement>(null)
+
+  const uploadCv = async (file: File) => {
+    if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
+    if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
+    setSavingCv(true)
+    const dataUrl = await fileToDataURL(file)
+    await saveSettings({ cvUrl: dataUrl, cvName: file.name }, `CV updated (${file.name})`)
+    setSavingCv(false)
+  }
+
+  const removeCv = async () => {
+    setSavingCv(true)
+    await saveSettings({ cvUrl: '', cvName: '' }, 'CV removed')
+    setSavingCv(false)
+  }
+
+  const onExportTranslations = async () => {
+    const server = await getTranslations()
+    const baseItems = getAllTranslatableItems(server[BASE_LANG] || {})
+    if (Object.keys(baseItems).length === 0) {
+      toast('No text available for translation yet. Add English content first.', 'error')
+      return
+    }
+    const prompt = [
+      'Translate the following artist portfolio content (animation, illustration, and 3D) from English (en) to Spanish (es), Portuguese (pt), and French (fr).',
+      'Maintain a professional and artistic tone. Do not translate proper names or software brands.',
+      '',
+      'Respond ONLY with valid JSON, without extra text or markdown formatting, with this exact structure (same keys as the original for each language):',
+      '{ "items": { "es": { ... }, "pt": { ... }, "fr": { ... } } }',
+      '',
+      'Save your response as a .json file and import it in the panel using "Import translations".',
+      '',
+      '--- CONTENT (English) ---',
+      JSON.stringify({ items: { [BASE_LANG]: baseItems } }, null, 2),
+    ].join('\n')
+    const blob = new Blob([prompt], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'translations-prompt.txt'
+    a.click()
+    URL.revokeObjectURL(url)
+    toast(`Prompt exported with ${Object.keys(baseItems).length} texts. Paste it entirely into Claude.`)
+  }
+
+  const onImportTranslations = async (file: File) => {
+    let parsed: { items?: Record<string, Record<string, string>> }
+    try { parsed = JSON.parse(await file.text()) } catch { toast('Invalid JSON file', 'error'); return }
+    const items = parsed.items || (parsed as Record<string, Record<string, string>>)
+    try {
+      const { imported } = await importTranslations(items)
+      state.translations = await getTranslations()
+      setLanguage(state.lang)
+      toast(`${imported} translations imported`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Error importing translations', 'error')
+    }
+  }
 
   // aplicar preferencias guardadas al montar (port de los init legacy)
   useEffect(() => {
@@ -119,7 +185,7 @@ export default function SettingsPanel() {
           </label>
         </div>
         <div className="setting-item">
-          <span>Pausar animaciones</span>
+          <span>Pause animations</span>
           <label className="switch">
             <input
               type="checkbox" id="motion-switch" checked={motionOff} suppressHydrationWarning
@@ -127,6 +193,21 @@ export default function SettingsPanel() {
             />
             <span className="slider round"></span>
           </label>
+        </div>
+        <hr className="settings-divider" />
+        <div className="setting-item">
+          <span>Curriculum Vitae</span>
+          <a
+            className={`cv-btn cv-btn-settings${settings.cvUrl ? '' : ' is-disabled'}`}
+            id="cv-download-settings" href={settings.cvUrl || undefined}
+            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
+            title={settings.cvUrl ? 'Download Curriculum Vitae (PDF)' : 'CV not available yet'}
+            aria-disabled={!settings.cvUrl || undefined}
+          >
+            <i className="fa-solid fa-file-arrow-down"></i>
+            <span>CV</span>
+          </a>
         </div>
         <div className="setting-item">
           <span>Language</span>
@@ -144,20 +225,6 @@ export default function SettingsPanel() {
               ))}
             </div>
           </div>
-        </div>
-        <div className="setting-item">
-          <span>Curriculum</span>
-          <a
-            className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`}
-            id="cv-download-settings" href={settings.cvUrl || undefined}
-            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
-            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-            title={settings.cvUrl ? 'Download CV' : 'CV no disponible aún'}
-            aria-disabled={!settings.cvUrl || undefined}
-          >
-            <i className="fa-solid fa-file-arrow-down"></i>
-            <span>CV</span>
-          </a>
         </div>
       </div>
 
@@ -178,7 +245,7 @@ export default function SettingsPanel() {
           <div ref={adminPanelRef} id="admin-settings-panel" className={`settings-panel settings-panel--admin${adminOpen ? '' : ' hidden'}`}>
             <h3>Admin Settings</h3>
             <div className="setting-item">
-              <span>Hide Edit actions</span>
+          <span>Hide Edit actions</span>
               <label className="switch">
                 <input
                   type="checkbox" id="hide-cms-switch" checked={hideCms} suppressHydrationWarning
@@ -193,11 +260,10 @@ export default function SettingsPanel() {
                 type="button"
                 className="cv-btn cv-btn-settings"
                 id="clear-section-btn"
-                title="Clear only the containers of the section currently in view (moves to unused)"
+                title="Clear only the containers of the section currently in view"
                 onClick={() => setSectionClear(currentSectionInfo())}
               >
                 <i className="fa-solid fa-eraser"></i>
-                <span>Clear Section</span>
               </button>
             </div>
             <div className="setting-item">
@@ -206,12 +272,66 @@ export default function SettingsPanel() {
                 type="button"
                 className="cv-btn cv-btn-settings"
                 id="clear-content-btn"
-                title="Clear all page content (moves to unused)"
+                title="Clear all page content"
                 onClick={() => setShowClearConfirm(true)}
               >
                 <i className="fa-solid fa-trash"></i>
-                <span>Clear All</span>
               </button>
+            </div>
+            <hr className="settings-divider" />
+            <div className="setting-item">
+          <span>Upload CV</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <label
+                  className="cv-btn cv-btn-settings"
+                  style={{ cursor: 'pointer', opacity: savingCv ? 0.6 : 1 }}
+                  title={settings.cvUrl ? 'Replace CV' : 'Upload CV'}
+                >
+                  <i className={`fa-solid ${savingCv ? 'fa-spinner fa-spin' : 'fa-file-arrow-up'}`}></i>
+                  <input
+                    type="file" accept="application/pdf" style={{ display: 'none' }} disabled={savingCv}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadCv(f) }}
+                  />
+                </label>
+                {settings.cvUrl && (
+                  <button
+                    type="button"
+                    className="cv-btn cv-btn-settings"
+                    title="Remove CV"
+                    onClick={removeCv}
+                    disabled={savingCv}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="setting-item">
+              <span>Export translations</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                title="Export translation prompt"
+                onClick={onExportTranslations}
+              >
+                <i className="fa-solid fa-download"></i>
+              </button>
+            </div>
+            <div className="setting-item">
+              <span>Import translations</span>
+              <button
+                type="button"
+                className="cv-btn cv-btn-settings"
+                title="Import translations JSON file"
+                onClick={() => transFileRef.current?.click()}
+              >
+                <i className="fa-solid fa-upload"></i>
+              </button>
+              <input
+                ref={transFileRef}
+                type="file" accept=".json,application/json" style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onImportTranslations(f) }}
+              />
             </div>
           </div>
         </>

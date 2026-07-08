@@ -119,8 +119,8 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
   const onSaveGraph = () => {
     setSaving(true)
     saveGraph(characters)
-      .then(() => { toast('Cambios guardados correctamente'); setSaving(false); onClose() })
-      .catch(() => { toast('Error guardando', 'error'); setSaving(false) })
+      .then(() => { toast('Changes saved successfully'); setSaving(false); onClose() })
+      .catch(() => { toast('Error saving changes', 'error'); setSaving(false) })
   }
 
   const move = (idx: number, dir: -1 | 1) => {
@@ -138,10 +138,10 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
   }
 
   return (
-    <CmsModal title="Gestión de Characters" wide show={show} onClose={onClose} actions={[]}>
+    <CmsModal title="Characters Manager" wide show={show} onClose={onClose} actions={[]}>
       <div className="cms-carousel-manager">
         <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Añadí, reordená, editá o eliminá personajes. Cada uno tiene retrato, hasta {CONCEPTS_PER} concepts y ficha (nombre / rol / descripción). Los cambios se aplican al guardar.
+          Add, reorder, edit, or delete characters. Each character has a portrait, up to {CONCEPTS_PER} concepts, and info (name / role / description). Changes take effect when saved.
         </p>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -154,42 +154,42 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
               pick(newKey)
             }}
           >
-            <i className="fa-solid fa-plus"></i> Añadir Personaje
+            <i className="fa-solid fa-plus"></i> Add Character
           </button>
           {dirty && (
             <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>
-              <i className="fa-solid fa-triangle-exclamation"></i> Tienes cambios sin guardar
+              <i className="fa-solid fa-triangle-exclamation"></i> Unsaved changes
             </span>
           )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {characters.map((vKey, i) => {
-            const name = state.items[`${vKey}::name`] || `Personaje #${i + 1} (Sin nombre)`
+            const name = state.items[`${vKey}::name`] || `Character #${i + 1} (Untitled)`
             const src = portraitSrc(vKey)
             return (
               <div key={vKey} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.6rem', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
                 <div style={{ width: 70, height: 70, borderRadius: 6, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: src ? `url("${src}")` : undefined, backgroundColor: '#e5e7eb', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '0.65rem' }}>
-                  {!src && 'Sin IMG'}
+                  {!src && 'No IMG'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ display: 'block', marginBottom: '0.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</strong>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <button type="button" className="cms-btn cms-btn--sm" onClick={() => pick(vKey)}>
-                      <i className="fa-solid fa-user"></i> Retrato / Ficha
+                      <i className="fa-solid fa-user"></i> Portrait / Info
                     </button>
                     {Array.from({ length: CONCEPTS_PER }, (_, m) => (
                       <button key={m} type="button" className="cms-btn cms-btn--sm" title={`Concept ${m + 1}`} onClick={() => pick(`${vKey}::c${m}`)}>
                         <i className="fa-solid fa-palette"></i> {m + 1}
                       </button>
                     ))}
-                    <button type="button" className="cms-btn cms-btn--sm" title="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
+                    <button type="button" className="cms-btn cms-btn--sm" title="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
                       <i className="fa-solid fa-arrow-up"></i>
                     </button>
-                    <button type="button" className="cms-btn cms-btn--sm" title="Bajar" disabled={i === characters.length - 1} onClick={() => move(i, 1)}>
+                    <button type="button" className="cms-btn cms-btn--sm" title="Move down" disabled={i === characters.length - 1} onClick={() => move(i, 1)}>
                       <i className="fa-solid fa-arrow-down"></i>
                     </button>
-                    <button type="button" className="cms-btn cms-btn--sm" title="Eliminar" style={{ color: '#ef4444' }} onClick={() => setCharacters((s) => s.filter((_, j) => j !== i))}>
+                    <button type="button" className="cms-btn cms-btn--sm" title="Delete" style={{ color: '#ef4444' }} onClick={() => setCharacters((s) => s.filter((_, j) => j !== i))}>
                       <i className="fa-solid fa-trash"></i>
                     </button>
                   </div>
@@ -198,7 +198,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
             )
           })}
           {characters.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No hay personajes. Añadí uno.</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No characters found. Add one.</div>
           )}
         </div>
 
@@ -210,7 +210,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
             style={!dirty ? { opacity: 0.5 } : undefined}
             onClick={onSaveGraph}
           >
-            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Guardando...</> : 'Guardar Cambios'}
+            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Saving...</> : 'Save Changes'}
           </button>
         </div>
       </div>

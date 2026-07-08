@@ -34,12 +34,12 @@ export default function LoginModal({ onSuccess, onClose }: Props) {
         } else if (data.success) {
           onSuccess(data.user?.username)
           onClose()
-          toast('Sesión iniciada correctamente')
+          toast('Logged in successfully')
         } else {
-          toast(data.error || 'Usuario o contraseña incorrectos', 'error')
+          toast(data.error || 'Incorrect username or password', 'error')
         }
       })
-      .catch(() => toast('Error de conexión con el servidor', 'error'))
+      .catch(() => toast('Connection error with server', 'error'))
       .finally(() => setBusy(false))
     return false // el modal se cierra solo en éxito
   }
@@ -48,33 +48,33 @@ export default function LoginModal({ onSuccess, onClose }: Props) {
 
   return (
     <CmsModal
-      title="Acceso de administrador"
+      title="Administrator access"
       onClose={onClose}
       actions={[
-        { label: 'Cancelar', onClick: () => { onClose(); return false } },
-        { label: busy ? 'Verificando…' : phase === '2fa' ? 'Verificar' : 'Entrar', primary: true, onClick: submit },
+        { label: 'Cancel', onClick: () => { onClose(); return false } },
+        { label: busy ? 'Verifying…' : phase === '2fa' ? 'Verify' : 'Log in', primary: true, onClick: submit },
       ]}
     >
       <div className="cms-login-form">
         {phase === 'creds' ? (
           <>
-            <label className="cms-field"><span>Usuario</span>
+            <label className="cms-field"><span>Username</span>
               <input ref={userRef} type="text" autoComplete="off" />
             </label>
-            <label className="cms-field"><span>Contraseña</span>
+            <label className="cms-field"><span>Password</span>
               <input ref={passRef} type="password" onKeyDown={onEnter} />
             </label>
             <p className="cms-hint" style={{ marginTop: 15 }}>
-              <i className="fa-solid fa-lock"></i> Asegurado con Google Authenticator 2FA.
+              <i className="fa-solid fa-lock"></i> Secured with Google Authenticator 2FA.
             </p>
           </>
         ) : (
           <>
-            <label className="cms-field"><span>Código 2FA (Google Authenticator)</span>
+            <label className="cms-field"><span>2FA Code (Google Authenticator)</span>
               <input ref={codeRef} type="text" autoComplete="off" maxLength={6} autoFocus onKeyDown={onEnter} />
             </label>
             <p className="cms-hint" style={{ color: 'var(--color-primary)' }}>
-              <i className="fa-solid fa-shield-halved"></i> Ingresa el código dinámico de tu app.
+              <i className="fa-solid fa-shield-halved"></i> Enter the dynamic code from your app.
             </p>
           </>
         )}

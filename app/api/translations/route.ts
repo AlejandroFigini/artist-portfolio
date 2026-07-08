@@ -12,9 +12,9 @@ function emptyMaps(): LangMaps {
   return { es: {}, en: {}, pt: {}, fr: {} }
 }
 
-/* GET /api/translations → { base, langs, items: { es, en, pt, fr } }
-   - es: texto base vivo desde cms_data, filtrado a prosa (no media/URLs).
-   - en/pt/fr: traducciones desde cms_translations.
+/* GET /api/translations → { base, langs, items: { en, es, pt, fr } }
+   - en: texto base vivo desde cms_data, filtrado a prosa (no media/URLs).
+   - es/pt/fr: traducciones desde cms_translations.
    Lo usa el cliente para aplicar el idioma y el admin para exportar a Claude.
    Sin DB → maps vacíos (el front degrada). */
 export async function GET() {
@@ -26,7 +26,7 @@ export async function GET() {
     const items = emptyMaps()
     const base = await pool.query('SELECT key, value FROM cms_data')
     for (const row of base.rows as { key: string; value: string }[]) {
-      if (isTranslatableEntry(row.key, row.value)) items.es[row.key] = row.value
+      if (isTranslatableEntry(row.key, row.value)) items[BASE_LANG][row.key] = row.value
     }
     const tr = await pool.query('SELECT key, lang, value FROM cms_translations')
     for (const row of tr.rows as { key: string; lang: string; value: string }[]) {
@@ -40,7 +40,7 @@ export async function GET() {
 }
 
 /* POST /api/translations → importar traducciones.
-   Body: { items: { en: {key:val}, pt: {...}, fr: {...} } } (es se ignora: es base).
+   Body: { items: { es: {key:val}, pt: {...}, fr: {...} } } (en se ignora: es base).
    Valida y upsertea cada (key, lang, value) en cms_translations. */
 export async function POST(req: Request) {
   const auth = await requireSession(req)
@@ -51,10 +51,10 @@ export async function POST(req: Request) {
 
   const incoming = body.items
   if (!incoming || typeof incoming !== 'object') {
-    return NextResponse.json({ error: 'Formato inválido. Se esperaba { items: { en, pt, fr } }.' }, { status: 400 })
+    return NextResponse.json({ error: 'Formato inválido. Se esperaba { items: { es, pt, fr } }.' }, { status: 400 })
   }
 
-  // Recolectar filas válidas solo para los idiomas destino (en/pt/fr).
+  // Recolectar filas válidas solo para los idiomas destino (es/pt/fr).
   const rows: { key: string; lang: string; value: string }[] = []
   for (const lang of TARGET_LANGS) {
     const map = incoming[lang]
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     }
   }
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'No se encontraron traducciones válidas para en/pt/fr.' }, { status: 400 })
+    return NextResponse.json({ error: 'No se encontraron traducciones válidas para es/pt/fr.' }, { status: 400 })
   }
 
   if (!hasDb) return NextResponse.json({ success: true, imported: rows.length, message: 'Traducciones recibidas (mock, sin DB)' })

@@ -117,11 +117,11 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             state.items[cmsKey + '::' + f.key] = val
             const def = meta.fields?.find((d) => d.key === f.key)
             if (def && cont) def.set(cont, val)
-            recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Campo "${f.label}" actualizado` })
+            recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Field "${f.label}" updated` })
           }
         })
         if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
-          persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
         } else {
           emit()
         }
@@ -155,8 +155,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
 
         recordAudit({
           section: meta.section, label: meta.label,
-          kind: meta.accept === 'webp' ? 'imagen' : 'video',
-          summary: (meta.accept === 'webp' ? 'Imagen' : 'Video') + ' reemplazado',
+          kind: meta.accept === 'webp' ? 'image' : 'video',
+          summary: (meta.accept === 'webp' ? 'Image' : 'Video') + ' replaced',
           file: { name: finalName, size: data.final_bytes, type: data.final_format },
         })
 
@@ -173,34 +173,34 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
   const actions =
     phase === 'form'
       ? [
-          { label: 'Cancelar', onClick: () => onClose(false) },
+          { label: 'Cancel', onClick: () => onClose(false) },
           {
-            label: 'Comprimir y subir a Cloudinary', primary: true,
+            label: 'Compress and upload to Cloudinary', primary: true,
             disabled: !fieldsComplete || isDuplicate,
             title: isDuplicate
-              ? 'Ya existe un archivo con ese nombre'
-              : fieldsComplete ? undefined : `Completá los campos obligatorios (${requiredLabels}) antes de subir`,
+              ? 'A file with that name already exists'
+              : fieldsComplete ? undefined : `Complete required fields (${requiredLabels}) before uploading`,
             onClick: doUpload,
           },
         ]
       : phase === 'uploading'
         ? []
-        : [{ label: phase === 'done' ? 'Cerrar y actualizar' : 'Cerrar', primary: true, onClick: () => onClose(phase === 'done') }]
+        : [{ label: phase === 'done' ? 'Close and update' : 'Close', primary: true, onClick: () => onClose(phase === 'done') }]
 
   return (
-    <CmsModal title="Subir contenido" wide locked={phase === 'uploading'} onClose={() => onClose(phase === 'done')} actions={actions}>
+    <CmsModal title="Upload content" wide locked={phase === 'uploading'} onClose={() => onClose(phase === 'done')} actions={actions}>
       {phase === 'form' && (
         <div className="cms-upload cms-upload--compact">
           <div className="cms-up-head">
-            <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
-            <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+            <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>Main feed</span></div>
+            <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
           </div>
           <label className="cms-field" style={{ marginTop: '0.75rem' }}>
-            <span>Nombre del contenedor</span>
+            <span>Container name</span>
             <input ref={containerRef} type="text" defaultValue={meta.label} style={{ fontWeight: 400 }} />
           </label>
           <label className="cms-field" style={{ marginTop: '0.6rem' }}>
-            <span>Nombre del archivo</span>
+            <span>File name</span>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <input ref={nameRef} type="text" defaultValue={getFileBasename(file.name)} onChange={checkDuplicate} style={{ flex: 1, borderTopRightRadius: getFileExtension(file.name) ? 0 : undefined, borderBottomRightRadius: getFileExtension(file.name) ? 0 : undefined }} />
               {getFileExtension(file.name) && (
@@ -212,17 +212,17 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             {isDuplicate && (
               <div style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <i className="fa-solid fa-triangle-exclamation"></i>
-                Ya existe un archivo con este nombre. Por favor, elige uno diferente.
+                A file with this name already exists. Please choose a different one.
               </div>
             )}
           </label>
           <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-            <div><span style={{ fontWeight: 400 }}>Tamaño:</span> <span style={{ fontFamily: "'Fira Code', monospace", fontWeight: 400 }}>{fmtBytes(file.size)}</span></div>
-            <div><span style={{ fontWeight: 400 }}>Formato:</span> <span style={{ fontWeight: 400 }}>{file.type || 'Archivo'}</span></div>
+            <div><span style={{ fontWeight: 400 }}>Size:</span> <span style={{ fontFamily: "'Fira Code', monospace", fontWeight: 400 }}>{fmtBytes(file.size)}</span></div>
+            <div><span style={{ fontWeight: 400 }}>Format:</span> <span style={{ fontWeight: 400 }}>{file.type || 'File'}</span></div>
           </div>
           {fields.length > 0 && (
             <div className="cms-up-fields" style={{ marginTop: '0.8rem' }}>
-              <div className="cms-fields-title">Datos del contenido</div>
+              <div className="cms-fields-title">Content data</div>
               {fields.map((f) => (
                 <label className="cms-field" key={f.key}>
                   <span>{f.label}</span>
@@ -246,8 +246,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
       {phase === 'uploading' && (
         <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
           <i className="fa-solid fa-circle-notch fa-spin fa-3x" style={{ color: 'var(--accent)' }}></i>
-          <h3 style={{ marginTop: '1rem', color: 'var(--text-primary)' }}>Subiendo y comprimiendo...</h3>
-          <p className="cms-admin-sub">Esto puede tardar unos segundos dependiendo del tamaño.</p>
+          <h3 style={{ marginTop: '1rem', color: 'var(--text-primary)' }}>Uploading and compressing...</h3>
+          <p className="cms-admin-sub">This may take a few seconds depending on file size.</p>
         </div>
       )}
 
@@ -256,9 +256,9 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           <div className="cms-upload-done__head">
             <i className="fa-solid fa-circle-check" style={{ color: 'var(--accent)' }}></i>
             <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>Subida exitosa</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>Upload successful</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                <strong>Se colocará en:</strong> {meta.label} &middot; {meta.section}
+                <strong>Will be placed in:</strong> {meta.label} &middot; {meta.section}
               </div>
             </div>
           </div>
@@ -268,19 +268,19 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
                 <video src={result.secure_url} controls style={{ width: '100%', maxHeight: '34vh', objectFit: 'contain', borderRadius: 6, display: 'block', background: '#000' }}></video>
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={result.secure_url} alt="Subida" style={{ width: '100%', maxHeight: '34vh', objectFit: 'contain', borderRadius: 6, display: 'block' }} />
+                <img src={result.secure_url} alt="Upload" style={{ width: '100%', maxHeight: '34vh', objectFit: 'contain', borderRadius: 6, display: 'block' }} />
               )}
             </div>
             <ul className="cms-upload-done__meta">
-              <li><strong>Archivo:</strong> <span>{result.original_name}</span></li>
-              <li><strong>Tipo:</strong> {isVid ? 'Video' : 'Imagen'} &middot; {result.final_format}</li>
+              <li><strong>File:</strong> <span>{result.original_name}</span></li>
+              <li><strong>Type:</strong> {isVid ? 'Video' : 'Image'} &middot; {result.final_format}</li>
               <li>
-                <strong>Tamaño:</strong>{' '}
+                <strong>Size:</strong>{' '}
                 <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(result.final_bytes)}</span>{' '}
-                <span style={{ fontSize: '0.78rem', opacity: 0.7 }}>(inicial: {fmtBytes(file.size)})</span>
+                <span style={{ fontSize: '0.78rem', opacity: 0.7 }}>(initial: {fmtBytes(file.size)})</span>
               </li>
               <li>
-                <strong style={{ color: 'var(--accent)' }}>Ahorro:</strong>{' '}
+                <strong style={{ color: 'var(--accent)' }}>Saved:</strong>{' '}
                 <strong style={{ color: 'var(--accent)', fontFamily: "'Fira Code', monospace" }}>
                   {file.size > result.final_bytes ? Math.round((1 - result.final_bytes / file.size) * 100) + '%' : '0%'}
                 </strong>
@@ -292,7 +292,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
                     target="_blank" rel="noopener noreferrer"
                     style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '0.78rem' }}
                   >
-                    <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.72rem' }}></i> Ver en Cloudinary
+                    <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.72rem' }}></i> View in Cloudinary
                   </a>
                 </li>
               )}

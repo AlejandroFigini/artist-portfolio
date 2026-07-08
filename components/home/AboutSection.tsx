@@ -145,22 +145,22 @@ export default function AboutSection() {
                 <span className="line-wrap"><span className="line">{TITLE}</span></span>
               </h2>
               <p className="about-lede" data-i18n="about_lede">
-                Diseño y animo personajes y mundos. Trabajo en la intersección
-                entre 3D, ilustración y narrativa visual.
+                I design and animate characters and worlds. Working at the intersection
+                of 3D, illustration, and visual storytelling.
               </p>
             </div>
 
             <div className="bio-content about-bio">
               <p>
-                Soy Lucía Montaña. Llevo años dándole forma a personajes y
-                escenarios, mezclando técnicas tradicionales con pipeline 3D
-                moderno. Cada pieza arranca de un boceto a mano y termina
-                lookdev'd para integrarse en producción.
+                I am Lucía Montaña. I have spent years shaping characters and
+                environments, combining traditional techniques with a modern 3D
+                pipeline. Every piece begins with a hand-drawn sketch and finishes
+                lookdev'd for production integration.
               </p>
               <p>
-                Mi práctica se mueve entre el corto animado, el motion design
-                editorial y el game art. Disfruto los proyectos donde el
-                lenguaje visual es el protagonista.
+                My work spans animated short films, editorial motion design,
+                and game art. I thrive on projects where visual language takes
+                center stage.
               </p>
             </div>
 

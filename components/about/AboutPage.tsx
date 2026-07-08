@@ -37,25 +37,25 @@ const TIMELINE = [
     year: '2024',
     role: 'Senior 3D Generalist',
     place: 'Freelance',
-    desc: 'Dirección de personajes y lookdev para cortos animados y piezas publicitarias.',
+    desc: 'Character direction and lookdev for animated short films and commercial pieces.',
   },
   {
     year: '2022',
     role: '3D Artist & Animator',
-    place: 'Estudio · Game Art',
-    desc: 'Pipeline de modelado, rigging y animación para proyectos de game art y motion.',
+    place: 'Studio · Game Art',
+    desc: 'Modeling, rigging, and animation pipeline for game art and motion projects.',
   },
   {
     year: '2019',
-    role: 'Inicio freelance',
+    role: 'Freelance Start',
     place: 'Montevideo',
-    desc: 'Primeros encargos de ilustración y modelado 3D mezclando técnica tradicional y pipeline digital.',
+    desc: 'Early illustration and 3D modeling commissions combining traditional techniques and digital pipeline.',
   },
   {
     year: '2017',
-    role: 'B.A. en Animación',
-    place: 'Formación',
-    desc: 'Base en animación, narrativa visual y lenguaje cinematográfico.',
+    role: 'B.A. in Animation',
+    place: 'Education',
+    desc: 'Foundation in animation, visual storytelling, and cinematic language.',
   },
 ]
 
@@ -148,18 +148,18 @@ export default function AboutPage() {
           <span className="ab-line-mask"><span className="ab-line ab-line--accent">Montaña</span></span>
         </h1>
         <p className="ab-hero-lede">
-          Diseño y animo personajes y mundos. Trabajo en la intersección entre
-          3D, ilustración y narrativa visual.
+          I design and animate characters and worlds. Working at the intersection of
+          3D, illustration, and visual storytelling.
         </p>
         <div className="ab-hero-meta">
           <span>Montevideo · UY</span>
           <span>3D Generalist</span>
-          <span className="ab-meta-live">Disponible para proyectos</span>
+          <span className="ab-meta-live">Available for projects</span>
         </div>
       </header>
 
       {/* 2 · RETRATO + BIO */}
-      <section className="ab-section ab-about ab-wrap" aria-label="Biografía">
+      <section className="ab-section ab-about ab-wrap" aria-label="Biography">
         <div className="ab-about-grid">
           <figure className="ab-portrait">
             <span className="ab-corner tl" />
@@ -167,23 +167,18 @@ export default function AboutPage() {
             <span className="ab-corner bl" />
             <span className="ab-corner br" />
             {/* contenedor CMS: about.photo (engine indexa por .artist-photo-img) */}
-            <img className="artist-photo-img" alt="Retrato de Lucía Montaña" />
+            <img className="artist-photo-img" alt="Lucía Montaña Portrait" />
             <figcaption className="ab-portrait-cap">FIG. 01 — Subject</figcaption>
           </figure>
 
           <div className="ab-bio">
-            <span className="ab-eyebrow">// Biografía</span>
+            <span className="ab-eyebrow">// Biography</span>
             <div className="ab-bio-text">
               <p>
-                Soy <strong>Lucía Montaña</strong>. Llevo años dándole forma a
-                personajes y escenarios, mezclando técnicas tradicionales con un
-                pipeline 3D moderno. Cada pieza arranca de un boceto a mano y
-                termina lookdev&apos;d para integrarse en producción.
+                I am <strong>Lucía Montaña</strong>. I have spent years shaping characters and environments, combining traditional techniques with a modern 3D pipeline. Every piece begins with a hand-drawn sketch and finishes lookdev&apos;d for production integration.
               </p>
               <p>
-                Mi práctica se mueve entre el corto animado, el motion design
-                editorial y el game art. Disfruto los proyectos donde el lenguaje
-                visual es el protagonista.
+                My work spans animated short films, editorial motion design, and game art. I thrive on projects where visual language takes center stage.
               </p>
             </div>
 
@@ -200,10 +195,10 @@ export default function AboutPage() {
       </section>
 
       {/* 3 · SOFTWARE / TOOLKIT */}
-      <section className="ab-section ab-tools ab-wrap" aria-label="Software y herramientas">
+      <section className="ab-section ab-tools ab-wrap" aria-label="Software and tools">
         <div className="ab-section-head">
           <span className="ab-eyebrow">// Toolkit</span>
-          <h2 className="ab-section-title">Software del día a día</h2>
+          <h2 className="ab-section-title">Day-to-day Software</h2>
         </div>
         <div className="ab-tools-grid">
           {TOOLS.map((t, i) => (
@@ -217,10 +212,10 @@ export default function AboutPage() {
       </section>
 
       {/* 4 · EXPERIENCIA / TIMELINE */}
-      <section className="ab-section ab-timeline-sec ab-wrap" aria-label="Trayectoria">
+      <section className="ab-section ab-timeline-sec ab-wrap" aria-label="Career Timeline">
         <div className="ab-section-head">
-          <span className="ab-eyebrow">// Trayectoria</span>
-          <h2 className="ab-section-title">De dónde vengo</h2>
+          <span className="ab-eyebrow">// Career Timeline</span>
+          <h2 className="ab-section-title">Where I come from</h2>
         </div>
         <div className="ab-timeline">
           <span className="ab-tl-track" aria-hidden="true"><span className="ab-tl-fill" /></span>
@@ -239,17 +234,16 @@ export default function AboutPage() {
       </section>
 
       {/* 5 · CONTACTO */}
-      <section className="ab-section ab-contact ab-wrap" aria-label="Contacto">
-        <span className="ab-eyebrow">// Contacto</span>
-        <h2 className="ab-contact-title">Trabajemos <em>juntos</em>.</h2>
+      <section className="ab-section ab-contact ab-wrap" aria-label="Contact">
+        <span className="ab-eyebrow">// Contact</span>
+        <h2 className="ab-contact-title">Let&apos;s work <em>together</em>.</h2>
         <p className="ab-contact-lede">
-          ¿Tenés un proyecto de animación, personajes o 3D en mente? Escribime y
-          lo charlamos.
+          Have an animation, character, or 3D project in mind? Drop me a message and let&apos;s talk.
         </p>
         <div className="ab-contact-actions">
           <a className="ab-cta" href="mailto:hola@luciamontana.com">
             <i className="fa-solid fa-paper-plane" aria-hidden="true" />
-            Escribime
+            Get in touch
           </a>
           <ul className="ab-socials">
             {SOCIALS.map((s) => (

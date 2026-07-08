@@ -47,7 +47,7 @@ function useSelection() {
 function MultiToggleBtn({ multiSelect, onClick }: { multiSelect: boolean; onClick: () => void }) {
   return (
     <button type="button" className="cms-btn cms-btn--sm" onClick={onClick}>
-      <i className="fa-solid fa-check-square"></i> {multiSelect ? 'Deshabilitar Selección' : 'Selección Múltiple'}
+      <i className="fa-solid fa-check-square"></i> {multiSelect ? 'Disable selection' : 'Multi-select'}
     </button>
   )
 }
@@ -73,7 +73,7 @@ function SectionOptionsMenu({ children }: { children: (close: () => void) => Rea
   return (
     <div className="admin-options-menu" ref={ref}>
       <button
-        type="button" className="cms-iconbtn" aria-label="Más opciones" aria-expanded={open}
+        type="button" className="cms-iconbtn" aria-label="More options" aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
         <i className="fa-solid fa-bars"></i>
@@ -91,11 +91,11 @@ function BatchBar({ count, actionLabel, danger, actionDisabled, onCancel, onActi
       <div className="cms-batch-info">
         <span className="cms-batch-count">{count}</span>
         <span className="cms-batch-text">
-          {count === 0 ? 'Seleccioná elementos' : count === 1 ? 'elemento seleccionado' : 'elementos seleccionados'}
+          {count === 0 ? 'Select items' : count === 1 ? 'item selected' : 'items selected'}
         </span>
       </div>
       <div className="cms-batch-actions">
-        <button type="button" className="cms-btn cms-btn--ghost cms-btn--sm" onClick={onCancel}>Cancelar</button>
+        <button type="button" className="cms-btn cms-btn--ghost cms-btn--sm" onClick={onCancel}>Cancel</button>
         <button
           type="button"
           className={`cms-btn cms-btn--sm cms-btn--primary${danger ? ' cms-batch-danger' : ''}`}
@@ -114,52 +114,52 @@ function useMenus({ openModal }: Pick<Ctx, 'openModal'>) {
   const { confirm } = useModal()
 
   const usedMenu = (e: AnyEntry): MenuAction[] => [
-    { icon: 'fa-pen', color: '#22c55e', label: 'Editar información', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
-    { icon: 'fa-box-archive', color: '#eab308', label: 'Mover a Sin Usar', onClick: () => {
+    { icon: 'fa-pen', color: '#22c55e', label: 'Edit info', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
+    { icon: 'fa-box-archive', color: '#eab308', label: 'Move to Unused', onClick: () => {
       const k = (e as { key: string }).key
       const otherUses = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src && u.key !== k) : []
       if (otherUses.length > 0) {
         const otherNames = otherUses.map(u => u.label || u.key).join(', ')
-        confirm('Vaciar Contenedor',
-          <>El contenido está en uso en: <strong>{otherNames}</strong>.<br /><br />
-            Se vaciará el contenedor <strong>{e.label || k}</strong>, pero el archivo <strong>no se moverá a sin usar</strong> porque sigue activo en los otros contenedores.</>,
+        confirm('Empty Container',
+          <>Content is in use in: <strong>{otherNames}</strong>.<br /><br />
+            Container <strong>{e.label || k}</strong> will be emptied, but the file <strong>will not be moved to unused</strong> because it is still active in other containers.</>,
           () => moveUsedToUnused(k))
       } else {
-        confirm('Mover a Sin Usar',
-          <>¿Mover <strong>{e.label || k}</strong> a Sin Usar? Se quitará del sitio.</>,
+        confirm('Move to Unused',
+          <>Move <strong>{e.label || k}</strong> to Unused? It will be removed from the site.</>,
           () => moveUsedToUnused(k))
       }
     } },
-    { icon: 'fa-link', color: '#a855f7', label: 'Asociar a otro contenedor', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
-    { icon: 'fa-signature', color: '#3b82f6', label: 'Renombrar contenedor', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },
+    { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
+    { icon: 'fa-signature', color: '#3b82f6', label: 'Rename container', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },
   ]
 
   const unusedMenu = (e: AnyEntry): MenuAction[] => {
     const idx = e._idx ?? -1
     const acts: MenuAction[] = [
-      { icon: 'fa-link', color: '#a855f7', label: 'Asociar a contenedor', onClick: () => openModal({ kind: 'associate', item: e, isUnused: true, idx }) },
+      { icon: 'fa-link', color: '#a855f7', label: 'Associate with container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: true, idx }) },
     ]
     if (e.key) {
-      acts.push({ icon: 'fa-rotate-left', color: '#22c55e', label: 'Restaurar', onClick: () => {
+      acts.push({ icon: 'fa-rotate-left', color: '#22c55e', label: 'Restore', onClick: () => {
         const occupied = state.usedContent[e.key!]
-        confirm('Restaurar contenido',
-          <>Vas a restaurar <strong>{e.label || 'contenido'}</strong>{e.section ? <> en la sección <strong>{e.section}</strong></> : null}.
+        confirm('Restore content',
+          <>You are about to restore <strong>{e.label || 'content'}</strong>{e.section ? <> in section <strong>{e.section}</strong></> : null}.
             {occupied ? (
-              <div className="cms-confirm-warn"><i className="fa-solid fa-triangle-exclamation"></i> El contenido actual de esa ubicación (<strong>{occupied.name || occupied.label}</strong>) se moverá a <strong>no usados</strong>.</div>
+              <div className="cms-confirm-warn"><i className="fa-solid fa-triangle-exclamation"></i> Current content in that location (<strong>{occupied.name || occupied.label}</strong>) will be moved to <strong>unused</strong>.</div>
             ) : (
-              <div className="cms-confirm-warn"><i className="fa-solid fa-circle-info"></i> Volverá a mostrarse en el sitio.</div>
+              <div className="cms-confirm-warn"><i className="fa-solid fa-circle-info"></i> It will be displayed on the site again.</div>
             )}</>,
           () => performRestore(idx))
       } })
     }
-    acts.push({ icon: 'fa-trash', color: 'danger', label: 'Mover a basurero', onClick: () => moveUnusedToTrash(idx) })
+    acts.push({ icon: 'fa-trash', color: 'danger', label: 'Move to trash', onClick: () => moveUnusedToTrash(idx) })
     return acts
   }
 
   const trashMenu = (e: AnyEntry): MenuAction[] => [
-    { icon: 'fa-folder-closed', color: '#eab308', label: 'Mover a sin usar', onClick: () => restoreTrashToUnused(e._idx ?? -1) },
-    { icon: 'fa-skull', color: 'danger', label: 'Borrar permanentemente', onClick: () => {
-      confirm('Eliminar permanentemente', '¿Eliminar permanentemente de Cloudinary? Esta acción no se puede deshacer.', () => { deletePermanent(e._idx ?? -1) })
+    { icon: 'fa-folder-closed', color: '#eab308', label: 'Move to unused', onClick: () => restoreTrashToUnused(e._idx ?? -1) },
+    { icon: 'fa-skull', color: 'danger', label: 'Delete permanently', onClick: () => {
+      confirm('Delete permanently', 'Permanently delete from Cloudinary? This action cannot be undone.', () => { deletePermanent(e._idx ?? -1) })
     } },
   ]
 
@@ -172,7 +172,7 @@ const toViewMenu = (acts: MenuAction[]) =>
     onClick: a.onClick,
   }))
 
-const USED_INFO = 'Todo el contenido en uso, organizado por página y sección. Las páginas o secciones sin contenido se muestran igual, con su conteo en cero.'
+const USED_INFO = 'All content in use, organized by page and section. Pages or sections without content are still shown with zero count.'
 
 const toggleInSet = (upd: (updater: (prev: Set<string>) => Set<string>) => void, id: string) =>
   upd((prev) => {
@@ -198,8 +198,8 @@ function SectionHeading({ icon, title, info }: { icon: string; title: string; in
 function ContentStats({ count, size }: { count: number; size: number }) {
   return (
     <div className="admin-content-stats">
-      <span>Archivos: <span className="admin-badge">{count}</span></span>
-      <span>Tamaño total: <span className="admin-badge">{fmtBytes(size)}</span></span>
+      <span>Files: <span className="admin-badge">{count}</span></span>
+      <span>Total size: <span className="admin-badge">{fmtBytes(size)}</span></span>
     </div>
   )
 }
@@ -226,7 +226,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head">
-        <SectionHeading icon="fa-check" title="Contenido en Uso" info={USED_INFO} />
+        <SectionHeading icon="fa-check" title="Content in Use" info={USED_INFO} />
         <SectionOptionsMenu>
           {(close) => (
             <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
@@ -236,11 +236,11 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
       <ContentStats count={usedArr.length} size={sumSizes(usedArr)} />
       {sel.multiSelect && (
         <BatchBar
-          count={count} actionLabel="Mover a Sin Usar"
+          count={count} actionLabel="Move to Unused"
           onCancel={sel.toggleMulti}
           onAction={() => {
             if (!count) return
-            confirm('Mover múltiples a no usados', `¿Mover ${count} elementos a sin usar?`, () => {
+            confirm('Move multiple to unused', `Move ${count} items to unused?`, () => {
               batchMoveUsedToUnused(sel.selected.map((x) => x.val))
               sel.toggleMulti()
             })
@@ -276,12 +276,12 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                   <i className={`fa-solid ${page.icon} admin-tree-icon`}></i>
                   <span className="admin-tree-label">{page.label}</span>
                   {page.count > 0 && (
-                    <span className="admin-badge">{page.count} archivos · {fmtBytes(page.size)}</span>
+                    <span className="admin-badge">{page.count} files · {fmtBytes(page.size)}</span>
                   )}
                 </button>
                 {sel.multiSelect && page.count > 0 && (
                   <input
-                    type="checkbox" title="Seleccionar toda la página"
+                    type="checkbox" title="Select entire page"
                     className="cms-check cms-check--all"
                     checked={pageAllSelected}
                     onChange={(ev) => pageKeys.forEach((k) => sel.toggle('used', k, ev.target.checked))}
@@ -291,7 +291,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
               {pOpen && (
                 <div className="admin-tree-sections">
                   {page.sections.length === 0 && (
-                    <p className="cms-admin-sub admin-tree-empty">Esta página todavía no tiene secciones.</p>
+                    <p className="cms-admin-sub admin-tree-empty">This page has no sections yet.</p>
                   )}
                   {page.sections.map((s) => {
                     const sid = `${page.id}:${s.id}`
@@ -309,12 +309,12 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                             <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
                             <span className="admin-tree-label">{s.label}</span>
                             {s.count > 0 && (
-                              <span className="admin-badge">{s.count} archivos · {fmtBytes(s.size)}</span>
+                              <span className="admin-badge">{s.count} files · {fmtBytes(s.size)}</span>
                             )}
                           </button>
                           {sel.multiSelect && s.count > 0 && (
                             <input
-                              type="checkbox" title="Seleccionar toda la sección" className="cms-check cms-check--all"
+                              type="checkbox" title="Select entire section" className="cms-check cms-check--all"
                               checked={secAllSelected}
                               onChange={(ev) => secKeys.forEach((k) => sel.toggle('used', k, ev.target.checked))}
                             />
@@ -323,7 +323,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                         {sOpen && (
                           <div className="admin-tree-content">
                             {s.count === 0
-                              ? <p className="cms-admin-sub admin-tree-empty">Sin contenido en esta sección.</p>
+                              ? <p className="cms-admin-sub admin-tree-empty">No content in this section.</p>
                               : <div className="cms-mlib-grid">{s.items.map(renderCard)}</div>}
                           </div>
                         )}
@@ -340,9 +340,9 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
   )
 }
 
-const UNUSED_INFO = 'Versiones reemplazadas o retiradas del sitio. Restauralas a su ubicación original o enviálas al basurero.'
-const TRASH_INFO = 'Contenido marcado para eliminar. Se borra automáticamente según la política elegida, o podés vaciarlo manualmente.'
-const REPO_INFO = 'Vista unificada de todo el contenido gestionado, en cualquiera de sus estados.'
+const UNUSED_INFO = 'Replaced or retired versions from the site. Restore them to their original location or send them to trash.'
+const TRASH_INFO = 'Content marked for deletion. It is automatically deleted based on the chosen policy, or you can empty it manually.'
+const REPO_INFO = 'Unified view of all managed content in any state.'
 
 export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
   const sel = useSelection()
@@ -353,15 +353,15 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head">
-        <SectionHeading icon="fa-folder-closed" title="Contenido Sin Usar" info={UNUSED_INFO} />
+        <SectionHeading icon="fa-folder-closed" title="Unused Content" info={UNUSED_INFO} />
         <SectionOptionsMenu>
           {(close) => (
             <>
               <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
               {unusedArr.length > 0 && (
                 <button type="button" className="cms-btn cms-btn--sm cms-btn--primary"
-                  onClick={() => { close(); confirm('Vaciar sin usar', 'Se moverá todo al basurero.', purgeUnused) }}>
-                  Vaciar todo lo no usado
+                  onClick={() => { close(); confirm('Empty unused', 'Everything will be moved to trash.', purgeUnused) }}>
+                  Empty all unused
                 </button>
               )}
             </>
@@ -371,11 +371,11 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
       <ContentStats count={unusedArr.length} size={sumSizes(unusedArr)} />
       {sel.multiSelect && (
         <BatchBar
-          count={count} actionLabel="Mover al Basurero" danger
+          count={count} actionLabel="Move to Trash" danger
           onCancel={sel.toggleMulti}
           onAction={() => {
             if (!count) return
-            confirm('Mover múltiples al basurero', `¿Mover ${count} elementos al basurero?`, () => {
+            confirm('Move multiple to trash', `Move ${count} items to trash?`, () => {
               batchMoveUnusedToTrash(sel.selected.map((x) => parseInt(x.val, 10)))
               sel.toggleMulti()
             })
@@ -387,9 +387,9 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
           <MediaCard
             key={e._idx} e={e} cardType="unused" actions={unusedMenu(e)}
             tags={
-              e.reason === 'replaced' ? <span className="cms-tag cms-tag--reemplazado">reemplazado</span>
-                : e.reason === 'retired' ? <span className="cms-tag cms-tag--retirado">retirado</span>
-                  : e.reason === 'upload' ? <span className="cms-tag cms-tag--subido">subido</span>
+              e.reason === 'replaced' ? <span className="cms-tag cms-tag--reemplazado">replaced</span>
+                : e.reason === 'retired' ? <span className="cms-tag cms-tag--retirado">retired</span>
+                  : e.reason === 'upload' ? <span className="cms-tag cms-tag--subido">uploaded</span>
                     : undefined
             }
             multiSelect={sel.multiSelect}
@@ -414,29 +414,29 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head" style={{ alignItems: 'center' }}>
-        <SectionHeading icon="fa-trash-can" title="Basurero" info={TRASH_INFO} />
+        <SectionHeading icon="fa-trash-can" title="Trash" info={TRASH_INFO} />
         <SectionOptionsMenu>
           {(close) => (
             <>
               <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
               <label className="admin-select-group">
                 <i className="fa-solid fa-clock-rotate-left"></i>
-                Borrado automático
+                Auto delete
                 <select
                   className="admin-select"
                   value={policy}
                   onChange={(e) => { setPolicy(e.target.value); saveJSON(LS.TRASH_POLICY, e.target.value); autoCleanTrash() }}
                 >
                   <option value="manual">Manual</option>
-                  <option value="1d">1 día</option>
-                  <option value="3d">3 días</option>
-                  <option value="7d">1 semana</option>
+                  <option value="1d">1 day</option>
+                  <option value="3d">3 days</option>
+                  <option value="7d">1 week</option>
                 </select>
               </label>
               {trashArr.length > 0 && (
                 <button type="button" className="cms-btn cms-btn--sm cms-btn--primary"
-                  onClick={() => { close(); confirm('Vaciar basurero', '¿Vaciar TODO el basurero y eliminar permanentemente de Cloudinary?', () => { emptyTrash() }) }}>
-                  Vaciar todo
+                  onClick={() => { close(); confirm('Empty trash', 'Empty ALL trash and permanently delete from Cloudinary?', () => { emptyTrash() }) }}>
+                  Empty all
                 </button>
               )}
             </>
@@ -446,12 +446,12 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
       <ContentStats count={trashArr.length} size={sumSizes(trashArr)} />
       {sel.multiSelect && (
         <BatchBar
-          count={count} actionLabel="Eliminar Permanentemente" danger
+          count={count} actionLabel="Delete Permanently" danger
           onCancel={sel.toggleMulti}
           onAction={() => {
             if (!count) return
-            confirm('Eliminar permanentemente', `¿Eliminar ${count} elementos permanentemente? Esto no se puede deshacer.`, () => {
-              toast('Eliminando archivos de Cloudinary...', 'info')
+            confirm('Delete permanently', `Permanently delete ${count} items? This cannot be undone.`, () => {
+              toast('Deleting files from Cloudinary...', 'info')
               batchDeletePermanent(sel.selected.map((x) => parseInt(x.val, 10)))
               sel.toggleMulti()
             })
@@ -462,7 +462,7 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
         {trashArr.map((e) => (
           <MediaCard
             key={e._idx} e={e} cardType="trash" actions={trashMenu(e)}
-            tags={<span className="cms-tag cms-tag--basurero">Basurero</span>}
+            tags={<span className="cms-tag cms-tag--basurero">Trash</span>}
             multiSelect={sel.multiSelect}
             selected={sel.isSel('trash', String(e._idx))}
             onToggleSelect={(on) => sel.toggle('trash', String(e._idx), on)}
@@ -492,9 +492,9 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const filtered = filter === 'all' ? all : all.filter((x) => x._state === filter)
 
   const stateTag = (s?: string) =>
-    s === 'used' ? <span className="cms-tag cms-tag--uso">En Uso</span>
-      : s === 'unused' ? <span className="cms-tag cms-tag--nouso">Sin Usar</span>
-        : <span className="cms-tag cms-tag--basurero">Basurero</span>
+    s === 'used' ? <span className="cms-tag cms-tag--uso">In Use</span>
+      : s === 'unused' ? <span className="cms-tag cms-tag--nouso">Unused</span>
+        : <span className="cms-tag cms-tag--basurero">Trash</span>
 
   // cada item conserva las opciones de SU apartado (uso / sin usar / basurero)
   const menuFor = (e: AnyEntry) =>
@@ -506,23 +506,23 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const usedSel = byState('used'); const unusedSel = byState('unused'); const trashSel = byState('trash')
   const activeStates = [usedSel.length && 'used', unusedSel.length && 'unused', trashSel.length && 'trash'].filter(Boolean) as string[]
   const single = activeStates.length === 1 ? activeStates[0] : null
-  const batchLabel = activeStates.length > 1 ? 'Selección mixta'
-    : single === 'used' ? 'Mover a Sin Usar'
-      : single === 'unused' ? 'Mover al Basurero'
-        : single === 'trash' ? 'Eliminar Permanentemente'
-          : 'Sin acción'
+  const batchLabel = activeStates.length > 1 ? 'Mixed selection'
+    : single === 'used' ? 'Move to Unused'
+      : single === 'unused' ? 'Move to Trash'
+        : single === 'trash' ? 'Delete Permanently'
+          : 'No action'
   const runBatch = () => {
     if (single === 'used') {
-      confirm('Mover múltiples a no usados', `¿Mover ${usedSel.length} elementos a sin usar?`, () => {
+      confirm('Move multiple to unused', `Move ${usedSel.length} items to unused?`, () => {
         batchMoveUsedToUnused(usedSel); sel.toggleMulti()
       })
     } else if (single === 'unused') {
-      confirm('Mover múltiples al basurero', `¿Mover ${unusedSel.length} elementos al basurero?`, () => {
+      confirm('Move multiple to trash', `Move ${unusedSel.length} items to trash?`, () => {
         batchMoveUnusedToTrash(unusedSel.map((v) => parseInt(v, 10))); sel.toggleMulti()
       })
     } else if (single === 'trash') {
-      confirm('Eliminar permanentemente', `¿Eliminar ${trashSel.length} elementos permanentemente? Esto no se puede deshacer.`, () => {
-        toast('Eliminando archivos de Cloudinary...', 'info')
+      confirm('Delete permanently', `Permanently delete ${trashSel.length} items? This cannot be undone.`, () => {
+        toast('Deleting files from Cloudinary...', 'info')
         batchDeletePermanent(trashSel.map((v) => parseInt(v, 10))); sel.toggleMulti()
       })
     }
@@ -531,23 +531,23 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head" style={{ alignItems: 'center' }}>
-        <SectionHeading icon="fa-cloud" title="Repositorio Total" info={REPO_INFO} />
+        <SectionHeading icon="fa-cloud" title="Total Repository" info={REPO_INFO} />
         <SectionOptionsMenu>
           {(close) => (
             <>
               <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
               <label className="admin-select-group">
                 <i className="fa-solid fa-filter"></i>
-                Filtrar por
+                Filter by
                 <select
                   className="admin-select"
                   value={filter}
                   onChange={(e) => { setFilter(e.target.value); saveJSON(LS.REPO_FILTER, e.target.value) }}
                 >
-                  <option value="all">Todos los contenidos</option>
-                  <option value="used">Solo en uso</option>
-                  <option value="unused">Solo sin usar</option>
-                  <option value="trash">Solo basurero</option>
+                  <option value="all">All content</option>
+                  <option value="used">Only in use</option>
+                  <option value="unused">Only unused</option>
+                  <option value="trash">Only trash</option>
                 </select>
               </label>
             </>

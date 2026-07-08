@@ -70,12 +70,12 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   // Estado compacto (chip): color + icono + tooltip. El detalle vive en el tooltip,
   // no en texto plano → panel minimalista.
   const status = dirty
-    ? { color: '#2563eb', icon: 'fa-circle-info', label: 'Guardá la estructura', title: 'Guardá la estructura para habilitar la subida de imágenes' }
+    ? { color: '#2563eb', icon: 'fa-circle-info', label: 'Save structure', title: 'Save structure to enable image uploading' }
     : (hasEmpty || filledCount < 1)
-      ? { color: '#b45309', icon: 'fa-triangle-exclamation', label: `${filledCount}/${slides.length} con imagen`, title: 'Faltan imágenes: completá o eliminá las diapositivas vacías' }
+      ? { color: '#b45309', icon: 'fa-triangle-exclamation', label: `${filledCount}/${slides.length} with image`, title: 'Missing images: complete or remove empty slides' }
       : !hasChanges
-        ? { color: '#64748b', icon: 'fa-check', label: 'Sin cambios', title: 'No se registraron cambios en el carrusel' }
-        : { color: '#047857', icon: 'fa-circle-check', label: 'Listo para guardar', title: 'Todas las diapositivas tienen imagen y hay cambios pendientes' }
+        ? { color: '#64748b', icon: 'fa-check', label: 'No changes', title: 'No changes recorded in carousel' }
+        : { color: '#047857', icon: 'fa-circle-check', label: 'Ready to save', title: 'All slides have images and there are pending changes' }
 
   // Reescribe slide#0..n según el orden actual y manda el payload (port saveGraph)
   const saveGraph = async (finalSlides: string[]) => {
@@ -134,8 +134,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   const onSaveGraph = () => {
     setSaving(true)
     saveGraph(slides)
-      .then(() => { toast('Grafo guardado correctamente'); setSaving(false) })
-      .catch(() => { toast('Error guardando el grafo', 'error'); setSaving(false) })
+      .then(() => { toast('Structure saved successfully'); setSaving(false) })
+      .catch(() => { toast('Error saving structure', 'error'); setSaving(false) })
   }
 
   const persistSettings = async (finalSlides: string[]) => {
@@ -153,16 +153,16 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   // Guardar Configuración: NO se permiten diapositivas vacías. Todas deben tener
   // imagen (o eliminarse). Mínimo 1 imagen (1 sola = imagen única, sin rotación).
   const onSaveSettings = () => {
-    if (dirty) { toast('Guardá el grafo primero', 'error'); return }
-    if (!hasChanges) { toast('No se registraron cambios', 'error'); return }
+    if (dirty) { toast('Save structure first', 'error'); return }
+    if (!hasChanges) { toast('No changes recorded', 'error'); return }
     if (hasEmpty || filledCount < 1) {
-      toast('Todas las diapositivas deben tener imagen (o eliminá las vacías)', 'error')
+      toast('All slides must have an image (or remove empty ones)', 'error')
       return
     }
     setSaving(true)
     persistSettings(slides)
-      .then(() => { toast('Carrusel guardado correctamente'); window.location.reload() })
-      .catch(() => { toast('Error guardando configuración', 'error'); setSaving(false) })
+      .then(() => { toast('Carousel saved successfully'); window.location.reload() })
+      .catch(() => { toast('Error saving settings', 'error'); setSaving(false) })
   }
 
   const move = (idx: number, dir: -1 | 1) => {
@@ -176,7 +176,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   }
 
   const addSlide = () => {
-    if (slides.length >= MAX_SLIDES) { toast(`Máximo ${MAX_SLIDES} diapositivas`, 'error'); return }
+    if (slides.length >= MAX_SLIDES) { toast(`Maximum ${MAX_SLIDES} slides`, 'error'); return }
     // Cap + id único derivado del estado (puro): no excede MAX ni duplica keys.
     setSlides((s) => {
       if (s.length >= MAX_SLIDES) return s
@@ -189,7 +189,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     <CmsModal
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>Gestión de Carrusel</span>
+          <span>Carousel Manager</span>
           <span
             style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
             onMouseEnter={() => setShowInfo(true)}
@@ -199,7 +199,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
               type="button"
               className="cms-icon-btn"
               style={{ border: 'none', background: 'transparent', padding: '0.1rem 0.25rem', color: 'var(--text-secondary)', fontSize: '0.9em' }}
-              aria-label="Ayuda"
+              aria-label="Help"
               aria-expanded={showInfo}
               onFocus={() => setShowInfo(true)}
               onBlur={() => setShowInfo(false)}
@@ -208,9 +208,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
             </button>
             {showInfo && (
               <div role="tooltip" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50, width: 300, padding: '0.6rem 0.8rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-secondary)', lineHeight: 1.55, boxShadow: '0 6px 20px rgba(0, 0, 0, 0.18)', textTransform: 'none', letterSpacing: 'normal' }}>
-                Mínimo {MIN_SLIDES}, máximo {MAX_SLIDES} diapositivas · 1 sola = imagen fija (sin rotación).<br />
-                Todas las diapositivas deben tener imagen para guardar el carrusel.<br />
-                Flujo: <strong>Añadir</strong> → <strong>Guardar estructura</strong> → <strong>Cambiar imagen</strong> → <strong>Guardar carrusel</strong>.
+                Minimum {MIN_SLIDES}, maximum {MAX_SLIDES} slides · 1 slide = static image (no rotation).<br />
+                All slides must have an image to save the carousel.<br />
+                Flow: <strong>Add</strong> → <strong>Save structure</strong> → <strong>Change image</strong> → <strong>Save carousel</strong>.
               </div>
             )}
           </span>
@@ -227,7 +227,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
             <i className={`fa-solid ${status.icon}`}></i>{status.label}
           </span>
           <span style={{ flex: 1 }} />
-          <label title="Duración entre diapositivas (segundos)" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <label title="Duration between slides (seconds)" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             <i className="fa-solid fa-clock"></i>
             <input
               type="number" min={2} max={30} value={duration}
@@ -242,23 +242,23 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
             const empty = isEmptySlide(vKey)
             return (
               <div key={vKey} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.45rem', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                <div title={empty ? 'Sin imagen' : undefined} style={{ position: 'relative', width: 84, height: 50, borderRadius: 4, flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'var(--bg-primary)', backgroundImage: `url("${slideSrc(vKey, prefix)}")`, border: empty ? '1px dashed #b45309' : '1px solid var(--border)' }}>
+                <div title={empty ? 'No image' : undefined} style={{ position: 'relative', width: 84, height: 50, borderRadius: 4, flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'var(--bg-primary)', backgroundImage: `url("${slideSrc(vKey, prefix)}")`, border: empty ? '1px dashed #b45309' : '1px solid var(--border)' }}>
                   {empty && <i className="fa-solid fa-image" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b45309', opacity: 0.55, fontSize: '1rem' }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0, fontSize: '0.85rem', fontWeight: 600 }}>
-                  Diapositiva {i + 1}
-                  {empty && <span style={{ marginLeft: 6, fontWeight: 400, fontSize: '0.75rem', color: '#b45309' }}>· sin imagen</span>}
+                  Slide {i + 1}
+                  {empty && <span style={{ marginLeft: 6, fontWeight: 400, fontSize: '0.75rem', color: '#b45309' }}>· no image</span>}
                 </div>
-                <button type="button" className="cms-icon-btn" disabled={vKey.startsWith('new_slide_') || dirty} title={vKey.startsWith('new_slide_') || dirty ? 'Guardá la estructura primero' : 'Cambiar imagen'} aria-label="Cambiar imagen" onClick={() => onPickImage(vKey)}>
+                <button type="button" className="cms-icon-btn" disabled={vKey.startsWith('new_slide_') || dirty} title={vKey.startsWith('new_slide_') || dirty ? 'Save structure first' : 'Change image'} aria-label="Change image" onClick={() => onPickImage(vKey)}>
                   <i className="fa-solid fa-arrow-up-from-bracket"></i>
                 </button>
-                <button type="button" className="cms-icon-btn" title="Subir" aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
+                <button type="button" className="cms-icon-btn" title="Move up" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
                   <i className="fa-solid fa-chevron-up"></i>
                 </button>
-                <button type="button" className="cms-icon-btn" title="Bajar" aria-label="Bajar" disabled={i === slides.length - 1} onClick={() => move(i, 1)}>
+                <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === slides.length - 1} onClick={() => move(i, 1)}>
                   <i className="fa-solid fa-chevron-down"></i>
                 </button>
-                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title={slides.length <= MIN_SLIDES ? `Mínimo ${MIN_SLIDES} diapositiva` : 'Eliminar'} aria-label="Eliminar" disabled={slides.length <= MIN_SLIDES} onClick={() => setSlides((s) => (s.length <= MIN_SLIDES ? s : s.filter((_, j) => j !== i)))}>
+                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title={slides.length <= MIN_SLIDES ? `Minimum ${MIN_SLIDES} slide` : 'Delete'} aria-label="Delete" disabled={slides.length <= MIN_SLIDES} onClick={() => setSlides((s) => (s.length <= MIN_SLIDES ? s : s.filter((_, j) => j !== i)))}>
                   <i className="fa-solid fa-trash"></i>
                 </button>
               </div>
@@ -270,10 +270,10 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
               className="cms-btn"
               style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderStyle: 'dashed' }}
               disabled={slides.length >= MAX_SLIDES}
-              title={slides.length >= MAX_SLIDES ? `Máximo ${MAX_SLIDES} diapositivas` : 'Añadir nueva diapositiva'}
+              title={slides.length >= MAX_SLIDES ? `Maximum ${MAX_SLIDES} slides` : 'Add new slide'}
               onClick={addSlide}
             >
-              <i className="fa-solid fa-plus"></i> Añadir diapositiva
+              <i className="fa-solid fa-plus"></i> Add slide
             </button>
           </div>
         </div>
@@ -287,17 +287,17 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
               disabled={saving || slides.length < MIN_SLIDES || slides.length > MAX_SLIDES}
               onClick={onSaveGraph}
             >
-              {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Guardando…</> : <><i className="fa-solid fa-diagram-project"></i> Guardar estructura</>}
+              {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Saving…</> : <><i className="fa-solid fa-diagram-project"></i> Save structure</>}
             </button>
           )}
           <button
             type="button" className="cms-btn cms-btn--primary"
             style={{ margin: 0 }}
             disabled={saving || dirty || !hasChanges || hasEmpty || filledCount < 1}
-            title={dirty ? 'Guardá la estructura primero' : !hasChanges ? 'No se registraron cambios' : hasEmpty ? 'Completá o eliminá las diapositivas vacías' : filledCount < 1 ? 'Agregá al menos una imagen' : undefined}
+            title={dirty ? 'Save structure first' : !hasChanges ? 'No changes recorded' : hasEmpty ? 'Complete or remove empty slides' : filledCount < 1 ? 'Add at least one image' : undefined}
             onClick={onSaveSettings}
           >
-            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Guardando…</> : <><i className="fa-solid fa-floppy-disk"></i> Guardar carrusel</>}
+            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Saving…</> : <><i className="fa-solid fa-floppy-disk"></i> Save carousel</>}
           </button>
         </div>
       </div>

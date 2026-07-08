@@ -41,33 +41,33 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
       performRenameContainer(cmsKey, newName)
       meta.label = newName
       refreshContainerLabel(cmsKey)
-      toast('Contenedor actualizado')
+      toast('Container updated')
     }
     setEditingName(false)
   }
 
   return (
-    <CmsModal title="¿Qué deseas hacer?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancelar', onClick: () => { commitRename() } }]}>
+    <CmsModal title="What would you like to do?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancel', onClick: () => { commitRename() } }]}>
       <div>
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
-          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
-          <div className="cms-meta-line"><strong>Tipo requerido:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Imagen'}</span></div>
+          <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>Main feed</span></div>
+          <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Required type:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Image'}</span></div>
           <div className="cms-container-name-row" style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {editingName ? (
               <label className="cms-field" style={{ flex: 1, margin: 0 }}>
-                <span>Nombre del contenedor</span>
+                <span>Container name</span>
                 <input ref={nameRef} type="text" defaultValue={meta.label} autoFocus style={{ fontWeight: 400 }} onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename() }} />
               </label>
             ) : (
               <div className="cms-meta-line" style={{ flex: 1 }}>
-                <strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span>
+                <strong>Container:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span>
               </div>
             )}
             <button
               type="button"
-              title={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
-              aria-label={editingName ? 'Guardar nombre' : 'Renombrar contenedor'}
+              title={editingName ? 'Save name' : 'Rename container'}
+              aria-label={editingName ? 'Save name' : 'Rename container'}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { if (editingName) commitRename(); else setEditingName(true) }}
               style={{
@@ -86,13 +86,13 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
         <div className="cms-picker-grid">
           <button type="button" className="cms-picker-option" onClick={onLocal}>
             <i className="fa-solid fa-file-arrow-up"></i>
-            <span className="cms-picker-title">Subir desde tu PC</span>
-            <span className="cms-picker-desc">Selecciona un archivo nuevo de tu computadora para subirlo y asignarlo aquí.</span>
+            <span className="cms-picker-title">Upload from your PC</span>
+            <span className="cms-picker-desc">Select a new file from your computer to upload and assign here.</span>
           </button>
           <button type="button" className="cms-picker-option" onClick={onRepo}>
             <i className="fa-solid fa-cloud"></i>
-            <span className="cms-picker-title">Usar desde repositorio</span>
-            <span className="cms-picker-desc">Elige un archivo que ya fue subido previamente al repositorio de contenidos.</span>
+            <span className="cms-picker-title">Use from repository</span>
+            <span className="cms-picker-desc">Choose a file that was previously uploaded to the content repository.</span>
           </button>
         </div>
       </div>
@@ -114,9 +114,9 @@ type RepoPickerProps = {
 }
 
 const FILTERS = [
-  { value: 'all', label: 'Repositorio', icon: 'fa-database', colorClass: 'cms-filter-repo' },
-  { value: 'usado', label: 'En uso', icon: 'fa-circle-check', colorClass: 'cms-filter-used' },
-  { value: 'sin usar', label: 'Sin usar', icon: 'fa-box-archive', colorClass: 'cms-filter-unused' },
+  { value: 'all', label: 'Repository', icon: 'fa-database', colorClass: 'cms-filter-repo' },
+  { value: 'usado', label: 'In use', icon: 'fa-circle-check', colorClass: 'cms-filter-used' },
+  { value: 'sin usar', label: 'Unused', icon: 'fa-box-archive', colorClass: 'cms-filter-unused' },
 ] as const
 
 export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps) {
@@ -189,7 +189,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       persistUsed()
       cloudinaryMove(src, getCloudinaryFolder(meta.section))
       recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
-      persistOverrides().catch(() => toast('Error de red al sincronizar con el servidor', 'error'))
+      persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
     } else {
       recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
       emit()
@@ -202,22 +202,22 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     if (cmsKey.startsWith('hero.wave')) syncWaveGroups()
 
     recordAudit({
-      section: meta.section, label: meta.label, kind: meta.kind === 'video' ? 'video' : 'imagen',
-      summary: moveFromOld ? `Contenido movido desde contenedor anterior (${selected.name || 'archivo existente'})` : `Contenido asignado/reusado desde repositorio (${selected.name || 'archivo existente'})`,
+      section: meta.section, label: meta.label, kind: meta.kind === 'video' ? 'video' : 'image',
+      summary: moveFromOld ? `Content moved from previous container (${selected.name || 'existing file'})` : `Content assigned/reused from repository (${selected.name || 'existing file'})`,
     })
-    toast(moveFromOld ? 'Contenido movido correctamente' : 'Contenido asignado correctamente')
+    toast(moveFromOld ? 'Content moved successfully' : 'Content assigned successfully')
     setConfirmEntry(null)
     if (onSuccess) onSuccess()
   }
 
   const assign = (): void | false => {
-    if (!selected) { toast('Seleccioná un contenido primero', 'error'); return false }
+    if (!selected) { toast('Select a content first', 'error'); return false }
     if ((selected.kind === 'video') !== isVideoSlot) {
-      toast(`Este contenido es incompatible (requiere ${isVideoSlot ? 'video' : 'imagen'})`, 'error')
+      toast(`This content is incompatible (requires ${isVideoSlot ? 'video' : 'image'})`, 'error')
       return false
     }
     const src = selected.src
-    if (!src) { toast('El contenido seleccionado no tiene un recurso válido', 'error'); return false }
+    if (!src) { toast('Selected content has no valid resource', 'error'); return false }
 
     // Verificar que el contenido siga existiendo en Cloudinary antes de asignar
     if (src.includes('cloudinary.com')) {
@@ -225,7 +225,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       verifySingleUrl(src).then((exists) => {
         setVerifying(false)
         if (!exists) {
-          toast('Este contenido ya no existe en Cloudinary y fue eliminado del repositorio', 'error')
+          toast('This content no longer exists in Cloudinary and was removed from the repository', 'error')
           purgeUrlsFromAllState([src])
           emit()
           return
@@ -249,18 +249,18 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   return (
     <CmsModal
-      title="Elegir del repositorio" wide onClose={onClose}
+      title="Choose from repository" wide onClose={onClose}
       actions={[
-        { label: 'Cancelar', onClick: () => {} },
-        { label: verifying ? 'Verificando...' : 'Usar este contenido', primary: true, onClick: verifying ? () => false as const : assign },
+        { label: 'Cancel', onClick: () => {} },
+        { label: verifying ? 'Verifying...' : 'Use this content', primary: true, onClick: verifying ? () => false as const : assign },
       ]}
     >
       <div>
         <div className="cms-up-head">
-          <div className="cms-meta-line"><strong>Página:</strong> <span style={{ opacity: 0.85 }}>Feed principal</span></div>
-          <div className="cms-meta-line"><strong>Sección:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
-          <div className="cms-meta-line"><strong>Contenedor:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span></div>
-          <div className="cms-meta-line"><strong>Mostrando:</strong> <span style={{ opacity: 0.85 }}>{isVideoSlot ? 'Videos' : 'Imágenes'} disponibles en el repositorio</span></div>
+          <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>Main feed</span></div>
+          <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
+          <div className="cms-meta-line"><strong>Container:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span></div>
+          <div className="cms-meta-line"><strong>Showing:</strong> <span style={{ opacity: 0.85 }}>{isVideoSlot ? 'Videos' : 'Images'} available in repository</span></div>
         </div>
         <div className="cms-repo-filter-bar">
           {FILTERS.map((f) => (
@@ -277,7 +277,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           {filtered.length === 0 && (
             <div className="cms-repo-empty">
               <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
-              No hay contenido disponible de este tipo.
+              No content available of this type.
             </div>
           )}
           {filtered.map((entry, i) => {
@@ -287,16 +287,16 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               key={i}
               className={`cms-repo-thumb${selected === entry ? ' selected' : ''}`}
               style={{ opacity: isCompat ? 1 : 0.45, cursor: isCompat ? 'pointer' : 'not-allowed' }}
-              onClick={() => { if (isCompat) setSelected(entry); else toast(`Contenido incompatible (requiere ${isVideoSlot ? 'video' : 'imagen'})`, 'error') }}
+              onClick={() => { if (isCompat) setSelected(entry); else toast(`Incompatible content (requires ${isVideoSlot ? 'video' : 'image'})`, 'error') }}
             >
               <div className="cms-mlib-tag-top" style={{ padding: '0.35rem 0.35rem 0 0.35rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                 {!isCompat && (
                   <span className="cms-tag" style={{ background: '#ef4444', color: '#fff' }}>Incompatible</span>
                 )}
                 {entry._state === 'usado' ? (
-                  <span className="cms-tag cms-tag--uso">En Uso</span>
+                  <span className="cms-tag cms-tag--uso">In Use</span>
                 ) : (
-                  <span className="cms-tag cms-tag--nouso">Sin Usar</span>
+                  <span className="cms-tag cms-tag--nouso">Unused</span>
                 )}
               </div>
               {entry.kind === 'video' ? (
@@ -318,7 +318,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               )}
               <div className="cms-repo-thumb-info">
                 <span style={{ fontWeight: 400 }}>{entry.name || entry.label || '—'}</span><br />
-                {entry.size ? <><strong>Tamaño:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
+                {entry.size ? <><strong>Size:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
               </div>
             </div>
             )
@@ -327,14 +327,14 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       </div>
       {confirmEntry && (
         <CmsModal
-          title="Contenido en uso"
+          title="Content in use"
           onClose={() => setConfirmEntry(null)}
           actions={[
-            { label: 'Cancelar', onClick: () => { setConfirmEntry(null); return false } },
+            { label: 'Cancel', onClick: () => { setConfirmEntry(null); return false } },
             {
               label: (
                 <>
-                  <i className="fa-solid fa-copy" style={{ marginRight: '0.4rem' }}></i> Reusar
+                  <i className="fa-solid fa-copy" style={{ marginRight: '0.4rem' }}></i> Reuse
                 </>
               ),
               primary: true,
@@ -343,7 +343,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             {
               label: (
                 <>
-                  <i className="fa-solid fa-arrow-right-arrow-left" style={{ marginRight: '0.4rem' }}></i> Mover
+                  <i className="fa-solid fa-arrow-right-arrow-left" style={{ marginRight: '0.4rem' }}></i> Move
                 </>
               ),
               primary: true,
@@ -356,13 +356,13 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               <i className="fa-solid fa-triangle-exclamation"></i>
             </div>
             <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--text-primary)', fontWeight: 500 }}>
-              Este contenido ya se está usando en el contenedor:
+              This content is already being used in container:
             </p>
             <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.6rem', marginBottom: '1.2rem', fontFamily: 'var(--font-display, inherit)', fontWeight: 600, color: 'var(--accent)' }}>
               {confirmEntry.label || confirmEntry._key}
             </div>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              ¿Deseas <strong>moverlo</strong> (se quitará del contenedor anterior) o <strong>reusarlo</strong> (se mantendrá en ambos)?
+              Do you want to <strong>move it</strong> (will be removed from previous container) or <strong>reuse it</strong> (will remain in both)?
             </p>
           </div>
         </CmsModal>

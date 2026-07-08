@@ -1611,9 +1611,20 @@ section {
     font-size: 0.95rem;
 }
 
-/* En settings ocupa el ancho disponible a la derecha */
+/* En settings ocupa un tamaño compacto y elegante */
 .cv-btn-settings {
-    padding: 0.5rem 1.1rem;
+    padding: 0.38rem 0.6rem;
+    min-width: 34px;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: 0.92rem;
+}
+.cv-btn-settings i {
+    font-size: 0.92rem;
 }
 
 /* Sigla del idioma seleccionado, al lado de la bandera */
@@ -1703,13 +1714,12 @@ body.is-admin .admin-only::before {
     padding: 4px;
 }
 
-/* En settings el panel está abajo-izquierda: el menú se abre HACIA ARRIBA
-   y alineado a la izquierda, para no quedar cortado por la pantalla. */
+/* En settings el menú se despliega HACIA EL COSTADO DERECHO para evitar cortarse con el borde inferior. */
 .lang-dropdown-settings {
     top: auto;
+    bottom: -10px;
+    left: calc(100% + 10px);
     right: auto;
-    bottom: calc(100% + 8px);
-    left: 0;
 }
 
 .lang-dropdown.active,
@@ -1994,7 +2004,8 @@ footer {
 }
 
 .settings-gear:hover {
-    transform: rotate(90deg) scale(1.1);
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 8px 22px rgba(124, 58, 237, 0.45);
 }
 
 /* Panel de Configuración */
@@ -2029,6 +2040,7 @@ footer {
 }
 .settings-gear--admin:hover {
     background: #3a2c66;
+    box-shadow: 0 8px 22px rgba(58, 44, 102, 0.6);
 }
 .settings-panel--admin {
     left: 85px;
@@ -2052,7 +2064,7 @@ footer {
     justify-content: space-between;
     align-items: center;
     gap: 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.9rem;
 }
 
 .setting-item span {
@@ -2066,6 +2078,15 @@ footer {
     background: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border);
+}
+
+.settings-divider {
+    height: 1.5px;
+    background: color-mix(in srgb, var(--accent) 45%, var(--border));
+    opacity: 1;
+    margin: 1.5rem 0;
+    border: none;
+    width: 100%;
 }
 
 /* Gestión → Redes sociales: input de URL/email por red */

@@ -133,8 +133,8 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
   const onSaveGraph = () => {
     setSaving(true)
     saveGraph(projects)
-      .then(() => { toast('Cambios guardados correctamente'); setSaving(false); onClose() })
-      .catch(() => { toast('Error guardando', 'error'); setSaving(false) })
+      .then(() => { toast('Changes saved successfully'); setSaving(false); onClose() })
+      .catch(() => { toast('Error saving changes', 'error'); setSaving(false) })
   }
 
   const move = (idx: number, dir: -1 | 1) => {
@@ -153,10 +153,10 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
   const [dummy, setDummy] = useState(0)
   
   return (
-    <CmsModal title="Gestión de Proyectos" wide show={show} onClose={onClose} actions={[]}>
+    <CmsModal title="Projects Manager" wide show={show} onClose={onClose} actions={[]}>
       <div className="cms-carousel-manager">
         <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Añade, reordena, edita o elimina los proyectos. Los cambios se aplicarán al hacer clic en "Guardar Cambios".
+          Add, reorder, edit, or delete projects. Changes will take effect when you click "Save Changes".
         </p>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -178,23 +178,23 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
               }, 500)
             }}
           >
-            <i className="fa-solid fa-plus"></i> Añadir Proyecto
+            <i className="fa-solid fa-plus"></i> Add Project
           </button>
           {dirty && (
             <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>
-              <i className="fa-solid fa-triangle-exclamation"></i> Tienes cambios sin guardar
+              <i className="fa-solid fa-triangle-exclamation"></i> Unsaved changes
             </span>
           )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {projects.map((vKey, i) => {
-            const title = state.items[`${vKey}::title`] || `Proyecto #${i + 1} (Sin título)`
+            const title = state.items[`${vKey}::title`] || `Project #${i + 1} (Untitled)`
             const src = slideSrc(vKey)
             return (
               <div key={vKey} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
                 <div style={{ width: 100, height: 60, borderRadius: 4, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url("${src}")`, backgroundColor: '#e5e7eb', flexShrink: 0 }}>
-                  {!src && <div style={{width: '100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#9ca3af', fontSize:'0.7rem'}}>Sin IMG</div>}
+                  {!src && <div style={{width: '100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#9ca3af', fontSize:'0.7rem'}}>No IMG</div>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ display: 'block', marginBottom: '0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -209,15 +209,15 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
                         setTimeout(() => setDummy(d => d+1), 500) // trigger re-render in case of new meta
                       }}
                     >
-                      <i className="fa-solid fa-pen"></i> Editar Info / IMG
+                      <i className="fa-solid fa-pen"></i> Edit Info / IMG
                     </button>
-                    <button type="button" className="cms-btn" title="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
+                    <button type="button" className="cms-btn" title="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
                       <i className="fa-solid fa-arrow-up"></i>
                     </button>
-                    <button type="button" className="cms-btn" title="Bajar" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
+                    <button type="button" className="cms-btn" title="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
                       <i className="fa-solid fa-arrow-down"></i>
                     </button>
-                    <button type="button" className="cms-btn" title="Eliminar" style={{ color: '#ef4444' }} onClick={() => setProjects((s) => s.filter((_, j) => j !== i))}>
+                    <button type="button" className="cms-btn" title="Delete" style={{ color: '#ef4444' }} onClick={() => setProjects((s) => s.filter((_, j) => j !== i))}>
                       <i className="fa-solid fa-trash"></i>
                     </button>
                   </div>
@@ -226,7 +226,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
             )
           })}
           {projects.length === 0 && (
-             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No hay proyectos. Añade uno.</div>
+             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No projects found. Add one.</div>
           )}
         </div>
 
@@ -238,7 +238,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
             style={!dirty ? { opacity: 0.5 } : undefined}
             onClick={onSaveGraph}
           >
-            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Guardando...</> : 'Guardar Cambios'}
+            {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Saving...</> : 'Save Changes'}
           </button>
         </div>
       </div>

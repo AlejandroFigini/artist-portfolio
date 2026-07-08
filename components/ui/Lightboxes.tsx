@@ -19,7 +19,7 @@ function InfoPanel({ withLink }: { withLink?: boolean }) {
       <p className="info-inspiration hidden"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span className="val"></span></p>
       {withLink && (
         <a className="info-link" target="_blank" rel="noopener" style={{ display: 'none' }}>
-          <i className="fa-solid fa-up-right-from-square"></i> Ver publicación original
+          <i className="fa-solid fa-up-right-from-square"></i> View original post
         </a>
       )}
       <div className="info-footer">
