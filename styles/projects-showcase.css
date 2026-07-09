@@ -15,7 +15,8 @@
   position: absolute;
   top: clamp(4rem, 8vw, 6rem);
   bottom: clamp(4rem, 8vw, 6rem);
-  left: clamp(0.9rem, 2vw, 1.8rem);
+  right: clamp(0.9rem, 2vw, 1.8rem);
+  left: auto;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -368,6 +368,12 @@ export default function ModelsShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
+      gsap.set('.m3d-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
+      gsap.to('.m3d-showcase__rail-fill', {
+        scaleY: 1, ease: 'none',
+        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
+      })
+
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
