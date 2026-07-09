@@ -433,15 +433,15 @@ export function getAllKnownContainerKeys(): string[] {
     ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
     ...Array.from({ length: Math.max(6, tryParseCount(state.items['char.settings'])) }, (_, i) => `char#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `char.soft#${i}`),
+    ...Array.from({ length: 3 }, (_, i) => `char.soft#${i}`),
     ...Array.from({ length: 15 }, (_, i) => `illustration#${i}`),
     ...Array.from({ length: Math.max(6, tryParseCount(state.items['anim.settings'])) }, (_, i) => `anim#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `anim.soft#${i}`),
+    ...Array.from({ length: 4 }, (_, i) => `anim.soft#${i}`),
     ...Array.from({ length: Math.max(6, tryParseCount(state.items['proj.settings'])) }, (_, i) => `proj#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `proj.soft#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `model3d#${i}`),
     ...Array.from({ length: 12 }, (_, i) => `model3d.gallery#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `model3d.soft#${i}`),
+    ...Array.from({ length: 4 }, (_, i) => `model3d.soft#${i}`),
   ]
   standard.forEach(k => keys.add(k))
   // 2) Claves en uso, retiradas, sin usar o en papelera

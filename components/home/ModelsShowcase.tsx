@@ -397,7 +397,7 @@ export default function ModelsShowcase() {
             Digital modeling and sculpting — characters, props, and environments
             built with a focus on form, topology, and production-ready materials.
           </p>
-          <SoftwareDropdown prefix="model3d" />
+          <SoftwareDropdown prefix="model3d" count={4} />
         </div>
 
         <div className="m3d-grid">

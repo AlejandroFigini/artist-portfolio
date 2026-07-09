@@ -195,7 +195,7 @@ export default function CharactersShowcase() {
             Character gallery: each piece explores its complete process — from early concept
             to final design, focusing on form, color, and personality.
           </p>
-          <SoftwareDropdown prefix="char" />
+          <SoftwareDropdown prefix="char" count={3} />
           {isAdmin && (
             <button
               type="button"

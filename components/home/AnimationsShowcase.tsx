@@ -329,7 +329,7 @@ export default function AnimationsShowcase() {
             A selection of animations, motion graphics, and technical tests
             exploring movement, storytelling, and expression through characters and environments.
           </p>
-          <SoftwareDropdown prefix="anim" />
+          <SoftwareDropdown prefix="anim" count={4} />
         </div>
 
         <div className="animations-grid">
