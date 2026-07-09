@@ -11,7 +11,7 @@ import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
-import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
@@ -51,18 +51,24 @@ export default function Hero() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     ensureGSAP()
+    const sec = sectionRef.current
+    if (!sec) return
+
     const ctx = gsap.context(() => {
       // parallax del media principal al scrollear (port de script.js)
-      gsap.to('.hero-primary .cms-media', {
-        yPercent: 15,
-        ease: 'none',
-        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
-      })
+      const mediaEl = sec.querySelector('.hero-primary .cms-media') || sec.querySelector('.hero-primary .hero-slide-panel') || sec.querySelector('.hero-primary')
+      if (mediaEl) {
+        gsap.to(mediaEl, {
+          yPercent: 15,
+          ease: 'none',
+          scrollTrigger: { trigger: sec, start: 'top top', end: 'bottom top', scrub: true },
+        })
+      }
 
       gsap.set('.hero-rail-fill', { scaleY: 0, transformOrigin: 'top center' })
       gsap.to('.hero-rail-fill', {
         scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sectionRef.current || '.hero', start: 'top 0%', end: 'bottom 50%', scrub: 0.6 },
+        scrollTrigger: { trigger: sec, start: 'top 0%', end: 'bottom 50%', scrub: 0.6 },
       })
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })

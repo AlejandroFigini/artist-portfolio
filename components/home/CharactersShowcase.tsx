@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/carousel'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import {
-  ensureGSAP, gsap, prefersReducedMotion,
+  ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion,
   typewriterRevealLoop, wordRevealLoop, type LoopHandle,
 } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
