@@ -9,11 +9,13 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background-color: #110e1a;
+  background-color: #f1ecfa;
   background-image:
-    linear-gradient(to right, rgba(139, 92, 246, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(139, 92, 246, 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(139, 92, 246, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(139, 92, 246, 0.12) 1px, transparent 1px);
   background-size: 38px 38px;
+  border-top: 1px solid rgba(139, 92, 246, 0.22);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.22);
   padding: clamp(2.5rem, 6vw, 5rem) 0;
 }
 
@@ -35,14 +37,14 @@
   font-family: 'Fira Code', monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
-  color: #b4a0e5;
+  color: #6d28d9;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   opacity: 0.7;
 }
 .ch-showcase__rail-fig--end { opacity: 0.45; }
 .ch-showcase__rail-track { position: relative; flex: 1; width: 1px; background: rgba(139, 92, 246, 0.25); }
-.ch-showcase__rail-fill { position: absolute; inset: 0; background: #a87ffb; box-shadow: 0 0 12px rgba(168, 127, 251, 0.8); }
+.ch-showcase__rail-fill { position: absolute; inset: 0; background: #7c3aed; box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
 
 /* --- Inner / header --- */
 .ch-showcase__inner {
@@ -61,7 +63,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #a87ffb;
+  color: #7c3aed;
   margin-bottom: 0.75rem;
 }
 .ch-showcase__title {
@@ -70,7 +72,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.02;
-  color: #ffffff;
+  color: #1e1e24;
   margin: 0 0 0.9rem;
   text-wrap: balance;
 }
@@ -78,7 +80,7 @@
   max-width: 62ch;
   font-size: clamp(0.95rem, 1.4vw, 1.1rem);
   line-height: 1.6;
-  color: #b4b0cc;
+  color: #64748b;
 }
 .ch-showcase__manage {
   position: absolute;
@@ -92,36 +94,37 @@
   letter-spacing: 0.06em;
   padding: 0.45rem 0.8rem;
   border-radius: 8px;
-  border: 1px solid #8b5cf6;
-  background: rgba(139, 92, 246, 0.15);
-  color: #d8c8ff;
+  border: 1px solid #7c3aed;
+  background: #ffffff;
+  color: #7c3aed;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+  transition: all 0.2s ease;
 }
-.ch-showcase__manage:hover { background: #8b5cf6; color: #fff; }
+.ch-showcase__manage:hover { background: #7c3aed; color: #fff; box-shadow: 0 6px 16px rgba(124, 58, 237, 0.2); }
 
 /* Software dropdown overrides inside characters showcase */
 .ch-showcase .sw-trigger {
-  color: #ffffff;
-  background: rgba(24, 21, 40, 0.85);
-  border: 1px solid rgba(168, 127, 251, 0.35);
+  color: #1e1e24;
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.35);
 }
 .ch-showcase .sw-trigger:hover {
-  background: rgba(168, 127, 251, 0.25);
-  border-color: #a87ffb;
-  box-shadow: 0 6px 18px -8px rgba(168, 127, 251, 0.5);
+  background: #f8f5ff;
+  border-color: #7c3aed;
+  box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.25);
 }
 .ch-showcase .sw-list {
-  background: #181528;
-  border-color: rgba(168, 127, 251, 0.35);
-  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.65);
+  background: #ffffff;
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.15);
 }
 .ch-showcase .sw-item {
-  color: #c2becc;
+  color: #475569;
 }
 .ch-showcase .sw-item:hover {
-  background: rgba(168, 127, 251, 0.2);
-  color: #ffffff;
+  background: #f3efff;
+  color: #7c3aed;
 }
 
 /* --- Carrusel (embla) --- */
@@ -129,13 +132,13 @@
 /* Botones prev/next: pastilla blueprint sobre el borde del carrusel. */
 .ch-nav {
   width: 44px; height: 44px;
-  border: 1px solid rgba(168, 127, 251, 0.35);
-  background: #1e1a30;
-  color: #e2dcfc;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: #ffffff;
+  color: #7c3aed;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.1);
+  transition: all 0.2s ease;
 }
-.ch-nav:hover:not(:disabled) { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+.ch-nav:hover:not(:disabled) { background: #7c3aed; color: #fff; border-color: #7c3aed; box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25); }
 
 /* --- Panel de personaje --- */
 .ch-panel {
@@ -146,14 +149,14 @@
   grid-template-columns: 1.35fr 1fr;
   gap: clamp(1rem, 2.5vw, 2.25rem);
   padding: clamp(1.1rem, 2.4vw, 2.1rem);
-  background: #181528;
-  border: 1px solid rgba(168, 127, 251, 0.25);
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.28);
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 45px -10px rgba(124, 58, 237, 0.14), 0 4px 15px -3px rgba(0, 0, 0, 0.04);
 }
 
 /* marcas de registro (corner ticks) */
-.ch-corner { position: absolute; width: 12px; height: 12px; border: 1px solid rgba(168, 127, 251, 0.45); pointer-events: none; }
+.ch-corner { position: absolute; width: 12px; height: 12px; border: 1px solid rgba(139, 92, 246, 0.45); pointer-events: none; }
 .ch-corner.tl { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
 .ch-corner.tr { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
 .ch-corner.bl { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
@@ -182,15 +185,15 @@
   font-size: clamp(4rem, 9vw, 7rem);
   font-weight: 800;
   line-height: 1;
-  color: rgba(168, 127, 251, 0.12);
+  color: rgba(139, 92, 246, 0.08);
   pointer-events: none;
   z-index: 0;
 }
-.ch-counter { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #8c86a6; margin-bottom: 0.6rem; }
-.ch-counter b { color: #c2a6ff; }
-.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #ffffff; margin: 0 0 0.35rem; }
-.ch-role { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #c2a6ff; margin-bottom: 0.9rem; }
-.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #b4b0cc; max-width: 42ch; }
+.ch-counter { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.6rem; }
+.ch-counter b { color: #7c3aed; }
+.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
+.ch-role { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
+.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; max-width: 42ch; }
 
 /* --- Empty (sin personajes) --- */
 .ch-empty {
@@ -201,12 +204,12 @@
   gap: 0.8rem;
   width: 100%;
   min-height: 40vh;
-  color: #a19db8;
-  border: 2px dashed rgba(168, 127, 251, 0.35);
-  background: rgba(24, 21, 40, 0.6);
+  color: #64748b;
+  border: 2px dashed rgba(139, 92, 246, 0.35);
+  background: #ffffff;
   border-radius: 14px;
 }
-.ch-empty i { font-size: 2rem; color: #a87ffb; }
+.ch-empty i { font-size: 2rem; color: #7c3aed; }
 
 /* --- Lightbox (reusa el patrón del legacy, con prefijo ch-) --- */
 .ch-lightbox {
