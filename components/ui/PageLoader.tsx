@@ -25,7 +25,6 @@ export default function PageLoader() {
   const ref = useRef<HTMLDivElement>(null)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
   const { settings } = useSiteSettings()
-  const admin = state.isAdmin
   const serverReady = state.serverReady
   const minDisplay = loaderDurationMs(settings.loaderDuration) // duración configurable
   const failsafe = minDisplay + 6000

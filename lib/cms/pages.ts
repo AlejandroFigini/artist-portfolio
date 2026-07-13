@@ -93,31 +93,6 @@ export function buildPageTree<T extends TreeEntry>(arr: T[]): PageNode<T>[] {
 
 // ----- Cloudinary folder helpers -------------------------------------------------
 
-/** Genera un slug seguro para rutas de carpeta: "Sobre mí" → "sobre-mi". */
-function slug(s: string): string {
-  return s
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'otros'
-}
-
-// Índice inverso: nombre de sección → { pageSlug, sectionSlug }
-type FolderMapping = { pageSlug: string; sectionSlug: string }
-const _sectionIndex = new Map<string, FolderMapping>()
-
-function ensureSectionIndex() {
-  if (_sectionIndex.size > 0) return
-  for (const page of SITE_PAGES) {
-    const ps = slug(page.label)
-    for (const sec of page.sections) {
-      const ss = slug(sec.label)
-      // Extraer los nombres literales de sección del matcher (bySection guarda los
-      // strings en el closure; acá mapeamos por el label de la SectionDef).
-      _sectionIndex.set(sec.label, { pageSlug: ps, sectionSlug: ss })
-    }
-  }
-}
-
 /** Dado el nombre humano de una sección, devuelve la ruta de carpeta en Cloudinary.
  *  Simplificado a 3 carpetas principales: en-uso, sin-usar, basurero. */
 export function getCloudinaryFolder(sectionName: string): string {

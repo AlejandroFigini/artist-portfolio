@@ -56,7 +56,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage }: P
       const ids = pendingNew().map((k) => Number(k.split('_')[1]))
       return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [storeVersion])
 
   const saveGraph = async (finalProjects: string[]) => {

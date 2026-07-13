@@ -74,7 +74,6 @@ export default function HeroMediaCarousel({ prefix, defaultSlides, className = '
       gsap.killTweensOf(els)
     }
     // slidesKey cambia cuando se sube/quita una imagen → re-arma el crossfade.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slidesKey, duration, prefix])
 
   return (

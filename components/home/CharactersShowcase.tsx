@@ -21,6 +21,7 @@ import {
 } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useCmsStore, state } from '@/lib/cms/store'
+import { rescan } from '@/components/cms/engine'
 
 const CONCEPTS_PER = 4
 
@@ -124,7 +125,12 @@ export default function CharactersShowcase() {
       ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`char#${i}::c${m}`] || ''),
     ].join('|'),
   ).join('~')
-  useEffect(() => { api?.reInit() }, [api, signature])
+  useEffect(() => {
+    api?.reInit()
+    if (state.isAdmin) {
+      setTimeout(() => rescan(), 100)
+    }
+  }, [api, signature])
 
   // Reveal de entrada del encabezado + typewriter del título (patrón hermano).
   useEffect(() => {

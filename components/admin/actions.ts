@@ -8,7 +8,7 @@ import { deleteMedia } from '@/lib/api'
 import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit,
-  persistUsed, persistUnused, persistRetired, persistTrash, persistOverridesLocal,
+  persistUsed, persistUnused, persistRetired, persistTrash,
   retireUsedEntryToUnused, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry,
 } from '@/lib/cms/store'
 

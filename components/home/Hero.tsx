@@ -11,7 +11,7 @@ import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion } from '@/hooks/useGSAP'
+import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))

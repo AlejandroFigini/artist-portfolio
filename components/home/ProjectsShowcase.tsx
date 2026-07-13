@@ -16,6 +16,8 @@ import { useCmsStore, state } from '@/lib/cms/store'
 // como JSX. Antes se leía vía data-attrs + MutationObserver, pero embla clona los
 // slides al hacer loop/reInit y los clones quedaban sin el src/textos que el motor
 // inyectaba imperativamente sólo en el nodo original → tarjetas en blanco.
+import { rescan } from '@/components/cms/engine'
+
 function ProjectCard({ index }: { index: number }) {
   useCmsStore()
   const key = `proj#${index}`
@@ -28,7 +30,7 @@ function ProjectCard({ index }: { index: number }) {
   return (
     <div
       data-content-id={key}
-      className="project-item h-full group flex flex-col w-full bg-white rounded-[1.25rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-500 ease-out"
+      className="project-item h-full group flex flex-col justify-between w-full mx-4 sm:mx-6 md:mx-8 bg-white rounded-[1.25rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-500 ease-out"
     >
       {/* 1. Contenedor de Imagen */}
       <div
@@ -51,25 +53,26 @@ function ProjectCard({ index }: { index: number }) {
       </div>
 
       {/* Contenedor de Textos y Botón */}
-      <div className="flex flex-col flex-1" style={{ padding: '2.5rem' }}>
+      <div className="flex flex-col flex-1 justify-between" style={{ padding: '2.5rem' }}>
+        <div>
+          {/* Etiqueta / Meta */}
+          <div className="flex items-center gap-3" style={{ marginBottom: '1.25rem' }}>
+            <span className="w-8 h-[1px] bg-[var(--accent)]"></span>
+            <span className="proj-card-date text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+              {startDate || 'In progress'}
+            </span>
+          </div>
 
-        {/* Etiqueta / Meta */}
-        <div className="flex items-center gap-3" style={{ marginBottom: '1.25rem' }}>
-          <span className="w-8 h-[1px] bg-[var(--accent)]"></span>
-          <span className="proj-card-date text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-            {startDate || 'In progress'}
-          </span>
+          {/* 2. Título */}
+          <h3 className="proj-card-title min-h-[3.6rem] text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300" style={{ marginBottom: '1rem' }}>
+            {title || `Project Title ${index + 1}`}
+          </h3>
+
+          {/* 3. Breve descriptivo */}
+          <p className="proj-card-summary min-h-[4.5rem] text-gray-500 text-[0.95rem] leading-relaxed line-clamp-3" style={{ marginBottom: '2.5rem' }}>
+            {summary || "This is a brief descriptive placeholder text for the project. The actual summary will appear here once you add content from the panel."}
+          </p>
         </div>
-
-        {/* 2. Título */}
-        <h3 className="proj-card-title text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300" style={{ marginBottom: '1rem' }}>
-          {title || `Project Title ${index + 1}`}
-        </h3>
-
-        {/* 3. Breve descriptivo */}
-        <p className="proj-card-summary text-gray-500 text-[0.95rem] leading-relaxed line-clamp-3" style={{ marginBottom: '2.5rem' }}>
-          {summary || "This is a brief descriptive placeholder text for the project. The actual summary will appear here once you add content from the panel."}
-        </p>
 
         {/* 4. Botón Leer Más (fijo abajo) */}
         <div className="mt-auto pt-4">
@@ -118,7 +121,12 @@ export default function ProjectsShowcase() {
       state.items[`proj#${i}::summary`] || '',
     ].join('|'),
   ).join('~')
-  useEffect(() => { carouselApi?.reInit() }, [carouselApi, projSignature])
+  useEffect(() => {
+    carouselApi?.reInit()
+    if (state.isAdmin) {
+      setTimeout(() => rescan(), 100)
+    }
+  }, [carouselApi, projSignature])
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -218,9 +226,9 @@ export default function ProjectsShowcase() {
             ]}
             className="w-full"
           >
-            <CarouselContent className="-ml-6 md:-ml-12 lg:-ml-16">
+            <CarouselContent className="-ml-4 py-6">
               {Array.from({ length: displayCount }).map((_, i) => (
-                <CarouselItem key={i} className="pl-6 md:pl-12 lg:pl-16 md:basis-1/2 lg:basis-1/3 flex">
+                <CarouselItem key={i} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4 px-4 sm:px-6 md:px-8">
                   <ProjectCard index={i} />
                 </CarouselItem>
               ))}

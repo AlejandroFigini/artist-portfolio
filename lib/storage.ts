@@ -46,17 +46,9 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: st
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
 
-/** Slug seguro para carpeta de Cloudinary: "Sobre mí" → "sobre-mi". */
-function toSlug(s: string): string {
-  return s
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'otros'
-}
-
 /** Genera la ruta de carpeta Cloudinary según el estado del contenido.
  *  Simplificado a 3 carpetas principales: en-uso, sin-usar, basurero. */
-export function folderSlug(section?: string, mediaState?: 'used' | 'unused' | 'trash', cloudinaryFolder?: string): string {
+export function folderSlug(section?: string, mediaState?: 'used' | 'unused' | 'trash'): string {
   if (mediaState === 'unused') return 'portfolio/sin-usar'
   if (mediaState === 'trash') return 'portfolio/basurero'
   return 'portfolio/en-uso'
@@ -172,12 +164,14 @@ export async function verifyAssetExists(url: string): Promise<boolean> {
     if (!parsed) return true // no se pudo parsear → asumir que existe
     await cloudinary.api.resource(parsed.publicId, { resource_type: parsed.resourceType })
     return true
-  } catch (err: any) {
+  } catch (err: unknown) {
     // El SDK de Cloudinary devuelve objetos puros con http_code en lugar de Error instances
-    const httpCode = err?.http_code || err?.error?.http_code || err?.status || err?.statusCode
+    const errObj = err as Record<string, unknown>
+    const errError = (errObj?.error ?? {}) as Record<string, unknown>
+    const httpCode = errObj?.http_code ?? errError?.http_code ?? errObj?.status ?? errObj?.statusCode
     if (httpCode === 404) return false
 
-    const message = err?.message || err?.error?.message || (typeof err === 'string' ? err : JSON.stringify(err))
+    const message = (errObj?.message ?? errError?.message ?? (typeof err === 'string' ? err : JSON.stringify(err))) as string
     if (typeof message === 'string' && (message.toLowerCase().includes('not found') || message.toLowerCase().includes('404'))) {
       return false
     }

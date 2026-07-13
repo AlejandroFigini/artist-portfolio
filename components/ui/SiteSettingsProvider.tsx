@@ -98,6 +98,7 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
 
   useEffect(() => {
     syncSettingsUsedContent(settings)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when these specific fields change
   }, [settings.loaderVideo, settings.faviconUrl])
 
   useEffect(() => {

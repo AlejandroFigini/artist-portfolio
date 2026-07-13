@@ -12,7 +12,6 @@ import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadJSON, saveJSON, loadLang, loadServerState, cleanOrphanOverrides, LS } from '@/lib/cms/store'
-import { BASE_LANG } from '@/lib/i18n'
 import * as engine from './engine'
 import dynamic from 'next/dynamic'
 
@@ -35,7 +34,6 @@ export default function CmsRoot() {
   const toast = useToast()
   useCmsStore()
   const [cmd, setCmd] = useState<Command | null>(null)
-  const [cmdStack, setCmdStack] = useState<Command[]>([])
   const [uploadFile, setUploadFile] = useState<{ key: string; file: File } | null>(null)
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
   // al nodo definitivo del DOM (patrón estándar de portales)
@@ -54,14 +52,7 @@ export default function CmsRoot() {
       fileInputRef.current.click()
       return
     }
-    setCmd((prev) => {
-      if (prev && c.type !== prev.type) {
-        setCmdStack((stack) => [...stack, prev])
-      } else if (!prev) {
-        setCmdStack([])
-      }
-      return c
-    })
+    setCmd(c)
   }, [])
 
   // Modo admin: overlay de edición + slots (port setAdmin)
@@ -76,7 +67,7 @@ export default function CmsRoot() {
       engine.removeEditControls()
     }
     engine.refreshRetired()
-  }, [dispatch])
+  }, [])
 
   // ----- Init (port de cms.js init()) ----------------------------------------
   useEffect(() => {
@@ -155,16 +146,7 @@ export default function CmsRoot() {
   }, [])
 
   const close = useCallback(() => {
-    setCmdStack((stack) => {
-      if (stack.length > 0) {
-        const nextStack = [...stack]
-        const lastCmd = nextStack.pop()!
-        setCmd(lastCmd)
-        return nextStack
-      }
-      setCmd(null)
-      return []
-    })
+    setCmd(null)
   }, [])
 
   return (
@@ -241,19 +223,9 @@ export default function CmsRoot() {
               onClose={close}
               onSuccess={() => {
                 const k = cmd.key
-                setCmdStack((stack) => {
-                  const next = [...stack]
-                  while (next.length > 0 && (next[next.length - 1].type === 'contentPicker' || next[next.length - 1].type === 'repoPicker')) {
-                    next.pop()
-                  }
-                  if (next.length > 0) {
-                    setCmd(next.pop()!)
-                    return next
-                  }
-                  setCmd(null)
-                  return []
-                })
-                if (k.startsWith('hero.marquee#')) {
+                setCmd(null)
+                const meta = engine.metaByKey[k]
+                if (k.startsWith('hero.marquee#') || (meta && meta.fields && meta.fields.length > 0)) {
                   setTimeout(() => dispatch({ type: 'editInfo', key: k }), 50)
                 }
               }}

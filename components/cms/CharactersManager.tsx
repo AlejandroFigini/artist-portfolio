@@ -60,7 +60,6 @@ export default function CharactersManager({ show = true, onClose, onPickImage }:
       const ids = pendingNew().map((k) => Number(k.split('_')[1]))
       return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeVersion])
 
   const saveGraph = async (finalChars: string[]) => {

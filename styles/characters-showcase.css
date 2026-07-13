@@ -14,8 +14,6 @@
     linear-gradient(to right, rgba(139, 92, 246, 0.12) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(139, 92, 246, 0.12) 1px, transparent 1px);
   background-size: 38px 38px;
-  border-top: 1px solid rgba(139, 92, 246, 0.22);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.22);
   padding: clamp(2.5rem, 6vw, 5rem) 0;
 }
 

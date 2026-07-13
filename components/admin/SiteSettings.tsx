@@ -12,12 +12,12 @@
 import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
-import { fileToDataURL, validateFile } from '@/lib/media'
+import { fileToDataURL } from '@/lib/media'
 import { saveContent, getTranslations, importTranslations } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey, getAllTranslatableItems } from '@/components/cms/engine'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
-import { isTranslatableEntry, BASE_LANG } from '@/lib/i18n'
+import { BASE_LANG } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
 
 export const CV_MAX_BYTES = 10 * 1024 * 1024

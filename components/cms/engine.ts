@@ -1015,9 +1015,12 @@ export function attachEditControls() {
         showEmptySlot(key)
       }
 
-      if (el.getAttribute('data-cms-has-btn') === '1') return
       if (entry.mount === 'none') { el.setAttribute('data-cms-has-btn', '1'); return }
       const host = entry.mount === 'parent' && el.parentElement ? el.parentElement : el
+      if (el.getAttribute('data-cms-has-btn') === '1') {
+        if (host.querySelector(':scope > .cms-tools')) return
+      }
+      host.querySelector(':scope > .cms-tools')?.remove()
       host.classList.add('cms-mount')
       ensurePositioned(host)
       host.appendChild(makeTools(key))
@@ -1054,6 +1057,9 @@ export function refreshTools(key: string) {
     ensurePositioned(host)
     host.appendChild(makeTools(key))
   })
+  setTimeout(() => {
+    if (state.isAdmin) rescan()
+  }, 150)
 }
 
 /** Refresca en vivo el nombre visible del contenedor (texto del overlay vacío

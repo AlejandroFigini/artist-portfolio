@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, persistOverridesLocal,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {

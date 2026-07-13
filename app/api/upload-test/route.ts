@@ -12,9 +12,9 @@ export async function POST(req: Request) {
   const auth = await requireSession(req)
   if ('deny' in auth) return auth.deny
 
-  let body: { base64Data?: string; originalSize?: number; originalName?: string; section?: string; mediaState?: 'used' | 'unused' | 'trash'; cloudinaryFolder?: string }
+  let body: { base64Data?: string; originalSize?: number; originalName?: string; section?: string; mediaState?: 'used' | 'unused' | 'trash' }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
-  const { base64Data, originalSize = 0, originalName = 'archivo', section, mediaState, cloudinaryFolder } = body
+  const { base64Data, originalSize = 0, originalName = 'archivo', section, mediaState } = body
 
   if (!base64Data || typeof base64Data !== 'string') {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const folder = folderSlug(typeof section === 'string' ? section : '', mediaState, cloudinaryFolder)
+    const folder = folderSlug(typeof section === 'string' ? section : '', mediaState)
     const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image', folder, originalName)
     return NextResponse.json({
       success: true,
