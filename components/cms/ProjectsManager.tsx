@@ -13,7 +13,11 @@ function parseSettings() {
   const settings = { count: 4 }
   try {
     const parsed = JSON.parse(state.items['proj.settings'] || '')
-    if (parsed && typeof parsed.count === 'number') settings.count = parsed.count
+    if (parsed && typeof parsed.count === 'number' && parsed.count > 0) {
+      if (parsed.count !== 6 || state.items['proj#4'] || state.items['proj#5']) {
+        settings.count = parsed.count
+      }
+    }
   } catch {}
   return settings
 }

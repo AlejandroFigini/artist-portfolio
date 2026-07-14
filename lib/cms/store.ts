@@ -408,13 +408,13 @@ export function getContainerMeta(key: string): { label: string; section: string;
   return { label: customLabel || def.label(n), section: def.section, kind: def.kind }
 }
 
-function tryParseCount(jsonStr: string | undefined): number {
-  if (!jsonStr) return 6
+function tryParseCount(jsonStr: string | undefined, fallback = 6): number {
+  if (!jsonStr) return fallback
   try {
     const p = JSON.parse(jsonStr)
     if (p && typeof p.count === 'number' && p.count > 0) return p.count
   } catch {}
-  return 6
+  return fallback
 }
 
 export function getAllKnownContainerKeys(): string[] {
@@ -437,7 +437,7 @@ export function getAllKnownContainerKeys(): string[] {
     ...Array.from({ length: 15 }, (_, i) => `illustration#${i}`),
     ...Array.from({ length: Math.max(6, tryParseCount(state.items['anim.settings'])) }, (_, i) => `anim#${i}`),
     ...Array.from({ length: 4 }, (_, i) => `anim.soft#${i}`),
-    ...Array.from({ length: Math.max(6, tryParseCount(state.items['proj.settings'])) }, (_, i) => `proj#${i}`),
+    ...Array.from({ length: Math.max(4, tryParseCount(state.items['proj.settings'], 4)) }, (_, i) => `proj#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `proj.soft#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `model3d#${i}`),
     ...Array.from({ length: 12 }, (_, i) => `model3d.gallery#${i}`),
@@ -701,6 +701,18 @@ export function cleanOrphanOverrides() {
     persistRetired()
     emit()
   }
+
+  // Normalizar conteo por defecto de proyectos (de 6 a 4) si el usuario tiene guardado 6 de versiones anteriores pero no hay proyectos reales en slots #4 y #5.
+  try {
+    const s = JSON.parse(state.items['proj.settings'] || '')
+    if (s && s.count === 6 && !state.items['proj#4'] && !state.items['proj#5']) {
+      s.count = 4
+      state.items['proj.settings'] = JSON.stringify(s)
+      clearItemOverrides(['proj#4', 'proj#5', 'proj#4::title', 'proj#4::summary', 'proj#4::start_date', 'proj#5::title', 'proj#5::summary', 'proj#5::start_date'])
+      saveContent({ 'proj.settings': state.items['proj.settings'], 'proj#4': '', 'proj#5': '' }).catch(() => {})
+      emit()
+    }
+  } catch {}
 }
 
 export function moveUsedToUnused(key: string) {

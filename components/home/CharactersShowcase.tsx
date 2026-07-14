@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi,
+  Carousel, CarouselContent, CarouselItem, type CarouselApi,
 } from '@/components/ui/carousel'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import {
@@ -26,11 +26,20 @@ import { rescan } from '@/components/cms/engine'
 const CONCEPTS_PER = 4
 
 function readCount(): number {
-  let count = 4
+  let count = 8
   try {
     const s = JSON.parse(state.items['char.settings'] || '')
-    if (s && typeof s.count === 'number') count = s.count
+    if (s && typeof s.count === 'number') {
+      if (s.count === 4) {
+        s.count = 8
+        state.items['char.settings'] = JSON.stringify(s)
+      }
+      count = s.count
+    }
   } catch {}
+  if (!state.items['char.settings']) {
+    state.items['char.settings'] = JSON.stringify({ count: 8 })
+  }
   return Math.max(0, count)
 }
 
@@ -66,30 +75,99 @@ function CharMedia({
   )
 }
 
-function CharacterPanel({ index, total, onOpen }: { index: number; total: number; onOpen: (lb: Lightbox) => void }) {
+function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: number; total: number; onOpen: (lb: Lightbox) => void; api?: CarouselApi; isHoveringRef?: React.MutableRefObject<boolean> }) {
   useCmsStore()
+  const [isHovered, setIsHovered] = useState(false)
+  const [activeSlide, setActiveSlide] = useState(0) // 0 = retrato principal, 1..4 = concepts c0..c3
+
   const key = `char#${index}`
-  const name = state.items[`${key}::name`] || ''
-  const role = state.items[`${key}::role`] || ''
-  const desc = state.items[`${key}::desc`] || ''
+  const sampleNames = ['Elena — Paladin Concept', 'Kaelen — Shadow Wanderer', 'Lyra — Star Weaver', 'Thorne — Iron Juggernaut', 'Vael — Frost Blade', 'Zephyr — Sky Hunter', 'Nyx — Void Oracle', 'Orion — Solar Warden']
+  const sampleRoles = ['Hero Concept & Turnaround', 'Dark Fantasy Character Design', 'Sci-Fi Protagonist Study', 'Mecha & Armor Lookdev', 'Cryo Warrior Visual Dev', 'Aero Scout Character Sheet', 'Mystic Entity Concept Art', 'Paladin Commander Sculpt']
+  const name = state.items[`${key}::name`] || sampleNames[index % sampleNames.length] || ''
+  const role = state.items[`${key}::role`] || sampleRoles[index % sampleRoles.length] || ''
+  const desc = state.items[`${key}::desc`] || 'Full character exploration: from early rough thumbnails and silhouette studies to finalized lookdev, turnaround sheets, and expression breakdowns.'
   const num = String(index + 1).padStart(2, '0')
   const tot = String(total).padStart(2, '0')
 
+  const galleryKeys = [
+    key, // index 0: imagen principal
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${key}::c${m}`), // indices 1..4: imagenes pequeñas
+  ]
+
+  useEffect(() => {
+    if (!isHovered) {
+      setActiveSlide(0)
+      return
+    }
+    // Al posar el mouse, cicla exclusivamente por las imágenes pequeñas (índices 1 al 4) en el contenedor grande
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev >= CONCEPTS_PER ? 1 : prev + 1))
+    }, 1250)
+    return () => clearInterval(timer)
+  }, [isHovered])
+
   const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
 
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+    setActiveSlide(1) // arranca mostrando la primera imagen pequeña (c0) y destacando su contenedor
+    if (isHoveringRef) isHoveringRef.current = true
+    api?.plugins().autoScroll?.stop()
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+    setActiveSlide(0) // vuelve a la imagen principal en el contenedor grande y quita el destacado
+    if (isHoveringRef) isHoveringRef.current = false
+    setTimeout(() => {
+      if (!isHoveringRef || !isHoveringRef.current) {
+        api?.plugins().autoScroll?.play()
+      }
+    }, 50)
+  }
+
   return (
-    <article className="ch-panel" data-cms-key={key} data-name={name} data-role={role} data-desc={desc}>
+    <article
+      className={`ch-panel ${isHovered ? 'is-hovered' : ''}`}
+      data-cms-key={key}
+      data-name={name}
+      data-role={role}
+      data-desc={desc}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <Corners />
       <div className="ch-panel__media">
-        <div className="ch-portrait-wrap">
-          <CharMedia cmsKey={key} className="ch-portrait" onOpen={open} />
-        </div>
-        <div className="ch-concepts">
-          {Array.from({ length: CONCEPTS_PER }, (_, m) => (
-            <div className="ch-concept-cell" key={m}>
-              <CharMedia cmsKey={`${key}::c${m}`} className="ch-concept" onOpen={open} />
+        <div className="ch-portrait-wrap relative overflow-hidden">
+          {galleryKeys.map((gKey, idx) => (
+            <div
+              key={gKey}
+              className="absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out"
+              style={{
+                opacity: activeSlide === idx ? 1 : 0,
+                pointerEvents: activeSlide === idx ? 'auto' : 'none',
+                zIndex: activeSlide === idx ? 2 : 1,
+              }}
+            >
+              <CharMedia cmsKey={gKey} className="ch-portrait w-full h-full" onOpen={open} />
             </div>
           ))}
+        </div>
+        <div className="ch-concepts">
+          {Array.from({ length: CONCEPTS_PER }, (_, m) => {
+            const isFeatured = isHovered && activeSlide === m + 1
+            return (
+              <div
+                className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-2 ring-violet-600 scale-[1.08] shadow-lg z-10 opacity-100' : isHovered ? 'opacity-65 scale-95' : 'opacity-100'}`}
+                key={m}
+                onMouseEnter={() => {
+                  if (isHovered) setActiveSlide(m + 1)
+                }}
+              >
+                <CharMedia cmsKey={`${key}::c${m}`} className="ch-concept" onOpen={open} />
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -110,6 +188,7 @@ export default function CharactersShowcase() {
   useCmsStore()
   const isAdmin = state.isAdmin
   const sectionRef = useRef<HTMLElement>(null)
+  const isHoveringRef = useRef(false)
   const [api, setApi] = useState<CarouselApi>()
   const [lightbox, setLightbox] = useState<Lightbox>(null)
   const [showInfo, setShowInfo] = useState(false)
@@ -131,6 +210,31 @@ export default function CharactersShowcase() {
       setTimeout(() => rescan(), 100)
     }
   }, [api, signature])
+
+  // Retomar el movimiento automático casi instantáneamente (120ms) tras soltar el mouse o finalizar arrastre
+  useEffect(() => {
+    if (!api) return
+    const autoScroll = api.plugins().autoScroll
+    if (!autoScroll) return
+
+    let timer: NodeJS.Timeout
+    const resumeFast = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (isHoveringRef.current) return // Si el usuario está posado con el mouse en el carrusel o tarjeta, NUNCA reanudar
+        autoScroll.play()
+      }, 120)
+    }
+
+    api.on('pointerUp', resumeFast)
+    api.on('settle', resumeFast)
+
+    return () => {
+      clearTimeout(timer)
+      api.off('pointerUp', resumeFast)
+      api.off('settle', resumeFast)
+    }
+  }, [api])
 
   // Reveal de entrada del encabezado + typewriter del título (patrón hermano).
   useEffect(() => {
@@ -197,54 +301,60 @@ export default function CharactersShowcase() {
         <header className="ch-showcase__header">
           <span className="ch-showcase__fig">FIG. 04 — Cast</span>
           <h2 id="ch-showcase-title" className="ch-showcase__title">Characters</h2>
-          <p className="ch-showcase__desc" data-i18n="characters_desc">
-            Character gallery: each piece explores its complete process — from early concept
-            to final design, focusing on form, color, and personality.
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4" style={{ marginBottom: '0.75rem' }}>
+            <p className="ch-showcase__desc" data-i18n="characters_desc">
+              Character gallery: each piece explores its complete process — from early concept
+              to final design, focusing on form, color, and personality.
+            </p>
+            {isAdmin && (
+              <button
+                type="button"
+                className="ch-showcase__manage"
+                title="Gestionar personajes"
+                aria-label="Gestionar personajes"
+                onClick={() => window.dispatchEvent(new CustomEvent('cms:charactersManager'))}
+              >
+                <i className="fa-solid fa-gear" /> Gestionar
+              </button>
+            )}
+          </div>
           <SoftwareDropdown prefix="char" count={3} />
-          {isAdmin && (
-            <button
-              type="button"
-              className="ch-showcase__manage"
-              title="Gestionar personajes"
-              aria-label="Gestionar personajes"
-              onClick={() => window.dispatchEvent(new CustomEvent('cms:charactersManager'))}
-            >
-              <i className="fa-solid fa-gear" /> Gestionar
-            </button>
-          )}
         </header>
 
-        {count === 0 ? (
-          <div className="ch-empty">
-            <i className="fa-solid fa-user-plus" />
-            <span>{isAdmin ? 'Add characters from "Manage".' : 'Coming soon.'}</span>
-          </div>
-        ) : (
-          <Carousel
-            key={count}
-            setApi={setApi}
-            opts={{ align: 'center', loop: true, watchDrag: count > 1 }}
-            // Cinta continua: AutoScroll mueve pixel a pixel (no snap-jump como
-            // Autoplay), constante y sin pausas. stopOnInteraction:false → el
-            // drag manual no la detiene para siempre, retoma sola. Respeta
-            // prefers-reduced-motion (mismo criterio que el resto del sitio).
-            plugins={count > 1 && !prefersReducedMotion() ? [
-              AutoScroll({ speed: 0.7, stopOnInteraction: false, stopOnMouseEnter: false }),
-            ] : []}
-            className="ch-carousel"
-          >
-            <CarouselContent className="-ml-4 md:-ml-6">
-              {Array.from({ length: count }).map((_, i) => (
-                <CarouselItem key={i} className="pl-4 md:pl-6 basis-[92%] md:basis-[82%] lg:basis-[74%]">
-                  <CharacterPanel index={i} total={count} onOpen={openLightbox} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="ch-nav" />
-            <CarouselNext className="ch-nav" />
-          </Carousel>
-        )}
+        <div className="ch-showcase__cards-container">
+          {count === 0 ? (
+            <div className="ch-empty">
+              <i className="fa-solid fa-user-plus" />
+              <span>{isAdmin ? 'Add characters from "Manage".' : 'Coming soon.'}</span>
+            </div>
+          ) : (
+            <Carousel
+              key={count}
+              setApi={setApi}
+              opts={{ align: 'center', loop: true, dragFree: true, watchDrag: true }}
+              plugins={count > 1 && !prefersReducedMotion() ? [
+                AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: true }),
+              ] : []}
+              className="ch-carousel"
+              onMouseEnter={() => {
+                isHoveringRef.current = true
+                api?.plugins().autoScroll?.stop()
+              }}
+              onMouseLeave={() => {
+                isHoveringRef.current = false
+                api?.plugins().autoScroll?.play()
+              }}
+            >
+              <CarouselContent className="-ml-3 md:-ml-4">
+                {Array.from({ length: count }).map((_, i) => (
+                  <CarouselItem key={i} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px]">
+                    <CharacterPanel index={i} total={count} onOpen={openLightbox} api={api} isHoveringRef={isHoveringRef} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          )}
+        </div>
       </div>
 
       {lightbox && typeof document !== 'undefined' && createPortal(

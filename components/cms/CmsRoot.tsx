@@ -249,6 +249,7 @@ export default function CmsRoot() {
             <CharactersManager
               onClose={close}
               onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
           {cmd?.type === 'auditPage' && <AuditOverlay onClose={close} />}

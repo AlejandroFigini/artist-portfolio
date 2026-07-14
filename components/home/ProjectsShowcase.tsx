@@ -102,7 +102,11 @@ export default function ProjectsShowcase() {
   let count = 4;
   try {
     const s = JSON.parse(state.items['proj.settings'] || '');
-    if (s && typeof s.count === 'number') count = s.count;
+    if (s && typeof s.count === 'number' && s.count > 0) {
+      if (s.count !== 6 || state.items['proj#4'] || state.items['proj#5']) {
+        count = s.count;
+      }
+    }
   } catch {}
   // Sin proyectos cargados: mínimo visual de 4 tarjetas de ejemplo (mismos
   // placeholders que ya usa ProjectCard) para que la sección no se vea vacía.

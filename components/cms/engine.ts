@@ -769,8 +769,13 @@ export async function deleteProjectSite(key: string) {
   if (!m) return
   const delIdx = Number(m[1])
 
-  let count = 0
-  try { count = JSON.parse(state.items['proj.settings'] || '').count || 0 } catch {}
+  let count = 4
+  try {
+    const p = JSON.parse(state.items['proj.settings'] || '')
+    if (p && typeof p.count === 'number' && p.count > 0) {
+      if (p.count !== 6 || state.items['proj#4'] || state.items['proj#5']) count = p.count
+    }
+  } catch {}
   if (!count) return
 
   // Archiva la imagen del proyecto borrado (si tiene contenido) a "no usados".
