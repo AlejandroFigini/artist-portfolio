@@ -187,7 +187,19 @@ export default function Hero() {
   // "Vida" constante de los containers flotantes la da el CSS (.float-anim)
 
   return (
-    <section id="presentacion" className="hero" ref={sectionRef}>
+    <section id="presentacion" className="hero" ref={sectionRef} style={{ position: 'relative' }}>
+      {isAdmin && (
+        <button
+          className="cms-hero-gear"
+          title="Configurar Carrusel General (Fondo de Portada)"
+          aria-label="Configurar Carrusel General (Fondo de Portada)"
+          style={{ top: '100px', right: '30px', position: 'absolute', zIndex: 1100 }}
+          onClick={(e) => { e.preventDefault(); openCarousel('hero') }}
+        >
+          <i className="fa-solid fa-layer-group"></i>
+        </button>
+      )}
+
       <div className="hero-rail" aria-hidden="true">
         <span className="hero-rail-fig">FILE 01 · HERO</span>
         <span className="hero-rail-track">
@@ -235,10 +247,7 @@ export default function Hero() {
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.02 — DETAIL</span>
           </div>
 
-          {/* Engranajes FUERA de los media-container: dentro, la maquinaria de
-              contenedor-vacío + la coreografía de entrada los ocultaban hasta
-              subir una imagen. Como hijos del wrapper se ven siempre (igual que
-              el del fondo). Posicionados en la esquina inferior derecha de cada uno. */}
+          {/* Engranajes exclusivos para los carruseles flotantes (principal y secundario) dentro de su contenedor. */}
           {isAdmin && (
             <>
               <button

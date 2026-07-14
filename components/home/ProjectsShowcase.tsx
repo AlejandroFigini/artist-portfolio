@@ -30,7 +30,7 @@ function ProjectCard({ index }: { index: number }) {
   return (
     <div
       data-content-id={key}
-      className="project-item h-full group flex flex-col justify-between w-full mx-4 sm:mx-6 md:mx-8 bg-white rounded-[1.25rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-500 ease-out"
+      className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-500 ease-out"
     >
       {/* 1. Contenedor de Imagen */}
       <div
@@ -122,11 +122,14 @@ export default function ProjectsShowcase() {
     ].join('|'),
   ).join('~')
   useEffect(() => {
-    carouselApi?.reInit()
-    if (state.isAdmin) {
-      setTimeout(() => rescan(), 100)
-    }
-  }, [carouselApi, projSignature])
+    if (!carouselApi) return
+    carouselApi.reInit()
+    const t = setTimeout(() => {
+      carouselApi?.reInit()
+      if (state.isAdmin) rescan()
+    }, 60)
+    return () => clearTimeout(t)
+  }, [carouselApi, projSignature, displayCount])
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -201,19 +204,22 @@ export default function ProjectsShowcase() {
             </p>
             {isAdmin && (
               <button 
+                type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('cms:projectsManager'))}
-                title="Gestionar Proyectos"
-                className="inline-flex items-center justify-center w-10 h-10 bg-gray-900 text-white rounded-full hover:bg-[var(--accent)] transition-colors duration-300 shadow-md shrink-0 relative z-10"
+                title="Gestionar proyectos"
+                aria-label="Gestionar proyectos"
+                className="proj-showcase__manage"
               >
-                <i className="fa-solid fa-gear" />
+                <i className="fa-solid fa-gear" /> Gestionar
               </button>
             )}
           </div>
         </div>
 
-        {/* Carrusel de 6 tarjetas */}
+        {/* Carrusel de proyectos */}
         <div className="w-full relative mt-4">
           <Carousel
+            key={displayCount}
             setApi={setCarouselApi}
             opts={{
               align: 'start',
@@ -228,8 +234,10 @@ export default function ProjectsShowcase() {
           >
             <CarouselContent className="-ml-4 py-6">
               {Array.from({ length: displayCount }).map((_, i) => (
-                <CarouselItem key={i} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4 px-4 sm:px-6 md:px-8">
-                  <ProjectCard index={i} />
+                <CarouselItem key={i} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4">
+                  <div className="w-full h-full px-1.5 sm:px-2">
+                    <ProjectCard index={i} />
+                  </div>
                 </CarouselItem>
               ))}
             </CarouselContent>

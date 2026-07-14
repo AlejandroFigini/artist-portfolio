@@ -242,6 +242,7 @@ export default function CmsRoot() {
             <ProjectsManager
               onClose={close}
               onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
           {cmd?.type === 'charactersManager' && (

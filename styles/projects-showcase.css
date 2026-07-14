@@ -57,10 +57,20 @@
   margin: 0 auto;
 }
 
-/* --- Empty card state --- */
+/* --- Empty card state & spacing guarantees --- */
 .proj-card--empty {
   opacity: 0.5;
   cursor: default;
+}
+
+/* --- Garantía absoluta de separación de celdas en el carrusel de proyectos --- */
+.proj-showcase [role="group"] {
+  padding-left: clamp(0.75rem, 1.5vw, 1.25rem) !important;
+}
+.proj-showcase .project-item {
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* Responsive fixes */
@@ -74,4 +84,30 @@
 }
 .proj-showcase__nav button:hover:not(:disabled) {
   transform: scale(1.08);
+}
+
+/* --- Admin Management Button (matching Characters Showcase style) --- */
+.proj-showcase__manage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #7c3aed;
+  background: #ffffff;
+  color: #7c3aed;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+  transition: all 0.2s ease;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.proj-showcase__manage:hover {
+  background: #7c3aed;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.2);
+  transform: translateY(-1px);
 }

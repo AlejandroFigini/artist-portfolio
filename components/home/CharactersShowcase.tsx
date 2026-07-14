@@ -222,6 +222,7 @@ export default function CharactersShowcase() {
           </div>
         ) : (
           <Carousel
+            key={count}
             setApi={setApi}
             opts={{ align: 'center', loop: true, watchDrag: count > 1 }}
             // Cinta continua: AutoScroll mueve pixel a pixel (no snap-jump como

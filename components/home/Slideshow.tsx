@@ -65,23 +65,6 @@ export default function HeroSlideshow() {
         ))}
         <div className="carousel-overlay"></div>
       </div>
-
-      {/* El gear vive FUERA del carrusel: éste tiene z-index:-1 (fondo), que
-          atrapa a sus hijos en un contexto de apilado detrás del contenido y los
-          vuelve no clickeables. Como hermano fixed escapa ese contexto. */}
-      {isAdmin && (
-        <button
-          className="cms-hero-gear"
-          title="Configurar Carrusel de Fondo"
-          style={{ position: 'fixed', zIndex: 1200 }}
-          onClick={(e) => {
-            e.preventDefault()
-            window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix: 'hero' } }))
-          }}
-        >
-          <i className="fa-solid fa-layer-group"></i>
-        </button>
-      )}
     </>
   )
 }

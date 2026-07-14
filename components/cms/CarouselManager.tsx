@@ -8,8 +8,8 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, retireUsedEntryToUnused, useCmsStore } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, seedUsedContent } from './engine'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, retireUsedEntryToUnused, useCmsStore, emit } from '@/lib/cms/store'
+import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 1
 const MAX_SLIDES = 4
@@ -87,6 +87,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
       if (vKey.startsWith(`${prefix}.slide#`) && oldData[vKey]) state.items[realKey] = oldData[vKey]!
       else delete state.items[realKey]
     })
+    for (let i = finalSlides.length; i < Math.max(original.length, finalSlides.length); i++) {
+      delete state.items[`${prefix}.slide#${i}`]
+    }
 
     // slides eliminadas → no usados
     original.forEach((k) => {
@@ -105,7 +108,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     state.items[`${prefix}.settings`] = payload[`${prefix}.settings`]
     for (let i = 0; i < Math.max(original.length, newCount); i++) {
       const rk = `${prefix}.slide#${i}`
-      if (state.items[rk] === undefined) state.items[rk] = ''
+      if (i >= newCount || state.items[rk] === undefined) {
+        state.items[rk] = ''
+      }
       payload[rk] = state.items[rk]
     }
 
@@ -127,6 +132,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     fresh.forEach((k) => { newSrcs[k] = slideSrc(k, prefix) })
     setInitialSrcs(newSrcs)
     setInitialDuration(duration)
+    emit()
+    broadcastCarousel(prefix)
   }
 
   // Guardar Grafo: persiste la estructura pero NO cierra el modal — el usuario
@@ -148,6 +155,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     saveJSON(LS.OVERRIDES, overrides)
     await saveContent(payload)
     seedUsedContent()
+    emit()
+    broadcastCarousel(prefix)
   }
 
   // Guardar Configuración: NO se permiten diapositivas vacías. Todas deben tener
