@@ -10,7 +10,7 @@ import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan } from './engine
 type Props = { show?: boolean; onClose: () => void; onPickImage: (key: string) => void; onEditInfo?: (key: string) => void }
 
 function parseSettings() {
-  const settings = { count: 6 }
+  const settings = { count: 4 }
   try {
     const parsed = JSON.parse(state.items['proj.settings'] || '')
     if (parsed && typeof parsed.count === 'number') settings.count = parsed.count

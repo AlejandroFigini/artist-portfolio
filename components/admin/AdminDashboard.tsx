@@ -12,7 +12,7 @@ import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
   state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders, validateCloudinaryContent,
 } from '@/lib/cms/store'
-import { getAccount, scaffoldCloudinaryFolders } from '@/lib/api'
+import { getAccount, scaffoldCloudinaryFolders, logout } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
@@ -131,8 +131,26 @@ export default function AdminDashboard() {
       <header className="admin-topbar">
         <Link href="/" className="logo" onClick={markSkipLoader}>Lucia Montaña <span className="highlight">| Management</span></Link>
         <div className="admin-topbar-right">
-          <span className="cms-user-chip"><i className="fa-solid fa-user-shield"></i> {state.username || '…'}</span>
-          <Link href="/" className="cms-btn cms-btn--sm" onClick={markSkipLoader}><i className="fa-solid fa-arrow-left"></i> Back to site</Link>
+          <div className="admin-dropdown-wrapper">
+            <span className="cms-user-chip" title={`Sesión iniciada como ${state.username || 'Administrador'}`}>
+              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+            </span>
+            <div className="admin-dropdown-menu">
+              <div className="admin-menu-header">Sesión actual: {state.username || 'Administrador'}</div>
+              <Link 
+                href="/" 
+                className="cms-navauth-btn" 
+                style={{ textDecoration: 'none', display: 'inline-block' }}
+                onClick={markSkipLoader}
+              >
+                <i className="fa-solid fa-arrow-left"></i> Back to site
+              </Link>
+              <button type="button" className="cms-navauth-btn" title="Log out"
+                onClick={() => { logout().finally(() => { setAdminFlag(false); toast('Logged out'); window.location.href = '/' }) }}>
+                <i className="fa-solid fa-right-from-bracket"></i> Log out
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

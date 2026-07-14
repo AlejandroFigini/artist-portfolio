@@ -5550,7 +5550,7 @@ body.cms-modal-open { overflow: hidden; }
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 200;
 }
 
 .admin-root {
@@ -7748,7 +7748,9 @@ body.hide-cms-controls .cms-add-slot,
 body.hide-cms-controls .cms-add-illu,
 body.hide-cms-controls .cms-carousel-controls,
 body.hide-cms-controls .cms-tools,
-body.hide-cms-controls .cms-tool-btn {
+body.hide-cms-controls .cms-tool-btn,
+body.hide-cms-controls .proj-showcase__manage,
+body.hide-cms-controls .ch-showcase__manage {
     display: none !important;
 }
 /* Vista "usuario normal": sin recuadros de edición ni slots vacíos resaltados.

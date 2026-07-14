@@ -99,7 +99,7 @@ export default function ProjectsShowcase() {
   const sectionRef = useRef<HTMLElement>(null)
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
 
-  let count = 6;
+  let count = 4;
   try {
     const s = JSON.parse(state.items['proj.settings'] || '');
     if (s && typeof s.count === 'number') count = s.count;
