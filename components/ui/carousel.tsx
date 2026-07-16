@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
@@ -157,7 +159,11 @@ const CarouselContent = React.forwardRef<
   const { carouselRef, orientation } = useCarousel()
 
   return (
-    <div ref={carouselRef} className="overflow-hidden">
+    <div
+      ref={carouselRef}
+      style={orientation === "horizontal" ? { overflowX: "clip", overflowY: "visible" } : { overflowY: "clip", overflowX: "visible" }}
+      className={cn(className)}
+    >
       <div
         ref={ref}
         className={cn(

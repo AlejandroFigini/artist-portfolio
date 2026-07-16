@@ -155,7 +155,7 @@ export default function AboutSection() {
                 I am Lucía Montaña. I have spent years shaping characters and
                 environments, combining traditional techniques with a modern 3D
                 pipeline. Every piece begins with a hand-drawn sketch and finishes
-                lookdev'd for production integration.
+                lookdev&apos;d for production integration.
               </p>
               <p>
                 My work spans animated short films, editorial motion design,
@@ -166,7 +166,7 @@ export default function AboutSection() {
 
             <div className="about-meta">
               <div className="about-meta-block">
-                <span className="about-meta-row about-meta-head">// SPECS</span>
+                <span className="about-meta-row about-meta-head">{"// SPECS"}</span>
                 <ul className="about-specs">
                   {SPECS.map((s) => (
                     <li key={s.k} className="about-spec">
@@ -178,7 +178,7 @@ export default function AboutSection() {
               </div>
 
               <div className="about-meta-block">
-                <span className="about-meta-row about-meta-head">// CONTACT</span>
+                <span className="about-meta-row about-meta-head">{"// CONTACT"}</span>
                 <ul className="about-socials">
                   {SOCIALS.map((s) => (
                     <li key={s.label} className="about-social">
@@ -223,6 +223,7 @@ export default function AboutSection() {
 
             <figure className="about-portrait">
               <Corners />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="artist-photo-img" alt="Retrato de Lucía Montaña" loading="lazy" decoding="async" />
               <figcaption className="about-portrait-cap">
                 <span>FIG. 02b</span>

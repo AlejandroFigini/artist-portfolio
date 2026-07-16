@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, emit, persistOverridesLocal, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, emit, type FieldValue,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {

@@ -26,6 +26,7 @@ function AnimCard({ index }: { index: number }) {
   const [playing, setPlaying] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [hasContent, setHasContent] = useState(false)
+  const [videoSrc, setVideoSrc] = useState('')
   const [showInfo, setShowInfo] = useState(false)
   const [fields, setFields] = useState<CardFields>({ title: '', project: '', date: '', inspiration: '', desc: '' })
   const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -55,6 +56,16 @@ function AnimCard({ index }: { index: number }) {
     const syncContent = () => {
       const has = checkHasContent()
       setHasContent(has)
+      
+      let srcVal = v.getAttribute('src') || ''
+      if (!srcVal) {
+        const sourceEl = v.querySelector('source')
+        if (sourceEl) {
+          srcVal = sourceEl.getAttribute('src') || ''
+        }
+      }
+      setVideoSrc(srcVal)
+
       // Only pause/reset if we just transitioned to having content
       if (has && !hasContentRef.current) { 
         try { v.pause(); v.currentTime = 0 } catch {} 
@@ -100,12 +111,8 @@ function AnimCard({ index }: { index: number }) {
 
   // Info timer for lightbox
   useEffect(() => {
-    if (expanded) {
-      infoTimerRef.current = setTimeout(() => setShowInfo(true), 1000)
-    } else {
-      setShowInfo(false)
-      if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
-    }
+    if (!expanded) return
+    infoTimerRef.current = setTimeout(() => setShowInfo(true), 1000)
     return () => { if (infoTimerRef.current) clearTimeout(infoTimerRef.current) }
   }, [expanded])
 
@@ -145,6 +152,7 @@ function AnimCard({ index }: { index: number }) {
 
   const closeExpanded = useCallback(() => {
     setExpanded(false)
+    setShowInfo(false)
     const v = videoRef.current
     if (v) { v.pause(); setPlaying(false) }
   }, [])
@@ -220,7 +228,7 @@ function AnimCard({ index }: { index: number }) {
 
           <div className={`anim-lightbox__media${showInfo ? ' info-open' : ''}`}>
             <video
-              src={videoRef.current?.src || ''}
+              src={videoSrc}
               className="anim-lightbox__video"
               autoPlay
               muted

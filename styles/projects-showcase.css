@@ -5,8 +5,9 @@
 
 .proj-showcase {
   position: relative;
-  padding: clamp(2rem, 5vw, 4rem) 0 clamp(2rem, 5vw, 4rem);
-  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4rem) 0 clamp(3.5rem, 7vw, 5.5rem);
+  overflow-x: clip;
+  overflow-y: visible;
   isolation: isolate;
 }
 
@@ -66,6 +67,7 @@
 /* --- Garantía absoluta de separación de celdas en el carrusel de proyectos --- */
 .proj-showcase [role="group"] {
   padding-left: clamp(0.75rem, 1.5vw, 1.25rem) !important;
+  padding-right: clamp(0.75rem, 1.5vw, 1.25rem) !important;
 }
 .proj-showcase .project-item {
   width: 100% !important;

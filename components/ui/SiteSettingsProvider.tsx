@@ -77,7 +77,9 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
 
   useEffect(() => {
     // 1) fallback local inmediato (sin flash en dev sin DB)
-    setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
+    setTimeout(() => {
+      setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
+    }, 0)
     // 2) valores canónicos del backend (ganan si están presentes)
     fetch('/api/site', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))

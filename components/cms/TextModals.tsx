@@ -1,12 +1,14 @@
 'use client'
 
+/* eslint-disable react-hooks/immutability */
+
 /* Modales de texto e info del sitio — port de cms.js: editText(),
    editInfoPage(), confirmMovePage(), openExport(). */
 
 import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { state, recordAudit, persistUsed, performRenameContainer, type FieldValue } from '@/lib/cms/store'
+import { state, recordAudit, persistUsed, performRenameContainer, type FieldValue, emit } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyStored, persistOverrides, moveToUnusedSite, deleteProjectSite, computeFields,
 } from './engine'
@@ -127,6 +129,17 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
   const [editingName, setEditingName] = useState(false)
   const [page] = useState(() => currentPageLabel())
 
+  const requiredDefs = (meta?.fields || []).filter((d) => !d.optional)
+  const requiredKeys = requiredDefs.map((d) => d.key)
+  const requiredLabels = requiredDefs.map((d) => d.label).join(', ')
+  const isComplete = () => requiredKeys.every((k) => {
+    const inp = valuesRef.current[k]
+    const v = inp ? inp.value : (fields.find((f) => f.key === k)?.value ?? '')
+    return v.trim() !== ''
+  })
+  const [fieldsComplete, setFieldsComplete] = useState(() => isComplete())
+  const recheckFields = () => setFieldsComplete(isComplete())
+
   const cont = meta.container && el ? el.closest<HTMLElement>(meta.container) : el
 
   const commitRename = () => {
@@ -145,29 +158,36 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
       onClose={() => { commitRename(); onClose() }}
       actions={[
         { label: 'Cancel', onClick: () => { commitRename() } },
-        { label: 'Save', primary: true, onClick: () => {
-          commitRename()
-          let changed = false
-          fields.forEach((f) => {
-            const inp = valuesRef.current[f.key]
-            if (!inp) return
-            const v = inp.value
-            if (v !== f.value) {
-              const compositeKey = cmsKey + '::' + f.key
-              state.items[compositeKey] = v
-              const def = meta.fields!.find((d) => d.key === f.key)
-              if (def && cont) def.set(cont, v)
-              const used = state.usedContent[cmsKey]
-              const ff = used?.fields?.find((z) => z.key === f.key)
-              if (ff) ff.value = v
-              recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Field "${f.label}" updated` })
-              changed = true
-            }
-          })
-          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
-          persistUsed()
-          toast(changed ? 'Container updated' : 'No changes')
-        } },
+        {
+          label: 'Save',
+          primary: true,
+          disabled: !fieldsComplete,
+          title: !fieldsComplete ? `Por favor completa los campos requeridos (${requiredLabels}) antes de guardar` : undefined,
+          onClick: () => {
+            commitRename()
+            let changed = false
+            fields.forEach((f) => {
+              const inp = valuesRef.current[f.key]
+              if (!inp) return
+              const v = inp.value
+              if (v !== f.value) {
+                const compositeKey = cmsKey + '::' + f.key
+                state.items[compositeKey] = v
+                const def = meta.fields!.find((d) => d.key === f.key)
+                if (def && cont) def.set(cont, v)
+                const used = state.usedContent[cmsKey]
+                const ff = used?.fields?.find((z) => z.key === f.key)
+                if (ff) ff.value = v
+                recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Field "${f.label}" updated` })
+                changed = true
+              }
+            })
+            persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+            persistUsed()
+            emit()
+            toast(changed ? 'Container updated' : 'No changes')
+          }
+        },
       ]}
     >
       <div className="cms-upload">
@@ -180,11 +200,11 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
           <div className="cms-fields-title">Information</div>
           {fields.map((f) => (
             <label className="cms-field" key={f.key}>
-              <span>{f.label}</span>
+              <span>{f.label} {requiredKeys.includes(f.key) && <span style={{ color: '#ef4444' }}>*</span>}</span>
               {f.textarea ? (
-                <textarea rows={2} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} />
+                <textarea rows={2} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} onChange={recheckFields} />
               ) : (
-                <input type={f.key.includes('date') ? 'date' : 'text'} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} />
+                <input type={f.key.includes('date') ? 'date' : 'text'} defaultValue={f.value} ref={(n) => { valuesRef.current[f.key] = n }} onChange={recheckFields} />
               )}
             </label>
           ))}
@@ -239,7 +259,7 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
       ]}
     >
       <div className="cms-confirm-body">
-        You are about to move "<strong>{fileName}</strong>" to <strong>unused content</strong>.
+        You are about to move &quot;<strong>{fileName}</strong>&quot; to <strong>unused content</strong>.
         <div className="cms-confirm-warn">
           <i className="fa-solid fa-triangle-exclamation"></i> It will be removed from the site; the space will become free
           to upload other content. You can restore it from Management.

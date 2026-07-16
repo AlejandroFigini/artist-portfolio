@@ -90,7 +90,7 @@ export default function IllustrationsShowcase() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="illu-showcase" aria-labelledby="illu-showcase-title">
+    <section ref={sectionRef} className="illu-showcase" id="illustrations" aria-labelledby="illu-showcase-title">
       <div className="illu-showcase__rail" aria-hidden="true">
         <span className="illu-showcase__rail-fig">FILE 06 · ILLUSTRATIONS</span>
         <span className="illu-showcase__rail-track">

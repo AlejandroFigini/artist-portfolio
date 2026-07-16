@@ -175,12 +175,13 @@ export default function AboutPage() {
             <span className="ab-corner bl" />
             <span className="ab-corner br" />
             {/* contenedor CMS: about.photo (engine indexa por .artist-photo-img) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="artist-photo-img" alt="Lucía Montaña Portrait" />
             <figcaption className="ab-portrait-cap" data-i18n="ab_fig_01">FIG. 01 — Subject</figcaption>
           </figure>
 
           <div className="ab-bio">
-            <span className="ab-eyebrow" data-i18n="ab_bio_title">// Biography</span>
+            <span className="ab-eyebrow" data-i18n="ab_bio_title">{"// Biography"}</span>
             <div className="ab-bio-text">
               <p>
                 I am <strong>Lucía Montaña</strong>. I have spent years shaping characters and environments, combining traditional techniques with a modern 3D pipeline. Every piece begins with a hand-drawn sketch and finishes lookdev&apos;d for production integration.
@@ -205,7 +206,7 @@ export default function AboutPage() {
       {/* 3 · SOFTWARE / TOOLKIT */}
       <section className="ab-section ab-tools ab-wrap" aria-label="Software and tools">
         <div className="ab-section-head">
-          <span className="ab-eyebrow" data-i18n="ab_toolkit_title">// Toolkit</span>
+          <span className="ab-eyebrow" data-i18n="ab_toolkit_title">{"// Toolkit"}</span>
           <h2 className="ab-section-title" data-i18n="ab_toolkit_h2">Day-to-day Software</h2>
         </div>
         <div className="ab-tools-grid">
@@ -222,7 +223,7 @@ export default function AboutPage() {
       {/* 4 · EXPERIENCIA / TIMELINE */}
       <section className="ab-section ab-timeline-sec ab-wrap" aria-label="Career Timeline">
         <div className="ab-section-head">
-          <span className="ab-eyebrow" data-i18n="ab_timeline_title">// Career Timeline</span>
+          <span className="ab-eyebrow" data-i18n="ab_timeline_title">{"// Career Timeline"}</span>
           <h2 className="ab-section-title" data-i18n="ab_timeline_h2">Where I come from</h2>
         </div>
         <div className="ab-timeline">
@@ -243,7 +244,7 @@ export default function AboutPage() {
 
       {/* 5 · CONTACTO */}
       <section className="ab-section ab-contact ab-wrap" aria-label="Contact">
-        <span className="ab-eyebrow" data-i18n="ab_contact_title">// Contact</span>
+        <span className="ab-eyebrow" data-i18n="ab_contact_title">{"// Contact"}</span>
         <h2 className="ab-contact-title" data-i18n="ab_contact_h2">Let&apos;s work <em>together</em>.</h2>
         <p className="ab-contact-lede">
           Have an animation, character, or 3D project in mind? Drop me a message and let&apos;s talk.

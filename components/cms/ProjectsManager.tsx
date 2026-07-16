@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable react-hooks/immutability */
+
 import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -13,10 +15,8 @@ function parseSettings() {
   const settings = { count: 4 }
   try {
     const parsed = JSON.parse(state.items['proj.settings'] || '')
-    if (parsed && typeof parsed.count === 'number' && parsed.count > 0) {
-      if (parsed.count !== 6 || state.items['proj#4'] || state.items['proj#5']) {
-        settings.count = parsed.count
-      }
+    if (parsed && typeof parsed.count === 'number' && parsed.count >= 0) {
+      settings.count = parsed.count
     }
   } catch {}
   return settings
@@ -36,7 +36,12 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
   // proj#new_*; los recuperamos aquí para que no se pierdan en el re-montaje.
   const pendingNew = () =>
     Object.keys(state.items)
-      .filter((k) => /^proj#new_\d+$/.test(k) && !!state.items[k])
+      .filter((k) => {
+        if (!/^proj#new_\d+$/.test(k)) return false
+        const src = state.items[k] || ''
+        const title = state.items[`${k}::title`] || ''
+        return !!src && !src.includes('placeholder') && !!title.trim()
+      })
       .sort((a, b) => Number(a.split('_')[1]) - Number(b.split('_')[1]))
   const [projects, setProjects] = useState<string[]>(() => [...original, ...pendingNew()])
   const [saving, setSaving] = useState(false)
@@ -61,15 +66,16 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
   // suscribimos para mergear el pendiente en vivo — antes había que cerrar y
   // reabrir el gestor para que apareciera.
   useEffect(() => {
-    setProjects((prev) => {
-      const add = pendingNew().filter((k) => !prev.includes(k))
-      return add.length ? [...prev, ...add] : prev
-    })
-    setNextNewId((n) => {
-      const ids = pendingNew().map((k) => Number(k.split('_')[1]))
-      return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
-    })
-     
+    setTimeout(() => {
+      setProjects((prev) => {
+        const add = pendingNew().filter((k) => !prev.includes(k))
+        return add.length ? [...prev, ...add] : prev
+      })
+      setNextNewId((n) => {
+        const ids = pendingNew().map((k) => Number(k.split('_')[1]))
+        return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
+      })
+    }, 0)
   }, [storeVersion])
 
   const saveGraph = async (finalProjects: string[]) => {
@@ -294,14 +300,11 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
               className="cms-btn"
               style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderStyle: 'dashed' }}
               title="Add new project"
-              onClick={async () => {
+              onClick={() => {
                 const newKey = `proj#new_${nextNewId}`
-                const nextProjects = [...projects, newKey]
-                setProjects(nextProjects)
                 setNextNewId((n) => n + 1)
                 ensureProjectMeta(newKey)
-                await saveGraph(nextProjects)
-                toast('New project added! Click the edit button (pencil icon) to upload an image and details.')
+                onPickImage(newKey)
               }}
             >
               <i className="fa-solid fa-plus"></i> Add project

@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
-import { useCmsStore, state } from '@/lib/cms/store'
+import { useCmsStore } from '@/lib/cms/store'
 
 const DEFAULT_INTERVAL_MS = 6000
 
@@ -16,7 +16,6 @@ type HeroDetail = { slides: string[]; duration: number }
 
 export default function HeroSlideshow() {
   useCmsStore()
-  const isAdmin = state.isAdmin
   const [slides, setSlides] = useState<string[]>([])
   const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS)
 

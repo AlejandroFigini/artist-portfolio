@@ -211,6 +211,7 @@ function galleryCells(copy: number) {
       className={`m3d-gallery-cell${copy > 0 ? ' m3d-gallery-cell--clone' : ''}`}
       aria-hidden={copy > 0 || undefined}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="m3d-gallery__img" data-cms-key={`model3d.gallery#${i}`} alt="" draggable={false} loading="lazy" decoding="async" />
     </div>
   ))

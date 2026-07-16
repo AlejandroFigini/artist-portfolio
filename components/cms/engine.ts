@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, persistMediaMeta, retireUsedEntryToUnused, clearItemOverrides, saveJSON, LS, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -657,17 +657,21 @@ function visualHosts(key: string): HTMLElement[] {
     const els = Array.from(document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`))
     return els.length > 0 ? els : []
   }
-  // Galería 3D: todas las copias de la celda (overlay vacío en cada instancia).
-  if (key.startsWith('model3d.gallery#')) {
-    return Array.from(document.querySelectorAll<HTMLElement>(`img[data-cms-key="${key}"]`))
-      .map((img) => img.closest<HTMLElement>('.m3d-gallery-cell') || img.parentElement)
-      .filter((e): e is HTMLElement => !!e)
+  // Buscar todas las copias o clones en el DOM (carruseles, galerías 3D, proyectos, personajes, etc.)
+  const allEls = Array.from(document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`))
+  if (allEls.length > 0) {
+    const hosts = allEls.map((el) => {
+      if (el.classList.contains('wave-item')) return el
+      if (isIconSlot(el)) return el.closest('a') || el
+      return el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+    }).filter((e): e is HTMLElement => !!e)
+    if (hosts.length > 0) return Array.from(new Set(hosts))
   }
   const el = elementsByKey[key]
   if (!el) return []
   if (el.classList.contains('wave-item')) return [el]
   if (isIconSlot(el)) return [el.closest('a') || el]
-  return [el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide') || el.parentElement || el]
+  return [el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el]
 }
 
 export function showEmptySlot(key: string) {
@@ -708,17 +712,16 @@ export function refreshRetired() {
   // Retirados: mismo marco vacío para admin Y visitante (el contenedor nunca
   // desaparece de la página; CSS ya oculta icono/nombre/click al visitante).
   state.retired.forEach((key) => {
-    visualHosts(key).forEach(() => showEmptySlot(key))
+    if (state.isAdmin) visualHosts(key).forEach(() => showEmptySlot(key))
   })
 
-  // Slots de media vacíos (sin contenido y no retirados) → marco genérico.
-  // Se muestra para TODOS (admin y visitante): el contenedor punteado se mantiene
-  // siempre; el icono + nombre + click solo se ven en admin (CSS los oculta para
-  // el visitante). Excluye texto y los carruseles (mount 'none', gestionados aparte).
+  // Slots de media vacíos (sin contenido y no retirados) → marco genérico para admin.
   Object.keys(elementsByKey).forEach((key) => {
     const m = metaByKey[key]
     if (!m || m.kind === 'text' || m.mount === 'none') return
-    if (!state.items[key] && !state.retired.includes(key)) showEmptySlot(key)
+    if (!state.items[key] && !state.retired.includes(key)) {
+      if (state.isAdmin) showEmptySlot(key)
+    }
   })
 }
 

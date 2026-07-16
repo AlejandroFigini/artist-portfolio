@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 /* Characters (home) — galería de personajes en paneles full-bleed con scroll
    horizontal (carrusel embla: drag + botones + snap; un panel domina el viewport
    y se asoma el siguiente). Cada personaje expone retrato + galería de concepts
@@ -26,21 +28,14 @@ import { rescan } from '@/components/cms/engine'
 const CONCEPTS_PER = 4
 
 function readCount(): number {
-  let count = 8
+  let count = 0
   try {
     const s = JSON.parse(state.items['char.settings'] || '')
-    if (s && typeof s.count === 'number') {
-      if (s.count === 4) {
-        s.count = 8
-        state.items['char.settings'] = JSON.stringify(s)
-      }
+    if (s && typeof s.count === 'number' && s.count > 0) {
       count = s.count
     }
   } catch {}
-  if (!state.items['char.settings']) {
-    state.items['char.settings'] = JSON.stringify({ count: 8 })
-  }
-  return Math.max(0, count)
+  return count > 0 ? count : 8
 }
 
 type Lightbox = { src: string; name: string; role: string; desc: string } | null
@@ -193,11 +188,20 @@ export default function CharactersShowcase() {
   const [lightbox, setLightbox] = useState<Lightbox>(null)
   const [showInfo, setShowInfo] = useState(false)
 
-  const count = readCount()
+  const totalSlots = readCount()
+  const completedIndices: number[] = []
+  for (let i = 0; i < totalSlots; i++) {
+    const src = state.items[`char#${i}`] || ''
+    const name = state.items[`char#${i}::name`] || ''
+    const hasImage = !!src && !src.includes('placeholder')
+    if (hasImage && !!name.trim()) {
+      completedIndices.push(i)
+    }
+  }
 
   // Firma del contenido visible → reInit de embla cuando cambian alta/baja/orden
   // o las imágenes (los clones/medidas se reconstruyen), igual que en Projects.
-  const signature = Array.from({ length: count }, (_, i) =>
+  const signature = Array.from({ length: totalSlots }, (_, i) =>
     [
       state.items[`char#${i}`] || '',
       state.items[`char#${i}::name`] || '',
@@ -209,7 +213,7 @@ export default function CharactersShowcase() {
     if (state.isAdmin) {
       setTimeout(() => rescan(), 100)
     }
-  }, [api, signature])
+  }, [api, signature, totalSlots])
 
   // Retomar el movimiento automático casi instantáneamente (120ms) tras soltar el mouse o finalizar arrastre
   useEffect(() => {
@@ -281,13 +285,21 @@ export default function CharactersShowcase() {
 
   // Panel de info del lightbox: aparece 1s después de ampliar.
   useEffect(() => {
-    if (!lightbox) { setShowInfo(false); return }
+    if (!lightbox) return
     const t = setTimeout(() => setShowInfo(true), 1000)
     return () => clearTimeout(t)
   }, [lightbox])
 
-  const openLightbox = useCallback((lb: Lightbox) => setLightbox(lb), [])
-  const closeLightbox = useCallback(() => setLightbox(null), [])
+  const openLightbox = useCallback((lb: Lightbox) => {
+    setLightbox(lb)
+    setShowInfo(false)
+  }, [])
+  const closeLightbox = useCallback(() => {
+    setLightbox(null)
+    setShowInfo(false)
+  }, [])
+
+  if (completedIndices.length === 0 && !state.isAdmin) return null
 
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
@@ -322,17 +334,16 @@ export default function CharactersShowcase() {
         </header>
 
         <div className="ch-showcase__cards-container">
-          {count === 0 ? (
-            <div className="ch-empty">
-              <i className="fa-solid fa-user-plus" />
-              <span>{isAdmin ? 'Add characters from "Manage".' : 'Coming soon.'}</span>
+          {completedIndices.length === 0 ? (
+            <div className="w-full py-12 text-center text-gray-500 font-medium border border-dashed border-gray-300 rounded-lg">
+              Completa los datos e imagen de un personaje desde &quot;Gestionar&quot; para que aparezca aquí.
             </div>
           ) : (
             <Carousel
-              key={count}
+              key={completedIndices.join('-')}
               setApi={setApi}
               opts={{ align: 'center', loop: true, dragFree: true, watchDrag: true }}
-              plugins={count > 1 && !prefersReducedMotion() ? [
+              plugins={completedIndices.length > 1 && !prefersReducedMotion() ? [
                 AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: true }),
               ] : []}
               className="ch-carousel"
@@ -346,9 +357,9 @@ export default function CharactersShowcase() {
               }}
             >
               <CarouselContent className="-ml-3 md:-ml-4">
-                {Array.from({ length: count }).map((_, i) => (
-                  <CarouselItem key={i} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px]">
-                    <CharacterPanel index={i} total={count} onOpen={openLightbox} api={api} isHoveringRef={isHoveringRef} />
+                {completedIndices.map((index) => (
+                  <CarouselItem key={index} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px]">
+                    <CharacterPanel index={index} total={completedIndices.length} onOpen={openLightbox} api={api} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}
               </CarouselContent>

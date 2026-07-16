@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable react-hooks/immutability */
+
 /* Selectores de contenido — port de cms.js openContentPicker() (subir
    desde PC vs repositorio, con renombrado inline del contenedor) y
    openRepoPicker() (grilla del repo filtrada por tipo compatible). */

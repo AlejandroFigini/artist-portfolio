@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { usePathname } from 'next/navigation'
 import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
@@ -33,6 +34,7 @@ const ExportModal = dynamic(() => import('./TextModals').then((m) => m.ExportMod
 export default function CmsRoot() {
   const toast = useToast()
   useCmsStore()
+  const pathname = usePathname()
   const [cmd, setCmd] = useState<Command | null>(null)
   const [uploadFile, setUploadFile] = useState<{ key: string; file: File } | null>(null)
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
@@ -68,6 +70,27 @@ export default function CmsRoot() {
     }
     engine.refreshRetired()
   }, [])
+
+  // Re-index and hydrate when path changes (essential for multi-page support in Next.js client-side navigation)
+  useEffect(() => {
+    if (!state.loaded) return
+
+    // Clear element cache for elements that are no longer in the document
+    Object.keys(engine.elementsByKey).forEach((k) => {
+      const el = engine.elementsByKey[k]
+      if (el && !document.contains(el)) {
+        delete engine.elementsByKey[k]
+      }
+    })
+
+    engine.indexEditables()
+    engine.hydrate()
+    engine.refreshRetired()
+
+    if (state.isAdmin) {
+      engine.attachEditControls()
+    }
+  }, [pathname])
 
   // ----- Init (port de cms.js init()) ----------------------------------------
   useEffect(() => {

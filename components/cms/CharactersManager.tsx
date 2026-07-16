@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable react-hooks/immutability */
+
 /* Gestión de Characters — espejo de ProjectsManager para la sección dinámica
    de personajes: alta / baja / reorden y edición de retrato + concepts + ficha.
    Las keys virtuales (char#i / char#new_*) se remapean a reales (char#i) al
@@ -25,17 +27,10 @@ function parseSettings() {
   const settings = { count: 8 }
   try {
     const parsed = JSON.parse(state.items['char.settings'] || '')
-    if (parsed && typeof parsed.count === 'number' && parsed.count > 0) {
-      if (parsed.count === 4) {
-        parsed.count = 8
-        state.items['char.settings'] = JSON.stringify(parsed)
-      }
+    if (parsed && typeof parsed.count === 'number' && parsed.count >= 0) {
       settings.count = parsed.count
     }
   } catch {}
-  if (!state.items['char.settings']) {
-    state.items['char.settings'] = JSON.stringify({ count: 8 })
-  }
   return settings
 }
 
@@ -51,7 +46,12 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
 
   const pendingNew = () =>
     Object.keys(state.items)
-      .filter((k) => /^char#new_\d+$/.test(k) && !!state.items[k])
+      .filter((k) => {
+        if (!/^char#new_\d+$/.test(k)) return false
+        const src = state.items[k] || ''
+        const name = state.items[`${k}::name`] || ''
+        return !!src && !src.includes('placeholder') && !!name.trim()
+      })
       .sort((a, b) => Number(a.split('_')[1]) - Number(b.split('_')[1]))
   const [characters, setCharacters] = useState<string[]>(() => [...original, ...pendingNew()])
   const [saving, setSaving] = useState(false)
@@ -73,14 +73,16 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
 
   // Mergea en vivo los personajes pendientes (char#new_*) creados desde el picker.
   useEffect(() => {
-    setCharacters((prev) => {
-      const add = pendingNew().filter((k) => !prev.includes(k))
-      return add.length ? [...prev, ...add] : prev
-    })
-    setNextNewId((n) => {
-      const ids = pendingNew().map((k) => Number(k.split('_')[1]))
-      return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
-    })
+    setTimeout(() => {
+      setCharacters((prev) => {
+        const add = pendingNew().filter((k) => !prev.includes(k))
+        return add.length ? [...prev, ...add] : prev
+      })
+      setNextNewId((n) => {
+        const ids = pendingNew().map((k) => Number(k.split('_')[1]))
+        return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
+      })
+    }, 0)
   }, [storeVersion])
 
   const saveGraph = async (finalChars: string[]) => {
@@ -319,14 +321,11 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
               className="cms-btn"
               style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderStyle: 'dashed' }}
               title="Add new character"
-              onClick={async () => {
+              onClick={() => {
                 const newKey = `char#new_${nextNewId}`
-                const nextCharacters = [...characters, newKey]
-                setCharacters(nextCharacters)
                 setNextNewId((n) => n + 1)
                 ensureCharacterMeta(newKey)
-                await saveGraph(nextCharacters)
-                toast('New character added! Click the edit button (pencil icon) to set its name and details.')
+                onPickImage(newKey)
               }}
             >
               <i className="fa-solid fa-plus"></i> Add character

@@ -8,13 +8,14 @@
 .ch-showcase {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   background-color: #f1ecfa;
   background-image:
     linear-gradient(to right, rgba(139, 92, 246, 0.12) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(139, 92, 246, 0.12) 1px, transparent 1px);
   background-size: 38px 38px;
-  padding: clamp(2.5rem, 6vw, 5rem) 0;
+  padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(3.5rem, 7vw, 6rem);
 }
 
 /* --- Rail vertical decorativo --- */

@@ -5,8 +5,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel'
 import Autoplay from 'embla-carousel-autoplay'
@@ -112,6 +110,16 @@ export default function ProjectsShowcase() {
   // placeholders que ya usa ProjectCard) para que la sección no se vea vacía.
   // No persiste nada ni afecta el conteo real que gestiona el admin.
   const displayCount = count > 0 ? count : 4
+
+  const completedIndices: number[] = []
+  for (let i = 0; i < displayCount; i++) {
+    const src = state.items[`proj#${i}`] || ''
+    const title = state.items[`proj#${i}::title`] || ''
+    const hasImage = !!src && !src.includes('placeholder')
+    if ((hasImage && !!title.trim()) || count === 0) {
+      completedIndices.push(i)
+    }
+  }
 
   // Embla clona los slides con loop:true y los clones son copias estáticas del
   // DOM; al cambiar contenido (alta/baja/reemplazo/reorden) sin reInit, los clones
@@ -236,18 +244,34 @@ export default function ProjectsShowcase() {
             ]}
             className="w-full"
           >
-            <CarouselContent className="-ml-4 py-6">
-              {Array.from({ length: displayCount }).map((_, i) => (
-                <CarouselItem key={i} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4">
-                  <div className="w-full h-full px-1.5 sm:px-2">
-                    <ProjectCard index={i} />
+            <CarouselContent className="-mx-4 py-6">
+              {(completedIndices.length > 0 ? completedIndices : Array.from({ length: displayCount }, (_, i) => i)).map((index) => (
+                <CarouselItem key={index} className="px-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4">
+                  <div className="w-full h-full">
+                    <ProjectCard index={index} />
                   </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
-            
-            <CarouselPrevious className="hidden md:flex -left-12 lg:-left-16 bg-white border-gray-200 text-gray-900 hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] transition-colors duration-300 shadow-sm" />
-            <CarouselNext className="hidden md:flex -right-12 lg:-right-16 bg-white border-gray-200 text-gray-900 hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] transition-colors duration-300 shadow-sm" />
+
+            {/* Flechas minimalistas */}
+            <button
+              type="button"
+              onClick={() => carouselApi?.scrollPrev()}
+              aria-label="Previous slide"
+              className="hidden md:flex absolute -left-16 lg:-left-20 xl:-left-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+            >
+              <i className="fa-solid fa-arrow-left text-xs transition-transform duration-300 group-hover/side:-translate-x-0.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => carouselApi?.scrollNext()}
+              aria-label="Next slide"
+              className="hidden md:flex absolute -right-16 lg:-right-20 xl:-right-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+            >
+              <i className="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover/side:translate-x-0.5" />
+            </button>
           </Carousel>
         </div>
       </div>
