@@ -36,6 +36,7 @@ export default function CmsRoot() {
   useCmsStore()
   const pathname = usePathname()
   const [cmd, setCmd] = useState<Command | null>(null)
+  const [managerCmd, setManagerCmd] = useState<Command | null>(null)
   const [uploadFile, setUploadFile] = useState<{ key: string; file: File } | null>(null)
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
   // al nodo definitivo del DOM (patrón estándar de portales)
@@ -54,7 +55,11 @@ export default function CmsRoot() {
       fileInputRef.current.click()
       return
     }
-    setCmd(c)
+    if (c.type === 'projectsManager' || c.type === 'charactersManager' || c.type === 'carouselManager') {
+      setManagerCmd(c)
+    } else {
+      setCmd(c)
+    }
   }, [])
 
   // Modo admin: overlay de edición + slots (port setAdmin)
@@ -169,7 +174,7 @@ export default function CmsRoot() {
   }, [])
 
   const close = useCallback(() => {
-    setCmd(null)
+    setCmd((prev) => (prev !== null ? null : prev))
   }, [])
 
   return (
@@ -254,23 +259,23 @@ export default function CmsRoot() {
               }}
             />
           )}
-          {cmd?.type === 'carouselManager' && (
+          {managerCmd?.type === 'carouselManager' && (
             <CarouselManager
-              prefix={cmd.key || 'hero'}
-              onClose={close}
+              prefix={managerCmd.key || 'hero'}
+              onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
             />
           )}
-          {cmd?.type === 'projectsManager' && (
+          {managerCmd?.type === 'projectsManager' && (
             <ProjectsManager
-              onClose={close}
+              onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
               onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
-          {cmd?.type === 'charactersManager' && (
+          {managerCmd?.type === 'charactersManager' && (
             <CharactersManager
-              onClose={close}
+              onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
               onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}
             />

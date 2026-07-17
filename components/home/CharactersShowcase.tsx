@@ -28,14 +28,13 @@ import { rescan } from '@/components/cms/engine'
 const CONCEPTS_PER = 4
 
 function readCount(): number {
-  let count = 0
   try {
     const s = JSON.parse(state.items['char.settings'] || '')
-    if (s && typeof s.count === 'number' && s.count > 0) {
-      count = s.count
+    if (s && typeof s.count === 'number' && s.count >= 0) {
+      return s.count
     }
   } catch {}
-  return count > 0 ? count : 8
+  return 8
 }
 
 type Lightbox = { src: string; name: string; role: string; desc: string } | null
@@ -299,7 +298,7 @@ export default function CharactersShowcase() {
     setShowInfo(false)
   }, [])
 
-  if (completedIndices.length === 0 && !state.isAdmin) return null
+  // Si está vacío, se renderiza el estado vacío ocupando el mismo espacio de altura
 
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
@@ -335,8 +334,11 @@ export default function CharactersShowcase() {
 
         <div className="ch-showcase__cards-container">
           {completedIndices.length === 0 ? (
-            <div className="w-full py-12 text-center text-gray-500 font-medium border border-dashed border-gray-300 rounded-lg">
-              Completa los datos e imagen de un personaje desde &quot;Gestionar&quot; para que aparezca aquí.
+            <div className="w-full min-h-[520px] md:min-h-[580px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-violet-300/60 rounded-2xl bg-white/60 shadow-sm transition-all duration-300">
+              <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
+                <i className="fa-solid fa-user-astronaut text-xl opacity-80" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">No hay personajes configurados</h3>
             </div>
           ) : (
             <Carousel

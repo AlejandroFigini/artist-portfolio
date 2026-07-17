@@ -28,11 +28,11 @@ function ProjectCard({ index }: { index: number }) {
   return (
     <div
       data-content-id={key}
-      className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-500 ease-out"
+      className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
     >
-      {/* 1. Contenedor de Imagen */}
+      {/* 1. Contenedor de Imagen (Formato apaisado 3:2 elegante con borde divisorio inferior) */}
       <div
-        className="w-full aspect-[4/3] bg-gray-50 relative block shrink-0 overflow-hidden"
+        className="w-full aspect-[16/10] sm:aspect-[3/2] bg-gray-50 relative block shrink-0 overflow-hidden border-b border-gray-100/80"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -50,38 +50,38 @@ function ProjectCard({ index }: { index: number }) {
         )}
       </div>
 
-      {/* Contenedor de Textos y Botón */}
-      <div className="flex flex-col flex-1 justify-between" style={{ padding: '2.5rem' }}>
+      {/* Contenedor de Textos y Botón (Amplios márgenes y perfecta distribución vertical) */}
+      <div className="flex flex-col flex-1 justify-between p-6 sm:p-7" style={{ padding: 'clamp(1.4rem, 2vw, 1.75rem)' }}>
         <div>
           {/* Etiqueta / Meta */}
-          <div className="flex items-center gap-3" style={{ marginBottom: '1.25rem' }}>
-            <span className="w-8 h-[1px] bg-[var(--accent)]"></span>
+          <div className="flex items-center gap-3 mb-3" style={{ marginBottom: '0.85rem' }}>
+            <span className="w-8 h-[1.5px] bg-[var(--accent)]"></span>
             <span className="proj-card-date text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
               {startDate || 'In progress'}
             </span>
           </div>
 
-          {/* 2. Título */}
-          <h3 className="proj-card-title min-h-[3.6rem] text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300" style={{ marginBottom: '1rem' }}>
+          {/* 2. Título (con altura mínima para alinear las tarjetas de al lado) */}
+          <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
             {title || `Project Title ${index + 1}`}
           </h3>
 
-          {/* 3. Breve descriptivo */}
-          <p className="proj-card-summary min-h-[4.5rem] text-gray-500 text-[0.95rem] leading-relaxed line-clamp-3" style={{ marginBottom: '2.5rem' }}>
+          {/* 3. Breve descriptivo (altura fija para que los botones de pie queden alineados) */}
+          <p className="proj-card-summary min-h-[4.2rem] text-gray-500 text-[0.9rem] leading-relaxed line-clamp-3 mb-5" style={{ marginBottom: '1.25rem', minHeight: '4.2rem' }}>
             {summary || "This is a brief descriptive placeholder text for the project. The actual summary will appear here once you add content from the panel."}
           </p>
         </div>
 
-        {/* 4. Botón Leer Más (fijo abajo) */}
-        <div className="mt-auto pt-4">
+        {/* 4. Pie con Botón Leer Más y borde divisorio */}
+        <div className="mt-auto pt-3 border-t border-gray-100/80 flex items-center justify-start" style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(229, 231, 235, 0.8)' }}>
           <button 
-            className="group/link inline-flex items-center gap-2 text-[11px] font-medium text-gray-400 tracking-[0.15em] uppercase relative pb-1 transition-colors duration-300 hover:text-[var(--accent)] cursor-pointer bg-transparent border-none shadow-none outline-none"
+            className="group/link inline-flex items-center gap-2 text-[11px] font-semibold text-gray-400 tracking-[0.16em] uppercase relative pb-2 transition-colors duration-300 hover:text-[var(--accent)] cursor-pointer bg-transparent border-none shadow-none outline-none"
             type="button"
             onClick={(e) => e.preventDefault()}
           >
             Read more
             <i className="fa-solid fa-arrow-right text-[9px] transition-transform duration-300 group-hover/link:translate-x-1.5" />
-            <span className="absolute left-0 bottom-0 w-full h-[1px] bg-[var(--accent)] origin-left scale-x-0 transition-transform duration-300 ease-out group-hover/link:scale-x-100" />
+            <span className="absolute left-0 w-full h-[1.5px] bg-[var(--accent)] origin-left scale-x-0 transition-transform duration-300 ease-out group-hover/link:scale-x-100" style={{ bottom: '-5px' }} />
           </button>
         </div>
       </div>
@@ -100,24 +100,23 @@ export default function ProjectsShowcase() {
   let count = 4;
   try {
     const s = JSON.parse(state.items['proj.settings'] || '');
-    if (s && typeof s.count === 'number' && s.count > 0) {
+    if (s && typeof s.count === 'number' && s.count >= 0) {
       if (s.count !== 6 || state.items['proj#4'] || state.items['proj#5']) {
         count = s.count;
       }
     }
   } catch {}
-  // Sin proyectos cargados: mínimo visual de 4 tarjetas de ejemplo (mismos
-  // placeholders que ya usa ProjectCard) para que la sección no se vea vacía.
-  // No persiste nada ni afecta el conteo real que gestiona el admin.
   const displayCount = count > 0 ? count : 4
 
   const completedIndices: number[] = []
-  for (let i = 0; i < displayCount; i++) {
-    const src = state.items[`proj#${i}`] || ''
-    const title = state.items[`proj#${i}::title`] || ''
-    const hasImage = !!src && !src.includes('placeholder')
-    if ((hasImage && !!title.trim()) || count === 0) {
-      completedIndices.push(i)
+  if (count > 0) {
+    for (let i = 0; i < count; i++) {
+      const src = state.items[`proj#${i}`] || ''
+      const title = state.items[`proj#${i}::title`] || ''
+      const hasImage = !!src && !src.includes('placeholder')
+      if (hasImage && !!title.trim()) {
+        completedIndices.push(i)
+      }
     }
   }
 
@@ -203,7 +202,7 @@ export default function ProjectsShowcase() {
 
       <div className="proj-showcase__frame">
         {/* Encabezado de la sección */}
-        <div style={{ marginBottom: '3rem', position: 'relative' }}>
+        <div style={{ marginBottom: '2rem', position: 'relative' }}>
           <span className="proj-showcase__fig text-xs tracking-[0.22em] text-[var(--accent)] uppercase mb-3 block">
             FIG. 03.5 — Work
           </span>
@@ -228,51 +227,60 @@ export default function ProjectsShowcase() {
           </div>
         </div>
 
-        {/* Carrusel de proyectos */}
-        <div className="w-full relative mt-4">
-          <Carousel
-            key={displayCount}
-            setApi={setCarouselApi}
-            opts={{
-              align: 'start',
-              loop: true,
-            }}
-            plugins={[
-              Autoplay({
-                delay: 4000,
-              }),
-            ]}
-            className="w-full"
-          >
-            <CarouselContent className="-mx-4 py-6">
-              {(completedIndices.length > 0 ? completedIndices : Array.from({ length: displayCount }, (_, i) => i)).map((index) => (
-                <CarouselItem key={index} className="px-4 basis-full md:basis-1/2 lg:basis-1/3 flex items-stretch py-4">
-                  <div className="w-full h-full">
-                    <ProjectCard index={index} />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-
-            {/* Flechas minimalistas */}
-            <button
-              type="button"
-              onClick={() => carouselApi?.scrollPrev()}
-              aria-label="Previous slide"
-              className="hidden md:flex absolute -left-16 lg:-left-20 xl:-left-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+        {/* Carrusel de proyectos / Estado vacío (Equilibrado como sub-sección horizontal) */}
+        <div className="w-full relative mt-3">
+          {completedIndices.length === 0 && count === 0 ? (
+            <div className="w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300/80 rounded-lg bg-white/60 shadow-sm transition-all duration-300">
+              <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
+                <i className="fa-solid fa-layer-group text-xl opacity-80" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">No hay proyectos destacados</h3>
+            </div>
+          ) : (
+            <Carousel
+              key={`${displayCount}-${completedIndices.join('-')}`}
+              setApi={setCarouselApi}
+              opts={{
+                align: 'start',
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                }),
+              ]}
+              className="w-full"
             >
-              <i className="fa-solid fa-arrow-left text-xs transition-transform duration-300 group-hover/side:-translate-x-0.5" />
-            </button>
+              <CarouselContent className="-ml-4 py-4">
+                {Array.from({ length: displayCount }, (_, i) => i).map((index) => (
+                  <CarouselItem key={index} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex items-stretch py-3">
+                    <div className="w-full h-full px-2 sm:px-2.5">
+                      <ProjectCard index={index} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
 
-            <button
-              type="button"
-              onClick={() => carouselApi?.scrollNext()}
-              aria-label="Next slide"
-              className="hidden md:flex absolute -right-16 lg:-right-20 xl:-right-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
-            >
-              <i className="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover/side:translate-x-0.5" />
-            </button>
-          </Carousel>
+              {/* Flechas minimalistas */}
+              <button
+                type="button"
+                onClick={() => carouselApi?.scrollPrev()}
+                aria-label="Previous slide"
+                className="hidden md:flex absolute -left-16 lg:-left-20 xl:-left-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+              >
+                <i className="fa-solid fa-arrow-left text-xs transition-transform duration-300 group-hover/side:-translate-x-0.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => carouselApi?.scrollNext()}
+                aria-label="Next slide"
+                className="hidden md:flex absolute -right-16 lg:-right-20 xl:-right-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+              >
+                <i className="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover/side:translate-x-0.5" />
+              </button>
+            </Carousel>
+          )}
         </div>
       </div>
     </section>

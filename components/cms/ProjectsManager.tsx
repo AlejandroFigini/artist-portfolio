@@ -69,7 +69,11 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     setTimeout(() => {
       setProjects((prev) => {
         const add = pendingNew().filter((k) => !prev.includes(k))
-        return add.length ? [...prev, ...add] : prev
+        const next = add.length ? [...prev, ...add] : prev
+        if (add.length > 0 || next.some((s, i) => s !== original[i]) || next.length !== original.length) {
+          saveGraph(next)
+        }
+        return next
       })
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
@@ -167,6 +171,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
       const tmp = next[idx + dir]
       next[idx + dir] = next[idx]
       next[idx] = tmp
+      saveGraph(next)
       return next
     })
   }
@@ -288,7 +293,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                 <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
                   <i className="fa-solid fa-chevron-down"></i>
                 </button>
-                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => setProjects((s) => s.filter((_, j) => j !== i))}>
+                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => setProjects((s) => { const next = s.filter((_, j) => j !== i); saveGraph(next); return next; })}>
                   <i className="fa-solid fa-trash"></i>
                 </button>
               </div>

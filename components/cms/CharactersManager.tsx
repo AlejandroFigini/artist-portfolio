@@ -76,7 +76,11 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     setTimeout(() => {
       setCharacters((prev) => {
         const add = pendingNew().filter((k) => !prev.includes(k))
-        return add.length ? [...prev, ...add] : prev
+        const next = add.length ? [...prev, ...add] : prev
+        if (add.length > 0 || next.some((s, i) => s !== original[i]) || next.length !== original.length) {
+          saveGraph(next)
+        }
+        return next
       })
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
@@ -150,6 +154,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     setCharacters((s) => {
       const next = s.slice()
       ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
+      saveGraph(next)
       return next
     })
   }
@@ -308,7 +313,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                   <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === characters.length - 1} onClick={() => move(i, 1)}>
                     <i className="fa-solid fa-chevron-down"></i>
                   </button>
-                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => setCharacters((s) => s.filter((_, j) => j !== i))}>
+                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => setCharacters((s) => { const next = s.filter((_, j) => j !== i); saveGraph(next); return next; })}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </div>
