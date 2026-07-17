@@ -4639,32 +4639,39 @@ body.is-admin .cms-empty-slot .cms-tools {
 }
 
 /* ---- Repo Browser: grilla de miniaturas seleccionables ---- */
+.cms-modal--repo-picker {
+    width: min(1040px, 94vw) !important;
+}
 .cms-repo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 0.7rem;
-    max-height: 50vh;
-    overflow-y: auto;
-    padding: 0.5rem 0;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+    padding: 0.5rem 0 1rem 0;
+}
+@media (max-width: 860px) {
+    .cms-repo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+    .cms-repo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .cms-repo-thumb {
     position: relative;
     display: flex;
     flex-direction: column;
-    border: 2px solid var(--border);
-    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
     overflow: hidden;
     cursor: pointer;
     background: var(--bg-secondary);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .cms-repo-thumb:hover {
-    border-color: rgba(124, 58, 237, 0.5);
+    border-color: rgba(124, 58, 237, 0.6);
     transform: translateY(-2px);
 }
 .cms-repo-thumb.selected {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25), 0 4px 12px rgba(124, 58, 237, 0.2);
+    box-shadow: 0 0 0 1.5px rgba(124, 58, 237, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 .cms-repo-thumb.selected::after {
     content: '\f00c';
@@ -4681,7 +4688,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     font-size: 0.65rem;
     background: var(--accent);
     color: #fff;
-    border-radius: 50%;
+    border-radius: 4px;
     z-index: 2;
 }
 .cms-repo-thumb-img {
@@ -4758,11 +4765,15 @@ body.is-admin .cms-empty-slot .cms-tools {
     cursor: pointer;
     transition: all 0.2s ease;
 }
-.cms-repo-filter-btn:hover { border-color: var(--accent); color: var(--text-primary); }
-.cms-repo-filter-btn.active { color: #fff; }
-.cms-filter-repo.active { background: var(--accent); border-color: var(--accent); }
-.cms-filter-used.active { background: rgba(16, 185, 129, 0.9); border-color: rgba(16, 185, 129, 0.9); }
-.cms-filter-unused.active { background: rgba(180, 83, 9, 0.9); border-color: rgba(180, 83, 9, 0.9); }
+.cms-repo-filter-btn:not(.active):hover { border-color: var(--accent); color: var(--text-primary); }
+.cms-repo-filter-btn.active,
+.cms-repo-filter-btn.active:hover { color: #fff !important; }
+.cms-filter-repo.active,
+.cms-filter-repo.active:hover { background: var(--accent); border-color: var(--accent); }
+.cms-filter-used.active,
+.cms-filter-used.active:hover { background: rgba(16, 185, 129, 0.9); border-color: rgba(16, 185, 129, 0.9); }
+.cms-filter-unused.active,
+.cms-filter-unused.active:hover { background: rgba(180, 83, 9, 0.9); border-color: rgba(180, 83, 9, 0.9); }
 .cms-repo-filter-btn i { font-size: 0.75rem; }
 
 /* ---- Global Hero Carousel Gear ---- */
@@ -4985,17 +4996,24 @@ body.is-admin .cms-mount.cms-empty-slot {
 
 .cms-modal-inner {
     max-height: 86vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 1.7rem;
 }
+.cms-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
+}
 
-/* Scrollbar del modal: fina, sin flechas (las de Windows rompían las
-   esquinas redondeadas del modal) y con track transparente */
-.cms-modal-inner { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-.cms-modal-inner::-webkit-scrollbar { width: 8px; }
-.cms-modal-inner::-webkit-scrollbar-button { display: none; height: 0; }
-.cms-modal-inner::-webkit-scrollbar-track { background: transparent; }
-.cms-modal-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+/* Scrollbar del modal: fina, sin flechas y con track transparente */
+.cms-modal-body { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.cms-modal-body::-webkit-scrollbar { width: 8px; }
+.cms-modal-body::-webkit-scrollbar-button { display: none; height: 0; }
+.cms-modal-body::-webkit-scrollbar-track { background: transparent; }
+.cms-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 
 .cms-modal-title {
     margin: 0 0 1.2rem;

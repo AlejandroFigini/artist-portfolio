@@ -26,6 +26,7 @@ type CmsModalProps = {
   children: React.ReactNode
   actions?: ModalAction[]
   wide?: boolean
+  className?: string
   // acciones en un único renglón (sin wrap), botones compactos
   compactActions?: boolean
   // sin X / Escape / click-afuera (p.ej. durante una subida)
@@ -35,7 +36,7 @@ type CmsModalProps = {
   onClose: () => void
 }
 
-export function CmsModal({ title, children, actions, wide, compactActions, locked, show = true, zIndex, onClose }: CmsModalProps) {
+export function CmsModal({ title, children, actions, wide, className = '', compactActions, locked, show = true, zIndex, onClose }: CmsModalProps) {
   const [visible, setVisible] = useState(false)
   // Solo cierra si el gesto EMPEZÓ y TERMINÓ sobre el overlay. Evita que
   // arrastrar una selección de texto desde dentro y soltar afuera cierre el modal.
@@ -66,11 +67,11 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
         downOnOverlay.current = false
       }}
     >
-      <div className={`cms-modal${wide ? ' cms-modal--wide' : ''}${compactActions ? ' cms-modal--actions-row' : ''}`}>
-        {/* el scroll vive en este wrapper interno (no en .cms-modal) para que la
-            barra nunca quede pegada a las esquinas redondeadas del contenedor */}
+      <div className={`cms-modal${wide ? ' cms-modal--wide' : ''}${compactActions ? ' cms-modal--actions-row' : ''}${className ? ` ${className}` : ''}`}>
+        {/* el scroll vive en .cms-modal-body interno para que el título arriba y las
+            acciones abajo queden siempre fijas y visibles sin scroll */}
         <div className="cms-modal-inner">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+          <div className="cms-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', flexShrink: 0 }}>
             <h3 className="cms-modal-title" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>{title}</h3>
             {!locked && (
               <button
@@ -83,7 +84,9 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
               </button>
             )}
           </div>
-          {children}
+          <div className="cms-modal-body">
+            {children}
+          </div>
           {actions && actions.length > 0 && (() => {
             const renderBtn = (a: ModalAction, i: number) => (
               <button
@@ -102,9 +105,9 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
             // renglón (sin wrap, scroll horizontal si no entran); el primario
             // (Cerrar) queda al final, empujado al extremo derecho
             if (compactActions) {
-              return <div className="cms-modal-actions cms-modal-actions--row">{actions.map(renderBtn)}</div>
+              return <div className="cms-modal-actions cms-modal-actions--row" style={{ flexShrink: 0, marginTop: '1.2rem' }}>{actions.map(renderBtn)}</div>
             }
-            return <div className="cms-modal-actions">{actions.map(renderBtn)}</div>
+            return <div className="cms-modal-actions" style={{ flexShrink: 0, marginTop: '1.2rem' }}>{actions.map(renderBtn)}</div>
           })()}
         </div>
       </div>

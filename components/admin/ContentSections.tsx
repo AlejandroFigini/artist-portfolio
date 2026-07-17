@@ -4,13 +4,13 @@
    Sin usar / Repositorio / Basurero, con selección múltiple, lotes,
    vista previa y menús contextuales por estado. */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes } from '@/lib/utils'
 import {
   state, sumSizes, deduplicateMedia, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
-  performRestore, loadJSON, saveJSON, LS,
+  performRestore, loadJSON, saveJSON, LS, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
 import {
@@ -24,6 +24,7 @@ export type AdminModal =
   | { kind: 'rename'; key: string }
   | { kind: 'associate'; item: AnyEntry; isUnused: boolean; idx: number }
   | { kind: 'editInfo'; key: string }
+  | { kind: 'selectContainerAction'; action: 'editInfo' | 'rename' | 'remove'; occs: UsedEntry[] }
 
 type Sel = { type: string; val: string }
 
@@ -113,26 +114,37 @@ function BatchBar({ count, actionLabel, danger, actionDisabled, onCancel, onActi
 function useMenus({ openModal }: Pick<Ctx, 'openModal'>) {
   const { confirm } = useModal()
 
-  const usedMenu = (e: AnyEntry): MenuAction[] => [
-    { icon: 'fa-pen', color: '#22c55e', label: 'Edit info', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
-    { icon: 'fa-box-archive', color: '#eab308', label: 'Move to Unused', onClick: () => {
-      const k = (e as { key: string }).key
-      const otherUses = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src && u.key !== k) : []
-      if (otherUses.length > 0) {
-        const otherNames = otherUses.map(u => u.label || u.key).join(', ')
-        confirm('Empty Container',
-          <>Content is in use in: <strong>{otherNames}</strong>.<br /><br />
-            Container <strong>{e.label || k}</strong> will be emptied, but the file <strong>will not be moved to unused</strong> because it is still active in other containers.</>,
-          () => moveUsedToUnused(k))
-      } else {
-        confirm('Move to Unused',
-          <>Move <strong>{e.label || k}</strong> to Unused? It will be removed from the site.</>,
-          () => moveUsedToUnused(k))
-      }
-    } },
-    { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
-    { icon: 'fa-signature', color: '#3b82f6', label: 'Rename container', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },
-  ]
+  const usedMenu = (e: AnyEntry): MenuAction[] => {
+    const occs = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src) : [e as UsedEntry]
+    if (occs.length > 1) {
+      return [
+        { icon: 'fa-pen', color: '#22c55e', label: `Edit info (${occs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'editInfo', occs }) },
+        { icon: 'fa-box-archive', color: '#eab308', label: `Move / Remove (${occs.length} uses)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'remove', occs }) },
+        { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
+        { icon: 'fa-signature', color: '#3b82f6', label: `Rename container (${occs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'rename', occs }) },
+      ]
+    }
+    return [
+      { icon: 'fa-pen', color: '#22c55e', label: 'Edit info', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
+      { icon: 'fa-box-archive', color: '#eab308', label: 'Move to Unused', onClick: () => {
+        const k = (e as { key: string }).key
+        const otherUses = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src && u.key !== k) : []
+        if (otherUses.length > 0) {
+          const otherNames = otherUses.map(u => u.label || u.key).join(', ')
+          confirm('Empty Container',
+            <>Content is in use in: <strong>{otherNames}</strong>.<br /><br />
+              Container <strong>{e.label || k}</strong> will be emptied, but the file <strong>will not be moved to unused</strong> because it is still active in other containers.</>,
+            () => moveUsedToUnused(k))
+        } else {
+          confirm('Move to Unused',
+            <>Move <strong>{e.label || k}</strong> to Unused? It will be removed from the site.</>,
+            () => moveUsedToUnused(k))
+        }
+      } },
+      { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
+      { icon: 'fa-signature', color: '#3b82f6', label: 'Rename container', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },
+    ]
+  }
 
   const unusedMenu = (e: AnyEntry): MenuAction[] => {
     const idx = e._idx ?? -1
@@ -208,20 +220,35 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
   const sel = useSelection()
   const { confirm } = useModal()
   const { usedMenu } = useMenus({ openModal })
+  const deduplicatedArr = useMemo(() => {
+    const map = new Map<string, AnyEntry>()
+    for (const e of usedArr) {
+      const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
+      if (!map.has(src)) {
+        map.set(src, e)
+      }
+    }
+    return Array.from(map.values())
+  }, [usedArr])
   const count = sel.selected.length
   const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
   const [openSecs, setOpenSecs] = useState<Set<string>>(() => new Set())
-  const tree = buildPageTree(usedArr)
+  const tree = buildPageTree(deduplicatedArr)
 
-  const renderCard = (e: AnyEntry) => (
-    <MediaCard
-      key={(e as { key: string }).key} e={e} cardType="used" actions={usedMenu(e)}
-      multiSelect={sel.multiSelect}
-      selected={sel.isSel('used', (e as { key: string }).key)}
-      onToggleSelect={(on) => sel.toggle('used', (e as { key: string }).key, on)}
-      onView={() => openModal({ kind: 'view', e, cardType: 'used', menu: toViewMenu(usedMenu(e)) })}
-    />
-  )
+  const getItemSelKey = (it: AnyEntry) => it.src || (it as { key?: string }).key || ''
+
+  const renderCard = (e: AnyEntry) => {
+    const selKey = getItemSelKey(e)
+    return (
+      <MediaCard
+        key={selKey} e={e} cardType="used" actions={usedMenu(e)}
+        multiSelect={sel.multiSelect}
+        selected={sel.isSel('used', selKey)}
+        onToggleSelect={(on) => sel.toggle('used', selKey, on)}
+        onView={() => openModal({ kind: 'view', e, cardType: 'used', menu: toViewMenu(usedMenu(e)) })}
+      />
+    )
+  }
 
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
@@ -233,15 +260,23 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={usedArr.length} size={sumSizes(usedArr)} />
+      <ContentStats count={deduplicatedArr.length} size={sumSizes(deduplicatedArr)} />
       {sel.multiSelect && (
         <BatchBar
           count={count} actionLabel="Move to Unused"
           onCancel={sel.toggleMulti}
           onAction={() => {
             if (!count) return
-            confirm('Move multiple to unused', `Move ${count} items to unused?`, () => {
-              batchMoveUsedToUnused(sel.selected.map((x) => x.val))
+            confirm('Move multiple to unused', `Move ${count} unique items (and all their container occurrences) to unused?`, () => {
+              const keysToRemove: string[] = []
+              sel.selected.forEach((x) => {
+                Object.values(state.usedContent).forEach((u) => {
+                  if (u.src === x.val || u.key === x.val) {
+                    keysToRemove.push(u.key)
+                  }
+                })
+              })
+              batchMoveUsedToUnused(keysToRemove)
               sel.toggleMulti()
             })
           }}
@@ -250,7 +285,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
       <div className="admin-tree">
         {tree.map((page) => {
           const pOpen = openPages.has(page.id)
-          const pageKeys = page.sections.flatMap((s) => s.items.map((it) => (it as { key: string }).key))
+          const pageKeys = page.sections.flatMap((s) => s.items.map(getItemSelKey))
           const pageAllSelected = pageKeys.length > 0 && pageKeys.every((k) => sel.isSel('used', k))
           const closePage = () => {
             toggleInSet(setOpenPages, page.id)
@@ -296,7 +331,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                   {page.sections.map((s) => {
                     const sid = `${page.id}:${s.id}`
                     const sOpen = openSecs.has(sid)
-                    const secKeys = s.items.map((it) => (it as { key: string }).key)
+                    const secKeys = s.items.map(getItemSelKey)
                     const secAllSelected = secKeys.length > 0 && secKeys.every((k) => sel.isSel('used', k))
                     return (
                       <div className="admin-tree-section" key={sid}>
@@ -321,6 +356,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                           )}
                         </div>
                         {sOpen && (
+
                           <div className="admin-tree-content">
                             {s.count === 0
                               ? <p className="cms-admin-sub admin-tree-empty">No content in this section.</p>

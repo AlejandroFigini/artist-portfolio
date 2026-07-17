@@ -68,10 +68,13 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
   const title = stripExt(e.name) || e.label || '—'
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
-  const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
-  const containerBase = e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Just uploaded' : '')
+  const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
+  const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
-  const containerLabel = isUnusedOrTrash ? 'Previous container:' : 'Container:'
+  const containerLabel = isUnusedOrTrash ? 'Previous container:' : (occCount > 1 && cardType === 'used' ? 'Containers:' : 'Container:')
+  const containerBase = cardType === 'used' && occCount > 1
+    ? occs.map(u => u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key).join(', ')
+    : (e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Just uploaded' : ''))
   return (
     <div
       className="cms-mlib-item"

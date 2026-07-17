@@ -6,7 +6,7 @@
    desde PC vs repositorio, con renombrado inline del contenedor) y
    openRepoPicker() (grilla del repo filtrada por tipo compatible). */
 
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
@@ -105,8 +105,16 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
 // ----- Repo Picker ------------------------------------------------------------
 
 type RepoEntry = {
-  src: string; name?: string; size?: number | null; label?: string; section?: string;
-  kind: 'image' | 'video'; _state: 'usado' | 'sin usar'; _key?: string; ts?: number; type?: string;
+  src: string
+  name?: string
+  size?: number | null
+  label?: string
+  section?: string
+  kind: 'image' | 'video'
+  _state: 'usado' | 'sin usar'
+  _key?: string
+  ts?: number
+  type?: string
 }
 
 type RepoPickerProps = {
@@ -150,7 +158,13 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   })
 
   if (!meta) return null
-  const filtered = filter === 'all' ? all : all.filter((e) => e._state === filter)
+  const filteredRaw = filter === 'all' ? all : all.filter((e) => e._state === filter)
+  const filtered = [...filteredRaw].sort((a, b) => {
+    const aCompat = (a.kind === 'video') === isVideoSlot ? 0 : 1
+    const bCompat = (b.kind === 'video') === isVideoSlot ? 0 : 1
+    if (aCompat !== bCompat) return aCompat - bCompat
+    return (b.ts || 0) - (a.ts || 0)
+  })
 
   const performAssign = (moveFromOld: boolean) => {
     if (!selected) return
@@ -251,7 +265,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   return (
     <CmsModal
-      title="Choose from repository" wide zIndex={100050} onClose={onClose}
+      title="Choose from repository" wide className="cms-modal--repo-picker" zIndex={100050} onClose={onClose}
       actions={[
         { label: 'Cancel', onClick: () => {} },
         { label: verifying ? 'Verifying...' : 'Use this content', primary: true, onClick: verifying ? () => false as const : assign },
@@ -275,66 +289,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             </button>
           ))}
         </div>
-        <div className="cms-repo-grid">
-          {filtered.length === 0 && (
-            <div className="cms-repo-empty">
-              <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
-              No content available of this type.
-            </div>
-          )}
-          {filtered.map((entry, i) => {
-            const isCompat = (entry.kind === 'video') === isVideoSlot
-            return (
-            <div
-              key={i}
-              className={`cms-repo-thumb${selected === entry ? ' selected' : ''}`}
-              style={{ opacity: isCompat ? 1 : 0.45, cursor: isCompat ? 'pointer' : 'not-allowed' }}
-              onClick={() => { if (isCompat) setSelected(entry); else toast(`Incompatible content (requires ${isVideoSlot ? 'video' : 'image'})`, 'error') }}
-            >
-              <div className="cms-mlib-tag-top" style={{ padding: '0.35rem 0.35rem 0 0.35rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                {!isCompat && (
-                  <span className="cms-tag" style={{ background: '#ef4444', color: '#fff' }}>Incompatible</span>
-                )}
-                {entry._state === 'usado' ? (
-                  <span className="cms-tag cms-tag--uso">In Use</span>
-                ) : (
-                  <span className="cms-tag cms-tag--nouso">Unused</span>
-                )}
-              </div>
-              {entry.kind === 'video' ? (
-                entry.src ? (
-                  entry.src.includes('res.cloudinary.com') ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img className="cms-repo-thumb-img" src={cloudinaryThumb(entry.src, true)} alt="" loading="lazy" />
-                  ) : (
-                    <video className="cms-repo-thumb-img" src={entry.src} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  )
-                ) : (
-                  <div className="cms-repo-thumb-icon"><i className="fa-solid fa-film"></i></div>
-                )
-              ) : entry.src ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img className="cms-repo-thumb-img" src={entry.src.startsWith('data:') ? entry.src : cloudinaryThumb(entry.src, false)} alt="" loading="lazy" />
-              ) : (
-                <div className="cms-repo-thumb-icon"><i className="fa-solid fa-image"></i></div>
-              )}
-              <div className="cms-repo-thumb-info">
-                <div style={{ fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name || entry.label || '—'}</div>
-                {entry._state === 'usado' && (
-                  <div style={{ fontSize: '0.74rem', color: 'var(--accent)', marginTop: '3px', lineHeight: 1.4, borderTop: '1px solid var(--border)', paddingTop: '3px' }}>
-                    <div><strong>Page:</strong> {getPageAndSectionInfo(entry).page}</div>
-                    <div><strong>Section:</strong> {getPageAndSectionInfo(entry).section}</div>
-                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong>Container:</strong> {entry.label || entry._key || '—'}</div>
-                  </div>
-                )}
-                {entry.size ? <div style={{ fontSize: '0.75rem', marginTop: 2 }}><strong>Size:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span></div> : null}
-              </div>
-            </div>
-            )
-          })}
-        </div>
         {selected && (
-          <div style={{ marginTop: '1.2rem', padding: '0.8rem 1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ marginBottom: '1.2rem', padding: '0.8rem 1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Selected: <span style={{ color: 'var(--accent)' }}>{selected.name || selected.label || 'media'}</span>
@@ -353,10 +309,73 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             </div>
           </div>
         )}
+        <div className="cms-repo-grid">
+          {filtered.length === 0 && (
+            <div className="cms-repo-empty">
+              <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
+              No content available of this type.
+            </div>
+          )}
+          {filtered.map((entry, i) => {
+            const isCompat = (entry.kind === 'video') === isVideoSlot
+            const prevCompat = i > 0 && (filtered[i - 1].kind === 'video') === isVideoSlot
+            const showHeader = !isCompat && (i === 0 || prevCompat)
+            return (
+              <Fragment key={i}>
+                {showHeader && (
+                  <div style={{ gridColumn: '1 / -1', marginTop: i > 0 ? '0.8rem' : 0, paddingTop: i > 0 ? '0.8rem' : 0, borderTop: i > 0 ? '1px dashed var(--border)' : 'none', color: 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <i className="fa-solid fa-ban" style={{ color: '#ef4444' }}></i>
+                    <span>Incompatible content ({isVideoSlot ? 'Images' : 'Videos'} — not selectable for this container)</span>
+                  </div>
+                )}
+                <div
+                  className={`cms-repo-thumb${selected === entry ? ' selected' : ''}`}
+                  style={{ opacity: isCompat ? 1 : 0.45, cursor: isCompat ? 'pointer' : 'not-allowed' }}
+                  onClick={() => { if (isCompat) setSelected(entry); else toast(`Incompatible content (requires ${isVideoSlot ? 'video' : 'image'})`, 'error') }}
+                >
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+                    <div style={{ position: 'absolute', top: '7px', left: '7px', zIndex: 2, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {!isCompat && (
+                        <span style={{ background: '#dc2626', color: '#ffffff', fontSize: '0.67rem', padding: '0.18rem 0.48rem', borderRadius: '3px', fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.55)', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Incompatible</span>
+                      )}
+                      {entry._state === 'usado' ? (
+                        <span style={{ background: '#10b981', color: '#ffffff', fontSize: '0.67rem', padding: '0.18rem 0.48rem', borderRadius: '3px', fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.55)', letterSpacing: '0.3px', textTransform: 'uppercase' }}>In Use</span>
+                      ) : (
+                        <span style={{ background: '#d97706', color: '#ffffff', fontSize: '0.67rem', padding: '0.18rem 0.48rem', borderRadius: '3px', fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.55)', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Unused</span>
+                      )}
+                    </div>
+                    {entry.kind === 'video' ? (
+                      entry.src ? (
+                        entry.src.includes('res.cloudinary.com') ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img className="cms-repo-thumb-img" src={cloudinaryThumb(entry.src, true)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <video className="cms-repo-thumb-img" src={entry.src} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        )
+                      ) : (
+                        <div className="cms-repo-thumb-icon" style={{ width: '100%', height: '100%', aspectRatio: '1 / 1' }}><i className="fa-solid fa-film"></i></div>
+                      )
+                    ) : entry.src ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img className="cms-repo-thumb-img" src={entry.src.startsWith('data:') ? entry.src : cloudinaryThumb(entry.src, false)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div className="cms-repo-thumb-icon" style={{ width: '100%', height: '100%', aspectRatio: '1 / 1' }}><i className="fa-solid fa-image"></i></div>
+                    )}
+                  </div>
+                  <div style={{ padding: '0.55rem 0.65rem', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }} title={entry.name || entry.label || '—'}>
+                      {entry.name || entry.label || '—'}
+                    </div>
+                  </div>
+                </div>
+              </Fragment>
+            )
+          })}
+        </div>
       </div>
       {confirmEntry && (
         <CmsModal
-          title="Content in use"
+          title="Content in use" zIndex={100060}
           onClose={() => setConfirmEntry(null)}
           actions={[
             { label: 'Cancel', onClick: () => { setConfirmEntry(null); return false } },

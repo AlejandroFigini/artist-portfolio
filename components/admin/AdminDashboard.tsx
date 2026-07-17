@@ -15,7 +15,7 @@ import {
 import { getAccount, scaffoldCloudinaryFolders, logout } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
-import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal } from './modals'
+import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal, SelectContainerActionModal } from './modals'
 import { seedUsedContent } from '../cms/engine'
 import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
 import SocialSettings from './SocialSettings'
@@ -332,6 +332,22 @@ export default function AdminDashboard() {
       {modal?.kind === 'rename' && <RenameContainerModal cmsKey={modal.key} onClose={() => setModal(null)} />}
       {modal?.kind === 'associate' && <AssociateContainerModal item={modal.item} isUnused={modal.isUnused} unusedIdx={modal.idx} onClose={() => setModal(null)} />}
       {modal?.kind === 'editInfo' && <AdminEditInfoModal cmsKey={modal.key} onClose={() => setModal(null)} />}
+      {modal?.kind === 'selectContainerAction' && (
+        <SelectContainerActionModal
+          action={modal.action}
+          occs={modal.occs}
+          onSelect={(k) => {
+            setModal(
+              modal.action === 'editInfo'
+                ? { kind: 'editInfo', key: k }
+                : modal.action === 'rename'
+                ? { kind: 'rename', key: k }
+                : null
+            )
+          }}
+          onClose={() => setModal(null)}
+        />
+      )}
       {uploadFiles.length > 0 && <AdminUploadModal files={uploadFiles} onClose={() => setUploadFiles([])} />}
     </>
   )

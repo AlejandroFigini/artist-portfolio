@@ -5,7 +5,7 @@
    subida directa a Cloudinary (sección "Subir contenido"). */
 
 import { useRef, useState } from 'react'
-import { CmsModal } from '@/components/ui/Modal'
+import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
@@ -14,8 +14,9 @@ import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
   loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta, getAllKnownContainerKeys,
+  moveUsedToUnused, type UsedEntry,
 } from '@/lib/cms/store'
-import { buildPageTree } from '@/lib/cms/pages'
+import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
 
 type CloseProp = { onClose: () => void }
@@ -267,12 +268,111 @@ type ViewProps = CloseProp & {
   menu: { label: React.ReactNode; onClick: () => void }[]
 }
 
+export function SelectContainerActionModal({
+  action,
+  occs,
+  onSelect,
+  onClose,
+}: {
+  action: 'editInfo' | 'rename' | 'remove'
+  occs: UsedEntry[]
+  onSelect: (key: string) => void
+  onClose: () => void
+}) {
+  const { confirm } = useModal()
+  const title = action === 'editInfo'
+    ? 'Select container to edit info'
+    : action === 'rename'
+    ? 'Select container to rename'
+    : 'Select container to remove content from'
+
+  return (
+    <CmsModal title={title} onClose={onClose} actions={[{ label: 'Cancel', onClick: () => {} }]}>
+      <div style={{ padding: '0.3rem 0' }}>
+        <p style={{ margin: '0 0 1rem 0', fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          This file is currently used in <strong>{occs.length} containers</strong>. Select which container you want to {action === 'editInfo' ? 'edit details for' : action === 'rename' ? 'rename' : 'remove this content from'}:
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '55vh', overflowY: 'auto' }}>
+          {occs.map((u) => {
+            const info = getPageAndSectionInfo(u)
+            const label = u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key
+            return (
+              <div
+                key={u.key}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+                  padding: '0.75rem 1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                  borderRadius: '8px', cursor: action !== 'remove' ? 'pointer' : 'default'
+                }}
+                onClick={action !== 'remove' ? () => { onClose(); onSelect(u.key) } : undefined}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.92rem' }}>{label}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                    <strong>Page:</strong> {info.page} · <strong>Section:</strong> {info.section}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={action === 'remove' ? 'cms-btn cms-btn--sm cms-batch-danger' : 'cms-btn cms-btn--sm cms-btn--primary'}
+                  onClick={(ev) => {
+                    ev.stopPropagation()
+                    if (action === 'remove') {
+                      const otherCount = occs.length - 1
+                      if (otherCount > 0) {
+                        confirm('Remove from container',
+                          `Remove content from "${label}"? The file will stay active in ${otherCount} other container${otherCount > 1 ? 's' : ''}.`,
+                          () => { moveUsedToUnused(u.key); onClose() })
+                      } else {
+                        confirm('Move to Unused',
+                          `Remove content from "${label}" and move to Unused?`,
+                          () => { moveUsedToUnused(u.key); onClose() })
+                      }
+                    } else {
+                      onClose()
+                      onSelect(u.key)
+                    }
+                  }}
+                >
+                  <i className={`fa-solid ${action === 'editInfo' ? 'fa-pen' : action === 'rename' ? 'fa-signature' : 'fa-xmark'}`} style={{ marginRight: '0.35rem' }}></i>
+                  {action === 'editInfo' ? 'Edit info' : action === 'rename' ? 'Rename' : 'Remove'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+        {action === 'remove' && occs.length > 1 && (
+          <div style={{ marginTop: '1.2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="cms-btn cms-btn--sm cms-batch-danger"
+              style={{ width: '100%', padding: '0.65rem' }}
+              onClick={() => {
+                confirm('Move all to Unused',
+                  `Remove this file from ALL ${occs.length} containers and move it to Unused?`,
+                  () => {
+                    occs.forEach(u => moveUsedToUnused(u.key))
+                    onClose()
+                  })
+              }}
+            >
+              <i className="fa-solid fa-folder-closed" style={{ marginRight: '0.4rem' }}></i>
+              Remove from ALL ({occs.length}) containers & Move to Unused
+            </button>
+          </div>
+        )}
+      </div>
+    </CmsModal>
+  )
+}
+
 export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
   const src = e.src || e.dataUrl
   if (!src || src === 'null' || src === 'undefined') return null
   const vid = isVideo(e.type || (e as { kind?: string }).kind, e.name)
   const ts = cardType === 'trash' || (cardType === 'repo' && e._state === 'trash') ? e.deletedAt : e.ts
-  const occCount = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0
+  const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
+  const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
   const containerBase = e.key ? getContainerMeta(e.key).label : ((e as { reason?: string }).reason === 'upload' ? 'Just uploaded' : '')
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : 'Container:'
@@ -304,7 +404,24 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
             <div><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
             <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span></div>
-            <div><strong>{containerLabel}</strong> <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
+            {cardType === 'used' && occs.length > 1 ? (
+              <div style={{ marginTop: '0.4rem', borderTop: '1px solid var(--border)', paddingTop: '0.4rem' }}>
+                <strong style={{ display: 'block', marginBottom: '0.3rem' }}>Containers in use ({occs.length}):</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {occs.map((u) => {
+                    const info = getPageAndSectionInfo(u)
+                    return (
+                      <div key={u.key} style={{ fontSize: '0.84rem', background: 'var(--bg-primary)', padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{info.page} / {info.section}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div><strong>{containerLabel}</strong> <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
+            )}
           </div>
         </div>
       </div>
