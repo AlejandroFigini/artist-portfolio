@@ -232,6 +232,7 @@ export default function CmsRoot() {
 
           {managerCmd?.type === 'carouselManager' && (
             <CarouselManager
+              show={!cmd && !uploadFile}
               prefix={managerCmd.key || 'hero'}
               onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
@@ -239,6 +240,7 @@ export default function CmsRoot() {
           )}
           {managerCmd?.type === 'projectsManager' && (
             <ProjectsManager
+              show={!cmd && !uploadFile}
               onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
               onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
@@ -246,6 +248,7 @@ export default function CmsRoot() {
           )}
           {managerCmd?.type === 'charactersManager' && (
             <CharactersManager
+              show={!cmd && !uploadFile}
               onClose={() => { setManagerCmd(null); close(); }}
               onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
               onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}

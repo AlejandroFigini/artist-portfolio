@@ -51,12 +51,15 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
     }
   }, [])
 
-  useKeyHandler('Escape', onClose, !locked)
+  useKeyHandler('Escape', onClose, !locked && show !== false)
 
   return (
     <div
-      className={`cms-modal-overlay${visible && show ? ' show' : ''}`}
-      style={zIndex ? { zIndex } : undefined}
+      className={`cms-modal-overlay${visible && show !== false ? ' show' : ''}`}
+      style={{
+        display: show === false ? 'none' : undefined,
+        ...(zIndex ? { zIndex } : {}),
+      }}
       onMouseDown={(e) => { downOnOverlay.current = e.target === e.currentTarget }}
       onMouseUp={(e) => {
         if (e.target === e.currentTarget && downOnOverlay.current && !locked) onClose()
