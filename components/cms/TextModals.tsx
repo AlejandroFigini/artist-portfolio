@@ -238,9 +238,7 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
         ]}
       >
         <div className="cms-confirm-body">
-          You are about to <strong>delete this project card</strong>. The image will be moved to
-          <strong> unused content</strong> (you can restore it from Management); the remaining
-          projects will reorder to fill the space.
+          Are you sure you want to delete this project card?
         </div>
       </CmsModal>
     )
