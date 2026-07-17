@@ -6,7 +6,7 @@
 
 .about-section {
   position: relative;
-  padding: clamp(5rem, 10vw, 9rem) 0 clamp(5rem, 10vw, 8rem);
+  padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(3rem, 6vw, 5.5rem);
   background: var(--bg-primary);
   overflow: hidden;
   isolation: isolate;
