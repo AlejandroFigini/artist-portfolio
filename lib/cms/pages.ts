@@ -111,3 +111,15 @@ export function getAllFolderPaths(): string[] {
   ]
 }
 
+/** Devuelve la página y sección formateada para una entrada en uso según su clave o sección */
+export function getPageAndSectionInfo(entry: { key?: string; _key?: string; section?: string }): { page: string; section: string } {
+  const e: TreeEntry = { key: entry._key || entry.key, section: entry.section }
+  for (const p of SITE_PAGES) {
+    for (const s of p.sections) {
+      if (s.match(e)) {
+        return { page: `${p.label} (${p.route})`, section: s.label }
+      }
+    }
+  }
+  return { page: 'Feed (/)', section: entry.section || 'General' }
+}

@@ -13,7 +13,7 @@ import { fmtBytes, cloudinaryThumb } from '@/lib/utils'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
 } from '@/lib/cms/store'
-import { getCloudinaryFolder } from '@/lib/cms/pages'
+import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
   syncWaveGroups, refreshTools, refreshContainerLabel,
@@ -319,13 +319,40 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
                 <div className="cms-repo-thumb-icon"><i className="fa-solid fa-image"></i></div>
               )}
               <div className="cms-repo-thumb-info">
-                <span style={{ fontWeight: 400 }}>{entry.name || entry.label || '—'}</span><br />
-                {entry.size ? <><strong>Size:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span> </> : ''}
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name || entry.label || '—'}</div>
+                {entry._state === 'usado' && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--accent)', marginTop: '3px', lineHeight: 1.4, borderTop: '1px solid var(--border)', paddingTop: '3px' }}>
+                    <div><strong>Page:</strong> {getPageAndSectionInfo(entry).page}</div>
+                    <div><strong>Section:</strong> {getPageAndSectionInfo(entry).section}</div>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong>Container:</strong> {entry.label || entry._key || '—'}</div>
+                  </div>
+                )}
+                {entry.size ? <div style={{ fontSize: '0.75rem', marginTop: 2 }}><strong>Size:</strong> <span style={{ fontWeight: 400 }}>{fmtBytes(entry.size)}</span></div> : null}
               </div>
             </div>
             )
           })}
         </div>
+        {selected && (
+          <div style={{ marginTop: '1.2rem', padding: '0.8rem 1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Selected: <span style={{ color: 'var(--accent)' }}>{selected.name || selected.label || 'media'}</span>
+              </div>
+              {selected._state === 'usado' ? (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                  <span className="cms-tag cms-tag--uso" style={{ marginRight: '0.5rem', padding: '0.15rem 0.45rem', fontSize: '0.72rem' }}>In Use</span>
+                  <strong>Page:</strong> {getPageAndSectionInfo(selected).page} · <strong>Section:</strong> {getPageAndSectionInfo(selected).section} · <strong>Container:</strong> {selected.label || selected._key}
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  <span className="cms-tag cms-tag--nouso" style={{ marginRight: '0.5rem', padding: '0.15rem 0.45rem', fontSize: '0.72rem' }}>Unused</span>
+                  Ready to assign to current container
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       {confirmEntry && (
         <CmsModal
@@ -358,10 +385,21 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               <i className="fa-solid fa-triangle-exclamation"></i>
             </div>
             <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--text-primary)', fontWeight: 500 }}>
-              This content is already being used in container:
+              This content is already being used across the site:
             </p>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.6rem', marginBottom: '1.2rem', fontFamily: 'var(--font-display, inherit)', fontWeight: 600, color: 'var(--accent)' }}>
-              {confirmEntry.label || confirmEntry._key}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.8rem 1rem', marginBottom: '1.2rem', textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <div style={{ marginBottom: '0.45rem', fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong>Page:</strong></span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{getPageAndSectionInfo(confirmEntry).page}</span>
+              </div>
+              <div style={{ marginBottom: '0.45rem', fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong>Section:</strong></span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{getPageAndSectionInfo(confirmEntry).section}</span>
+              </div>
+              <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span><strong>Container:</strong></span>
+                <span style={{ color: 'var(--accent)', fontWeight: 600, fontFamily: 'var(--font-display, inherit)' }}>{confirmEntry.label || confirmEntry._key}</span>
+              </div>
             </div>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Do you want to <strong>move it</strong> (will be removed from previous container) or <strong>reuse it</strong> (will remain in both)?
