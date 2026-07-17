@@ -49,7 +49,7 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
   }
 
   return (
-    <CmsModal title="What would you like to do?" onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancel', onClick: () => { commitRename() } }]}>
+    <CmsModal title="What would you like to do?" zIndex={100050} onClose={() => { commitRename(); onClose() }} actions={[{ label: 'Cancel', onClick: () => { commitRename() } }]}>
       <div>
         <div className="cms-up-head">
           <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>Main feed</span></div>
@@ -251,7 +251,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   return (
     <CmsModal
-      title="Choose from repository" wide onClose={onClose}
+      title="Choose from repository" wide zIndex={100050} onClose={onClose}
       actions={[
         { label: 'Cancel', onClick: () => {} },
         { label: verifying ? 'Verifying...' : 'Use this content', primary: true, onClick: verifying ? () => false as const : assign },

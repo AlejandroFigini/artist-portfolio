@@ -31,10 +31,11 @@ type CmsModalProps = {
   // sin X / Escape / click-afuera (p.ej. durante una subida)
   locked?: boolean
   show?: boolean
+  zIndex?: number
   onClose: () => void
 }
 
-export function CmsModal({ title, children, actions, wide, compactActions, locked, show = true, onClose }: CmsModalProps) {
+export function CmsModal({ title, children, actions, wide, compactActions, locked, show = true, zIndex, onClose }: CmsModalProps) {
   const [visible, setVisible] = useState(false)
   // Solo cierra si el gesto EMPEZÓ y TERMINÓ sobre el overlay. Evita que
   // arrastrar una selección de texto desde dentro y soltar afuera cierre el modal.
@@ -55,6 +56,7 @@ export function CmsModal({ title, children, actions, wide, compactActions, locke
   return (
     <div
       className={`cms-modal-overlay${visible && show ? ' show' : ''}`}
+      style={zIndex ? { zIndex } : undefined}
       onMouseDown={(e) => { downOnOverlay.current = e.target === e.currentTarget }}
       onMouseUp={(e) => {
         if (e.target === e.currentTarget && downOnOverlay.current && !locked) onClose()

@@ -230,6 +230,28 @@ export default function CmsRoot() {
             }}
           />
 
+          {managerCmd?.type === 'carouselManager' && (
+            <CarouselManager
+              prefix={managerCmd.key || 'hero'}
+              onClose={() => { setManagerCmd(null); close(); }}
+              onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
+            />
+          )}
+          {managerCmd?.type === 'projectsManager' && (
+            <ProjectsManager
+              onClose={() => { setManagerCmd(null); close(); }}
+              onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
+            />
+          )}
+          {managerCmd?.type === 'charactersManager' && (
+            <CharactersManager
+              onClose={() => { setManagerCmd(null); close(); }}
+              onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}
+            />
+          )}
+
           {cmd?.type === 'login' && (
             <LoginModal onClose={close} onSuccess={(username) => setAdmin(true, username)} />
           )}
@@ -257,27 +279,6 @@ export default function CmsRoot() {
                   setTimeout(() => dispatch({ type: 'editInfo', key: k }), 50)
                 }
               }}
-            />
-          )}
-          {managerCmd?.type === 'carouselManager' && (
-            <CarouselManager
-              prefix={managerCmd.key || 'hero'}
-              onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
-            />
-          )}
-          {managerCmd?.type === 'projectsManager' && (
-            <ProjectsManager
-              onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
-              onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
-            />
-          )}
-          {managerCmd?.type === 'charactersManager' && (
-            <CharactersManager
-              onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
-              onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
           {cmd?.type === 'auditPage' && <AuditOverlay onClose={close} />}

@@ -188,7 +188,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         : [{ label: phase === 'done' ? 'Close and update' : 'Close', primary: true, onClick: () => onClose(phase === 'done') }]
 
   return (
-    <CmsModal title="Upload content" wide locked={phase === 'uploading'} onClose={() => onClose(phase === 'done')} actions={actions}>
+    <CmsModal title="Upload content" wide locked={phase === 'uploading'} zIndex={100060} onClose={() => onClose(phase === 'done')} actions={actions}>
       {phase === 'form' && (
         <div className="cms-upload cms-upload--compact">
           <div className="cms-up-head">

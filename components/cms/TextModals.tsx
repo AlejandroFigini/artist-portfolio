@@ -87,7 +87,7 @@ export function EditTextModal({ cmsKey, onClose }: KeyProps) {
 
   return (
     <CmsModal
-      title="Edit text"
+      title="Edit text" zIndex={100050}
       onClose={() => { commitRename(); onClose() }}
       actions={[
         { label: 'Cancel', onClick: () => { commitRename() } },
@@ -227,7 +227,7 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
   if (isProject) {
     return (
       <CmsModal
-        title="Delete card"
+        title="Delete card" zIndex={100050}
         onClose={onClose}
         actions={[
           { label: 'Cancel', onClick: () => {} },
@@ -248,7 +248,7 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
 
   return (
     <CmsModal
-      title="Move to unused"
+      title="Move to unused" zIndex={100050}
       onClose={onClose}
       actions={[
         { label: 'Cancel', onClick: () => {} },
