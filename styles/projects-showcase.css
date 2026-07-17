@@ -66,8 +66,8 @@
 
 /* --- Garantía absoluta de separación y márgenes de celdas en el carrusel de proyectos --- */
 .proj-showcase [role="group"] {
-  padding-left: clamp(0.75rem, 1.5vw, 1.25rem) !important;
-  padding-right: clamp(0.75rem, 1.5vw, 1.25rem) !important;
+  padding-left: clamp(0.45rem, 0.9vw, 0.75rem) !important;
+  padding-right: clamp(0.45rem, 0.9vw, 0.75rem) !important;
 }
 .proj-showcase .project-item {
   width: 100% !important;

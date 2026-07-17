@@ -254,7 +254,7 @@ export default function ProjectsShowcase() {
               <CarouselContent className="-ml-4 py-4">
                 {Array.from({ length: displayCount }, (_, i) => i).map((index) => (
                   <CarouselItem key={index} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex items-stretch py-3">
-                    <div className="w-full h-full px-2 sm:px-2.5">
+                    <div className="w-full h-full px-1 sm:px-1.5">
                       <ProjectCard index={index} />
                     </div>
                   </CarouselItem>
