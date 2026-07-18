@@ -185,21 +185,19 @@ export default function Nav() {
               <div
                 className="dropbtn"
                 id="gallery-label"
-                data-i18n="nav_gallery"
                 onClick={(e) => { e.stopPropagation(); toggleDropdown('gallery') }}
               >
-                Gallery <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                <span data-i18n="nav_gallery">Gallery</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
               </div>
               <div className="dropdown-content">
                 {GALLERY_LINKS.map((l) => (
                   <Link
                     key={l.href}
                     href={l.href}
-                    data-i18n={l.i18n}
                     className={pathname === l.href ? 'active' : undefined}
                     onClick={closeNav}
                   >
-                    <i className={`fa-solid ${l.icon}`}></i> {l.label}
+                    <i className={`fa-solid ${l.icon}`}></i> <span data-i18n={l.i18n}>{l.label}</span>
                   </Link>
                 ))}
               </div>
@@ -207,10 +205,9 @@ export default function Nav() {
             <div className={`dropdown${dropdown === 'portfolio' ? ' open' : ''}`}>
               <div
                 className="dropbtn"
-                data-i18n="nav_portfolio"
                 onClick={(e) => { e.stopPropagation(); toggleDropdown('portfolio') }}
               >
-                Portfolio <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                <span data-i18n="nav_portfolio">Portfolio</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
               </div>
               <div className="dropdown-content">
                 {portfolioNets.map((n) => (
