@@ -6,7 +6,7 @@
 .m3d-showcase {
   position: relative;
   padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(3rem, 6vw, 5.5rem);
-  background: #f6f5fb;
+  background: #fcfcfc;
   overflow: hidden;
   isolation: isolate;
 }

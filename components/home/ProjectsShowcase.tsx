@@ -190,7 +190,7 @@ export default function ProjectsShowcase() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="proj-showcase w-full bg-gray-50">
+    <section ref={sectionRef} className="proj-showcase w-full">
       {/* Riel vertical decorativo */}
       <div className="proj-showcase__rail" aria-hidden="true">
         <span className="proj-showcase__rail-fig">FILE 03.5 · PROJECTS</span>

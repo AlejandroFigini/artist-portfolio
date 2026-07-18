@@ -6,7 +6,7 @@
 .anim-showcase {
   position: relative;
   padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(3rem, 6vw, 5.5rem);
-  background: #f6f5fb;
+  background: #ffffff;
   overflow: hidden;
   isolation: isolate;
 }

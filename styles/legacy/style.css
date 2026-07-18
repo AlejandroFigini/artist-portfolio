@@ -1984,7 +1984,7 @@ footer {
 /* Botón Configuración (Tuerca) - Esquina inferior opuesta */
 .settings-gear {
     position: fixed;
-    bottom: 30px;
+    bottom: var(--settings-bottom, 30px);
     left: 30px;
     /* Esquina inferior izquierda */
     z-index: 1000;
@@ -2011,7 +2011,7 @@ footer {
 /* Panel de Configuración */
 .settings-panel {
     position: fixed;
-    bottom: 85px;
+    bottom: calc(var(--settings-bottom, 30px) + 55px);
     /* Arriba del boton de configuración */
     left: 30px;
     /* Alineado con el boton de configuración izquierda */

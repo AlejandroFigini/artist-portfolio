@@ -161,6 +161,37 @@ export default function SettingsPanel() {
     return () => document.removeEventListener('click', onClick)
   }, [open, adminOpen])
 
+  // Elevación dinámica de la tuerca al hacer scroll hasta el footer
+  useEffect(() => {
+    let ticking = false
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const footer = document.querySelector('footer.main-footer')
+          if (footer) {
+            const footerRect = footer.getBoundingClientRect()
+            if (footerRect.top < window.innerHeight) {
+              const overlap = window.innerHeight - footerRect.top
+              document.documentElement.style.setProperty('--settings-bottom', `${30 + overlap}px`)
+            } else {
+              document.documentElement.style.setProperty('--settings-bottom', '30px')
+            }
+          }
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    onScroll() // check inicial
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      document.documentElement.style.removeProperty('--settings-bottom')
+    }
+  }, [])
+
   const toggleDark = (checked: boolean) => {
     setDark(checked)
     const theme = checked ? 'dark' : 'light'
