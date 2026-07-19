@@ -440,36 +440,33 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
   const [results, setResults] = useState<(UploadResponse & { original_name: string; isVid: boolean })[]>([])
   const [errorMsg, setErrorMsg] = useState('')
   const [progressIndex, setProgressIndex] = useState(0)
-  const nameRef = useRef<HTMLInputElement>(null)
 
-  const [singleDuplicate, setSingleDuplicate] = useState(() => {
-    if (files.length !== 1) return false
-    const rawName = getFileBasename(files[0].name)
-    const finalName = ensureExtension(rawName, files[0].name)
-    const nameLower = finalName.toLowerCase()
-    return Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
-  })
+  // Track the editable base name for each file
+  const [fileNames, setFileNames] = useState<string[]>(() => files.map(f => getFileBasename(f.name)))
 
-  const [multiDuplicates] = useState<string[]>(() => {
-    if (files.length <= 1) return []
-    return files.filter(f => {
-      const rawName = getFileBasename(f.name)
+  // Check duplicates for each file against repo and other files in the same batch
+  const duplicates = useMemo(() => {
+    return files.map((f, i) => {
+      const rawName = fileNames[i].trim() || getFileBasename(f.name)
       const finalName = ensureExtension(rawName, f.name)
       const nameLower = finalName.toLowerCase()
-      return Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
-    }).map(f => f.name)
-  })
+      // Check against repo
+      const inRepo = Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
+      // Check against other files in the same batch
+      const inBatch = fileNames.findIndex((fn, j) => {
+        if (j === i) return false
+        return ensureExtension(fn.trim() || getFileBasename(files[j].name), files[j].name).toLowerCase() === nameLower
+      }) !== -1
+      return inRepo || inBatch
+    })
+  }, [files, fileNames, state.usedContent, state.unused])
 
-  const checkSingleDuplicate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (files.length !== 1) return
-    const rawName = e.target.value.trim()
-    if (!rawName) {
-      setSingleDuplicate(false)
-      return
-    }
-    const finalName = ensureExtension(rawName, files[0].name)
-    const nameLower = finalName.toLowerCase()
-    setSingleDuplicate(Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower))
+  const hasAnyDuplicate = duplicates.some(d => d)
+
+  const handleNameChange = (index: number, newName: string) => {
+    const newNames = [...fileNames]
+    newNames[index] = newName
+    setFileNames(newNames)
   }
 
   const doUpload = () => {
@@ -483,7 +480,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
           setProgressIndex(i + 1)
           const file = files[i]
           const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
-          const rawName = (files.length === 1 && nameRef.current?.value.trim()) || getFileBasename(file.name)
+          const rawName = fileNames[i].trim() || getFileBasename(file.name)
           const finalName = ensureExtension(rawName, file.name)
           const base64 = await fileToDataURL(file)
           const data = await uploadMedia(base64, file.size, finalName, 'Direct uploads', 'unused')
@@ -521,7 +518,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
     phase === 'form'
       ? [
           { label: 'Cancel', onClick: () => {} },
-          { label: files.length > 1 ? `Compress and upload ${files.length} files` : 'Compress and upload to Cloudinary', primary: true, disabled: singleDuplicate || multiDuplicates.length > 0, onClick: doUpload },
+          { label: files.length > 1 ? `Compress and upload ${files.length} files` : 'Compress and upload to Cloudinary', primary: true, disabled: hasAnyDuplicate, onClick: doUpload },
         ]
       : phase === 'uploading'
         ? []
@@ -536,8 +533,8 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>File name</label>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <input ref={nameRef} type="text" className="cms-field" defaultValue={getFileBasename(files[0].name)}
-                    onChange={checkSingleDuplicate}
+                  <input type="text" className="cms-field" value={fileNames[0]}
+                    onChange={(e) => handleNameChange(0, e.target.value)}
                     style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
                   {getFileExtension(files[0].name) && (
                     <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
@@ -551,7 +548,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                 <div><strong>Content type:</strong> {files[0].type.includes('video') ? 'Video' : 'Image'}</div>
                 <div><strong>Format:</strong> {files[0].type || 'File'}</div>
               </div>
-              {singleDuplicate && (
+              {hasAnyDuplicate && (
                 <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
                   <div>
@@ -568,16 +565,34 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                   <i className="fa-solid fa-layer-group" style={{ color: 'var(--accent)', marginRight: '0.4rem' }}></i>
                   {files.length} files selected for upload:
                 </label>
-                <div style={{ maxHeight: '250px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ maxHeight: '350px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                   {files.map((f, i) => {
-                    const isDup = multiDuplicates.includes(f.name)
+                    const isDup = duplicates[i]
+                    const ext = getFileExtension(f.name)
                     return (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', paddingBottom: '0.4rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <span style={{ fontWeight: 500, color: isDup ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
-                          <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: isDup ? '#ef4444' : 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
-                          {f.name}
-                        </span>
-                        <span style={{ fontFamily: "'Fira Code', monospace", color: isDup ? '#ef4444' : 'var(--text-secondary)', fontSize: '0.8rem' }}>{isDup ? 'Duplicate' : fmtBytes(f.size)}</span>
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingBottom: '0.6rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                          <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                            <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
+                            File {i + 1}
+                          </span>
+                          <span style={{ fontFamily: "'Fira Code', monospace", color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="text" className="cms-field" value={fileNames[i]}
+                            onChange={(e) => handleNameChange(i, e.target.value)}
+                            style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, background: isDup ? 'rgba(239,68,68,0.05)' : 'var(--bg-secondary)', color: isDup ? '#ef4444' : 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
+                          {ext && (
+                            <span style={{ padding: '0.4rem 0.6rem', background: isDup ? 'rgba(239,68,68,0.1)' : 'var(--bg-secondary)', border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, borderLeft: 0, borderRadius: '0 6px 6px 0', color: isDup ? '#ef4444' : 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                              {ext}
+                            </span>
+                          )}
+                        </div>
+                        {isDup && (
+                          <span style={{ color: '#ef4444', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <i className="fa-solid fa-triangle-exclamation"></i> Duplicate name
+                          </span>
+                        )}
                       </div>
                     )
                   })}
@@ -586,12 +601,12 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 <strong>Total size:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
               </div>
-              {multiDuplicates.length > 0 && (
+              {hasAnyDuplicate && (
                 <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
                   <div>
                     <strong style={{ display: 'block', marginBottom: '0.2rem' }}>Duplicate names detected</strong>
-                    {multiDuplicates.length} file(s) already exist in the repository with the same name. Please remove or rename them on your PC before uploading.
+                    Some files conflict with existing ones in the repository (or with each other). Please rename the highlighted files above to avoid conflicts.
                   </div>
                 </div>
               )}
