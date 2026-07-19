@@ -665,7 +665,10 @@ export function purgeUrlsFromAllState(urls: string[]) {
   if (usedChanged) { persistUsed(); persistRetired() }
   if (unusedChanged) { persistUnused() }
   if (trashChanged) { persistTrash() }
-  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0 || hist.length > 0) { emit() }
+  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0 || hist.length > 0) { 
+    emit() 
+    flushSyncToServer() // Ensure immediate sync to prevent reappearing on reload
+  }
 }
 
 export function cleanOrphanOverrides() {
