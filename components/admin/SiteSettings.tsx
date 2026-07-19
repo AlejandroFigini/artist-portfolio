@@ -82,10 +82,11 @@ export function useSaveSettings() {
           retireUsedEntryToUnused(prev, 'replaced', ['loader.gallop'])
         }
         const mm = state.mediaMeta['loader.gallop'] || state.mediaMeta[final.loaderVideo]
+        const isImage = mm?.type?.startsWith('image/') || final.loaderVideo.match(/\.(png|jpe?g|webp|gif|svg)$/i)
         state.usedContent['loader.gallop'] = {
-          key: 'loader.gallop', label: 'Background Video (.loader-gallop)', section: 'Site Settings', kind: 'video',
-          src: final.loaderVideo, name: mm?.name || 'video', size: mm?.size ?? null, original: false,
-          ts: Date.now(), type: mm?.type || 'video/webm',
+          key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', section: 'Site Settings', kind: isImage ? 'image' : 'video',
+          src: final.loaderVideo, name: mm?.name || (isImage ? 'loader-image' : 'video'), size: mm?.size ?? null, original: false,
+          ts: Date.now(), type: mm?.type || (isImage ? 'image/webp' : 'video/webm'),
         }
         const idx = state.unused.findIndex(u => u.src === final.loaderVideo)
         if (idx !== -1) state.unused.splice(idx, 1)
