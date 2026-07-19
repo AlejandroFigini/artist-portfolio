@@ -335,10 +335,10 @@ export default function CharactersShowcase() {
         <div className="ch-showcase__cards-container">
           {completedIndices.length === 0 ? (
             <div className="w-full min-h-[520px] md:min-h-[580px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-violet-300/60 rounded-2xl bg-white/60 shadow-sm transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
+              <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
                 <i className="fa-solid fa-user-astronaut text-xl opacity-80" />
               </div>
-              <h3 className="text-lg font-bold text-gray-800">No hay personajes configurados</h3>
+              <h3 className="cms-placeholder-inner text-lg font-bold text-gray-800">No hay personajes configurados</h3>
             </div>
           ) : (
             <Carousel

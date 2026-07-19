@@ -5740,7 +5740,9 @@ body.hide-cms-controls .cms-empty-overlay > span,
 body:not(.is-admin) .hero-carousel-empty > i,
 body:not(.is-admin) .hero-carousel-empty > span,
 body.hide-cms-controls .hero-carousel-empty > i,
-body.hide-cms-controls .hero-carousel-empty > span {
+body.hide-cms-controls .hero-carousel-empty > span,
+body:not(.is-admin) .cms-placeholder-inner,
+body.hide-cms-controls .cms-placeholder-inner {
     display: none !important;
 }
 .cms-modal-content-split {
