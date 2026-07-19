@@ -4,7 +4,7 @@
    renameContainerModal, openAssociateContainerModal, editInfo y la
    subida directa a Cloudinary (sección "Subir contenido"). */
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
