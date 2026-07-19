@@ -15,6 +15,11 @@
 
 import { useEffect, useRef } from 'react'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import HeroMediaCarousel from './HeroMediaCarousel'
+import { useCmsStore, state } from '@/lib/cms/store'
+
+const openCarousel = (prefix: string) =>
+  window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
 
 const SPECS = [
   { k: 'ROLE',      v: '3D Generalist & Animator' },
@@ -46,6 +51,8 @@ const TITLE = 'About'
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null)
+  useCmsStore()
+  const isAdmin = state.isAdmin
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -223,11 +230,21 @@ export default function AboutSection() {
 
             <figure className="about-portrait">
               <Corners />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="artist-photo-img" alt="Retrato de Lucía Montaña" loading="lazy" decoding="async" />
+              <HeroMediaCarousel prefix="about-carousel" defaultSlides={[]} label="Carrusel About me" className="artist-photo-img cms-media" />
               <figcaption className="about-portrait-cap">
                 <span>FIG. 02b</span>
               </figcaption>
+              {isAdmin && (
+                <button
+                  className="cms-hero-gear"
+                  title="Configurar Carrusel About me"
+                  aria-label="Configurar Carrusel About me"
+                  style={{ top: '10px', right: '10px', zIndex: 1100 }}
+                  onClick={(e) => { e.preventDefault(); openCarousel('about-carousel') }}
+                >
+                  <i className="fa-solid fa-layer-group"></i>
+                </button>
+              )}
             </figure>
           </div>
         </div>

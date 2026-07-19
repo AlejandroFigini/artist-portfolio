@@ -442,6 +442,16 @@
 .about-portrait:hover {
   animation-play-state: paused;
 }
+
+/* Ocultar decoraciones si el carrusel está vacío (para mostrar el dashed genérico) */
+.about-portrait:has(.hero-carousel-empty) {
+  background-color: transparent;
+  box-shadow: none;
+}
+.about-portrait:has(.hero-carousel-empty) .bp-corner,
+.about-portrait:has(.hero-carousel-empty) .about-portrait-cap {
+  display: none;
+}
 .about-portrait .artist-photo-img {
   width: 100%;
   height: 100%;

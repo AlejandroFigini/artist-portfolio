@@ -170,7 +170,7 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'about.desc', sel: '.bio-content', kind: 'text', mount: 'self', section: 'About me', label: 'Biography — About me' },
   { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — About me` },
   { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
-  { base: 'about.photo', sel: '.artist-photo-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'About me', label: 'Lucia Photo — About me' },
+  { base: 'about-carousel.slide', sel: '.about-carousel-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'About me', label: (el, i) => `About Carousel Image #${i + 1}` },
   { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')
@@ -915,7 +915,7 @@ export function clearAllSite() {
   if (!state.isAdmin) return
   // Fuerza el reset de los carruseles de portada aunque no tengan contenido CMS
   // (ej. el fondo mostrando los DEFAULT_SLIDES) → "limpiar todo" siempre los vacía.
-  clearKeys(allMediaKeys(), ['hero', 'hero-main', 'hero-sub'])
+  clearKeys(allMediaKeys(), ['hero', 'hero-main', 'hero-sub', 'about-carousel'])
 }
 
 // ----- Limpieza por sección (sección en viewport) --------------------------------

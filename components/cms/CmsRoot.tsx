@@ -133,6 +133,7 @@ export default function CmsRoot() {
           broadcastCarousel('hero')
           broadcastCarousel('hero-main')
           broadcastCarousel('hero-sub')
+          broadcastCarousel('about-carousel')
 
           cleanOrphanOverrides()
           engine.refreshRetired()

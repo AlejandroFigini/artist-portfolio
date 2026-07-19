@@ -365,6 +365,7 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'hero-main.slide': { section: 'Hero', label: (n) => `Main Carousel Image #${n}`, kind: 'image' },
   'hero-sub.slide': { section: 'Hero', label: (n) => `Secondary Carousel Image #${n}`, kind: 'image' },
   'hero.slide': { section: 'Hero', label: (n) => `Carousel Image #${n}`, kind: 'image' },
+  'about-carousel.slide': { section: 'About me', label: (n) => `About me Carousel Image #${n}`, kind: 'image' },
   'hero.wave': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'hero.marquee': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'soft.hero': { section: 'Hero', label: (n) => `Hero Stack Logo #${n}`, kind: 'image' },
@@ -373,7 +374,6 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'hero.subtitle': { section: 'Hero', label: () => 'Subtitle (below title) — Hero', kind: 'text' },
   'about.title': { section: 'About me', label: () => 'Title — About me', kind: 'text' },
   'about.desc': { section: 'About me', label: () => 'Biography — About me', kind: 'text' },
-  'about.photo': { section: 'About me', label: () => 'Photo — About me', kind: 'image' },
   'about.video': { section: 'About me', label: () => 'Video — About me', kind: 'video' },
   'subtitle': { section: 'Subtitles', label: (n) => `Subtitle #${n}`, kind: 'text' },
   'char': { section: 'Characters', label: (n) => `Character #${n}`, kind: 'image' },
@@ -424,11 +424,11 @@ export function getAllKnownContainerKeys(): string[] {
     'loader.gallop',
     'settings.faviconUrl',
     'anim.bg',
-    'about.photo',
     'about.video',
     ...Array.from({ length: 5 }, (_, i) => `hero-main.slide#${i}`),
     ...Array.from({ length: 5 }, (_, i) => `hero-sub.slide#${i}`),
     ...Array.from({ length: 5 }, (_, i) => `hero.slide#${i}`),
+    ...Array.from({ length: 5 }, (_, i) => `about-carousel.slide#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
@@ -452,7 +452,7 @@ export function getAllKnownContainerKeys(): string[] {
   Object.keys(state.containerNames).forEach(k => keys.add(k))
   // 3) Claves en items que correspondan a contenedores de media conocidos
   Object.keys(state.items).forEach(k => {
-    if (/^(?:char|proj|anim|illustration|model3d|hero|hero-main|hero-sub|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
+    if (/^(?:char|proj|anim|illustration|model3d|hero|hero-main|hero-sub|about-carousel|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
       keys.add(k)
     }
   })
