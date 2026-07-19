@@ -60,10 +60,6 @@
 }
 
 /* --- Empty card state & spacing guarantees --- */
-.proj-card--empty {
-  opacity: 0.5;
-  cursor: default;
-}
 
 /* --- Garantía absoluta de separación y márgenes de celdas en el carrusel de proyectos --- */
 .proj-showcase [role="group"] {
@@ -103,12 +99,6 @@
 }
 
 /* Override shadcn carousel buttons if necessary */
-.proj-showcase__nav button {
-  transition: all 0.3s ease;
-}
-.proj-showcase__nav button:hover:not(:disabled) {
-  transform: scale(1.08);
-}
 
 /* --- Admin Management Button --- */
 .proj-showcase__manage {

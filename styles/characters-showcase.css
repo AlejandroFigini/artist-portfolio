@@ -187,15 +187,6 @@
 }
 
 /* Botones prev/next: pastilla blueprint sobre el borde del carrusel. */
-.ch-nav {
-  width: 44px; height: 44px;
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  background: #ffffff;
-  color: #7c3aed;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.1);
-  transition: all 0.2s ease;
-}
-.ch-nav:hover:not(:disabled) { background: #7c3aed; color: #fff; border-color: #7c3aed; box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25); }
 
 /* --- Panel de personaje --- */
 .ch-panel {
@@ -288,20 +279,6 @@
 .ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; max-width: 42ch; }
 
 /* --- Empty (sin personajes) --- */
-.ch-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
-  width: 100%;
-  min-height: 40vh;
-  color: #64748b;
-  border: 2px dashed rgba(139, 92, 246, 0.35);
-  background: #ffffff;
-  border-radius: 14px;
-}
-.ch-empty i { font-size: 2rem; color: #7c3aed; }
 
 /* --- Lightbox (reusa el patrón del legacy, con prefijo ch-) --- */
 .ch-lightbox {

@@ -476,18 +476,6 @@
 }
 
 /* Caption genérico (compatibilidad con caption del reel) */
-.about-portrait-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0.8rem;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.8);
-  text-transform: uppercase;
-  pointer-events: none;
-}
 
 /* Placeholder visual cuando aún no hay imagen */
 .about-portrait .artist-photo-img:not([src]),
