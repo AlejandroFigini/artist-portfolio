@@ -122,7 +122,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : (occCount > 1 && cardType === 'used' ? 'Containers:' : 'Container:')
   const containerBase = cardType === 'used' && occCount > 1
     ? occs.map(u => u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key).join(', ')
-    : (e.key ? getContainerMeta(e.key).label : (e.reason === 'upload' ? 'Just uploaded' : ''))
+    : (e.key ? getContainerMeta(e.key).label : '')
   return (
     <div
       className="cms-mlib-item"

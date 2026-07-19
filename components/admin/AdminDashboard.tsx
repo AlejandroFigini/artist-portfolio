@@ -239,7 +239,7 @@ export default function AdminDashboard() {
                   <i className="fa-solid fa-cloud c-repo"></i>{navBadge('Repository', repoArr.length, sumSizes(repoArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'subircontenido' ? ' active' : ''}`} onClick={() => goto('subircontenido')}>
-                  <i className="fa-solid fa-vial c-subir"></i><span>Upload content</span>
+                  <i className="fa-solid fa-cloud-arrow-up c-subir"></i><span>Upload content</span>
                 </button>
               </div>
             </div>
@@ -282,7 +282,7 @@ export default function AdminDashboard() {
 
           {section === 'subircontenido' && (
             <div className="admin-card">
-              <h2><i className="fa-solid fa-vial"></i> Upload content</h2>
+              <h2><i className="fa-solid fa-cloud-arrow-up"></i> Upload content</h2>
               <p className="cms-admin-sub">Upload an image or video directly to Cloudinary and get automatic AI optimization.</p>
               <div className="cms-upload" style={{ maxWidth: 800, margin: '2rem auto', border: '2px dashed var(--border)', padding: '3rem 1.5rem', borderRadius: 16, textAlign: 'center', background: 'var(--bg-secondary)' }}>
                 <label className="cms-btn cms-btn--primary" style={{ display: 'inline-block', cursor: 'pointer', padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: 12 }}>

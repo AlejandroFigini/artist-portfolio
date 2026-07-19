@@ -575,18 +575,19 @@ export async function verifySingleUrl(url: string): Promise<boolean> {
 }
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {
-  if (!entry || !entry.src) return
-  const otherUses = Object.values(state.usedContent).filter(u => u.src === entry.src && u.key !== entry.key && !ignoreKeys.includes(u.key))
+  if (!entry || (!entry.src && !entry.dataUrl)) return
+  const id = entry.src || entry.dataUrl || ''
+  const otherUses = Object.values(state.usedContent).filter(u => (u.src || u.dataUrl) === id && u.key !== entry.key && !ignoreKeys.includes(u.key))
   if (otherUses.length === 0) {
-    const alreadyInUnused = state.unused.some(u => u.src === entry.src)
+    const alreadyInUnused = state.unused.some(u => (u.src || u.dataUrl) === id)
     if (!alreadyInUnused) {
       state.unused.push({
-        key: entry.key, src: entry.src, dataUrl: entry.src, name: entry.name, size: entry.size,
+        key: entry.key, src: entry.src, dataUrl: entry.dataUrl, name: entry.name, size: entry.size,
         type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
         label: entry.label, section: entry.section, original: entry.original, reason,
       })
       // Mover en Cloudinary: en-uso → sin-usar
-      cloudinaryMove(entry.src, 'portfolio/sin-usar')
+      if (entry.src) cloudinaryMove(entry.src, 'portfolio/sin-usar')
     }
   }
 }

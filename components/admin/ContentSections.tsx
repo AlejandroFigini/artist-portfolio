@@ -117,15 +117,25 @@ function useMenus({ openModal }: Pick<Ctx, 'openModal'>) {
   const usedMenu = (e: AnyEntry): MenuAction[] => {
     const occs = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src) : [e as UsedEntry]
     if (occs.length > 1) {
-      return [
-        { icon: 'fa-pen', color: '#22c55e', label: `Edit info (${occs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'editInfo', occs }) },
+      const editOccs = occs.filter(u => u.fields && u.fields.length > 0)
+      const acts: MenuAction[] = []
+      if (editOccs.length > 0) {
+        acts.push({ icon: 'fa-pen', color: '#22c55e', label: `Edit info (${editOccs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'editInfo', occs: editOccs }) })
+      }
+      acts.push(
         { icon: 'fa-box-archive', color: '#eab308', label: `Move / Remove (${occs.length} uses)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'remove', occs }) },
         { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
-        { icon: 'fa-signature', color: '#3b82f6', label: `Rename container (${occs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'rename', occs }) },
-      ]
+        { icon: 'fa-signature', color: '#3b82f6', label: `Rename container (${occs.length} containers)...`, onClick: () => openModal({ kind: 'selectContainerAction', action: 'rename', occs }) }
+      )
+      return acts
     }
-    return [
-      { icon: 'fa-pen', color: '#22c55e', label: 'Edit info', onClick: () => openModal({ kind: 'editInfo', key: (e as { key: string }).key }) },
+
+    const singleActs: MenuAction[] = []
+    const ue = e as UsedEntry
+    if (ue.fields && ue.fields.length > 0) {
+      singleActs.push({ icon: 'fa-pen', color: '#22c55e', label: 'Edit info', onClick: () => openModal({ kind: 'editInfo', key: ue.key }) })
+    }
+    singleActs.push(
       { icon: 'fa-box-archive', color: '#eab308', label: 'Move to Unused', onClick: () => {
         const k = (e as { key: string }).key
         const otherUses = e.src ? Object.values(state.usedContent).filter(u => u.src === e.src && u.key !== k) : []
@@ -142,8 +152,9 @@ function useMenus({ openModal }: Pick<Ctx, 'openModal'>) {
         }
       } },
       { icon: 'fa-link', color: '#a855f7', label: 'Associate with another container', onClick: () => openModal({ kind: 'associate', item: e, isUnused: false, idx: -1 }) },
-      { icon: 'fa-signature', color: '#3b82f6', label: 'Rename container', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) },
-    ]
+      { icon: 'fa-signature', color: '#3b82f6', label: 'Rename container', onClick: () => openModal({ kind: 'rename', key: (e as { key: string }).key }) }
+    )
+    return singleActs
   }
 
   const unusedMenu = (e: AnyEntry): MenuAction[] => {
@@ -380,6 +391,14 @@ const UNUSED_INFO = 'Replaced or retired versions from the site. Restore them to
 const TRASH_INFO = 'Content marked for deletion. It is automatically deleted based on the chosen policy, or you can empty it manually.'
 const REPO_INFO = 'Unified view of all managed content in any state.'
 
+const getUnusedTag = (e: AnyEntry) => {
+  if (e.reason === 'upload') return <span className="cms-tag cms-tag--subido">Just uploaded</span>
+  if (e.reason === 'replaced') return <span className="cms-tag cms-tag--reemplazado">Replaced</span>
+  if (e.reason === 'deleted') return <span className="cms-tag cms-tag--basurero">Deleted</span>
+  if (e.reason === 'retired') return <span className="cms-tag cms-tag--retirado">Retired</span>
+  return null
+}
+
 export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
   const sel = useSelection()
   const { confirm } = useModal()
@@ -421,7 +440,7 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
       <div className="cms-mlib-grid">
         {unusedArr.map((e) => (
           <MediaCard
-            key={e._idx} e={e} cardType="unused" actions={unusedMenu(e)}
+            key={e._idx} e={e} cardType="unused" actions={unusedMenu(e)} tags={getUnusedTag(e)}
 
             multiSelect={sel.multiSelect}
             selected={sel.isSel('unused', String(e._idx))}

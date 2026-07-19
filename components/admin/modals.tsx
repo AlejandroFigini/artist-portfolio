@@ -373,7 +373,7 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
   const ts = cardType === 'trash' || (cardType === 'repo' && e._state === 'trash') ? e.deletedAt : e.ts
   const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
   const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
-  const containerBase = e.key ? getContainerMeta(e.key).label : ((e as { reason?: string }).reason === 'upload' ? 'Just uploaded' : '')
+  const containerBase = e.key ? getContainerMeta(e.key).label : ''
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : 'Container:'
 
@@ -389,16 +389,15 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
     >
       <div>
         {vid ? (
-          <video src={src} controls autoPlay style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+          <video src={src} controls autoPlay style={{ maxWidth: '100%', maxHeight: '40vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
         ) : (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', margin: '0 auto' }} />
+          <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '40vh', borderRadius: 8, display: 'block', margin: '0 auto' }} />
         )}
         <div style={{ marginTop: '1.5rem', textAlign: 'left', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-          <h4 style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>{e.name || e.label || 'Untitled'}</h4>
+          <h4 style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>{getFileBasename(e.name || e.label || 'Untitled')}</h4>
           <div className="cms-mlib-meta" style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
             <div><strong>File name:</strong> {e.name || '—'}</div>
-            <div><strong>Original container:</strong> {e.label || '—'}</div>
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
@@ -438,6 +437,36 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
   const [errorMsg, setErrorMsg] = useState('')
   const [progressIndex, setProgressIndex] = useState(0)
   const nameRef = useRef<HTMLInputElement>(null)
+
+  const [singleDuplicate, setSingleDuplicate] = useState(() => {
+    if (files.length !== 1) return false
+    const rawName = getFileBasename(files[0].name)
+    const finalName = ensureExtension(rawName, files[0].name)
+    const nameLower = finalName.toLowerCase()
+    return Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
+  })
+
+  const [multiDuplicates] = useState<string[]>(() => {
+    if (files.length <= 1) return []
+    return files.filter(f => {
+      const rawName = getFileBasename(f.name)
+      const finalName = ensureExtension(rawName, f.name)
+      const nameLower = finalName.toLowerCase()
+      return Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
+    }).map(f => f.name)
+  })
+
+  const checkSingleDuplicate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (files.length !== 1) return
+    const rawName = e.target.value.trim()
+    if (!rawName) {
+      setSingleDuplicate(false)
+      return
+    }
+    const finalName = ensureExtension(rawName, files[0].name)
+    const nameLower = finalName.toLowerCase()
+    setSingleDuplicate(Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower))
+  }
 
   const doUpload = () => {
     void (async () => {
@@ -488,7 +517,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
     phase === 'form'
       ? [
           { label: 'Cancel', onClick: () => {} },
-          { label: files.length > 1 ? `Compress and upload ${files.length} files` : 'Compress and upload to Cloudinary', primary: true, onClick: doUpload },
+          { label: files.length > 1 ? `Compress and upload ${files.length} files` : 'Compress and upload to Cloudinary', primary: true, disabled: singleDuplicate || multiDuplicates.length > 0, onClick: doUpload },
         ]
       : phase === 'uploading'
         ? []
@@ -504,6 +533,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>File name</label>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <input ref={nameRef} type="text" className="cms-field" defaultValue={getFileBasename(files[0].name)}
+                    onChange={checkSingleDuplicate}
                     style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
                   {getFileExtension(files[0].name) && (
                     <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
@@ -517,6 +547,15 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                 <div><strong>Content type:</strong> {files[0].type.includes('video') ? 'Video' : 'Image'}</div>
                 <div><strong>Format:</strong> {files[0].type || 'File'}</div>
               </div>
+              {singleDuplicate && (
+                <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: '0.2rem' }}>Name already in use</strong>
+                    There is already a file with this exact name in the repository. Please rename the file above to avoid conflicts.
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -526,20 +565,32 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                   {files.length} files selected for upload:
                 </label>
                 <div style={{ maxHeight: '250px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {files.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', paddingBottom: '0.4rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                      <span style={{ fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
-                        <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
-                        {f.name}
-                      </span>
-                      <span style={{ fontFamily: "'Fira Code', monospace", color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
-                    </div>
-                  ))}
+                  {files.map((f, i) => {
+                    const isDup = multiDuplicates.includes(f.name)
+                    return (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', paddingBottom: '0.4rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <span style={{ fontWeight: 500, color: isDup ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                          <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: isDup ? '#ef4444' : 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
+                          {f.name}
+                        </span>
+                        <span style={{ fontFamily: "'Fira Code', monospace", color: isDup ? '#ef4444' : 'var(--text-secondary)', fontSize: '0.8rem' }}>{isDup ? 'Duplicate' : fmtBytes(f.size)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 <strong>Total size:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
               </div>
+              {multiDuplicates.length > 0 && (
+                <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: '0.2rem' }}>Duplicate names detected</strong>
+                    {multiDuplicates.length} file(s) already exist in the repository with the same name. Please remove or rename them on your PC before uploading.
+                  </div>
+                </div>
+              )}
             </>
           )}
           <p className="cms-admin-sub" style={{ margin: '1rem 0 0' }}>Processed with cloud AI for maximum optimization.</p>
