@@ -401,9 +401,10 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Original container:</strong> {e.label || '—'}</div>
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
-            <div><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
-            <div><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-            <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span></div>
+            <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+            {occCount > 1 && (
+              <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
+            )}
             {cardType === 'used' && occs.length > 1 ? (
               <div style={{ marginTop: '0.4rem', borderTop: '1px solid var(--border)', paddingTop: '0.4rem' }}>
                 <strong style={{ display: 'block', marginBottom: '0.3rem' }}>Containers in use ({occs.length}):</strong>

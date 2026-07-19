@@ -397,7 +397,7 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
               {unusedArr.length > 0 && (
                 <button type="button" className="cms-btn cms-btn--sm cms-btn--primary"
                   onClick={() => { close(); confirm('Empty unused', 'Everything will be moved to trash.', purgeUnused) }}>
-                  Empty all unused
+                  <i className="fa-solid fa-trash-can"></i> Empty all unused
                 </button>
               )}
             </>
@@ -422,12 +422,7 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
         {unusedArr.map((e) => (
           <MediaCard
             key={e._idx} e={e} cardType="unused" actions={unusedMenu(e)}
-            tags={
-              e.reason === 'replaced' ? <span className="cms-tag cms-tag--reemplazado">replaced</span>
-                : e.reason === 'retired' ? <span className="cms-tag cms-tag--retirado">retired</span>
-                  : e.reason === 'upload' ? <span className="cms-tag cms-tag--subido">uploaded</span>
-                    : undefined
-            }
+
             multiSelect={sel.multiSelect}
             selected={sel.isSel('unused', String(e._idx))}
             onToggleSelect={(on) => sel.toggle('unused', String(e._idx), on)}
@@ -455,9 +450,17 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
           {(close) => (
             <>
               <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
+              {trashArr.length > 0 && (
+                <button type="button" className="cms-btn cms-btn--sm cms-btn--primary"
+                  onClick={() => { close(); confirm('Empty trash', 'Empty ALL trash and permanently delete from Cloudinary?', () => { emptyTrash() }) }}>
+                  <i className="fa-solid fa-trash-can"></i> Empty all
+                </button>
+              )}
               <label className="admin-select-group">
-                <i className="fa-solid fa-clock-rotate-left"></i>
-                Auto delete
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <i className="fa-solid fa-clock-rotate-left"></i>
+                  Auto delete
+                </span>
                 <select
                   className="admin-select"
                   value={policy}
@@ -469,12 +472,6 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
                   <option value="7d">1 week</option>
                 </select>
               </label>
-              {trashArr.length > 0 && (
-                <button type="button" className="cms-btn cms-btn--sm cms-btn--primary"
-                  onClick={() => { close(); confirm('Empty trash', 'Empty ALL trash and permanently delete from Cloudinary?', () => { emptyTrash() }) }}>
-                  Empty all
-                </button>
-              )}
             </>
           )}
         </SectionOptionsMenu>
@@ -498,7 +495,7 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
         {trashArr.map((e) => (
           <MediaCard
             key={e._idx} e={e} cardType="trash" actions={trashMenu(e)}
-            tags={<span className="cms-tag cms-tag--basurero">Trash</span>}
+
             multiSelect={sel.multiSelect}
             selected={sel.isSel('trash', String(e._idx))}
             onToggleSelect={(on) => sel.toggle('trash', String(e._idx), on)}

@@ -290,7 +290,7 @@ export function FaviconSettings() {
   return (
     <div className="admin-card" id="ajustes-favicon">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-compass"></i> Page Favicon
+        <h2><i className="fa-solid fa-compass"></i> Page Icon
           <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon displayed in browser tabs and bookmarks.">
             <i className="fa-solid fa-circle-info"></i>
             <span className="cms-info-bubble" role="tooltip">Customize the icon displayed in browser tabs and bookmarks.</span>

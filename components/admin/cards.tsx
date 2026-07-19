@@ -4,6 +4,7 @@
    repoCard de admin.js (thumb Cloudinary, meta, dropdown de acciones,
    checkbox de selección múltiple). */
 
+import { useState, useRef, useEffect } from 'react'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
 import { state, getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
 
@@ -27,6 +28,53 @@ export type MenuAction = {
   color?: string
   label: string
   onClick: () => void
+}
+
+function CardDropdown({ actions }: { actions: MenuAction[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onClick = (ev: MouseEvent) => {
+      if (!ref.current?.contains(ev.target as Node)) setOpen(false)
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [open])
+
+  return (
+    <div className={`cms-dropdown ${open ? 'open' : ''}`} ref={ref}>
+      <button 
+        type="button" 
+        className="cms-iconbtn" 
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((o) => !o)
+        }}
+      >
+        <i className="fa-solid fa-ellipsis-vertical"></i>
+      </button>
+      <div className="cms-dropdown-menu">
+        {actions.map((a, i) => (
+          <button 
+            key={i} 
+            type="button" 
+            className="cms-dropdown-item" 
+            onClick={(e) => {
+              e.stopPropagation()
+              setOpen(false)
+              a.onClick()
+            }} 
+            style={a.color === 'danger' ? { color: '#ef4444' } : undefined}
+          >
+            <i className={`fa-solid ${a.icon}`} style={a.color && a.color !== 'danger' ? { color: a.color } : undefined}></i> {a.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function Thumb({ e }: { e: AnyEntry }) {
@@ -108,23 +156,15 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || '—'}>{e.name || '—'}</span></div>
           <div><strong>Format:</strong> {getFormat(e)}</div>
           <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
-          <div><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</div>
-          <div><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</div>
-          <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span></div>
+          <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+          {occCount > 1 && (
+            <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
+          )}
           <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase} style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
         </div>
         {actions.length > 0 && (
           <div className="cms-mlib-actions">
-            <div className="cms-dropdown">
-              <button type="button" className="cms-iconbtn"><i className="fa-solid fa-ellipsis-vertical"></i></button>
-              <div className="cms-dropdown-menu">
-                {actions.map((a, i) => (
-                  <button key={i} type="button" className="cms-dropdown-item" onClick={a.onClick} style={a.color === 'danger' ? { color: '#ef4444' } : undefined}>
-                    <i className={`fa-solid ${a.icon}`} style={a.color && a.color !== 'danger' ? { color: a.color } : undefined}></i> {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CardDropdown actions={actions} />
           </div>
         )}
       </div>
