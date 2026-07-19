@@ -401,6 +401,10 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+            <div>
+              <strong>Cloudinary link:</strong>{' '}
+              <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Open in new tab <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i></a>
+            </div>
             {occCount > 1 && (
               <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
             )}
