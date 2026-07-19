@@ -581,9 +581,9 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                         <div style={{ display: 'flex', alignItems: 'center' }}>
                           <input type="text" className="cms-field" value={fileNames[i]}
                             onChange={(e) => handleNameChange(i, e.target.value)}
-                            style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, background: isDup ? 'rgba(239,68,68,0.05)' : 'var(--bg-secondary)', color: isDup ? '#ef4444' : 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
+                            style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
                           {ext && (
-                            <span style={{ padding: '0.4rem 0.6rem', background: isDup ? 'rgba(239,68,68,0.1)' : 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: isDup ? '#ef4444' : 'var(--border)', borderRadius: '0 6px 6px 0', color: isDup ? '#ef4444' : 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                            <span style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
                               {ext}
                             </span>
                           )}
