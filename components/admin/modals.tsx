@@ -537,7 +537,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                     onChange={(e) => handleNameChange(0, e.target.value)}
                     style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
                   {getFileExtension(files[0].name) && (
-                    <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                    <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
                       {getFileExtension(files[0].name)}
                     </span>
                   )}
@@ -583,7 +583,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                             onChange={(e) => handleNameChange(i, e.target.value)}
                             style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, background: isDup ? 'rgba(239,68,68,0.05)' : 'var(--bg-secondary)', color: isDup ? '#ef4444' : 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
                           {ext && (
-                            <span style={{ padding: '0.4rem 0.6rem', background: isDup ? 'rgba(239,68,68,0.1)' : 'var(--bg-secondary)', border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, borderLeft: 0, borderRadius: '0 6px 6px 0', color: isDup ? '#ef4444' : 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                            <span style={{ padding: '0.4rem 0.6rem', background: isDup ? 'rgba(239,68,68,0.1)' : 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: isDup ? '#ef4444' : 'var(--border)', borderRadius: '0 6px 6px 0', color: isDup ? '#ef4444' : 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
                               {ext}
                             </span>
                           )}
