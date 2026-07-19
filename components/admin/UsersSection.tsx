@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toDataURL } from 'qrcode'
-import { state, useCmsStore, setAdminFlag } from '@/lib/cms/store'
+import { state, useCmsStore, setAdminFlag, recordAudit } from '@/lib/cms/store'
 import { updateAccount, twoFa, getUsers, type UserRow } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { fmtDate } from '@/lib/utils'
@@ -51,6 +51,7 @@ export default function UsersSection() {
     const user = await updateAccount({ username: form.username })
     setAdminFlag(true, user.username)
     setForm((f) => ({ ...f, username: '' }))
+    recordAudit({ user: state.username, section: 'Users', label: 'My Account', summary: 'Changed username' })
     toast('Username updated')
     refresh()
     setView('menu')
@@ -60,6 +61,7 @@ export default function UsersSection() {
     if (form.next !== form.repeat) throw new Error('Passwords do not match')
     await updateAccount({ currentPassword: form.current, newPassword: form.next })
     setForm((f) => ({ ...f, current: '', next: '', repeat: '' }))
+    recordAudit({ user: state.username, section: 'Users', label: 'My Account', summary: 'Changed password' })
     toast('Password updated')
     setView('menu')
   })
@@ -75,6 +77,7 @@ export default function UsersSection() {
     await twoFa({ action: 'enable', code: form.code })
     setQr(null)
     setForm((f) => ({ ...f, code: '' }))
+    recordAudit({ user: state.username, section: 'Users', label: 'My Account', summary: 'Enabled 2FA' })
     toast('2FA enabled')
     refresh()
     setView('menu')
@@ -83,6 +86,7 @@ export default function UsersSection() {
   const disable2fa = () => run(async () => {
     await twoFa({ action: 'disable', password: form.password })
     setForm((f) => ({ ...f, password: '' }))
+    recordAudit({ user: state.username, section: 'Users', label: 'My Account', summary: 'Disabled 2FA' })
     toast('2FA disabled')
     refresh()
     setView('menu')
@@ -119,110 +123,134 @@ export default function UsersSection() {
       </div>
 
       {/* ----- Mi cuenta ----- */}
-      <h3 style={{ marginTop: '2rem' }}><i className="fa-solid fa-id-card"></i> My account — {state.username}</h3>
+      <h2 style={{ marginTop: '2.5rem', marginBottom: '1rem' }}>
+        <i className="fa-solid fa-user-pen"></i> Edit Account
+      </h2>
 
-      {view === 'menu' && (
-        <div className="admin-quick" style={{ marginTop: '1rem' }}>
-          <button type="button" className="cms-btn" onClick={() => setView('username')}>
-            <i className="fa-solid fa-user-pen"></i> Change username
-          </button>
-          <button type="button" className="cms-btn" onClick={() => setView('password')}>
-            <i className="fa-solid fa-key"></i> Change password
-          </button>
-          {me?.totpEnabled ? (
-            <button type="button" className="cms-btn" onClick={() => setView('2fa-disable')}>
-              <i className="fa-solid fa-shield-halved"></i> Disable 2FA
-            </button>
-          ) : (
-            <button type="button" className="cms-btn cms-btn--primary" disabled={busy} onClick={start2fa}>
-              <i className="fa-solid fa-shield-halved"></i> Enable 2FA
-            </button>
-          )}
-        </div>
-      )}
-
-      {view === 'username' && (
-        <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <label className="cms-field"><span>New username</span>
-            <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
-          </label>
-          <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
-            <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.username.trim().length < 3} onClick={saveUsername}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view === 'password' && (
-        <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <label className="cms-field"><span>Current password</span>
-            <input type="password" value={form.current} onChange={set('current')} />
-          </label>
-          <label className="cms-field"><span>New password (min 8 characters)</span>
-            <input type="password" value={form.next} onChange={set('next')} />
-          </label>
-          <label className="cms-field"><span>Repeat new password</span>
-            <input type="password" value={form.repeat} onChange={set('repeat')} />
-          </label>
-          <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
-            <button
-              type="button" className="cms-btn cms-btn--primary"
-              disabled={busy || !form.current || form.next.length < 8 || !form.repeat}
-              onClick={savePassword}
-            >
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view === '2fa-setup' && qr && (
-        <div style={{ marginTop: '1rem' }}>
-          <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>
-          <ol className="cms-2fa-guide" style={{ margin: '0.8rem 0 1.2rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.6rem' }}>
-            {GUIDE_STEPS.map((s, i) => (
-              <li key={i}><i className={`fa-solid ${s.icon}`} style={{ width: 20, marginRight: 6 }}></i>{s.text}</li>
-            ))}
-          </ol>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ textAlign: 'center' }}>
-              {/* dataURL generado en el cliente desde el otpauth URI, no es media del CMS */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qr.img} alt="QR code to set up 2FA in your authenticator app" width={200} height={200} style={{ borderRadius: 10, display: 'block' }} />
-              <p className="cms-hint" style={{ wordBreak: 'break-all', maxWidth: 220 }}>Manual key: <code>{qr.secret}</code></p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 600 }}>
+        
+        {/* Username Block */}
+        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
+            <div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Username</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{state.username}</div>
             </div>
-            <div className="cms-login-form" style={{ maxWidth: 320, flex: 1 }}>
-              <label className="cms-field"><span>6-digit code from app</span>
-                <input type="text" maxLength={6} inputMode="numeric" value={form.code} onChange={set('code')} autoComplete="off" />
+            <button type="button" className="cms-btn" onClick={() => setView(view === 'username' ? 'menu' : 'username')}>
+              {view === 'username' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-pen"></i> Edit</>}
+            </button>
+          </div>
+          {view === 'username' && (
+            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+              <label className="cms-field"><span>New username</span>
+                <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
               </label>
               <div className="cms-confirm-actions">
-                <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
-                <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.code.length !== 6} onClick={enable2fa}>
-                  {busy ? 'Verifying…' : 'Confirm and enable'}
+                <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.username.trim().length < 3} onClick={saveUsername}>
+                  {busy ? 'Saving…' : 'Save username'}
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {view === '2fa-disable' && (
-        <div className="cms-login-form" style={{ maxWidth: 420, marginTop: '1rem' }}>
-          <p className="cms-hint">Enter your password to disable 2FA. Your account will be protected only by username and password.</p>
-          <label className="cms-field"><span>Password</span>
-            <input type="password" value={form.password} onChange={set('password')} />
-          </label>
-          <div className="cms-confirm-actions">
-            <button type="button" className="cms-btn cms-btn-cancel" onClick={back}>Cancel</button>
-            <button type="button" className="cms-btn cms-btn-danger" disabled={busy || !form.password} onClick={disable2fa}>
-              {busy ? 'Verifying…' : 'Disable 2FA'}
+        {/* Password Block */}
+        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
+            <div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Password</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '3px' }}>••••••••</div>
+            </div>
+            <button type="button" className="cms-btn" onClick={() => setView(view === 'password' ? 'menu' : 'password')}>
+              {view === 'password' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-key"></i> Update</>}
             </button>
           </div>
+          {view === 'password' && (
+            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+              <label className="cms-field"><span>Current password</span>
+                <input type="password" value={form.current} onChange={set('current')} />
+              </label>
+              <label className="cms-field"><span>New password (min 8 characters)</span>
+                <input type="password" value={form.next} onChange={set('next')} />
+              </label>
+              <label className="cms-field"><span>Repeat new password</span>
+                <input type="password" value={form.repeat} onChange={set('repeat')} />
+              </label>
+              <div className="cms-confirm-actions">
+                <button
+                  type="button" className="cms-btn cms-btn--primary"
+                  disabled={busy || !form.current || form.next.length < 8 || !form.repeat}
+                  onClick={savePassword}
+                >
+                  {busy ? 'Saving…' : 'Update password'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* 2FA Block */}
+        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
+            <div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>2FA Security</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: me?.totpEnabled ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                {me?.totpEnabled ? <><i className="fa-solid fa-shield-halved"></i> Enabled</> : 'Disabled'}
+              </div>
+            </div>
+            {me?.totpEnabled ? (
+              <button type="button" className="cms-btn" onClick={() => setView(view === '2fa-disable' ? 'menu' : '2fa-disable')}>
+                {view === '2fa-disable' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : 'Disable 2FA'}
+              </button>
+            ) : (
+              <button type="button" className="cms-btn cms-btn--primary" onClick={() => view === '2fa-setup' ? setView('menu') : start2fa()}>
+                {view === '2fa-setup' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-shield-halved"></i> Enable 2FA</>}
+              </button>
+            )}
+          </div>
+          
+          {view === '2fa-setup' && qr && (
+            <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+              <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>
+              <ol className="cms-2fa-guide" style={{ margin: '0.8rem 0 1.2rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.6rem' }}>
+                {GUIDE_STEPS.map((s, i) => (
+                  <li key={i}><i className={`fa-solid ${s.icon}`} style={{ width: 20, marginRight: 6 }}></i>{s.text}</li>
+                ))}
+              </ol>
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <div style={{ textAlign: 'center', background: 'white', padding: '0.5rem', borderRadius: '10px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qr.img} alt="QR code" width={200} height={200} style={{ display: 'block' }} />
+                </div>
+                <div className="cms-login-form" style={{ maxWidth: 320, flex: 1 }}>
+                  <label className="cms-field"><span>6-digit code from app</span>
+                    <input type="text" maxLength={6} inputMode="numeric" value={form.code} onChange={set('code')} autoComplete="off" style={{ letterSpacing: '0.3em', fontSize: '1.2rem', fontFamily: 'monospace' }} />
+                  </label>
+                  <div className="cms-confirm-actions">
+                    <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.code.length !== 6} onClick={enable2fa}>
+                      {busy ? 'Verifying…' : 'Confirm & Enable'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view === '2fa-disable' && (
+            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+              <p className="cms-hint">Enter your password to disable 2FA. Your account will be protected only by username and password.</p>
+              <label className="cms-field"><span>Password</span>
+                <input type="password" value={form.password} onChange={set('password')} />
+              </label>
+              <div className="cms-confirm-actions">
+                <button type="button" className="cms-btn cms-btn-danger" disabled={busy || !form.password} onClick={disable2fa}>
+                  {busy ? 'Verifying…' : 'Disable 2FA'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
