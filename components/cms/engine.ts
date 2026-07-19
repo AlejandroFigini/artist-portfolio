@@ -712,7 +712,7 @@ export function refreshRetired() {
   // Retirados: mismo marco vacío para admin Y visitante (el contenedor nunca
   // desaparece de la página; CSS ya oculta icono/nombre/click al visitante).
   state.retired.forEach((key) => {
-    if (state.isAdmin) visualHosts(key).forEach(() => showEmptySlot(key))
+    visualHosts(key).forEach(() => showEmptySlot(key))
   })
 
   // Slots de media vacíos (sin contenido y no retirados) → marco genérico para admin.
@@ -720,7 +720,7 @@ export function refreshRetired() {
     const m = metaByKey[key]
     if (!m || m.kind === 'text' || m.mount === 'none') return
     if (!state.items[key] && !state.retired.includes(key)) {
-      if (state.isAdmin) showEmptySlot(key)
+      showEmptySlot(key)
     }
   })
 }
