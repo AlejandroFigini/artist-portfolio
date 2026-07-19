@@ -198,7 +198,7 @@ export default function CmsRoot() {
                     style={{ textDecoration: 'none', display: 'inline-block' }}
                     onClick={() => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }}
                   >
-                    <i className="fa-solid fa-sliders"></i> Admin
+                    <i className="fa-solid fa-sliders"></i> Management
                   </a>
                   <button type="button" className="cms-navauth-btn" title="Log out"
                     onClick={() => { logout().finally(() => { setAdmin(false); toast('Logged out') }) }}>

@@ -7,6 +7,7 @@
    se cierra con el botón ✕ — única vía para subir/reemplazar ese video. */
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { loaderDurationMs } from '@/lib/settings'
@@ -14,12 +15,8 @@ import { loaderDurationMs } from '@/lib/settings'
 const FADE_MS = 800
 
 export default function PageLoader() {
-  const [gone, setGone] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-      return true
-    }
-    return false
-  })
+  const pathname = usePathname()
+  const [gone, setGone] = useState(pathname !== '/')
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
   const [isPreview, setIsPreview] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
