@@ -5733,8 +5733,16 @@ body.hide-cms-controls .hero-carousel-empty {
     cursor: default;
     pointer-events: none;
 }
-
-
+body:not(.is-admin) .cms-empty-overlay > i,
+body:not(.is-admin) .cms-empty-overlay > span,
+body.hide-cms-controls .cms-empty-overlay > i,
+body.hide-cms-controls .cms-empty-overlay > span,
+body:not(.is-admin) .hero-carousel-empty > i,
+body:not(.is-admin) .hero-carousel-empty > span,
+body.hide-cms-controls .hero-carousel-empty > i,
+body.hide-cms-controls .hero-carousel-empty > span {
+    display: none !important;
+}
 .cms-modal-content-split {
     display: flex;
     flex-direction: column;
