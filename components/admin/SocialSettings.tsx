@@ -44,12 +44,14 @@ export default function SocialSettings() {
   return (
     <div className="admin-card" id="ajustes-social">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-share-nodes"></i> Social Networks</h2>
+        <h2><i className="fa-solid fa-share-nodes"></i> Social Networks
+          <span className="cms-info-tip" tabIndex={0} aria-label="Define links to your social networks. They apply to menu icons, footer, and any section linking to your socials. Leave a field empty to hide that network.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Define links to your social networks. They apply to menu icons, footer, and any section linking to your socials. Leave a field empty to hide that network.</span>
+          </span>
+        </h2>
       </div>
-      <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Define links to your social networks. They apply to menu icons,
-        footer, and any section linking to your socials. Leave a field empty to hide that network.
-      </p>
+      <p className="cms-admin-sub">Public social links</p>
       <div className="social-settings">
         {SOCIAL_NETWORKS.map((n) => (
           <div key={n.id} className="setting-item">

@@ -174,11 +174,14 @@ export function LoaderSettings() {
   return (
     <div className="admin-card" id="ajustes-loader">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-spinner"></i> Loading Screen</h2>
+        <h2><i className="fa-solid fa-spinner"></i> Loading Screen
+          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the introductory loading video and its duration.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip">Customize the introductory loading video and its duration.</span>
+          </span>
+        </h2>
       </div>
-      <p className="cms-admin-sub">
-        Customize the introductory loading video and its duration.
-      </p>
+      <p className="cms-admin-sub">Loading video and duration</p>
       <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
           className="site-setting-media"
@@ -287,11 +290,14 @@ export function FaviconSettings() {
   return (
     <div className="admin-card" id="ajustes-favicon">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-compass"></i> Page Favicon</h2>
+        <h2><i className="fa-solid fa-compass"></i> Page Favicon
+          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon displayed in browser tabs and bookmarks.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip">Customize the icon displayed in browser tabs and bookmarks.</span>
+          </span>
+        </h2>
       </div>
-      <p className="cms-admin-sub">
-        Customize the icon displayed in browser tabs and bookmarks.
-      </p>
+      <p className="cms-admin-sub">Tab and bookmark icon</p>
       <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
           className="site-setting-media"
@@ -370,12 +376,14 @@ export function CvSettings() {
   return (
     <div className="admin-card" id="ajustes-cv">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-file-pdf"></i> Curriculum Vitae (CV)</h2>
+        <h2><i className="fa-solid fa-file-pdf"></i> Curriculum Vitae (CV)
+          <span className="cms-info-tip" tabIndex={0} aria-label="Upload your CV in PDF format. This file is downloaded from the 'CV' button in the menu and settings panel across all pages.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Upload your CV in PDF format. This file is downloaded from the &quot;CV&quot; button in the menu and settings panel across all pages.</span>
+          </span>
+        </h2>
       </div>
-      <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Upload your CV in PDF format. This file is downloaded from the &quot;CV&quot;
-        button in the menu and settings panel across all pages.
-      </p>
+      <p className="cms-admin-sub">Public downloadable resume</p>
       {settings.cvUrl ? (
         <div className="site-setting-file">
           <i className="fa-solid fa-file-pdf"></i>
@@ -455,12 +463,14 @@ export function TranslationSettings() {
   return (
     <div className="admin-card" id="ajustes-traducciones">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-language"></i> Translations</h2>
+        <h2><i className="fa-solid fa-language"></i> Translations
+          <span className="cms-info-tip" tabIndex={0} aria-label="Export the translation prompt (instructions + site text), paste it entirely into Claude, and then import the resulting JSON (Spanish, Portuguese, and French).">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 300 }}>Export the translation prompt (instructions + site text), paste it entirely into Claude, and then import the resulting JSON (Spanish, Portuguese, and French).</span>
+          </span>
+        </h2>
       </div>
-      <p className="cms-admin-sub">
-        <i className="fa-solid fa-circle-info"></i> Export the translation prompt (instructions + site text),
-        paste it entirely into Claude, and then import the resulting JSON (Spanish, Portuguese, and French).
-      </p>
+      <p className="cms-admin-sub">Manage multi-language content</p>
       <div className="admin-quick" style={{ marginTop: '1rem' }}>
         <button type="button" className="cms-btn" onClick={onExport}>
           <i className="fa-solid fa-download"></i> Export for translation

@@ -78,6 +78,54 @@ export default function AdminDashboard() {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const goto = (s: string) => {
+    setSection(s)
+    if (s.startsWith('contenidos-') || s === 'subircontenido') {
+      setSubOpen(true)
+      setAjustesOpen(false)
+    } else if (s === 'ajustes' || s.startsWith('ajustes-')) {
+      setAjustesOpen(true)
+      setSubOpen(false)
+      if (s.startsWith('ajustes-')) {
+        setTimeout(() => {
+          const el = document.getElementById(s)
+          if (el) {
+            const y = el.getBoundingClientRect().top + window.scrollY - 90
+            window.scrollTo({ top: y, behavior: 'smooth' })
+          }
+        }, 50)
+      } else if (s === 'ajustes') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    } else {
+      setSubOpen(false)
+      setAjustesOpen(false)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const isContenidos = section.startsWith('contenidos-') || section === 'subircontenido'
+  const isAjustes = section === 'ajustes' || section.startsWith('ajustes-')
+
+  useEffect(() => {
+    if (!isAjustes) return
+    const ids = ['ajustes-loader', 'ajustes-favicon', 'ajustes-social', 'ajustes-cv', 'ajustes-traducciones']
+    
+    const handleMouseOver = (e: MouseEvent) => {
+      let el = e.target as HTMLElement | null
+      while (el && el !== document.body) {
+        if (el.id && ids.includes(el.id)) {
+          if (el.id !== section) setSection(el.id)
+          break
+        }
+        el = el.parentElement
+      }
+    }
+
+    document.addEventListener('mouseover', handleMouseOver)
+    return () => document.removeEventListener('mouseover', handleMouseOver)
+  }, [isAjustes, section])
+
   const usedArr: AnyEntry[] = Object.values(state.usedContent)
   const unusedArr: AnyEntry[] = state.unused.map((e, i) => ({ ...e, _idx: i }))
   const trashArr: AnyEntry[] = state.trash.map((e, i) => ({ ...e, _idx: i }))
@@ -98,21 +146,7 @@ export default function AdminDashboard() {
     )
   }
 
-  const goto = (s: string) => {
-    setSection(s)
-    if (s.startsWith('contenidos-') || s === 'subircontenido') {
-      setSubOpen(true)
-      setAjustesOpen(false)
-    } else if (s === 'ajustes' || s.startsWith('ajustes-')) {
-      setAjustesOpen(true)
-      setSubOpen(false)
-    } else {
-      setSubOpen(false)
-      setAjustesOpen(false)
-    }
-  }
-  const isContenidos = section.startsWith('contenidos-') || section === 'subircontenido'
-  const isAjustes = section === 'ajustes' || section.startsWith('ajustes-')
+
 
   const navBadge = (label: string, count: number, size: number) => (
     <span className="admin-nav-badge-label">
@@ -164,7 +198,7 @@ export default function AdminDashboard() {
               <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
             </button>
             <div className="admin-nav-group">
-              <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => { const next = !ajustesOpen; if (next) setSubOpen(false); if (next && !isAjustes) goto('ajustes-loader'); setAjustesOpen(next); }}>
+              <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => setAjustesOpen(!ajustesOpen)}>
                 <i className="fa-solid fa-sliders"></i>
                 <span>Site settings <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: 'auto', width: 'auto', transform: ajustesOpen ? 'rotate(180deg)' : undefined }}></i></span>
               </button>
@@ -187,7 +221,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="admin-nav-group">
-              <button type="button" className={`admin-nav-item${isContenidos ? ' active' : ''}`} onClick={() => { const next = !subOpen; if (next) setAjustesOpen(false); setSubOpen(next); }}>
+              <button type="button" className={`admin-nav-item${isContenidos ? ' active' : ''}`} onClick={() => setSubOpen(!subOpen)}>
                 <i className="fa-solid fa-photo-film"></i>
                 <span>Content <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: 'auto', width: 'auto', transform: subOpen ? 'rotate(180deg)' : undefined }}></i></span>
               </button>
@@ -319,12 +353,11 @@ export default function AdminDashboard() {
 
           {section === 'usuarios' && <UsersSection />}
 
-          {section === 'ajustes' && <SiteSettings />}
-          {section === 'ajustes-loader' && <LoaderSettings />}
-          {section === 'ajustes-favicon' && <FaviconSettings />}
-          {section === 'ajustes-social' && <SocialSettings />}
-          {section === 'ajustes-cv' && <CvSettings />}
-          {section === 'ajustes-traducciones' && <TranslationSettings />}
+          {isAjustes && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <SiteSettings />
+            </div>
+          )}
         </main>
       </div>
 
