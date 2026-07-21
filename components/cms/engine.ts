@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, retireUsedEntryToUnused, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue,
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -1089,6 +1089,7 @@ export async function persistOverrides() {
   persistOverridesLocal()
   emit()
   await saveContent(state.items)
+  flushSyncToServer()
 }
 
 export function rescan() {

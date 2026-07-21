@@ -171,7 +171,7 @@ function scheduleSyncToServer(...keys: string[]) {
   _syncTimer = setTimeout(flushSyncToServer, 2000)
 }
 
-function flushSyncToServer() {
+export function flushSyncToServer() {
   _syncTimer = null
   if (!state.isAdmin || _pendingKeys.size === 0) return
   const payload: CmsStatePayload = {}
@@ -693,7 +693,7 @@ export function cleanOrphanOverrides() {
     if (key.startsWith('settings.') || key === 'loader.gallop') return
     if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
       if (!validUrls.has(val)) {
-        keysToClear.push(key)
+        // keysToClear.push(key) // DISABLED: race conditions with usedContent debounce can wipe valid recently uploaded images
         if (!state.retired.includes(key) && !key.includes('::') && !key.endsWith('.settings')) {
           state.retired.push(key)
         }

@@ -30,10 +30,17 @@ const markSkipLoader = () => { try { sessionStorage.setItem('cms_skip_loader', '
 
 const RESUMEN_INFO = 'Each card shows content count and total size: in use (active on site), unused (retired), trash (marked for deletion) and repository (all content combined).'
 
-function Stat({ label, count, size, warn }: { label: string; count: number; size: string; warn?: boolean }) {
+function Stat({ label, count, size, warn, repeatedCount }: { label: string; count: number; size: string; warn?: boolean; repeatedCount?: number }) {
   return (
     <div className={`admin-stat${warn ? ' admin-stat--warn' : ''}`}>
-      <span className="admin-stat-num">{count}</span>
+      <span className="admin-stat-num">
+        {count}
+        {repeatedCount !== undefined && repeatedCount > 0 && (
+          <span style={{ fontSize: '0.55em', opacity: 0.7, marginLeft: '0.4rem', fontWeight: 600, verticalAlign: 'middle' }}>
+            (+{repeatedCount} rep)
+          </span>
+        )}
+      </span>
       <span>{label}</span>
       <span className="admin-stat-size">{size}</span>
     </div>
@@ -127,6 +134,8 @@ export default function AdminDashboard() {
   }, [isAjustes, section])
 
   const usedArr: AnyEntry[] = Object.values(state.usedContent)
+  const uniqueUsedArr = deduplicateMedia(usedArr)
+  const repeatedUsedCount = usedArr.length - uniqueUsedArr.length
   const unusedArr: AnyEntry[] = state.unused.map((e, i) => ({ ...e, _idx: i }))
   const trashArr: AnyEntry[] = state.trash.map((e, i) => ({ ...e, _idx: i }))
   const repoArr = deduplicateMedia([...usedArr, ...unusedArr, ...trashArr])
@@ -227,7 +236,7 @@ export default function AdminDashboard() {
               </button>
               <div className={`admin-nav-sub${subOpen ? ' open' : ''}`}>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-usado' ? ' active' : ''}`} onClick={() => goto('contenidos-usado')}>
-                  <i className="fa-solid fa-check c-uso"></i>{navBadge('In use', usedArr.length, sumSizes(usedArr))}
+                  <i className="fa-solid fa-check c-uso"></i>{navBadge('In use', uniqueUsedArr.length, sumSizes(uniqueUsedArr))}
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'contenidos-nousado' ? ' active' : ''}`} onClick={() => goto('contenidos-nousado')}>
                   <i className="fa-solid fa-folder-closed c-nouso"></i>{navBadge('Unused', unusedArr.length, sumSizes(unusedArr))}
@@ -262,7 +271,7 @@ export default function AdminDashboard() {
               </h2>
               <p className="cms-admin-sub">Site content management dashboard.</p>
               <div className="admin-stats">
-                <Stat label="used items" count={usedArr.length} size={fmtBytes(sumSizes(usedArr))} />
+                <Stat label="used items" count={uniqueUsedArr.length} size={fmtBytes(sumSizes(uniqueUsedArr))} repeatedCount={repeatedUsedCount} />
                 <Stat label="unused items" count={unusedArr.length} size={fmtBytes(sumSizes(unusedArr))} />
                 <Stat label="in trash" count={trashArr.length} size={fmtBytes(sumSizes(trashArr))} warn />
                 <Stat label="total repository" count={repoArr.length} size={fmtBytes(sumSizes(repoArr))} />
