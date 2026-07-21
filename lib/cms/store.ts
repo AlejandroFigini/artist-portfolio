@@ -485,6 +485,7 @@ export function cloudinaryMove(oldUrl: string, newFolder: string) {
       if (e.src === oldUrl) { e.src = newUrl; if (e.dataUrl === oldUrl) e.dataUrl = newUrl }
     })
     persistUsed(); persistUnused(); persistTrash(); persistOverridesLocal()
+    scheduleSyncToServer('overrides')
     emit()
   }).catch(() => {})
 }
