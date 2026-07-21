@@ -85,8 +85,23 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     })
     console.log('[saveGraph] original:', original, 'finalSlides:', finalSlides, 'oldData:', oldData)
 
+    const oldUsed: Record<string, any> = {}
+    original.forEach((k) => {
+      if (state.usedContent[k]) oldUsed[k] = state.usedContent[k]
+    })
+
+    // slides eliminadas → no usados
+    original.forEach((k) => {
+      if (finalSlides.includes(k)) return
+      if (oldUsed[k]) {
+        retireUsedEntryToUnused(oldUsed[k], 'deleted', [k])
+      }
+    })
+
     finalSlides.forEach((vKey, i) => {
       const realKey = `${prefix}.slide#${i}`
+      
+      // Items mapping
       if (vKey.startsWith(`${prefix}.slide#`) && oldData[vKey]) {
         state.items[realKey] = oldData[vKey]!
       } else {
@@ -95,20 +110,21 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
         }
         delete state.items[realKey]
       }
-    })
-    for (let i = finalSlides.length; i < Math.max(original.length, finalSlides.length); i++) {
-      delete state.items[`${prefix}.slide#${i}`]
-    }
 
-    // slides eliminadas → no usados
-    original.forEach((k) => {
-      if (finalSlides.includes(k)) return
-      const prev = state.usedContent[k]
-      if (prev) {
-        retireUsedEntryToUnused(prev, 'deleted', [k])
-        delete state.usedContent[k]
+      // UsedContent mapping
+      if (oldUsed[vKey]) {
+        state.usedContent[realKey] = { ...oldUsed[vKey], key: realKey }
+      } else {
+        delete state.usedContent[realKey]
       }
     })
+
+    for (let i = finalSlides.length; i < Math.max(original.length, finalSlides.length); i++) {
+      const rk = `${prefix}.slide#${i}`
+      delete state.items[rk]
+      delete state.usedContent[rk]
+    }
+
     persistUnused()
     persistUsed()
 
