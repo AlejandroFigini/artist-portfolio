@@ -1085,7 +1085,7 @@ export function refreshContainerLabel(key: string) {
 // ----- Persistencia al backend -------------------------------------------------------
 
 /** Guarda overrides en localStorage y sincroniza con el Express. Lanza si falla la red. */
-export async function persistOverrides(): Promise<void> {
+export async function persistOverrides() {
   persistOverridesLocal()
   emit()
   await saveContent(state.items)

@@ -11,7 +11,7 @@ import { saveContent } from '@/lib/api'
 import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, retireUsedEntryToUnused, useCmsStore, emit } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
-const MIN_SLIDES = 1
+const MIN_SLIDES = 0
 const MAX_SLIDES = 4
 
 type Props = { prefix: string; show?: boolean; onClose: () => void; onPickImage: (key: string) => void }
@@ -37,8 +37,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   const toast = useToast()
   useCmsStore()
   const [settings] = useState(() => parseSettings(prefix))
-  // Siempre ≥1 fila para editar (incluso tras limpiar, count:0 → 1 fila vacía).
-  const initialCount = Math.max(1, settings.count)
+  // Permite count:0 (carrusel vacío).
+  const initialCount = Math.max(0, settings.count)
   const [original, setOriginal] = useState<string[]>(() =>
     Array.from({ length: initialCount }, (_, i) => `${prefix}.slide#${i}`))
   const [slides, setSlides] = useState<string[]>(original)
@@ -71,7 +71,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   // no en texto plano → panel minimalista.
   const status = dirty
     ? { color: '#2563eb', icon: 'fa-circle-info', label: 'Save structure', title: 'Save structure to enable image uploading' }
-    : (hasEmpty || filledCount < 1)
+    : (hasEmpty || (slides.length > 0 && filledCount < 1))
       ? { color: '#b45309', icon: 'fa-triangle-exclamation', label: `${filledCount}/${slides.length} with image`, title: 'Missing images: complete or remove empty slides' }
       : !hasChanges
         ? { color: '#64748b', icon: 'fa-check', label: 'No changes', title: 'No changes recorded in carousel' }
@@ -80,12 +80,21 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   // Reescribe slide#0..n según el orden actual y manda el payload (port saveGraph)
   const saveGraph = async (finalSlides: string[]) => {
     const oldData: Record<string, string | undefined> = {}
-    original.forEach((k) => { oldData[k] = state.items[k] })
+    original.forEach((k) => { 
+      oldData[k] = slideSrc(k, prefix) 
+    })
+    console.log('[saveGraph] original:', original, 'finalSlides:', finalSlides, 'oldData:', oldData)
 
     finalSlides.forEach((vKey, i) => {
       const realKey = `${prefix}.slide#${i}`
-      if (vKey.startsWith(`${prefix}.slide#`) && oldData[vKey]) state.items[realKey] = oldData[vKey]!
-      else delete state.items[realKey]
+      if (vKey.startsWith(`${prefix}.slide#`) && oldData[vKey]) {
+        state.items[realKey] = oldData[vKey]!
+      } else {
+        if (vKey.startsWith(`${prefix}.slide#`)) {
+          console.warn(`[saveGraph] Deleting ${realKey} because oldData[${vKey}] is falsy!`)
+        }
+        delete state.items[realKey]
+      }
     })
     for (let i = finalSlides.length; i < Math.max(original.length, finalSlides.length); i++) {
       delete state.items[`${prefix}.slide#${i}`]
@@ -160,11 +169,11 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   }
 
   // Guardar Configuración: NO se permiten diapositivas vacías. Todas deben tener
-  // imagen (o eliminarse). Mínimo 1 imagen (1 sola = imagen única, sin rotación).
+  // imagen (o eliminarse). Puede haber 0 imágenes (se elimina el carrusel).
   const onSaveSettings = () => {
     if (dirty) { toast('Save structure first', 'error'); return }
     if (!hasChanges) { toast('No changes recorded', 'error'); return }
-    if (hasEmpty || filledCount < 1) {
+    if (hasEmpty || (slides.length > 0 && filledCount < 1)) {
       toast('All slides must have an image (or remove empty ones)', 'error')
       return
     }
@@ -302,8 +311,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
           <button
             type="button" className="cms-btn cms-btn--primary"
             style={{ margin: 0 }}
-            disabled={saving || dirty || !hasChanges || hasEmpty || filledCount < 1}
-            title={dirty ? 'Save structure first' : !hasChanges ? 'No changes recorded' : hasEmpty ? 'Complete or remove empty slides' : filledCount < 1 ? 'Add at least one image' : undefined}
+            disabled={saving || dirty || !hasChanges || hasEmpty || (slides.length > 0 && filledCount < 1)}
+            title={dirty ? 'Save structure first' : !hasChanges ? 'No changes recorded' : hasEmpty ? 'Complete or remove empty slides' : (slides.length > 0 && filledCount < 1) ? 'Add at least one image' : undefined}
             onClick={onSaveSettings}
           >
             {saving ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Saving…</> : <><i className="fa-solid fa-floppy-disk"></i> Save carousel</>}

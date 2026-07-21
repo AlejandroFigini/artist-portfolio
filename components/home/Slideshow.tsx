@@ -7,6 +7,7 @@
    sin rotación. Con prefers-reduced-motion queda la primera slide fija. */
 
 import { useEffect, useState } from 'react'
+import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { useCmsStore } from '@/lib/cms/store'
 
@@ -51,6 +52,11 @@ export default function HeroSlideshow() {
       gsap.killTweensOf(els)
     }
   }, [slides, intervalMs])
+
+  // Sync with CMS admin changes using shared hook
+  const slidesKey = slides.join('|')
+  useCarouselSync(undefined, slidesKey)
+
 
   return (
     <>

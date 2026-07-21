@@ -10,11 +10,16 @@ import {
 import Autoplay from 'embla-carousel-autoplay'
 import { useCmsStore, state } from '@/lib/cms/store'
 
+// Shared hook for carousel reinitialization
+import { useCarouselSync } from '@/components/ui/useCarouselSync'
+
+import { rescan } from '@/components/cms/engine'
+
 // El contenido se lee reactivamente desde el store (state.items) y se renderiza
 // como JSX. Antes se leía vía data-attrs + MutationObserver, pero embla clona los
 // slides al hacer loop/reInit y los clones quedaban sin el src/textos que el motor
 // inyectaba imperativamente sólo en el nodo original → tarjetas en blanco.
-import { rescan } from '@/components/cms/engine'
+
 
 function ProjectCard({ index }: { index: number }) {
   useCmsStore()
@@ -132,15 +137,8 @@ export default function ProjectsShowcase() {
       state.items[`proj#${i}::summary`] || '',
     ].join('|'),
   ).join('~')
-  useEffect(() => {
-    if (!carouselApi) return
-    carouselApi.reInit()
-    const t = setTimeout(() => {
-      carouselApi?.reInit()
-      if (state.isAdmin) rescan()
-    }, 60)
-    return () => clearTimeout(t)
-  }, [carouselApi, projSignature, displayCount])
+  // Reinitialize carousel when content changes using shared hook
+  useCarouselSync(carouselApi, projSignature, [displayCount])
 
   useEffect(() => {
     if (prefersReducedMotion()) return

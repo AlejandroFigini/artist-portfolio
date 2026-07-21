@@ -24,6 +24,7 @@ import {
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { rescan } from '@/components/cms/engine'
+import { useCarouselSync } from '@/components/ui/useCarouselSync'
 
 const CONCEPTS_PER = 4
 
@@ -207,12 +208,8 @@ export default function CharactersShowcase() {
       ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`char#${i}::c${m}`] || ''),
     ].join('|'),
   ).join('~')
-  useEffect(() => {
-    api?.reInit()
-    if (state.isAdmin) {
-      setTimeout(() => rescan(), 100)
-    }
-  }, [api, signature, totalSlots])
+  // Reinitialize carousel when content changes using shared hook
+  useCarouselSync(api, signature, [totalSlots])
 
   // Retomar el movimiento automático casi instantáneamente (120ms) tras soltar el mouse o finalizar arrastre
   useEffect(() => {

@@ -233,6 +233,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   const assign = (): void | false => {
     if (!selected) { toast('Select a content first', 'error'); return false }
+
     if ((selected.kind === 'video') !== isVideoSlot) {
       toast(`This content is incompatible (requires ${isVideoSlot ? 'video' : 'image'})`, 'error')
       return false
