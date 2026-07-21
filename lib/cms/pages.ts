@@ -42,7 +42,7 @@ export const SITE_PAGES: PageDef[] = [
   {
     id: 'feed', label: 'Feed', route: '/', icon: 'fa-house',
     sections: [
-      { id: 'portada', label: 'Hero / Cover', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos', 'Hero / Cover', 'Cover', 'Hero', 'Subtitles') },
+      { id: 'portada', label: 'Hero / Cover', match: bySection('Portada', 'Portada (Principal)', 'Portada (Secundario)', 'Subtítulos', 'Hero / Cover', 'Cover', 'Hero', 'Subtitles', 'Hero (Main)', 'Hero (Secondary)') },
       { id: 'about', label: 'About me', match: bySection('Sobre mí', 'About me') },
       { id: 'animations', label: 'Animations', match: bySection('Animations', 'Animaciones') },
       { id: 'projects', label: 'Projects', match: bySection('Proyectos', 'Projects') },
