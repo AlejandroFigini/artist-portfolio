@@ -130,8 +130,13 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     state.items['char.settings'] = payload['char.settings']
     Object.keys(state.items).filter((k) => k.startsWith('char#')).forEach((k) => { payload[k] = state.items[k] })
 
-    // Vacía en la DB las keys temporales (char#new_*) ya promovidas (upsert no borra).
-    Object.keys(oldData).forEach((k) => { if (k.startsWith('char#new')) payload[k] = '' })
+    // Vacía en la DB las keys temporales (char#new_*) ya promovidas
+    // Y también cualquier key de un personaje eliminado o desplazado que ya no exista
+    Object.keys(oldData).forEach((k) => { 
+      if (k.startsWith('char#new') || state.items[k] === undefined) {
+        payload[k] = '' 
+      }
+    })
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     Object.keys(overrides).forEach((k) => { if (k.startsWith('char#')) delete overrides[k] })

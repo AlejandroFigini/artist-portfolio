@@ -136,7 +136,12 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     // El POST de /api/content es upsert (no borra). Las llaves temporales
     // proj#new_* ya promovidas a reales quedarían en la DB y reaparecerían como
     // pendientes (duplicando) en la próxima sesión → las vaciamos explícitamente.
-    Object.keys(oldData).forEach((k) => { if (k.startsWith('proj#new')) payload[k] = '' })
+    // Y también cualquier key de un proyecto eliminado que ya no exista.
+    Object.keys(oldData).forEach((k) => { 
+      if (k.startsWith('proj#new') || state.items[k] === undefined) {
+        payload[k] = '' 
+      }
+    })
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     Object.keys(overrides).forEach(k => {
