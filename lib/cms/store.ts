@@ -688,15 +688,22 @@ export function cleanOrphanOverrides() {
     }
   })
 
+  // Also treat any URL currently active in state.items as valid — seedUsedContent()
+  // runs AFTER this function and will properly register them. Without this, recently
+  // uploaded content gets falsely retired due to the usedContent debounce lag.
+  Object.values(state.items).forEach((val) => {
+    if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
+      validUrls.add(val)
+    }
+  })
+
   const keysToClear: string[] = []
   Object.entries(state.items).forEach(([key, val]) => {
     if (key.startsWith('settings.') || key === 'loader.gallop') return
     if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
       if (!validUrls.has(val)) {
         // keysToClear.push(key) // DISABLED: race conditions with usedContent debounce can wipe valid recently uploaded images
-        if (!state.retired.includes(key) && !key.includes('::') && !key.endsWith('.settings')) {
-          state.retired.push(key)
-        }
+        // Also disabled the retirement: seedUsedContent() will handle registration properly.
       }
     }
   })

@@ -447,14 +447,30 @@ export function applyStored(key: string, value: string) {
 export function hydrate() {
   // Auto-sanitización: si un elemento fue retirado por el botón individual viejo,
   // puede que su URL haya quedado como "fantasma" en state.items. Lo limpiamos.
+  // PERO: si la key tiene contenido real (URL de Cloudinary), NO lo borramos — en su
+  // lugar la des-retiramos, porque probablemente fue marcada por error por la race
+  // condition vieja de cleanOrphanOverrides.
+  const toUnretire: string[] = []
   state.retired.forEach(key => {
     if (state.items[key]) {
-      delete state.items[key]
-      Object.keys(state.items).forEach(k => {
-        if (k.startsWith(key + '::')) delete state.items[k]
-      })
+      const val = state.items[key]
+      const isRealContent = typeof val === 'string' && (val.includes('cloudinary.com') || val.includes('res.cloudinary'))
+      if (isRealContent) {
+        // Don't destroy real content — mark for un-retirement
+        toUnretire.push(key)
+      } else {
+        delete state.items[key]
+        Object.keys(state.items).forEach(k => {
+          if (k.startsWith(key + '::')) delete state.items[k]
+        })
+      }
     }
   })
+  // Remove falsely-retired keys
+  if (toUnretire.length > 0) {
+    state.retired = state.retired.filter(k => !toUnretire.includes(k))
+    persistRetired()
+  }
   
   Object.keys(state.items).forEach((key) => applyStored(key, state.items[key]))
 }
