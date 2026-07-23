@@ -120,16 +120,18 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : (occCount > 1 && cardType === 'used' ? 'Containers:' : 'Container:')
-  const containerBase = cardType === 'used' && occCount > 1
-    ? occs.map(u => u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key).join(', ')
-    : (e.key ? getContainerMeta(e.key).label : '')
+  const occList = cardType === 'used' && occCount > 1
+    ? occs.map(u => u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key)
+    : []
+  const firstContainer = occList.length > 0 ? occList[0] : (e.key ? getContainerMeta(e.key).label : '')
+  const containerBase = occList.length > 0 ? occList.join(', ') : firstContainer
   return (
     <div
       className="cms-mlib-item"
       data-card-type={cardType}
       onClick={(ev) => {
         const t = ev.target as HTMLElement
-        if (t.closest('.cms-mlib-actions') || t.closest('.cms-multi-check')) return
+        if (t.closest('.cms-mlib-actions') || t.closest('.cms-multi-check') || t.closest('.cms-info-tip')) return
         onView()
       }}
     >
@@ -160,7 +162,27 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           {occCount > 1 && (
             <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
           )}
-          <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase} style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
+          {occList.length > 1 ? (
+            <div className="cms-mlib-meta-truncate" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong>{containerLabel}</strong>
+              <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{`${firstContainer} (+${occList.length - 1})`}</span>
+              <span className="cms-info-tip" tabIndex={0} aria-label={`Containers (${occList.length}): ${containerBase}`} onClick={(e) => e.stopPropagation()}>
+                <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)', cursor: 'pointer' }}></i>
+                <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '180px', maxWidth: '240px' }}>
+                  <strong style={{ display: 'block', marginBottom: '0.3rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
+                    Contenedores en uso ({occList.length}):
+                  </strong>
+                  {occList.map((cName, idx) => (
+                    <div key={idx} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>
+                      • {cName}
+                    </div>
+                  ))}
+                </span>
+              </span>
+            </div>
+          ) : (
+            <div className="cms-mlib-meta-truncate"><strong>{containerLabel}</strong> <span title={containerBase} style={{ color: 'var(--accent)', fontWeight: 600 }}>{containerBase || '—'}</span></div>
+          )}
         </div>
         {actions.length > 0 && (
           <div className="cms-mlib-actions">

@@ -663,7 +663,9 @@ function visualHosts(key: string): HTMLElement[] {
     const hosts = allEls.map((el) => {
       if (el.classList.contains('wave-item')) return el
       if (isIconSlot(el)) return el.closest('a') || el
-      return el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+      const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+      if (key.includes('::c') && host && host.classList.contains('ch-portrait-wrap')) return null
+      return host
     }).filter((e): e is HTMLElement => !!e)
     if (hosts.length > 0) return Array.from(new Set(hosts))
   }
@@ -671,7 +673,9 @@ function visualHosts(key: string): HTMLElement[] {
   if (!el) return []
   if (el.classList.contains('wave-item')) return [el]
   if (isIconSlot(el)) return [el.closest('a') || el]
-  return [el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el]
+  const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+  if (key.includes('::c') && host && host.classList.contains('ch-portrait-wrap')) return []
+  return [host]
 }
 
 export function showEmptySlot(key: string) {

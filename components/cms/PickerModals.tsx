@@ -11,7 +11,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, getFormat, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
+  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
@@ -312,7 +312,24 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
                   <span><strong>Size:</strong> {fmtBytes(selected.size)}</span>
                   <span><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</span>
                   <span><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</span>
-                  <span><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span></span>
+                  <span>
+                    <strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span>
+                    {occCount > 1 && (
+                      <span className="cms-info-tip" tabIndex={0} style={{ marginLeft: '0.35rem', cursor: 'pointer' }}>
+                        <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)' }}></i>
+                        <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '180px' }}>
+                          <strong style={{ display: 'block', marginBottom: '0.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
+                            Reused in containers:
+                          </strong>
+                          {Object.values(state.usedContent).filter(u => u.src === selected.src).map((u, i) => (
+                            <div key={i} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>
+                              • {u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key}
+                            </div>
+                          ))}
+                        </span>
+                      </span>
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -411,26 +428,26 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             <div style={{ fontSize: '2.5rem', color: 'var(--c-nouso, #f59e0b)', marginBottom: '0.8rem' }}>
               <i className="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--text-primary)', fontWeight: 500 }}>
-              This content is already being used across the site:
-            </p>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.8rem 1rem', marginBottom: '1.2rem', textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <div style={{ marginBottom: '0.45rem', fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                <span><strong>Page:</strong></span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{getPageAndSectionInfo(confirmEntry).page}</span>
-              </div>
-              <div style={{ marginBottom: '0.45rem', fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                <span><strong>Section:</strong></span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{getPageAndSectionInfo(confirmEntry).section}</span>
-              </div>
-              <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span><strong>Container:</strong></span>
-                <span style={{ color: 'var(--accent)', fontWeight: 600, fontFamily: 'var(--font-display, inherit)' }}>{confirmEntry.label || confirmEntry._key}</span>
-              </div>
+            <div style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--text-primary)', fontWeight: 500 }}>
+              This content is already being used. Do you want to move it or reuse it?
+              <span className="cms-info-tip" tabIndex={0} style={{ marginLeft: '0.4rem', cursor: 'pointer', verticalAlign: 'middle' }}>
+                <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)' }}></i>
+                <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '220px', textAlign: 'left', fontWeight: 'normal', fontSize: '0.88rem' }}>
+                  <strong style={{ display: 'block', marginBottom: '0.35rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.3rem', color: 'var(--accent)' }}>
+                    Currently used in:
+                  </strong>
+                  <div style={{ marginBottom: '0.3rem', color: 'var(--text-primary)' }}>
+                    <div><strong>Page:</strong> {getPageAndSectionInfo(confirmEntry).page}</div>
+                    <div><strong>Section:</strong> {getPageAndSectionInfo(confirmEntry).section}</div>
+                    <div><strong>Container:</strong> {confirmEntry.label || confirmEntry._key}</div>
+                  </div>
+                  <div style={{ marginTop: '0.5rem', paddingTop: '0.3rem', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                    <strong>Move:</strong> Removes from previous.<br/>
+                    <strong>Reuse:</strong> Remains in both.
+                  </div>
+                </span>
+              </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Do you want to <strong>move it</strong> (will be removed from previous container) or <strong>reuse it</strong> (will remain in both)?
-            </p>
           </div>
         </CmsModal>
       )}

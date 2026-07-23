@@ -67,20 +67,20 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
   // reabrir el gestor para que apareciera.
   useEffect(() => {
     setTimeout(() => {
-      setProjects((prev) => {
-        const add = pendingNew().filter((k) => !prev.includes(k))
-        const next = add.length ? [...prev, ...add] : prev
-        if (add.length > 0 || next.some((s, i) => s !== original[i]) || next.length !== original.length) {
-          saveGraph(next)
-        }
-        return next
-      })
+      const currentPending = pendingNew()
+      const add = currentPending.filter((k) => !projects.includes(k))
+      
+      const hasPending = projects.some(k => k.startsWith('proj#new_')) && currentPending.some(k => k.startsWith('proj#new_'))
+      
+      if (add.length > 0 || hasPending) {
+        saveGraph(add.length > 0 ? [...projects, ...add] : projects)
+      }
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
         return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
       })
     }, 0)
-  }, [storeVersion])
+  }, [storeVersion, projects])
 
   const saveGraph = async (finalProjects: string[]) => {
     const oldData: Record<string, string | undefined> = {}
@@ -166,14 +166,10 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
   }
 
   const move = (idx: number, dir: -1 | 1) => {
-    setProjects((s) => {
-      const next = s.slice()
-      const tmp = next[idx + dir]
-      next[idx + dir] = next[idx]
-      next[idx] = tmp
-      saveGraph(next)
-      return next
-    })
+    const next = projects.slice()
+    ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
+    setProjects(next)
+    saveGraph(next)
   }
 
   // Permite forzar el render después de interactuar con el UploadModal
@@ -293,7 +289,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                 <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
                   <i className="fa-solid fa-chevron-down"></i>
                 </button>
-                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => setProjects((s) => { const next = s.filter((_, j) => j !== i); saveGraph(next); return next; })}>
+                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => { const next = projects.filter((_, j) => j !== i); setProjects(next); saveGraph(next); }}>
                   <i className="fa-solid fa-trash"></i>
                 </button>
               </div>

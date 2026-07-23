@@ -410,7 +410,22 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             )}
             {cardType === 'used' && occs.length > 1 ? (
               <div style={{ marginTop: '0.4rem', borderTop: '1px solid var(--border)', paddingTop: '0.4rem' }}>
-                <strong style={{ display: 'block', marginBottom: '0.3rem' }}>Containers in use ({occs.length}):</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Containers in use ({occs.length}):</strong>
+                  <span className="cms-info-tip" tabIndex={0} aria-label={`In use in ${occs.length} containers`}>
+                    <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)', cursor: 'pointer' }}></i>
+                    <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '220px' }}>
+                      <strong style={{ display: 'block', marginBottom: '0.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
+                        Resumen de contenedores:
+                      </strong>
+                      {occs.map((u, i) => (
+                        <div key={i} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>
+                          • {u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key}
+                        </div>
+                      ))}
+                    </span>
+                  </span>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   {occs.map((u) => {
                     const info = getPageAndSectionInfo(u)

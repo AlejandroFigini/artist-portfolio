@@ -229,10 +229,10 @@ export default function ProjectsShowcase() {
         <div className="w-full relative mt-3">
           {completedIndices.length === 0 && count === 0 ? (
             <div className="w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300/80 rounded-lg bg-white/60 shadow-sm transition-all duration-300">
-              <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
+              <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
                 <i className="fa-solid fa-layer-group text-xl opacity-80" />
               </div>
-              <h3 className="cms-placeholder-inner text-lg font-bold text-gray-800">No hay proyectos destacados</h3>
+              <h3 className="text-lg font-bold text-gray-800">No hay proyectos destacados</h3>
             </div>
           ) : (
             <Carousel

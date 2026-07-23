@@ -74,20 +74,24 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
   // Mergea en vivo los personajes pendientes (char#new_*) creados desde el picker.
   useEffect(() => {
     setTimeout(() => {
-      setCharacters((prev) => {
-        const add = pendingNew().filter((k) => !prev.includes(k))
-        const next = add.length ? [...prev, ...add] : prev
-        if (add.length > 0 || next.some((s, i) => s !== original[i]) || next.length !== original.length) {
-          saveGraph(next)
-        }
-        return next
-      })
+      const currentPending = pendingNew()
+      const add = currentPending.filter((k) => !characters.includes(k))
+      
+      // En Strict Mode, si el efecto se ejecuta dos veces, el closure de 'characters'
+      // puede tener 'char#new_' obsoleto, pero currentPending estará vacío porque
+      // saveGraph ya borró esa key de state.items sincrónicamente.
+      // Usamos currentPending en lugar de characters para hasPending:
+      const hasPending = characters.some(k => k.startsWith('char#new_')) && currentPending.some(k => k.startsWith('char#new_'))
+      
+      if (add.length > 0 || hasPending) {
+        saveGraph(add.length > 0 ? [...characters, ...add] : characters)
+      }
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
         return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
       })
     }, 0)
-  }, [storeVersion])
+  }, [storeVersion, characters])
 
   const saveGraph = async (finalChars: string[]) => {
     const oldData: Record<string, string | undefined> = {}
@@ -151,12 +155,10 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
   }
 
   const move = (idx: number, dir: -1 | 1) => {
-    setCharacters((s) => {
-      const next = s.slice()
-      ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
-      saveGraph(next)
-      return next
-    })
+    const next = characters.slice()
+    ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
+    setCharacters(next)
+    saveGraph(next)
   }
 
   const pick = (key: string) => {
@@ -313,7 +315,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                   <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === characters.length - 1} onClick={() => move(i, 1)}>
                     <i className="fa-solid fa-chevron-down"></i>
                   </button>
-                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => setCharacters((s) => { const next = s.filter((_, j) => j !== i); saveGraph(next); return next; })}>
+                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => { const next = characters.filter((_, j) => j !== i); setCharacters(next); saveGraph(next); }}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </div>

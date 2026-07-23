@@ -4,7 +4,7 @@
    con nombre + campos de info, fase de subida bloqueada, vista de éxito
    con ahorro de compresión. El archivo ya viene validado (CmsRoot). */
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
@@ -77,6 +77,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     )
     setIsDuplicate(existsInUsed || existsInUnused)
   }
+
+  const [autoStartDone, setAutoStartDone] = useState(false)
 
   if (!meta) return null
 
@@ -169,6 +171,19 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
       })
     return false
   }
+
+  useEffect(() => {
+    let mounted = true;
+    if (phase === 'form' && fields.length === 0 && !isDuplicate && !autoStartDone) {
+      setTimeout(() => {
+        if (mounted) {
+          setAutoStartDone(true)
+          doUpload()
+        }
+      }, 0)
+    }
+    return () => { mounted = false; }
+  }, [phase, fields.length, isDuplicate, autoStartDone, doUpload])
 
   const actions =
     phase === 'form'

@@ -89,23 +89,39 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${key}::c${m}`), // indices 1..4: imagenes pequeñas
   ]
 
+  // Filtra qué índices (1 al 4) tienen realmente una imagen cargada
+  const validConceptIndices = Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1)
+    .filter((idx) => {
+      const src = state.items[`${key}::c${idx - 1}`]
+      return !!src && !src.includes('placeholder')
+    })
+
   useEffect(() => {
-    if (!isHovered) {
+    if (!isHovered || validConceptIndices.length === 0) {
       setActiveSlide(0)
       return
     }
-    // Al posar el mouse, cicla exclusivamente por las imágenes pequeñas (índices 1 al 4) en el contenedor grande
+    // Si hay concepts válidos, cicla a través de ellos
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev >= CONCEPTS_PER ? 1 : prev + 1))
+      setActiveSlide((prev) => {
+        const currentIdx = validConceptIndices.indexOf(prev)
+        const nextIdx = currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
+        return validConceptIndices[nextIdx]
+      })
     }, 1250)
     return () => clearInterval(timer)
-  }, [isHovered])
+  }, [isHovered, validConceptIndices.join(',')])
 
   const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
 
   const handleMouseEnter = () => {
     setIsHovered(true)
-    setActiveSlide(1) // arranca mostrando la primera imagen pequeña (c0) y destacando su contenedor
+    // Si hay concepts, salta al primero válido; si no, se queda en el retrato principal
+    if (validConceptIndices.length > 0) {
+      setActiveSlide(validConceptIndices[0])
+    } else {
+      setActiveSlide(0)
+    }
     if (isHoveringRef) isHoveringRef.current = true
     api?.plugins().autoScroll?.stop()
   }
@@ -124,7 +140,6 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
   return (
     <article
       className={`ch-panel ${isHovered ? 'is-hovered' : ''}`}
-      data-cms-key={key}
       data-name={name}
       data-role={role}
       data-desc={desc}
@@ -144,7 +159,7 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
                 zIndex: activeSlide === idx ? 2 : 1,
               }}
             >
-              <CharMedia cmsKey={gKey} className="ch-portrait w-full h-full" onOpen={open} />
+              <CharMedia cmsKey={gKey} className={`${gKey.includes('::c') ? 'ch-concept-slide' : 'ch-portrait'} w-full h-full`} onOpen={open} />
             </div>
           ))}
         </div>
@@ -297,6 +312,9 @@ export default function CharactersShowcase() {
 
   // Si está vacío, se renderiza el estado vacío ocupando el mismo espacio de altura
 
+  let renderIndices = [...completedIndices]
+  const isLoopable = completedIndices.length >= 4
+
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
       <div className="ch-showcase__rail" aria-hidden="true">
@@ -339,10 +357,10 @@ export default function CharactersShowcase() {
             </div>
           ) : (
             <Carousel
-              key={completedIndices.join('-')}
+              key={`${totalSlots}-${signature}`}
               setApi={setApi}
-              opts={{ align: 'center', loop: true, dragFree: true, watchDrag: true }}
-              plugins={completedIndices.length > 1 && !prefersReducedMotion() ? [
+              opts={{ align: 'center', loop: isLoopable, dragFree: true, watchDrag: true }}
+              plugins={isLoopable && !prefersReducedMotion() ? [
                 AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: true }),
               ] : []}
               className="ch-carousel"
@@ -356,8 +374,8 @@ export default function CharactersShowcase() {
               }}
             >
               <CarouselContent className="-ml-3 md:-ml-4">
-                {completedIndices.map((index) => (
-                  <CarouselItem key={index} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px]">
+                {renderIndices.map((index, i) => (
+                  <CarouselItem key={`${index}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
                     <CharacterPanel index={index} total={completedIndices.length} onOpen={openLightbox} api={api} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}

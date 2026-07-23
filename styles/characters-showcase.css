@@ -194,7 +194,6 @@
   width: 100%;
   max-width: 460px;
   min-height: clamp(520px, 60vh, 660px);
-  max-height: clamp(560px, 68vh, 740px);
   margin: 0 auto !important;
   display: flex;
   flex-direction: column;
@@ -207,9 +206,9 @@
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 .ch-panel.is-hovered {
-  transform: translateY(-8px) scale(1.025);
+  transform: translateY(-8px) scale(1.015);
   border-color: #7c3aed;
-  box-shadow: 0 28px 55px -12px rgba(124, 58, 237, 0.35), 0 6px 20px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 30px -8px rgba(124, 58, 237, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
   z-index: 20;
 }
 
@@ -220,22 +219,22 @@
 .ch-corner.bl { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
 .ch-corner.br { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
 
-.ch-panel__media { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; flex: 1; min-height: 0; }
+.ch-panel__media { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; flex: none; }
 
 .ch-portrait-wrap {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   border-radius: 10px;
   background: rgba(124, 58, 237, 0.04);
   border: 1px solid rgba(139, 92, 246, 0.22);
   overflow: hidden;
-  flex: 1;
-  min-height: 220px;
-  max-height: 380px;
+  flex: none;
+  width: 100%;
+  max-height: 250px;
 }
-.ch-portrait { position: absolute; inset: 0; border-radius: 10px; background-size: cover; background-position: center; cursor: default; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.ch-portrait.has-media { cursor: zoom-in; }
-.ch-portrait.has-media:hover { transform: scale(1.03); }
+.ch-portrait, .ch-concept-slide { position: absolute; inset: 0; border-radius: 10px; background-size: cover; background-position: center; cursor: default; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ch-portrait.has-media, .ch-concept-slide.has-media { cursor: zoom-in; }
+.ch-portrait.has-media:hover, .ch-concept-slide.has-media:hover { transform: scale(1.03); }
 
 .ch-concepts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
 .ch-concept-cell {
@@ -259,7 +258,7 @@
 .ch-concept-cell .cms-empty-overlay span { display: none !important; }
 
 /* --- Info / ficha --- */
-.ch-panel__info { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.ch-panel__info { position: relative; display: flex; flex-direction: column; justify-content: flex-start; min-width: 0; flex: 1 0 auto; }
 .ch-ghost {
   position: absolute;
   top: -0.4em;
@@ -274,9 +273,9 @@
 }
 .ch-counter { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.6rem; }
 .ch-counter b { color: #7c3aed; }
-.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
+.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
 .ch-role { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
-.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; max-width: 42ch; }
+.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; width: 100%; }
 
 /* --- Empty (sin personajes) --- */
 
@@ -332,6 +331,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ch-portrait, .ch-concept, .ch-lightbox, .ch-lightbox__media, .ch-lightbox__info-panel { transition: none; animation: none; }
-  .ch-portrait.has-media:hover, .ch-concept.has-media:hover { transform: none; }
+  .ch-portrait, .ch-concept-slide, .ch-concept, .ch-lightbox, .ch-lightbox__media, .ch-lightbox__info-panel { transition: none; animation: none; }
+  .ch-portrait.has-media:hover, .ch-concept-slide.has-media:hover, .ch-concept.has-media:hover { transform: none; }
 }
