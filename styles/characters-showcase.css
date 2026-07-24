@@ -225,6 +225,7 @@
   border-radius: 10px;
   background: rgba(124, 58, 237, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: none;
   overflow: hidden;
   flex: none;
   width: 100%;
