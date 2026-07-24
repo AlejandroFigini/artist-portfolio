@@ -170,7 +170,7 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
             const isFeatured = isHovered && activeSlide === m + 1
             return (
               <div
-                className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-1 ring-violet-600 scale-[1.08] shadow-lg z-10 opacity-100' : isHovered ? 'opacity-65 scale-95' : 'opacity-100'}`}
+                className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-1 ring-violet-400 scale-[1.04] shadow-md z-10 opacity-100' : isHovered ? 'opacity-65 scale-95' : 'opacity-100'}`}
                 key={m}
                 onMouseEnter={() => {
                   if (isHovered) setActiveSlide(m + 1)
