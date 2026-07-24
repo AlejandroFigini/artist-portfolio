@@ -125,16 +125,12 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
     // Siempre arranca mostrando la imagen principal y deja que el ciclo avance a las subimágenes
     setActiveSlide(0)
     if (isHoveringRef) isHoveringRef.current = true
-    api?.plugins().autoScroll?.stop()
   }
 
   const handleMouseLeave = () => {
     setIsHovered(false)
     setActiveSlide(0) // vuelve a la imagen principal en el contenedor grande y quita el destacado
     if (isHoveringRef) isHoveringRef.current = false
-    if (!isHoveringRef || !isHoveringRef.current) {
-      api?.plugins().autoScroll?.play()
-    }
   }
 
   return (
@@ -359,17 +355,9 @@ export default function CharactersShowcase() {
               setApi={setApi}
               opts={{ align: 'center', loop: isLoopable, dragFree: true, watchDrag: true }}
               plugins={isLoopable && !prefersReducedMotion() ? [
-                AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: true }),
+                AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: false }),
               ] : []}
               className="ch-carousel"
-              onMouseEnter={() => {
-                isHoveringRef.current = true
-                api?.plugins().autoScroll?.stop()
-              }}
-              onMouseLeave={() => {
-                isHoveringRef.current = false
-                api?.plugins().autoScroll?.play()
-              }}
             >
               <CarouselContent className="-ml-3 md:-ml-4">
                 {renderIndices.map((index, i) => (

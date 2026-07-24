@@ -67,7 +67,7 @@ function ProjectCard({ index }: { index: number }) {
           </div>
 
           {/* 2. Título (con altura mínima para alinear las tarjetas de al lado) */}
-          <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
+          <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-normal font-[family-name:var(--font)] text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
             {title || `Project Title ${index + 1}`}
           </h3>
 

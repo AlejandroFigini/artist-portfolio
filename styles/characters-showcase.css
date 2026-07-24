@@ -278,7 +278,7 @@
 }
 .ch-counter { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.6rem; }
 .ch-counter b { color: #7c3aed; }
-.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
+.ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
 .ch-role { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
 .ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; width: 100%; }
 
