@@ -26,7 +26,7 @@ import { useCmsStore, state } from '@/lib/cms/store'
 import { rescan } from '@/components/cms/engine'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 
-const CONCEPTS_PER = 4
+const CONCEPTS_PER = 3
 
 function readCount(): number {
   try {
