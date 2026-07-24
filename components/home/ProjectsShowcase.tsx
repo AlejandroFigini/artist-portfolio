@@ -194,11 +194,11 @@ export default function ProjectsShowcase() {
           <span className="proj-showcase__fig text-xs tracking-[0.22em] text-[var(--accent)] uppercase mb-3 block">
             FIG. 03.5 — Work
           </span>
-          <h2 className="proj-showcase__title text-4xl md:text-5xl font-bold text-gray-900" style={{ marginBottom: '1.25rem' }}>
+          <h2 className="proj-showcase__title text-3xl md:text-4xl text-gray-900 leading-none tracking-tight" style={{ fontFamily: 'var(--font-display)', fontWeight: 200, marginBottom: '2rem' }}>
             Featured Projects
           </h2>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <p className="proj-showcase__desc text-gray-600 max-w-[60ch] text-base md:text-lg">
+            <p className="proj-showcase__desc text-gray-900 max-w-2xl text-base leading-relaxed" style={{ fontWeight: 200 }}>
               A curated selection of my featured projects and artwork.
             </p>
             {isAdmin && (

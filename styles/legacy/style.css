@@ -96,7 +96,7 @@ html {
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    line-height: 1.6;
+    line-height: 1.8;
     font-weight: 200;
     /* Restaurado a un grosor legible para los textos regulares */
     /* Letra legible por defecto */
@@ -118,16 +118,14 @@ header {
     left: 0;
     width: 100%;
     z-index: 1000;
-    background-color: transparent;
-    border-bottom: none;
-    transition: background-color 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    transition: padding 0.3s ease, box-shadow 0.3s ease;
 }
 
 header.scrolled {
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -145,8 +143,8 @@ header.scrolled {
 .logo {
     font-family: var(--font);
     /* Raleway es naturalmente sÃºper fina */
-    font-size: 1.5rem;
-    font-weight: 300;
+    font-size: 1.3rem;
+    font-weight: 200;
     /* Un toque mÃ¡s de presencia para el logo */
     letter-spacing: 0.1em;
     color: var(--text-primary);
@@ -157,8 +155,8 @@ header.scrolled {
 }
 
 .logo span {
-    color: #4c1d95; /* Ink-Deep Violet: Superior contrast and professional weight */
-    font-weight: 300; /* Keeping it fine and elegant */
+    color: var(--accent); /* More noticeable violet */
+    font-weight: 200; /* Keeping it fine and elegant */
 }
 
 .nav-links {
@@ -175,7 +173,7 @@ header.scrolled {
 .dropbtn {
     font-family: var(--font);
     font-size: 0.95rem;
-    font-weight: 300;
+    font-weight: 200;
     letter-spacing: 0.1em;
     color: var(--text-primary);
     transition: var(--transition);
@@ -373,7 +371,7 @@ section {
 .section-title h2 {
     font-size: clamp(1.6rem, 4vw, 2.5rem);
     font-weight: 200;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     letter-spacing: -0.5px;
     color: var(--accent);
     /* Violeta consistente */
@@ -3782,7 +3780,7 @@ html.motion-off #animBlobCanvas {
    ============================================================================ */
 .nav-links > a[data-i18n="nav_contact"] {
     color: var(--accent);
-    font-weight: 700;
+    font-weight: 400;
 }
 .nav-links > a[data-i18n="nav_contact"]:hover {
     color: var(--accent-hover, var(--accent));

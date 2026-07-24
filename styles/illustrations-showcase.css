@@ -85,21 +85,21 @@
 }
 .illu-showcase__title {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(3.2rem, 8vw, 6.8rem);
-  font-weight: 200;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 300;
   line-height: 0.95;
   letter-spacing: -0.04em;
   color: var(--text-primary);
   margin: 0;
 }
 .illu-showcase__desc {
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
-  font-weight: 300;
-  line-height: 1.55;
-  color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-weight: 200;
+  line-height: 1.8;
+  color: #000;
   letter-spacing: 0.005em;
   max-width: 60ch;
-  margin: 1.2rem 0 0;
+  margin: 2rem 0 0;
 }
 
 /* ============================================================

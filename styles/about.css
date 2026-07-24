@@ -117,13 +117,13 @@
 }
 
 .about-title {
-  font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(3.2rem, 8vw, 6.8rem);
-  font-weight: 200;
+  font-family: var(--font);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 300;
   line-height: 0.95;
-  letter-spacing: -0.04em;
-  color: var(--text-primary);
-  margin: 0 0 1.4rem;
+  letter-spacing: 0.05em;
+  color: #000;
+  margin: 0 0 2rem;
 }
 .about-title .line-wrap {
   display: block;
@@ -136,11 +136,12 @@
 }
 
 .about-lede {
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
-  font-weight: 300;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  letter-spacing: 0.005em;
+  font-family: var(--font);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-weight: 200;
+  line-height: 1.9;
+  color: #000 !important;
+  letter-spacing: 0.05em;
   max-width: 60ch;
 }
 
@@ -165,13 +166,14 @@
 }
 
 .about-bio p {
-  font-size: clamp(1.02rem, 1.4vw, 1.18rem);
-  font-weight: 300;
-  line-height: 1.75;
-  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-weight: 200;
+  line-height: 2.0;
+  color: var(--text-secondary) !important;
   margin: 0 0 1.2rem;
-  max-width: 56ch;
-  letter-spacing: 0.008em;
+  max-width: 60ch;
+  letter-spacing: 0.05em;
 }
 .about-bio p:last-child { margin-bottom: 0; }
 
@@ -213,13 +215,14 @@
   font-family: 'Fira Code', monospace;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
-  color: var(--text-secondary);
+  color: #000;
   text-transform: uppercase;
 }
 .about-spec-v {
+  font-family: var(--font);
   font-size: 0.95rem;
-  font-weight: 400;
-  color: var(--text-secondary);
+  font-weight: 200;
+  color: #000;
   letter-spacing: 0.01em;
 }
 
@@ -244,7 +247,7 @@
   font-family: 'Fira Code', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  color: #000;
   background: color-mix(in srgb, var(--accent) 4%, transparent);
   transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
   white-space: nowrap;

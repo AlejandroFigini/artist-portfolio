@@ -99,21 +99,21 @@
 }
 .m3d-showcase__title {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(3.2rem, 8vw, 6.8rem);
-  font-weight: 200;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 300;
   line-height: 0.95;
   letter-spacing: -0.04em;
-  color: var(--text-primary);
+  color: #000;
   margin: 0;
 }
 .m3d-showcase__desc {
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
-  font-weight: 300;
-  line-height: 1.55;
-  color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-weight: 200;
+  line-height: 1.8;
+  color: #000;
   letter-spacing: 0.005em;
   max-width: 60ch;
-  margin: 1.2rem 0 0;
+  margin: 2rem 0 0;
 }
 
 /* --- Grid 2-columnas: textos (sticky) | coverflow --- */
@@ -148,7 +148,7 @@
 }
 .m3d-text__title {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
   font-weight: 400;
   letter-spacing: -0.01em;
   color: var(--text-primary);
@@ -156,9 +156,9 @@
 }
 .m3d-text__body {
   font-size: clamp(0.95rem, 1.25vw, 1.05rem);
-  font-weight: 300;
+  font-weight: 200;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: #000;
   margin: 0;
   max-width: 46ch;
 }
