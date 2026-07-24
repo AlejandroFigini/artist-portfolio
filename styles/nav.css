@@ -156,7 +156,7 @@ header.scrolled::after { opacity: 0.75; }
   border-radius: 999px;
   padding: 0.28rem 0.8rem;
   /* misma voz tipográfica que los links de la nav (.nav-links>a) */
-  font-family: 'Raleway', sans-serif;
+  font-family: var(--font);
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.08em;
@@ -316,7 +316,7 @@ header.scrolled::after { opacity: 0.75; }
   padding: 0.8rem 1.2rem;
   cursor: pointer;
   position: relative;
-  font-family: 'Raleway', sans-serif;
+  font-family: var(--font);
   font-size: 0.9rem;
   font-weight: 300;
   letter-spacing: 0.06em;
