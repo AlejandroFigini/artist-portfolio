@@ -316,7 +316,7 @@
 .ch-lightbox__info-btn:hover { transform: scale(1.08); }
 .ch-lightbox__info-panel {
   position: absolute; 
-  bottom: calc(1rem + 20px); 
+  bottom: calc(1rem + 50px); 
   right: calc(1rem + 20px - min(38vw, 380px));
   width: min(38vw, 380px); text-align: left; color: #fff;
   background: rgba(15, 15, 20, 0.85);
