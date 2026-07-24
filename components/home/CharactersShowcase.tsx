@@ -184,7 +184,7 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
       </div>
 
       <div className="ch-panel__info">
-        <span className="ch-ghost" aria-hidden="true">{num}</span>
+
         <span className="ch-counter"><b>{num}</b> / {tot}</span>
         <h3 className="ch-name">{name || `Character ${num}`}</h3>
         <div className="ch-role">{role || 'Character Role'}</div>
