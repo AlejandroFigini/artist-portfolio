@@ -691,8 +691,10 @@ export function cleanOrphanOverrides() {
   // Also treat any URL currently active in state.items as valid — seedUsedContent()
   // runs AFTER this function and will properly register them. Without this, recently
   // uploaded content gets falsely retired due to the usedContent debounce lag.
+  // Include ALL non-empty values (not just cloudinary), since local /uploads/ URLs
+  // are also valid content.
   Object.values(state.items).forEach((val) => {
-    if (typeof val === 'string' && (val.includes('cloudinary.com') || val.startsWith('data:image') || val.startsWith('data:video'))) {
+    if (typeof val === 'string' && val.length > 0) {
       validUrls.add(val)
     }
   })
