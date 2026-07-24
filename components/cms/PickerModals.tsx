@@ -312,24 +312,26 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
                   <span><strong>Size:</strong> {fmtBytes(selected.size)}</span>
                   <span><strong>Upload date:</strong> {ts ? fmtDateOnly(ts) : '—'}</span>
                   <span><strong>Upload time:</strong> {ts ? fmtTimeOnly(ts) : '—'}</span>
-                  <span>
-                    <strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{occCount === 0 ? '0 times' : `${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span>
-                    {occCount > 1 && (
-                      <span className="cms-info-tip" tabIndex={0} style={{ marginLeft: '0.35rem', cursor: 'pointer' }}>
-                        <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)' }}></i>
-                        <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '180px' }}>
-                          <strong style={{ display: 'block', marginBottom: '0.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
-                            Reused in containers:
-                          </strong>
-                          {Object.values(state.usedContent).filter(u => u.src === selected.src).map((u, i) => (
-                            <div key={i} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>
-                              • {u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key}
-                            </div>
-                          ))}
+                  {occCount > 0 && (
+                    <span>
+                      <strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} ${occCount === 1 ? 'time' : 'times'}`}</span>
+                      {occCount > 1 && (
+                        <span className="cms-info-tip" tabIndex={0} style={{ marginLeft: '0.35rem', cursor: 'pointer' }}>
+                          <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)' }}></i>
+                          <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '180px' }}>
+                            <strong style={{ display: 'block', marginBottom: '0.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
+                              Reused in containers:
+                            </strong>
+                            {Object.values(state.usedContent).filter(u => u.src === selected.src).map((u, i) => (
+                              <div key={i} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>
+                                • {u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key}
+                              </div>
+                            ))}
+                          </span>
                         </span>
-                      </span>
-                    )}
-                  </span>
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

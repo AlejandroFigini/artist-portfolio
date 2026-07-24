@@ -385,30 +385,30 @@ export default function CharactersShowcase() {
       </div>
 
       {lightbox && typeof document !== 'undefined' && createPortal(
-        <div className="ch-lightbox" onClick={closeLightbox}>
-          <button type="button" className="ch-lightbox__close" onClick={closeLightbox} aria-label="Cerrar">
-            <i className="fa-solid fa-xmark" />
-          </button>
-          <div className={`ch-lightbox__media${showInfo ? ' is-shifted' : ''}`}>
+        <div className={`lightbox ${showInfo ? 'info-open' : ''}`} style={{ display: 'flex', opacity: 1 }} onClick={closeLightbox}>
+          <span className="lightbox-close" onClick={closeLightbox}>&times;</span>
+          <div className="lightbox-wrapper">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={lightbox.src} alt={lightbox.name} className="ch-lightbox__img" onClick={(e) => e.stopPropagation()} />
+            <img src={lightbox.src} alt={lightbox.name} className="lightbox-content" onClick={(e) => e.stopPropagation()} />
             <button
               type="button"
-              className="ch-lightbox__info-btn"
+              className="info-toggle-btn"
               onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
               aria-label="Información"
             >
-              <i className={`fa-solid ${showInfo ? 'fa-xmark' : 'fa-circle-info'}`} />
+              <i className="fa-solid fa-info" />
             </button>
-            {showInfo && (
-              <div className="ch-lightbox__info-panel" onClick={(e) => e.stopPropagation()}>
-                <h3>{lightbox.name}</h3>
-                <dl className="ch-lightbox__meta">
-                  {lightbox.role && <div><dt>Rol</dt><dd>{lightbox.role}</dd></div>}
-                  {lightbox.desc && <div className="ch-lightbox__meta-block"><dt>Descripción</dt><dd>{lightbox.desc}</dd></div>}
-                </dl>
+            <div className={`lightbox-info-panel ${showInfo ? '' : 'hidden'}`} onClick={(e) => e.stopPropagation()}>
+              <h3 className="info-title">{lightbox.name}</h3>
+              <div className="info-divider"></div>
+              <div className="info-meta">
+                {lightbox.role && <span className="info-project"><i className="fa-solid fa-folder-open"></i> <span className="val">{lightbox.role}</span></span>}
               </div>
-            )}
+              <p className="info-desc">{lightbox.desc}</p>
+              <div className="info-footer">
+                <span><i className="fa-solid fa-palette"></i> LUCIA MONTAÑA</span>
+              </div>
+            </div>
           </div>
         </div>,
         document.body,
