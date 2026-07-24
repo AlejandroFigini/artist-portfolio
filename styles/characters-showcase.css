@@ -54,6 +54,7 @@
   position: relative;
   width: min(100% - 2 * var(--page-gutter), 1320px);
   margin: 0 auto clamp(1.4rem, 2.8vw, 2.2rem);
+  border-bottom: none; /* Override legacy global `header { border-bottom }` rule */
 }
 
 .ch-showcase__cards-container {
