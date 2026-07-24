@@ -254,8 +254,13 @@
   border-radius: 10px;
   padding: 0.25rem;
 }
-.ch-concept-cell .cms-empty-overlay i { display: none !important; }
+.ch-concept-cell .cms-empty-overlay i { font-size: 1.15rem !important; }
 .ch-concept-cell .cms-empty-overlay span { display: none !important; }
+
+/* Ocultar el widget flotante verde (cms-tools) en las sub-imágenes */
+.ch-concept-cell .cms-tools {
+  display: none !important;
+}
 
 /* --- Info / ficha --- */
 .ch-panel__info { position: relative; display: flex; flex-direction: column; justify-content: flex-start; min-width: 0; flex: 1 0 auto; }
