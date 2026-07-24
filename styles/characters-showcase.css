@@ -236,7 +236,7 @@
 .ch-portrait.has-media, .ch-concept-slide.has-media { cursor: zoom-in; }
 .ch-portrait.has-media:hover, .ch-concept-slide.has-media:hover { transform: scale(1.03); }
 
-.ch-concepts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
+.ch-concepts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
 .ch-concept-cell {
   position: relative;
   aspect-ratio: 1 / 1;

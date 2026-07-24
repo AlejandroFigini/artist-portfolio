@@ -21,7 +21,7 @@ type Props = {
   onEditInfo?: (key: string) => void
 }
 
-const CONCEPTS_PER = 4
+const CONCEPTS_PER = 3
 
 function parseSettings() {
   const settings = { count: 8 }
