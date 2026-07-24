@@ -162,7 +162,7 @@ const CarouselContent = React.forwardRef<
     <div
       ref={carouselRef}
       style={orientation === "horizontal" ? { overflowX: "clip", overflowY: "visible" } : { overflowY: "clip", overflowX: "visible" }}
-      className={cn(className)}
+      className={cn("cursor-grab active:cursor-grabbing", className)}
     >
       <div
         ref={ref}
