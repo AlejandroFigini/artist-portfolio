@@ -201,14 +201,14 @@
   padding: clamp(1.1rem, 1.6vw, 1.5rem);
   background: #ffffff;
   border: 1px solid rgba(139, 92, 246, 0.28);
-  border-radius: 14px;
-  box-shadow: none;
+  border-radius: 6px;
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 .ch-panel.is-hovered {
   transform: translateY(-8px) scale(1.015);
   border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: none;
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08);
   z-index: 20;
 }
 
