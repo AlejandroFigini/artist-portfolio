@@ -401,11 +401,27 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               <div>
-                <strong>Cloudinary link:</strong>{' '}
-                <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Open in new tab <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i></a>
+                <strong>Cloudinary console:</strong>{' '}
+                <a 
+                  href={`https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search?q=${encodeURIComponent(e.name ? getFileBasename(e.name) : '')}`}
+                  target="_blank" rel="noopener noreferrer" 
+                  style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+                >
+                  Search asset <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i>
+                </a>
               </div>
+              <a 
+                href={src} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="cms-btn cms-btn--sm" 
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.6rem', background: 'transparent', border: '1px solid var(--border)' }}
+                title="View raw file"
+              >
+                <i className="fa-solid fa-up-right-from-square"></i> Raw file
+              </a>
               <a 
                 href={src.includes('/upload/') ? src.replace('/upload/', '/upload/fl_attachment/') : src} 
                 download={e.name || 'download'} 
@@ -415,7 +431,7 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
                 style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.6rem' }}
                 title="Download file"
               >
-                <i className="fa-solid fa-download"></i> Download content
+                <i className="fa-solid fa-download"></i> Download
               </a>
             </div>
             {occCount > 1 && (

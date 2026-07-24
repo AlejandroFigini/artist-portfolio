@@ -303,7 +303,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
               {result.asset_id && (
                 <li>
                   <a
-                    href={`${CLOUDINARY_CONSOLE}/${encodeURIComponent(result.asset_id)}/manage/summary?q=&view_mode=mosaic&context=manage`}
+                    href={`https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search?q=${encodeURIComponent(result.original_name ? getFileBasename(result.original_name) : '')}`}
                     target="_blank" rel="noopener noreferrer"
                     style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '0.78rem' }}
                   >

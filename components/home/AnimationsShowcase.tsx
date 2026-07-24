@@ -189,8 +189,8 @@ function AnimCard({ index }: { index: number }) {
               <span className="anim-card__fig">FIG. 03{String.fromCharCode(97 + index)}</span>
               <h3 className="anim-card__title video-title">{fields.title}</h3>
               <span className="anim-card__meta">
-                <span className="video-project"><i className="fa-solid fa-folder" aria-hidden="true" /> {fields.project}</span>
-                <span className="video-date"><i className="fa-regular fa-calendar" aria-hidden="true" /> {fields.date}</span>
+                <span className="video-project"><i className="fa-solid fa-folder" aria-hidden="true" /> <span className="val">{fields.project}</span></span>
+                <span className="video-date"><i className="fa-regular fa-calendar" aria-hidden="true" /> <span className="val">{fields.date}</span></span>
               </span>
             </div>
             <div className="anim-card__controls">
@@ -216,20 +216,13 @@ function AnimCard({ index }: { index: number }) {
       </div>
 
       {expanded && hasContent && typeof document !== 'undefined' && createPortal(
-        <div className="anim-lightbox" onClick={closeExpanded}>
-          <button
-            type="button"
-            className="anim-lightbox__close"
-            onClick={closeExpanded}
-            aria-label="Cerrar"
-          >
-            <i className="fa-solid fa-xmark" />
-          </button>
+        <div className={`lightbox ${showInfo ? 'info-open' : ''}`} style={{ display: 'flex', opacity: 1 }} onClick={closeExpanded}>
+          <span className="lightbox-close" onClick={closeExpanded}>&times;</span>
 
-          <div className={`anim-lightbox__media${showInfo ? ' info-open' : ''}`}>
+          <div className="lightbox-wrapper">
             <video
               src={videoSrc}
-              className="anim-lightbox__video"
+              className="lightbox-content"
               autoPlay
               muted
               loop
@@ -240,24 +233,26 @@ function AnimCard({ index }: { index: number }) {
 
             <button
               type="button"
-              className="anim-lightbox__info-btn"
+              className="info-toggle-btn"
               onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
               aria-label="Información"
             >
-              <i className={`fa-solid ${showInfo ? 'fa-xmark' : 'fa-circle-info'}`} />
+              <i className="fa-solid fa-info" />
             </button>
 
-            {showInfo && (
-              <div className="anim-lightbox__info-panel" onClick={(e) => e.stopPropagation()}>
-                {fields.title && <h3>{fields.title}</h3>}
-                <dl className="anim-lightbox__meta">
-                  {fields.date && <div><dt>Fecha</dt><dd>{fields.date}</dd></div>}
-                  {fields.project && <div><dt>Proyecto</dt><dd>{fields.project}</dd></div>}
-                  {fields.inspiration && <div><dt>Inspiración</dt><dd>{fields.inspiration}</dd></div>}
-                  {fields.desc && <div className="anim-lightbox__meta-block"><dt>Descripción</dt><dd>{fields.desc}</dd></div>}
-                </dl>
+            <div className={`lightbox-info-panel ${showInfo ? '' : 'hidden'}`} onClick={(e) => e.stopPropagation()}>
+              {fields.title && <h3 className="info-title">{fields.title}</h3>}
+              <div className="info-divider"></div>
+              <div className="info-meta">
+                {fields.date && <span className="info-date"><i className="fa-regular fa-calendar"></i> <span className="val">{fields.date}</span></span>}
+                {fields.project && <span className="info-project"><i className="fa-solid fa-folder-open"></i> <span className="val">{fields.project}</span></span>}
               </div>
-            )}
+              {fields.desc && <p className="info-desc">{fields.desc}</p>}
+              {fields.inspiration && <p className="info-inspiration"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span className="val">{fields.inspiration}</span></p>}
+              <div className="info-footer">
+                <span><i className="fa-solid fa-palette"></i> LUCIA MONTAÑA</span>
+              </div>
+            </div>
           </div>
         </div>,
         document.body

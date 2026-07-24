@@ -35,9 +35,18 @@ export type FieldDef = {
   set: (c: HTMLElement, v: string) => void
 }
 
-const txt = (e: Element | null) => (e ? (e.textContent || '').trim() : '')
+const txt = (e: Element | null) => {
+  if (!e) return ''
+  const val = e.querySelector('.val')
+  return (val ? val.textContent || '' : e.textContent || '').trim()
+}
 function setTxtKeepIcon(e: Element | null, v: string) {
   if (!e) return
+  const val = e.querySelector('.val')
+  if (val) {
+    val.textContent = v
+    return
+  }
   const icon = e.querySelector('i')
   e.textContent = ' ' + v
   if (icon) e.prepend(icon)
@@ -46,13 +55,21 @@ function setTxtKeepIcon(e: Element | null, v: string) {
 const ANIM_FIELDS: FieldDef[] = [
   { key: 'title', label: 'Title',
     get: (c) => txt(c.querySelector('.video-title')),
-    set: (c, v) => { const e = c.querySelector('.video-title'); if (e) e.textContent = v; c.setAttribute('data-title', v) } },
+    set: (c, v) => { const e = c.querySelector('.video-title'); if (e) { const val = e.querySelector('.val'); if (val) val.textContent = v; else e.textContent = v; } c.setAttribute('data-title', v) } },
   { key: 'date', label: 'Date', optional: true,
     get: (c) => txt(c.querySelector('.video-date')) || c.getAttribute('data-date') || '',
-    set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-date'), v); c.setAttribute('data-date', v) } },
+    set: (c, v) => { 
+      const e = c.querySelector('.video-date'); 
+      if (e) { const val = e.querySelector('.val'); if (val) val.textContent = v; else setTxtKeepIcon(e, v); } 
+      c.setAttribute('data-date', v) 
+    } },
   { key: 'project', label: 'Project', optional: true,
     get: (c) => txt(c.querySelector('.video-project')) || c.getAttribute('data-project') || '',
-    set: (c, v) => { setTxtKeepIcon(c.querySelector('.video-project'), v); c.setAttribute('data-project', v) } },
+    set: (c, v) => { 
+      const e = c.querySelector('.video-project'); 
+      if (e) { const val = e.querySelector('.val'); if (val) val.textContent = v; else setTxtKeepIcon(e, v); } 
+      c.setAttribute('data-project', v) 
+    } },
   { key: 'inspiration', label: 'Inspiration', optional: true,
     get: (c) => c.getAttribute('data-inspiration') || '',
     set: (c, v) => c.setAttribute('data-inspiration', v) },

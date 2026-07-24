@@ -150,14 +150,8 @@
   /* translate (float) y scale (hover) son propiedades independientes → no
      compiten entre sí ni con el transform que deja GSAP en la entrada. */
   transition: box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1), scale 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  animation: anim-card-float 10s ease-in-out infinite;
-  animation-delay: calc(var(--card-i, 0) * -2.4s);
   will-change: transform;
   backface-visibility: hidden;
-}
-@keyframes anim-card-float {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 -5px; }
 }
 .anim-card:hover {
   box-shadow:
