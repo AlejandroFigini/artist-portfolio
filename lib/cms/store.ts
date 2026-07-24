@@ -593,10 +593,85 @@ export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'r
   }
 }
 
+function compactList(prefix: string, deletedIndices: Set<number>, cleared: Record<string, string>) {
+  if (deletedIndices.size === 0) return
+  let settingsKey = `${prefix}.settings`
+  let count = 0
+  try {
+    const parsed = JSON.parse(state.items[settingsKey] || '{}')
+    if (typeof parsed.count === 'number') count = parsed.count
+  } catch {}
+  if (count === 0) return
+
+  const remainingIndices: number[] = []
+  for (let i = 0; i < count; i++) {
+    if (!deletedIndices.has(i)) remainingIndices.push(i)
+  }
+
+  if (remainingIndices.length === count) return
+
+  const updates: Record<string, string> = {}
+  
+  // Shift remaining items down
+  for (let newIdx = 0; newIdx < remainingIndices.length; newIdx++) {
+    const oldIdx = remainingIndices[newIdx]
+    if (newIdx !== oldIdx) {
+      const oldKey = `${prefix}#${oldIdx}`
+      const newKey = `${prefix}#${newIdx}`
+      
+      // Move main key
+      if (state.items[oldKey] !== undefined) {
+        state.items[newKey] = state.items[oldKey]
+        updates[newKey] = state.items[newKey]
+      }
+      
+      // Move sub keys
+      const oldPrefix = `${oldKey}::`
+      Object.keys(state.items).forEach(k => {
+        if (k.startsWith(oldPrefix)) {
+          const suffix = k.slice(oldPrefix.length)
+          state.items[`${newKey}::${suffix}`] = state.items[k]
+          updates[`${newKey}::${suffix}`] = state.items[k]
+        }
+      })
+    }
+  }
+
+  // Clear out the trailing indices that are now empty
+  for (let i = remainingIndices.length; i < count; i++) {
+    const oldKey = `${prefix}#${i}`
+    delete state.items[oldKey]
+    cleared[oldKey] = ''
+    Object.keys(state.items).forEach(k => {
+      if (k.startsWith(`${oldKey}::`)) {
+        delete state.items[k]
+        cleared[k] = ''
+      }
+    })
+  }
+
+  // Update settings count
+  const newCount = remainingIndices.length
+  const newSettings = JSON.stringify({ count: newCount })
+  state.items[settingsKey] = newSettings
+  updates[settingsKey] = newSettings
+
+  // Merge updates into the cleared object (which acts as the DB payload)
+  Object.assign(cleared, updates)
+}
+
 export function clearItemOverrides(keys: string[]) {
   if (!keys.length) return
   const cleared: Record<string, string> = {}
+  const charDeleted = new Set<number>()
+  const projDeleted = new Set<number>()
+
   keys.forEach((key) => {
+    const charMatch = key.match(/^char#(\d+)$/)
+    if (charMatch) charDeleted.add(parseInt(charMatch[1], 10))
+    const projMatch = key.match(/^proj#(\d+)$/)
+    if (projMatch) projDeleted.add(parseInt(projMatch[1], 10))
+
     delete state.items[key]
     cleared[key] = ''
     Object.keys(state.items).forEach((k) => {
@@ -606,6 +681,10 @@ export function clearItemOverrides(keys: string[]) {
       }
     })
   })
+
+  compactList('char', charDeleted, cleared)
+  compactList('proj', projDeleted, cleared)
+
   persistOverridesLocal()
   // Persist removal to DB (DB first strategy)
   saveContent(cleared).catch(() => {})
