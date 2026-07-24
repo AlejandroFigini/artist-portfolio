@@ -254,7 +254,7 @@
   border-radius: 10px;
   padding: 0.25rem;
 }
-.ch-concept-cell .cms-empty-overlay i { font-size: 1.15rem !important; }
+.ch-concept-cell .cms-empty-overlay i { display: none !important; }
 .ch-concept-cell .cms-empty-overlay span { display: none !important; }
 
 /* --- Info / ficha --- */

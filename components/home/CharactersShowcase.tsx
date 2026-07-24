@@ -89,23 +89,26 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${key}::c${m}`), // indices 1..4: imagenes pequeñas
   ]
 
-  // Filtra qué índices (1 al 4) tienen realmente una imagen cargada
-  const validConceptIndices = Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1)
-    .filter((idx) => {
+  // Incluimos el índice 0 (imagen principal) y filtramos qué índices (1 al 4) tienen imagen
+  const validConceptIndices = [
+    0,
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
       const src = state.items[`${key}::c${idx - 1}`]
       return !!src && !src.includes('placeholder')
     })
+  ]
 
   useEffect(() => {
-    if (!isHovered || validConceptIndices.length === 0) {
+    // Si no hay hover, o si solo está la imagen principal (length <= 1), se queda en 0
+    if (!isHovered || validConceptIndices.length <= 1) {
       setActiveSlide(0)
       return
     }
-    // Si hay concepts válidos, cicla a través de ellos
+    // Si hay concepts válidos, cicla a través de ellos, incluyendo la imagen principal
     const timer = setInterval(() => {
       setActiveSlide((prev) => {
         const currentIdx = validConceptIndices.indexOf(prev)
-        const nextIdx = currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
+        const nextIdx = currentIdx !== -1 && currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
         return validConceptIndices[nextIdx]
       })
     }, 1250)
@@ -116,12 +119,8 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
 
   const handleMouseEnter = () => {
     setIsHovered(true)
-    // Si hay concepts, salta al primero válido; si no, se queda en el retrato principal
-    if (validConceptIndices.length > 0) {
-      setActiveSlide(validConceptIndices[0])
-    } else {
-      setActiveSlide(0)
-    }
+    // Siempre arranca mostrando la imagen principal y deja que el ciclo avance a las subimágenes
+    setActiveSlide(0)
     if (isHoveringRef) isHoveringRef.current = true
     api?.plugins().autoScroll?.stop()
   }
