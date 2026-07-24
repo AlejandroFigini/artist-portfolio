@@ -283,11 +283,7 @@ export default function CharactersShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.set('.ch-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.ch-showcase__rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -323,11 +319,7 @@ export default function CharactersShowcase() {
 
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
-      <div className="ch-showcase__rail" aria-hidden="true">
-        <span className="ch-showcase__rail-fig">FILE 04 · CHARACTERS</span>
-        <span className="ch-showcase__rail-track"><span className="ch-showcase__rail-fill" /></span>
-        <span className="ch-showcase__rail-fig ch-showcase__rail-fig--end">END</span>
-      </div>
+
 
       <div className="ch-showcase__inner">
         <header className="ch-showcase__header">

@@ -303,11 +303,7 @@ export default function AnimationsShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.set('.anim-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.anim-showcase__rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -316,13 +312,7 @@ export default function AnimationsShowcase() {
 
   return (
     <section ref={sectionRef} className="anim-showcase" aria-labelledby="anim-showcase-title">
-      <div className="anim-showcase__rail" aria-hidden="true">
-        <span className="anim-showcase__rail-fig">FILE 03 · ANIMATIONS</span>
-        <span className="anim-showcase__rail-track">
-          <span className="anim-showcase__rail-fill" />
-        </span>
-        <span className="anim-showcase__rail-fig anim-showcase__rail-fig--end">END</span>
-      </div>
+
 
       <div className="anim-showcase__frame">
         <div className="anim-showcase__header">

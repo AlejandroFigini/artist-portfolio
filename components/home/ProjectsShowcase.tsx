@@ -176,11 +176,7 @@ export default function ProjectsShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.set('.proj-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.proj-showcase__rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -190,13 +186,7 @@ export default function ProjectsShowcase() {
   return (
     <section ref={sectionRef} className="proj-showcase w-full">
       {/* Riel vertical decorativo */}
-      <div className="proj-showcase__rail" aria-hidden="true">
-        <span className="proj-showcase__rail-fig">FILE 03.5 · PROJECTS</span>
-        <span className="proj-showcase__rail-track">
-          <span className="proj-showcase__rail-fill" />
-        </span>
-        <span className="proj-showcase__rail-fig proj-showcase__rail-fig--end">END</span>
-      </div>
+
 
       <div className="proj-showcase__frame">
         {/* Encabezado de la sección */}

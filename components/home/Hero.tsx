@@ -65,12 +65,6 @@ export default function Hero() {
         })
       }
 
-      gsap.set('.hero-rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.hero-rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 0%', end: 'bottom 50%', scrub: 0.6 },
-      })
-
       const tl = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })
 
       // estados iniciales (solo cuando la animación va a correr)
@@ -200,13 +194,7 @@ export default function Hero() {
         </button>
       )}
 
-      <div className="hero-rail" aria-hidden="true">
-        <span className="hero-rail-fig">FILE 01 · HERO</span>
-        <span className="hero-rail-track">
-          <span className="hero-rail-fill" />
-        </span>
-        <span className="hero-rail-fig hero-rail-fig--end">END</span>
-      </div>
+
 
       <div className="hero-grid">
 

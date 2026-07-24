@@ -78,11 +78,7 @@ export default function IllustrationsShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.set('.illu-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.illu-showcase__rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -91,13 +87,7 @@ export default function IllustrationsShowcase() {
 
   return (
     <section ref={sectionRef} className="illu-showcase" id="illustrations" aria-labelledby="illu-showcase-title">
-      <div className="illu-showcase__rail" aria-hidden="true">
-        <span className="illu-showcase__rail-fig">FILE 06 · ILLUSTRATIONS</span>
-        <span className="illu-showcase__rail-track">
-          <span className="illu-showcase__rail-fill" />
-        </span>
-        <span className="illu-showcase__rail-fig illu-showcase__rail-fig--end">END</span>
-      </div>
+
 
       <div className="illu-showcase__frame">
         <div className="illu-showcase__header">

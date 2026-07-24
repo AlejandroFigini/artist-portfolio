@@ -265,19 +265,19 @@
   width: 2.6rem;
   height: 2.6rem;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--text-primary);
-  font-size: 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  transition: color 0.25s ease, transform 0.25s ease;
 }
 .m3d-nav:hover {
-  background: #fff;
-  border-color: var(--accent);
+  background: transparent;
+  border: none;
   color: var(--accent);
-  transform: scale(1.08);
-  box-shadow: 0 8px 20px -8px rgba(124, 58, 237, 0.35);
+  transform: scale(1.15);
+  box-shadow: none;
 }
 .m3d-dots {
   display: flex;

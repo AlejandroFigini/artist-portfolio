@@ -370,11 +370,7 @@ export default function ModelsShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      gsap.set('.m3d-showcase__rail-fill', { scaleY: 0, transformOrigin: 'top center' })
-      gsap.to('.m3d-showcase__rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -383,13 +379,7 @@ export default function ModelsShowcase() {
 
   return (
     <section ref={sectionRef} className="m3d-showcase" aria-labelledby="m3d-showcase-title">
-      <div className="m3d-showcase__rail" aria-hidden="true">
-        <span className="m3d-showcase__rail-fig">FILE 05 · 3D</span>
-        <span className="m3d-showcase__rail-track">
-          <span className="m3d-showcase__rail-fill" />
-        </span>
-        <span className="m3d-showcase__rail-fig m3d-showcase__rail-fig--end">END</span>
-      </div>
+
 
       <div className="m3d-showcase__frame">
         <div className="m3d-showcase__header">

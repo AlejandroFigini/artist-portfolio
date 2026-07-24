@@ -117,10 +117,7 @@ export default function AboutSection() {
         yoyo: true, repeat: -1, delay: 2.2,
       })
 
-      gsap.to('.about-rail-fill', {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 50%', scrub: 0.6 },
-      })
+
 
       ScrollTrigger.refresh()
     }, sectionRef)
@@ -129,14 +126,7 @@ export default function AboutSection() {
 
   return (
     <section ref={sectionRef} className="about-section" aria-labelledby="about-title-h">
-      {/* Riel-cota vertical decorativo */}
-      <div className="about-rail" aria-hidden="true">
-        <span className="about-rail-fig">FILE 02 · ABOUT</span>
-        <span className="about-rail-track">
-          <span className="about-rail-fill" />
-        </span>
-        <span className="about-rail-fig about-rail-fig--end">END</span>
-      </div>
+
 
       <div className="about-frame">
         <div className="about-grid">
