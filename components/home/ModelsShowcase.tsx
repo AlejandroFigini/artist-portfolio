@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
-const SLIDE_COUNT = 3
+const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
 const AUTOPLAY_MS = 5000
 
@@ -54,10 +54,11 @@ function relOffset(i: number, active: number, n: number) {
 
 function slideStyle(off: number): React.CSSProperties {
   const abs = Math.abs(off)
-  const translateX = off * 50
-  const rotateY = off * -30
-  const translateZ = abs === 0 ? 0 : -180
-  const scale = abs === 0 ? 1 : 0.78
+  // abs >= 2 lo manda al centro profundo para que no cruce la pantalla visiblemente al reordenarse
+  const translateX = abs >= 2 ? 0 : off * 50
+  const rotateY = abs >= 2 ? 0 : off * -30
+  const translateZ = abs === 0 ? 0 : abs === 1 ? -180 : -400
+  const scale = abs === 0 ? 1 : abs === 1 ? 0.78 : 0.5
   const opacity = abs === 0 ? 1 : abs === 1 ? 0.5 : 0
   return {
     transform: `translate(-50%, -50%) translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
