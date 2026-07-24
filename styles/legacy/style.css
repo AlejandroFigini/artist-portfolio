@@ -17,7 +17,7 @@
 
     /* Variables generales */
     --font: 'Raleway', sans-serif;
-    --font-display: 'Syne', sans-serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
     --letter-spacing-elegant: 0.05em;
     --radius: 1.5rem;
     --radius-sm: 0.75rem;
@@ -372,7 +372,7 @@ section {
 
 .section-title h2 {
     font-size: clamp(1.6rem, 4vw, 2.5rem);
-    font-weight: 300;
+    font-weight: 200;
     margin-bottom: 1rem;
     letter-spacing: -0.5px;
     color: var(--accent);
