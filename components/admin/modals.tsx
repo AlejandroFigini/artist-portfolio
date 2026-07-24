@@ -401,9 +401,22 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
             <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
-            <div>
-              <strong>Cloudinary link:</strong>{' '}
-              <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Open in new tab <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i></a>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <strong>Cloudinary link:</strong>{' '}
+                <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Open in new tab <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i></a>
+              </div>
+              <a 
+                href={src.includes('/upload/') ? src.replace('/upload/', '/upload/fl_attachment/') : src} 
+                download={e.name || 'download'} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="cms-btn cms-btn--sm" 
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.6rem' }}
+                title="Download file"
+              >
+                <i className="fa-solid fa-download"></i> Download content
+              </a>
             </div>
             {occCount > 1 && (
               <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>

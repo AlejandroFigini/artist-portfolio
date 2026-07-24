@@ -3568,12 +3568,15 @@ body.is-admin .cms-mount.cms-empty-slot {
 }
 .cms-modal-actions--row::-webkit-scrollbar { display: none; }
 .cms-modal-actions--row .cms-btn {
-    font-size: 0.85rem;
-    padding: 0.6rem 1.1rem;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
     white-space: nowrap;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
-.cms-modal-actions--row .cms-btn--primary { margin-left: auto; }
+.cms-modal-actions--row .cms-btn--primary { margin-left: auto; flex-shrink: 0; overflow: visible; }
 .cms-modal--wide.cms-modal--actions-row { width: min(860px, 100%); }
 
 .cms-textarea {
