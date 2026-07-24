@@ -109,7 +109,7 @@
 .illu-masonry {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: clamp(110px, 12vw, 185px);
+  grid-auto-rows: clamp(145px, 15vw, 230px);
   gap: clamp(0.5rem, 1vw, 0.9rem);
 }
 
