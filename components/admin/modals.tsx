@@ -405,23 +405,17 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
               <div>
                 <strong>Cloudinary console:</strong>{' '}
                 <a 
-                  href={`https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search?q=${encodeURIComponent(e.name ? getFileBasename(e.name) : '')}`}
+                  href={`https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search?q=${encodeURIComponent(
+                    src.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
+                      ? src.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)![2].replace(/\.[a-zA-Z0-9]+$/, '')
+                      : (e.name ? getFileBasename(e.name) : '')
+                  )}`}
                   target="_blank" rel="noopener noreferrer" 
                   style={{ color: 'var(--accent)', textDecoration: 'underline' }}
                 >
-                  Search asset <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i>
+                  Manage asset <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i>
                 </a>
               </div>
-              <a 
-                href={src} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="cms-btn cms-btn--sm" 
-                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.6rem', background: 'transparent', border: '1px solid var(--border)' }}
-                title="View raw file"
-              >
-                <i className="fa-solid fa-up-right-from-square"></i> Raw file
-              </a>
               <a 
                 href={src.includes('/upload/') ? src.replace('/upload/', '/upload/fl_attachment/') : src} 
                 download={e.name || 'download'} 
