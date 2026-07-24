@@ -272,7 +272,7 @@
   position: relative;
   padding-top: 0;
   padding-bottom: clamp(3rem, 7vw, 5rem);  /* espacio inferior para que la foto entre completa */
-  align-self: start;
+  align-self: center;
   isolation: isolate;  /* contiene el z-index de los blobs */
 }
 
