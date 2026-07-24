@@ -217,9 +217,9 @@
 /* La slide central resalta con glow de acento */
 .m3d-slide[aria-hidden='false'] {
   box-shadow:
-    0 30px 70px -14px rgba(124, 58, 237, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
-    0 0 50px -8px rgba(139, 92, 246, 0.22);
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 0 20px -5px rgba(139, 92, 246, 0.12);
 }
 
 .m3d-slide__media {

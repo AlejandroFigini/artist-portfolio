@@ -132,11 +132,9 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
     setIsHovered(false)
     setActiveSlide(0) // vuelve a la imagen principal en el contenedor grande y quita el destacado
     if (isHoveringRef) isHoveringRef.current = false
-    setTimeout(() => {
-      if (!isHoveringRef || !isHoveringRef.current) {
-        api?.plugins().autoScroll?.play()
-      }
-    }, 50)
+    if (!isHoveringRef || !isHoveringRef.current) {
+      api?.plugins().autoScroll?.play()
+    }
   }
 
   return (
@@ -170,7 +168,7 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
             const isFeatured = isHovered && activeSlide === m + 1
             return (
               <div
-                className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-1 ring-violet-400 scale-[1.04] shadow-md z-10 opacity-100' : isHovered ? 'opacity-65 scale-95' : 'opacity-100'}`}
+                className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-1 ring-violet-400/30 scale-[1.02] z-10 opacity-100' : isHovered ? 'opacity-65 scale-95' : 'opacity-100'}`}
                 key={m}
                 onMouseEnter={() => {
                   if (isHovered) setActiveSlide(m + 1)
@@ -240,7 +238,7 @@ export default function CharactersShowcase() {
       timer = setTimeout(() => {
         if (isHoveringRef.current) return // Si el usuario está posado con el mouse en el carrusel o tarjeta, NUNCA reanudar
         autoScroll.play()
-      }, 120)
+      }, 0)
     }
 
     api.on('pointerUp', resumeFast)

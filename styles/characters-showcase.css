@@ -202,13 +202,13 @@
   background: #ffffff;
   border: 1px solid rgba(139, 92, 246, 0.28);
   border-radius: 14px;
-  box-shadow: 0 20px 45px -10px rgba(124, 58, 237, 0.14), 0 4px 15px -3px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 .ch-panel.is-hovered {
   transform: translateY(-8px) scale(1.015);
-  border-color: #7c3aed;
-  box-shadow: 0 16px 30px -8px rgba(124, 58, 237, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: none;
   z-index: 20;
 }
 
