@@ -200,15 +200,15 @@
   gap: clamp(0.8rem, 1.5vw, 1.25rem);
   padding: clamp(1.1rem, 1.6vw, 1.5rem);
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: none;
   border-radius: 6px;
-  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 .ch-panel.is-hovered {
   transform: translateY(-8px) scale(1.015);
-  border-color: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.15);
+  border: none;
+  box-shadow: none;
   z-index: 20;
 }
 
@@ -226,7 +226,7 @@
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   background: rgba(124, 58, 237, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: none;
   overflow: hidden;
   flex: none;
   width: 100%;
@@ -242,7 +242,7 @@
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   background: rgba(124, 58, 237, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: none;
   overflow: hidden;
 }
 .ch-concept { position: absolute; inset: 0; border-radius: 10px; background-size: cover; background-position: center; cursor: default; transition: transform 0.45s ease; }

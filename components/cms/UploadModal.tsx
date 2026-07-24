@@ -15,7 +15,7 @@ import {
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
-  elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools,
+  elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
 } from './engine'
 
 const CLOUDINARY_CONSOLE =
@@ -111,6 +111,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
 
         state.items[cmsKey] = data.secure_url
         applyMedia(cmsKey, data.secure_url)
+        seedUsedContent()
+        persistUsed()
 
         const el = elementsByKey[cmsKey]
         const cont = meta.container && el ? el.closest<HTMLElement>(meta.container) : el

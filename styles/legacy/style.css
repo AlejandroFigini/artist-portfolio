@@ -1331,6 +1331,12 @@ footer {
     transform: translateY(-3px) scale(1.08);
     box-shadow: 0 8px 22px rgba(124, 58, 237, 0.45);
 }
+.settings-gear i {
+    transition: transform 0.5s ease;
+}
+.settings-gear:hover i {
+    transform: rotate(180deg);
+}
 
 /* Panel de ConfiguraciÃ³n */
 .settings-panel {
@@ -1879,7 +1885,7 @@ input:checked+.slider:before {
     font-size: 2.2rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
+    text-transform: none;
     background: linear-gradient(to right, #fff, #a78bfa);
     -webkit-background-clip: text;
     background-clip: text;
@@ -2161,6 +2167,13 @@ input:checked+.slider:before {
     z-index: 100;
     transition: all 0.3s ease;
     opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    line-height: 1;
+    transform-origin: center;
 }
 
 .lightbox-close:hover {
