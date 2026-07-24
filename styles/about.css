@@ -149,7 +149,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(2.5rem, 6vw, 6rem);
-  align-items: start;
+  align-items: center;
 }
 
 @media (max-width: 960px) {
@@ -419,8 +419,8 @@
   position: absolute;
   bottom: 0;
   left: -4%;
-  width: 38%;
-  max-width: 200px;
+  width: 32%;
+  max-width: 170px;
   aspect-ratio: 4/5;
   margin: 0;
   overflow: hidden;
