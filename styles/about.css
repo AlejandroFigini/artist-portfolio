@@ -271,7 +271,6 @@
 .about-media {
   position: relative;
   padding-top: 0;
-  padding-bottom: clamp(3rem, 7vw, 5rem);  /* espacio inferior para que la foto entre completa */
   align-self: center;
   isolation: isolate;  /* contiene el z-index de los blobs */
 }
@@ -417,10 +416,10 @@
    ligera rotación + flotación lenta opuesta al reel para crear contraste. */
 .about-portrait {
   position: absolute;
-  bottom: 0;
+  bottom: -4%;
   left: -4%;
-  width: 32%;
-  max-width: 170px;
+  width: 28%;
+  max-width: 145px;
   aspect-ratio: 4/5;
   margin: 0;
   overflow: hidden;

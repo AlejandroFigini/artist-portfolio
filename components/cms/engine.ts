@@ -1033,6 +1033,7 @@ function makeTools(key: string) {
   }
   const hasContent = !!state.items[key]
   const isProject = /^proj#\d+$/.test(key)
+  tools.setAttribute('data-cms-content', hasContent ? '1' : '0')
   if (hasContent && meta.fields) tools.appendChild(toolBtn('fa-pen', 'Edit info: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
   tools.appendChild(toolBtn('fa-arrow-up-from-bracket', hasContent ? 'Replace: ' + meta.label : 'Upload content: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))
   // Proyectos: papelera que ELIMINA la tarjeta (archivando su imagen a no usados).
@@ -1056,8 +1057,10 @@ export function attachEditControls() {
 
       if (entry.mount === 'none') { el.setAttribute('data-cms-has-btn', '1'); return }
       const host = entry.mount === 'parent' && el.parentElement ? el.parentElement : el
+      const hasContent = !!state.items[key]
       if (el.getAttribute('data-cms-has-btn') === '1') {
-        if (host.querySelector(':scope > .cms-tools')) return
+        const existing = host.querySelector(':scope > .cms-tools')
+        if (existing && existing.getAttribute('data-cms-content') === (hasContent ? '1' : '0')) return
       }
       host.querySelector(':scope > .cms-tools')?.remove()
       host.classList.add('cms-mount')
