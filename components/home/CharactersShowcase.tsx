@@ -315,7 +315,13 @@ export default function CharactersShowcase() {
   // Si está vacío, se renderiza el estado vacío ocupando el mismo espacio de altura
 
   let renderIndices = [...completedIndices]
-  const isLoopable = completedIndices.length >= 4
+  const isLoopable = completedIndices.length > 0
+  
+  if (isLoopable && renderIndices.length < 6) {
+    while (renderIndices.length < 6) {
+      renderIndices = [...renderIndices, ...completedIndices]
+    }
+  }
 
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
