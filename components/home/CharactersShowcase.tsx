@@ -101,19 +101,22 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
   useEffect(() => {
     // Si no hay hover, o si solo está la imagen principal (length <= 1), se queda en 0
     if (!isHovered || validConceptIndices.length <= 1) {
-      setActiveSlide(0)
+      if (!isHovered) setActiveSlide(0)
       return
     }
+
+    // La imagen principal (0) dura menos que los concepts secundarios
+    const duration = activeSlide === 0 ? 500 : 1300
+
     // Si hay concepts válidos, cicla a través de ellos, incluyendo la imagen principal
-    const timer = setInterval(() => {
-      setActiveSlide((prev) => {
-        const currentIdx = validConceptIndices.indexOf(prev)
-        const nextIdx = currentIdx !== -1 && currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
-        return validConceptIndices[nextIdx]
-      })
-    }, 1250)
-    return () => clearInterval(timer)
-  }, [isHovered, validConceptIndices.join(',')])
+    const timer = setTimeout(() => {
+      const currentIdx = validConceptIndices.indexOf(activeSlide)
+      const nextIdx = currentIdx !== -1 && currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
+      setActiveSlide(validConceptIndices[nextIdx])
+    }, duration)
+
+    return () => clearTimeout(timer)
+  }, [isHovered, activeSlide, validConceptIndices.join(',')])
 
   const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
 
