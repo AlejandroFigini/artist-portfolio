@@ -5378,7 +5378,7 @@ body.cms-modal-open { overflow: hidden; }
     border-radius: 50px; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 2rem; color: var(--accent);
 }
 .hero-title {
-    font-family: var(--font); font-size: clamp(1.9rem, 4vw, 3.8rem); font-weight: 300;
+    font-family: var(--font-display); font-size: clamp(1.9rem, 4vw, 3.8rem); font-weight: 200;
     line-height: 1.14; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.04em; text-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 .line-wrap { display: block; overflow: hidden; }
