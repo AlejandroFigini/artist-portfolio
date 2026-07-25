@@ -13,11 +13,13 @@ import {
   performRestore, loadJSON, saveJSON, LS, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
+import { listCloudinaryResources, type CloudinaryResourceInfo } from '@/lib/api'
 import {
   deletePermanent, emptyTrash, purgeUnused, autoCleanTrash,
   batchMoveUsedToUnused, batchMoveUnusedToTrash, batchDeletePermanent,
 } from './actions'
 import { MediaCard, type AnyEntry, type MenuAction } from './cards'
+import { SyncAuditModal, type SyncAuditResult } from './modals'
 
 export type AdminModal =
   | { kind: 'view'; e: AnyEntry; cardType: 'used' | 'unused' | 'trash' | 'repo'; menu: { label: React.ReactNode; onClick: () => void }[] }
@@ -529,12 +531,104 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
 // identificador de selección de un item del repo según su estado
 const repoSelVal = (e: AnyEntry) => (e._state === 'used' ? (e.key || '') : String(e._idx))
 
+// ----- Utilidades de Export CSV -----------------------------------------------
+
+function downloadCsv(filename: string, headers: string[], rows: string[][]) {
+  const bom = '\uFEFF'
+  const csv = bom + [headers.join(','), ...rows.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+/** Recopila todas las URLs de Cloudinary conocidas del CMS. */
+function collectCmsCloudinaryUrls(): { url: string; name: string; state: string; section: string }[] {
+  const entries: { url: string; name: string; state: string; section: string }[] = []
+  const seen = new Set<string>()
+  Object.values(state.usedContent).forEach((e) => {
+    if (e?.src?.includes('cloudinary.com') && !seen.has(e.src)) {
+      seen.add(e.src)
+      entries.push({ url: e.src, name: e.name || e.label || e.key, state: 'used', section: e.section || '' })
+    }
+  })
+  state.unused.forEach((e) => {
+    const src = e.src || e.dataUrl || ''
+    if (src.includes('cloudinary.com') && !seen.has(src)) {
+      seen.add(src)
+      entries.push({ url: src, name: e.name || e.label || '', state: 'unused', section: e.section || '' })
+    }
+  })
+  state.trash.forEach((e) => {
+    const src = e.src || e.dataUrl || ''
+    if (src.includes('cloudinary.com') && !seen.has(src)) {
+      seen.add(src)
+      entries.push({ url: src, name: e.name || e.label || '', state: 'trash', section: e.section || '' })
+    }
+  })
+  return entries
+}
+
+/** Compara la lista de Cloudinary con la del CMS y genera el resultado de auditoría. */
+function buildSyncAuditResult(
+  cloudinaryList: CloudinaryResourceInfo[],
+  cmsList: { url: string; name: string; state: string; section: string }[],
+): SyncAuditResult {
+  // Crear un Set de secure_urls de Cloudinary para comparación rápida
+  const cloudinaryUrlSet = new Set(cloudinaryList.map((r) => r.secure_url))
+  // Crear un Set de URLs del CMS
+  const cmsUrlSet = new Set(cmsList.map((r) => r.url))
+
+  // Matching: están en ambos
+  const matching: SyncAuditResult['matching'] = []
+  cmsList.forEach((cms) => {
+    if (cloudinaryUrlSet.has(cms.url)) {
+      const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url)
+      matching.push({
+        url: cms.url,
+        name: cms.name,
+        state: cms.state,
+        cloudinaryId: cloudRes?.public_id || '',
+      })
+    }
+  })
+
+  // Orphaned: en Cloudinary pero NO en el CMS
+  const orphaned: SyncAuditResult['orphaned'] = []
+  cloudinaryList.forEach((cr) => {
+    if (!cmsUrlSet.has(cr.secure_url)) {
+      orphaned.push({
+        url: cr.secure_url,
+        publicId: cr.public_id,
+        resourceType: cr.resource_type,
+        format: cr.format,
+        bytes: cr.bytes,
+        folder: cr.folder,
+      })
+    }
+  })
+
+  // Broken: en CMS pero NO en Cloudinary
+  const broken: SyncAuditResult['broken'] = []
+  cmsList.forEach((cms) => {
+    if (!cloudinaryUrlSet.has(cms.url)) {
+      broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
+    }
+  })
+
+  return { matching, orphaned, broken }
+}
+
 export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const sel = useSelection()
   const { confirm } = useModal()
   const toast = useToast()
   const { usedMenu, unusedMenu, trashMenu } = useMenus({ openModal })
   const [filter, setFilter] = useState(() => loadJSON<string>(LS.REPO_FILTER, 'all'))
+  const [syncAudit, setSyncAudit] = useState<SyncAuditResult | null>(null)
+  const [syncing, setSyncing] = useState(false)
 
   const all: AnyEntry[] = deduplicateMedia([
     ...usedArr.map((x) => ({ ...x, _state: 'used' as const })),
@@ -580,7 +674,64 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
     }
   }
 
+  // ----- Export handlers -----
+
+  const exportCloudinary = async (close: () => void) => {
+    close()
+    toast('Fetching Cloudinary resources...', 'info')
+    const resources = await listCloudinaryResources()
+    if (resources.length === 0) {
+      toast('No resources found in Cloudinary (or Cloudinary not configured).', 'error')
+      return
+    }
+    downloadCsv(
+      `cloudinary-export-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Public ID', 'URL', 'Type', 'Format', 'Size (bytes)', 'Folder', 'Created At'],
+      resources.map((r) => [r.public_id, r.secure_url, r.resource_type, r.format, String(r.bytes), r.folder, r.created_at]),
+    )
+    toast(`Exported ${resources.length} Cloudinary resources to CSV`, 'success')
+  }
+
+  const exportCms = (close: () => void) => {
+    close()
+    const cmsList = collectCmsCloudinaryUrls()
+    if (cmsList.length === 0) {
+      toast('No Cloudinary content found in the CMS.', 'error')
+      return
+    }
+    downloadCsv(
+      `cms-export-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Name', 'URL', 'State', 'Section'],
+      cmsList.map((r) => [r.name, r.url, r.state, r.section]),
+    )
+    toast(`Exported ${cmsList.length} CMS items to CSV`, 'success')
+  }
+
+  const compareSync = async (close: () => void) => {
+    close()
+    setSyncing(true)
+    toast('Comparing Cloudinary vs Management... This may take a few seconds.', 'info')
+    try {
+      const [cloudinaryList, cmsList] = await Promise.all([
+        listCloudinaryResources(),
+        Promise.resolve(collectCmsCloudinaryUrls()),
+      ])
+      if (cloudinaryList.length === 0 && cmsList.length === 0) {
+        toast('No content to compare.', 'error')
+        setSyncing(false)
+        return
+      }
+      const result = buildSyncAuditResult(cloudinaryList, cmsList)
+      setSyncAudit(result)
+      toast(`Audit complete: ${result.matching.length} synced, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`, result.orphaned.length + result.broken.length > 0 ? 'error' : 'success')
+    } catch {
+      toast('Error comparing Cloudinary vs CMS.', 'error')
+    }
+    setSyncing(false)
+  }
+
   return (
+    <>
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
       <div className="admin-card-head" style={{ alignItems: 'center' }}>
         <SectionHeading icon="fa-cloud" title="Total Repository" info={REPO_INFO} />
@@ -602,6 +753,16 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
                   <option value="trash">Only trash</option>
                 </select>
               </label>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.5rem 0' }} />
+              <button type="button" className="cms-btn cms-btn--sm" onClick={() => exportCloudinary(close)} disabled={syncing}>
+                <i className="fa-solid fa-cloud-arrow-down"></i> Export Cloudinary
+              </button>
+              <button type="button" className="cms-btn cms-btn--sm" onClick={() => exportCms(close)}>
+                <i className="fa-solid fa-file-export"></i> Export Management
+              </button>
+              <button type="button" className="cms-btn cms-btn--sm cms-btn--primary" onClick={() => compareSync(close)} disabled={syncing}>
+                <i className={`fa-solid ${syncing ? 'fa-spinner fa-spin' : 'fa-magnifying-glass-chart'}`}></i> {syncing ? 'Comparing...' : 'Compare Sync'}
+              </button>
             </>
           )}
         </SectionOptionsMenu>
@@ -634,5 +795,7 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
         })}
       </div>
     </div>
+    {syncAudit && <SyncAuditModal result={syncAudit} onClose={() => setSyncAudit(null)} />}
+    </>
   )
 }

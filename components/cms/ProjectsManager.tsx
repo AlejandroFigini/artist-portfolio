@@ -7,7 +7,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
 import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan } from './engine'
+import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan, cleanTemporaryKeys } from './engine'
 
 type Props = { show?: boolean; onClose: () => void; onPickImage: (key: string) => void; onEditInfo?: (key: string) => void }
 
@@ -137,11 +137,14 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     // proj#new_* ya promovidas a reales quedarían en la DB y reaparecerían como
     // pendientes (duplicando) en la próxima sesión → las vaciamos explícitamente.
     // Y también cualquier key de un proyecto eliminado que ya no exista.
+    const tempsToClean: string[] = []
     Object.keys(oldData).forEach((k) => { 
       if (k.startsWith('proj#new') || state.items[k] === undefined) {
         payload[k] = '' 
+        if (k.startsWith('proj#new')) tempsToClean.push(k)
       }
     })
+    if (tempsToClean.length > 0) cleanTemporaryKeys(tempsToClean)
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     Object.keys(overrides).forEach(k => {

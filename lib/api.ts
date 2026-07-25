@@ -267,3 +267,28 @@ export async function saveState(payload: CmsStatePayload): Promise<void> {
     // backend no disponible → el estado sigue en localStorage
   }
 }
+
+// ----- Auditoría Cloudinary vs Gestión ----------------------------------------
+
+export type CloudinaryResourceInfo = {
+  public_id: string
+  secure_url: string
+  resource_type: string
+  format: string
+  bytes: number
+  folder: string
+  created_at: string
+}
+
+/** Lista todos los recursos de Cloudinary bajo portfolio/.
+ *  Silencioso si el backend no responde (devuelve array vacío). */
+export async function listCloudinaryResources(): Promise<CloudinaryResourceInfo[]> {
+  try {
+    const r = await fetch('/api/list-cloudinary', { cache: 'no-store' })
+    if (!r.ok) return []
+    const data = await r.json()
+    return (data as { resources?: CloudinaryResourceInfo[] }).resources || []
+  } catch {
+    return []
+  }
+}

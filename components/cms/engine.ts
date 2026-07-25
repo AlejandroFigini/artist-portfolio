@@ -605,6 +605,19 @@ export function seedUsedContent() {
   if (changed) { persistUsed(); emit() }
 }
 
+export function cleanTemporaryKeys(keys: string[]) {
+  let changed = false
+  keys.forEach((k) => {
+    delete metaByKey[k]
+    delete typeByKey[k]
+    if (state.usedContent[k]) {
+      delete state.usedContent[k]
+      changed = true
+    }
+  })
+  if (changed) { persistUsed(); emit() }
+}
+
 export function syncSettingsUsedContent(settings: { loaderVideo?: string; faviconUrl?: string }) {
   let changed = false
   if (settings.loaderVideo !== undefined) {

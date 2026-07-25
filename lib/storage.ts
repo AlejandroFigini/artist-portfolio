@@ -331,3 +331,55 @@ async function cleanSubFoldersRecursively(parentFolder: string, targetFolder: st
   }
 }
 
+// ----- Listado completo de Cloudinary (para auditoría de sincronización) ------
+
+export type CloudinaryResource = {
+  public_id: string
+  secure_url: string
+  resource_type: string
+  format: string
+  bytes: number
+  folder: string
+  created_at: string
+}
+
+/** Lista TODOS los recursos de Cloudinary dentro del prefijo `portfolio/`.
+ *  Pagina automáticamente con cursor (máx 500 por request).
+ *  Itera sobre los 3 resource_types: image, video, raw. */
+export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
+  if (!hasCloudinary) return []
+  const all: CloudinaryResource[] = []
+  const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+  for (const type of types) {
+    let cursor: string | undefined = undefined
+    do {
+      try {
+        const res = await cloudinary.api.resources({
+          resource_type: type,
+          type: 'upload',
+          prefix: 'portfolio/',
+          max_results: 500,
+          next_cursor: cursor,
+        }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+        if (res.resources) {
+          for (const r of res.resources) {
+            all.push({
+              public_id: r.public_id as string,
+              secure_url: r.secure_url as string,
+              resource_type: type,
+              format: (r.format as string) || '',
+              bytes: (r.bytes as number) || 0,
+              folder: (r.folder as string) || '',
+              created_at: (r.created_at as string) || '',
+            })
+          }
+        }
+        cursor = res.next_cursor
+      } catch (err) {
+        console.error(`[listAllCloudinaryResources] error listing ${type}:`, err)
+        cursor = undefined // detener paginación para este tipo si falla
+      }
+    } while (cursor)
+  }
+  return all
+}

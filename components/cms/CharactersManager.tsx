@@ -12,7 +12,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
 import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, ensureCharacterMeta, rescan } from './engine'
+import { elementsByKey, currentSrcOf, ensureCharacterMeta, rescan, cleanTemporaryKeys } from './engine'
 
 type Props = {
   show?: boolean
@@ -132,11 +132,14 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
 
     // Vacía en la DB las keys temporales (char#new_*) ya promovidas
     // Y también cualquier key de un personaje eliminado o desplazado que ya no exista
+    const tempsToClean: string[] = []
     Object.keys(oldData).forEach((k) => { 
       if (k.startsWith('char#new') || state.items[k] === undefined) {
         payload[k] = '' 
+        if (k.startsWith('char#new')) tempsToClean.push(k)
       }
     })
+    if (tempsToClean.length > 0) cleanTemporaryKeys(tempsToClean)
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     Object.keys(overrides).forEach((k) => { if (k.startsWith('char#')) delete overrides[k] })
