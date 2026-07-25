@@ -14,20 +14,25 @@ export default function AnalyticsSection() {
 
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
     const fetchData = async () => {
-      setLoading(true)
+      if (!data) setLoading(true)
       try {
         const res = await fetch(`/api/admin/analytics?range=${range}`)
         const json = await res.json()
-        if (json.data) {
+        if (res.ok && json.data) {
           setData(json.data)
+          setErrorMsg(null)
+        } else {
+          setErrorMsg(json.error || 'Error desconocido conectando a Google Analytics')
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch analytics data:', err)
+        setErrorMsg(err.message || 'Fallo en la red')
       } finally {
         setLoading(false)
       }
@@ -40,6 +45,23 @@ export default function AnalyticsSection() {
 
     return () => clearInterval(intervalId)
   }, [range])
+
+  if (errorMsg) {
+    return (
+      <div className="admin-card ga-analytics-card" id="seccion-analitica">
+        <div className="ga-header">
+          <div>
+            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Tráfico & Analítica</h2>
+          </div>
+        </div>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', margin: '1rem' }}>
+          <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
+          <p><strong>Error conectando a GA4:</strong></p>
+          <p style={{ marginTop: '0.5rem', opacity: 0.9 }}>{errorMsg}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading && !data) {
     return (
