@@ -304,7 +304,7 @@ export async function GET(request: Request) {
     const realtimeReqPages = analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'unifiedScreenName' }],
+      dimensions: [{ name: 'pagePath' }],
     });
 
     // Realtime Pulse (Countries)
@@ -333,14 +333,15 @@ export async function GET(request: Request) {
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      realtimePages = sortedPages.map(r => {
-        let name = r.dimensionValues?.[0].value || 'Home';
-        if (name === '(not set)') name = 'Home';
-        if (name.includes(' - ')) name = name.split(' - ')[0];
-        if (name.includes(' | ')) name = name.split(' | ')[0];
-        const count = parseInt(r.metricValues?.[0].value || '0', 10);
-        return { name, count };
-      });
+      realtimePages = sortedPages
+        .map(r => {
+          let name = r.dimensionValues?.[0].value || '/';
+          return { name, count: parseInt(r.metricValues?.[0].value || '0', 10) };
+        })
+        .filter(p => p.name !== '(not set)' && p.name !== '(other)');
+      
+      // Limit realtime pages to top 4 for visual consistency
+      realtimePages = realtimePages.slice(0, 4);
     }
     
     let realtimeCountries: {name: string, count: number}[] = [];
