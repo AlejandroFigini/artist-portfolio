@@ -2,11 +2,22 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 
 const propertyId = process.env.GA4_PROPERTY_ID;
-const clientEmail = process.env.GA_CLIENT_EMAIL;
-// Fix private key formatting from env vars (replaces literal \n with newline characters and removes quotes)
+let clientEmail = process.env.GA_CLIENT_EMAIL;
 let privateKey = process.env.GA_PRIVATE_KEY || '';
+
+// Si el usuario guardó el JSON completo en una variable (mucho más seguro contra errores de formato en Railway)
+if (process.env.GA_CREDENTIALS_JSON) {
+  try {
+    const creds = JSON.parse(process.env.GA_CREDENTIALS_JSON);
+    if (creds.client_email) clientEmail = creds.client_email;
+    if (creds.private_key) privateKey = creds.private_key;
+  } catch (e) {
+    console.error("Error parsing GA_CREDENTIALS_JSON", e);
+  }
+}
+
 if (privateKey) {
-  // Elimina comillas dobles al principio y al final si las tiene (Railway a veces las inyecta)
+  // Elimina comillas dobles al principio y al final
   privateKey = privateKey.replace(/^"|"$/g, '');
   // Reemplaza los saltos de línea literales (\n) por saltos de línea reales
   privateKey = privateKey.replace(/\\n/gm, '\n');
