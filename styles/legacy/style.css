@@ -2145,11 +2145,11 @@ input:checked+.slider:before {
    asÃ­ el medio se re-centra en el Ã¡rea libre (sin taparse, a cualquier tamaÃ±o)
    y le sumamos un leve achicado. */
 .lightbox.info-open .lightbox-wrapper {
-    padding-right: 360px;
+    padding-right: 180px;
 }
 
 .lightbox.info-open .lightbox-content {
-    transform: scale(0.97);
+    transform: scale(0.985);
 }
 
 @media (max-width: 768px) {
@@ -2216,7 +2216,7 @@ input:checked+.slider:before {
 .lightbox-info-panel {
     position: absolute;
     bottom: 2rem;
-    right: 6rem;
+    right: 2rem;
     width: 320px;
     padding: 2rem;
     background: rgba(15, 23, 42, 0.85);

@@ -326,7 +326,7 @@
 }
 /* Panel abierto → el video se corre un poco a la izquierda (movimiento sutil). */
 .anim-lightbox__media.info-open .anim-lightbox__video {
-  transform: translateX(clamp(-70px, -5vw, -40px));
+  transform: translateX(-16px);
 }
 
 /* --- Media: contiene el video + botón + panel --- */
