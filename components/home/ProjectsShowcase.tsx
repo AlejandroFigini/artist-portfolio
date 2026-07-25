@@ -30,26 +30,74 @@ function ProjectCard({ index }: { index: number }) {
   const summary = state.items[`${key}::summary`] || ''
   const hasImage = !!imgSrc && !imgSrc.includes('placeholder')
 
+  const [isHovered, setIsHovered] = useState(false)
+  const [activeSlide, setActiveSlide] = useState(0)
+
+  const CONCEPTS_PER = 3
+  const galleryKeys = [
+    key,
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${key}::c${m}`),
+  ]
+
+  const validConceptIndices = [
+    0,
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
+      const src = state.items[`${key}::c${idx - 1}`]
+      return !!src && !src.includes('placeholder')
+    })
+  ]
+
+  useEffect(() => {
+    if (!isHovered || validConceptIndices.length <= 1) {
+      if (!isHovered) setActiveSlide(0)
+      return
+    }
+
+    const duration = activeSlide === 0 ? 500 : 1300
+    const timer = setTimeout(() => {
+      const currentIdx = validConceptIndices.indexOf(activeSlide)
+      const nextIdx = currentIdx !== -1 && currentIdx + 1 < validConceptIndices.length ? currentIdx + 1 : 0
+      setActiveSlide(validConceptIndices[nextIdx])
+    }, duration)
+
+    return () => clearTimeout(timer)
+  }, [isHovered, activeSlide, validConceptIndices.join(',')])
+
   return (
     <div
       data-content-id={key}
       className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* 1. Contenedor de Imagen (Formato apaisado 3:2 elegante con borde divisorio inferior) */}
       <div
         className="w-full aspect-[16/10] sm:aspect-[3/2] bg-gray-50 relative block shrink-0 overflow-hidden border-b border-gray-100/80"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="proj-card-img w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          loading="lazy" decoding="async"
-          src={imgSrc || undefined}
-          alt={title || `Project ${index + 1}`}
-        />
-        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        {galleryKeys.map((gKey, idx) => {
+          const src = state.items[gKey]
+          if (!src || src.includes('placeholder')) return null
+          
+          return (
+            <img
+              key={gKey}
+              className="proj-card-img absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
+              style={{
+                opacity: activeSlide === idx ? 1 : 0,
+                transform: `scale(${activeSlide === idx && isHovered ? 1.05 : 1})`,
+                zIndex: activeSlide === idx ? 2 : 1,
+              }}
+              loading="lazy" decoding="async"
+              src={src}
+              alt={title || `Project image ${idx}`}
+            />
+          )
+        })}
+        
+        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
         {!hasImage && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100 z-0">
             <span className="text-sm tracking-widest uppercase" data-i18n="no_image">No image</span>
           </div>
         )}

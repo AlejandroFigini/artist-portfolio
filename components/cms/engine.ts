@@ -368,6 +368,15 @@ export function ensureSlideMeta(key: string) {
 
 export function ensureProjectMeta(key: string) {
   if (metaByKey[key]) return
+  const concept = key.match(/^proj#(?:new_)?\w+::c(\d+)$/)
+  if (concept) {
+    metaByKey[key] = {
+      label: state.containerNames[key] || `Project Image #${Number(concept[1]) + 1}`,
+      section: 'Projects', kind: 'image', accept: 'webp', mount: 'none',
+    }
+    typeByKey[key] = 'media'
+    return
+  }
   const m = key.match(/^proj#(\d+)$/)
   if (!m && !key.startsWith('proj#new')) return
   const n = m ? Number(m[1]) + 1 : 'New'

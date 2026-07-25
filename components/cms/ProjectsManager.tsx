@@ -22,6 +22,8 @@ function parseSettings() {
   return settings
 }
 
+const CONCEPTS_PER = 3
+
 const slideSrc = (vKey: string) =>
   state.items[vKey] || currentSrcOf(elementsByKey[vKey] || null) || ''
 
@@ -112,11 +114,13 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     // Papelera: marca los originales eliminados como "no usados"
     original.forEach((k) => {
       if (finalProjects.includes(k)) return
-      const prev = state.usedContent[k]
-      if (prev) {
-        retireUsedEntryToUnused(prev, 'retired', [k])
-        delete state.usedContent[k]
-      }
+      ;[k, ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${k}::c${m}`)].forEach((mk) => {
+        const prev = state.usedContent[mk]
+        if (prev) {
+          retireUsedEntryToUnused(prev, 'retired', [mk])
+          delete state.usedContent[mk]
+        }
+      })
     })
     persistUnused()
     persistUsed()
@@ -251,55 +255,92 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                     Project {i + 1} {empty && <span style={{ color: '#b45309' }}>· no image</span>}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="cms-icon-btn"
-                  title="Subir o elegir nueva imagen"
-                  aria-label="Subir o elegir nueva imagen"
-                  onClick={async () => {
-                    let targetKey = vKey
-                    if (dirty || vKey.startsWith('proj#new_')) {
-                      await saveGraph(projects)
-                      const idx = projects.indexOf(vKey)
-                      if (idx !== -1) targetKey = `proj#${idx}`
-                    }
-                    ensureProjectMeta(targetKey)
-                    onPickImage(targetKey)
-                  }}
-                >
-                  <i className="fa-solid fa-image"></i>
-                </button>
-                <button
-                  type="button"
-                  className="cms-icon-btn"
-                  title="Editar info (título, descripción, fecha)"
-                  aria-label="Editar info (título, descripción, fecha)"
-                  onClick={async () => {
-                    let targetKey = vKey
-                    if (dirty || vKey.startsWith('proj#new_')) {
-                      await saveGraph(projects)
-                      const idx = projects.indexOf(vKey)
-                      if (idx !== -1) targetKey = `proj#${idx}`
-                    }
-                    ensureProjectMeta(targetKey)
-                    if (onEditInfo) {
-                      onEditInfo(targetKey)
-                    } else {
-                      window.dispatchEvent(new CustomEvent('cms:editInfo', { detail: { key: targetKey } }))
-                    }
-                  }}
-                >
-                  <i className="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button type="button" className="cms-icon-btn" title="Move up" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
-                  <i className="fa-solid fa-chevron-up"></i>
-                </button>
-                <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
-                  <i className="fa-solid fa-chevron-down"></i>
-                </button>
-                <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => { const next = projects.filter((_, j) => j !== i); setProjects(next); saveGraph(next); }}>
-                  <i className="fa-solid fa-trash"></i>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="cms-icon-btn"
+                    title="Subir o elegir nueva imagen"
+                    aria-label="Subir o elegir nueva imagen"
+                    onClick={async () => {
+                      let targetKey = vKey
+                      if (dirty || vKey.startsWith('proj#new_')) {
+                        await saveGraph(projects)
+                        const idx = projects.indexOf(vKey)
+                        if (idx !== -1) targetKey = `proj#${idx}`
+                      }
+                      ensureProjectMeta(targetKey)
+                      onPickImage(targetKey)
+                    }}
+                  >
+                    <i className="fa-solid fa-image"></i>
+                  </button>
+                  <button
+                    type="button"
+                    className="cms-icon-btn"
+                    title="Editar info (título, descripción, fecha)"
+                    aria-label="Editar info (título, descripción, fecha)"
+                    onClick={async () => {
+                      let targetKey = vKey
+                      if (dirty || vKey.startsWith('proj#new_')) {
+                        await saveGraph(projects)
+                        const idx = projects.indexOf(vKey)
+                        if (idx !== -1) targetKey = `proj#${idx}`
+                      }
+                      ensureProjectMeta(targetKey)
+                      if (onEditInfo) {
+                        onEditInfo(targetKey)
+                      } else {
+                        window.dispatchEvent(new CustomEvent('cms:editInfo', { detail: { key: targetKey } }))
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-pen-to-square"></i>
+                  </button>
+
+                  <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 0.2rem' }} />
+
+                  {Array.from({ length: CONCEPTS_PER }, (_, m) => {
+                    const cKey = `${vKey}::c${m}`
+                    const cSrc = slideSrc(cKey)
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        className="cms-icon-btn"
+                        style={{ width: 34, height: 34, padding: 0, position: 'relative', overflow: 'hidden', border: cSrc ? '1px solid var(--accent)' : '1px dashed var(--border)' }}
+                        title={`Concept image #${m + 1} (${cSrc ? 'Uploaded - Click to change' : 'Empty - Click to upload'})`}
+                        onClick={async () => {
+                          let targetKey = cKey
+                          if (dirty || vKey.startsWith('proj#new_')) {
+                            await saveGraph(projects)
+                            const idx = projects.indexOf(vKey)
+                            if (idx !== -1) targetKey = `proj#${idx}::c${m}`
+                          }
+                          ensureProjectMeta(targetKey)
+                          onPickImage(targetKey)
+                        }}
+                      >
+                        {cSrc ? (
+                          <div style={{ position: 'absolute', inset: 0, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url("${cSrc}")` }} />
+                        ) : (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)' }}>C{m + 1}</span>
+                        )}
+                      </button>
+                    )
+                  })}
+
+                  <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 0.2rem' }} />
+
+                  <button type="button" className="cms-icon-btn" title="Move up" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
+                    <i className="fa-solid fa-chevron-up"></i>
+                  </button>
+                  <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
+                    <i className="fa-solid fa-chevron-down"></i>
+                  </button>
+                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => { const next = projects.filter((_, j) => j !== i); setProjects(next); saveGraph(next); }}>
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                </div>
               </div>
             )
           })}
