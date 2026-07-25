@@ -141,17 +141,25 @@
 .ch-showcase .sw-trigger {
   color: #1e1e24;
   background: #ffffff;
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  border: 1px solid rgba(139, 92, 246, 0.22);
 }
-.ch-showcase .sw-trigger:hover {
+.ch-showcase .sw-trigger:hover,
+.ch-showcase .sw-dropdown:hover .sw-trigger,
+.ch-showcase .sw-dropdown:focus-within .sw-trigger,
+.ch-showcase .sw-dropdown.is-open .sw-trigger {
   background: #f8f5ff;
-  border-color: #7c3aed;
-  box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.25);
+  border-color: rgba(124, 58, 237, 0.48);
+  box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.18);
 }
 .ch-showcase .sw-list {
   background: #ffffff;
-  border-color: rgba(139, 92, 246, 0.35);
-  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(139, 92, 246, 0.22);
+  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.12);
+}
+.ch-showcase .sw-dropdown:hover .sw-list,
+.ch-showcase .sw-dropdown:focus-within .sw-list,
+.ch-showcase .sw-dropdown.is-open .sw-list {
+  border-color: rgba(124, 58, 237, 0.48);
 }
 .ch-showcase .sw-item {
   color: #475569;

@@ -5505,10 +5505,10 @@ body.is-admin .hero-software-wave {
     height: 56px;
     border-radius: 28px;
     background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.09), 0 2px 8px -2px rgba(124, 58, 237, 0.07);
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -5516,8 +5516,8 @@ body.is-admin .hero-software-wave {
     cursor: pointer;
     overflow: visible;
     animation: waveBob 3s ease-in-out infinite alternate;
-    /* Colapso (al sacar el mouse): lento y con delay para que no sea brusco. */
-    transition: max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, padding 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, transform 0.55s ease 0.15s, border-color 0.45s ease, box-shadow 0.45s ease;
+    /* Colapso (al sacar el mouse): suave, progresivo y muy lento. */
+    transition: max-width 1s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s, padding 1s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s, transform 0.85s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s, border-color 0.65s ease, box-shadow 0.65s ease;
 }
 
 /* Hover for filled bubbles: kill bob, expand width horizontally */
@@ -5526,8 +5526,8 @@ body.is-admin .hero-software-wave {
     max-width: 280px;
     padding: 0 20px;
     transform: scale(1.08); /* Reduced scale since it becomes much wider */
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1), 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
     z-index: 40;
 }
 
@@ -5535,15 +5535,15 @@ body.is-admin .hero-software-wave {
 .wave-item:not(.wave-has-content):hover {
     animation: none;
     transform: scale(1.15);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1), 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
     z-index: 40;
 }
 
-/* ExpansiÃ³n (al entrar el mouse): responsiva, sin delay. */
+/* Expansión (al entrar el mouse): muy pausada, gradual y lenta. */
 .wave-item.wave-has-content:hover,
 .wave-item:not(.wave-has-content):hover {
-    transition: max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, padding 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, transform 0.3s ease 0s, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: max-width 0.95s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, padding 0.95s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, border-color 0.55s ease, box-shadow 0.55s ease;
 }
 
 /* â”€â”€ Icon slot â”€â”€ */
