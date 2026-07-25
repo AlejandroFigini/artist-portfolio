@@ -6279,3 +6279,192 @@ select.ga-metric-select option {
     font-size: 0.8rem;
     opacity: 0.85;
 }
+/* REALTIME CARD REDESIGN */
+.ga-realtime-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ga-realtime-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.ga-realtime-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.ga-realtime-card-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ga-pulse-wrapper {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ga-realtime-card-body {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.ga-realtime-main-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.ga-realtime-number {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.ga-realtime-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ga-realtime-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-left: 1px solid var(--border-color);
+  padding-left: 3rem;
+}
+
+.ga-realtime-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ga-realtime-icon {
+  font-size: 1.5rem;
+  color: #ef4444;
+  opacity: 0.8;
+  width: 24px;
+  text-align: center;
+}
+
+.ga-detail-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ga-detail-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.ga-detail-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* CUSTOM CONTROLS */
+.ga-custom-select {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem top 50%;
+  background-size: 0.65rem auto;
+  padding-right: 2.5rem;
+}
+
+.ga-custom-select:hover {
+  border-color: var(--accent);
+}
+
+.ga-custom-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+
+.ga-custom-btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ga-custom-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.ga-custom-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .ga-realtime-card-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .ga-realtime-details {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    padding-left: 0;
+    padding-top: 1.5rem;
+    width: 100%;
+  }
+}

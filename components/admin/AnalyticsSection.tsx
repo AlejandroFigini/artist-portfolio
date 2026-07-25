@@ -6,8 +6,8 @@ import WorldMap from "react-svg-worldmap"
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
    visitantes únicos, páginas más vistas, origen del tráfico y dispositivos. */
 export default function AnalyticsSection() {
-  const [range, setRange] = useState('30daysAgo')
-  const [pendingRange, setPendingRange] = useState('30daysAgo')
+  const [range, setRange] = useState('thisWeek')
+  const [pendingRange, setPendingRange] = useState('thisWeek')
   const [countryMetric, setCountryMetric] = useState<'activos' | 'nuevos' | 'recurrentes'>('activos')
 
   const [data, setData] = useState<any>(null)
@@ -94,22 +94,47 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
-      {/* Banner de Tráfico en Tiempo Real (Live Pulse) - Minimalista */}
-      <div className="ga-realtime-minimal" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', marginBottom: '1rem' }}>
-        <span className="ga-pulse-dot" style={{ width: '8px', height: '8px', margin: 0 }}></span>
-        <span style={{ fontWeight: 600, color: '#ef4444', letterSpacing: '0.05em' }}>EN VIVO:</span>
-        <span style={{ color: 'var(--text-primary)', opacity: 0.8 }}>
-          Usuarios activos durante los últimos 30 minutos: <strong>{active.realtimeUsers}</strong> {active.realtimeCountry && `(desde ${active.realtimeCountry})`} — viendo <em>{active.realtimePage}</em>
-        </span>
+      {/* Tarjeta de Tráfico en Tiempo Real */}
+      <div className="ga-realtime-card">
+        <div className="ga-realtime-card-header">
+          <div className="ga-pulse-wrapper">
+            <div className="ga-pulse"></div>
+            <span className="ga-pulse-dot"></span>
+          </div>
+          <h3>TRÁFICO EN VIVO (Últimos 30 min)</h3>
+        </div>
+        <div className="ga-realtime-card-body">
+          <div className="ga-realtime-main-stat">
+            <span className="ga-realtime-number">{active.realtimeUsers}</span>
+            <span className="ga-realtime-label">Usuarios Activos</span>
+          </div>
+          <div className="ga-realtime-details">
+            <div className="ga-realtime-detail-item">
+              <i className="fa-solid fa-earth-americas ga-realtime-icon"></i>
+              <div className="ga-detail-text">
+                <span className="ga-detail-label">Desde</span>
+                <span className="ga-detail-value">{active.realtimeCountry || 'Global'}</span>
+              </div>
+            </div>
+            <div className="ga-realtime-detail-item">
+              <i className="fa-solid fa-file-lines ga-realtime-icon"></i>
+              <div className="ga-detail-text">
+                <span className="ga-detail-label">Viendo</span>
+                <span className="ga-detail-value">{active.realtimePage || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Selector de Rango de Tiempo idéntico a GA4 */}
-      <div className="ga-range-selector" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <div className="ga-range-selector" style={{ marginBottom: '2rem', display: 'flex', gap: '0.8rem', alignItems: 'center', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+        <i className="fa-regular fa-calendar" style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', marginLeft: '0.5rem' }}></i>
         <select
           value={pendingRange}
           onChange={(e) => setPendingRange(e.target.value)}
-          className="admin-select"
-          style={{ padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+          className="ga-custom-select"
+          style={{ flexGrow: 1, maxWidth: '300px' }}
         >
           <option value="today">Hoy</option>
           <option value="yesterday">Ayer</option>
@@ -127,12 +152,15 @@ export default function AnalyticsSection() {
         </select>
         <button
           type="button"
-          className="admin-btn primary"
+          className="ga-custom-btn"
           onClick={() => setRange(pendingRange)}
-          style={{ padding: '0.4rem 1rem' }}
           disabled={loading || pendingRange === range}
         >
-          {loading && pendingRange === range ? 'Cargando...' : 'Aplicar'}
+          {loading && pendingRange === range ? (
+            <><i className="fa-solid fa-spinner fa-spin"></i> Cargando</>
+          ) : (
+            <><i className="fa-solid fa-check"></i> Aplicar</>
+          )}
         </button>
       </div>
 
@@ -383,14 +411,6 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
-      {/* Footer Informativo de Conexión de API */}
-      <div className="ga-footer-status">
-        <i className="fa-solid fa-circle-info"></i>
-        <span>
-          <strong>Estado de Conexión:</strong> Estás viendo el <em>Diseño de Maqueta / Vista Previa</em> del panel de Analítica. 
-          Al habilitar la <code>Google Analytics Data API</code>, este panel mostrará los datos reales actualizados automáticamente.
-        </span>
-      </div>
     </div>
   )
 }
