@@ -287,9 +287,19 @@ export default function ProjectsShowcase() {
               plugins={[
                 Autoplay({
                   delay: 4000,
+                  stopOnMouseEnter: true,
+                  stopOnInteraction: true,
                 }),
               ]}
               className="w-full"
+              onMouseEnter={() => {
+                const autoplay = carouselApi?.plugins()?.autoplay as any
+                if (autoplay) autoplay.stop()
+              }}
+              onMouseLeave={() => {
+                const autoplay = carouselApi?.plugins()?.autoplay as any
+                if (autoplay) autoplay.play()
+              }}
             >
               <CarouselContent className="-ml-4 py-4">
                 {Array.from({ length: displayCount }, (_, i) => i).map((index) => (
