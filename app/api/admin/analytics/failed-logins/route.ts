@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const session = cookieStore.get('admin_session');
+  const session = cookieStore.get('sid');
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
