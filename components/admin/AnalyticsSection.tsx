@@ -97,13 +97,47 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
-      {/* Banner de Tráfico en Tiempo Real */}
-      <div className="ga-realtime-banner" style={{ marginBottom: '1.5rem', background: 'var(--bg-secondary)', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.95rem' }}>
-        <div className="ga-pulse"></div>
-        <span style={{ fontWeight: 600, color: '#ef4444', letterSpacing: '0.05em' }}>EN VIVO:</span>
-        <span style={{ color: 'var(--text-primary)', opacity: 0.8 }}>
-          Usuarios activos durante los últimos 30 minutos: <strong>{active.realtimeUsers}</strong> {active.realtimeCountry ? `(desde ${active.realtimeCountry})` : ''} — viendo <em>{active.realtimePage || 'tu portafolio'}</em>
-        </span>
+      {/* SECCIÓN EN VIVO DEDICADA */}
+      <div className="admin-card ga-analytics-card" style={{ marginBottom: '2rem', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'linear-gradient(135deg, rgba(239,68,68,0.05) 0%, transparent 100%)' }}>
+        <div className="ga-header" style={{ borderBottom: '1px solid rgba(239, 68, 68, 0.1)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <div className="ga-pulse-wrapper">
+              <div className="ga-pulse"></div>
+              <span className="ga-pulse-dot"></span>
+            </div>
+            <h2 style={{ color: '#ef4444', margin: 0 }}>Usuarios en Vivo (Últimos 30 min)</h2>
+          </div>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+          {/* Total */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: '4.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{active.realtimeUsers}</div>
+            <div style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.85rem', marginTop: '0.5rem', letterSpacing: '0.05em' }}>Visitantes Totales</div>
+          </div>
+          
+          {/* Por Página */}
+          <div>
+            <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}><i className="fa-solid fa-file-lines" style={{marginRight: '0.5rem', color: '#ef4444'}}></i> Por Página</h4>
+            {active.realtimePages?.length > 0 ? active.realtimePages.map((p: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--text-primary)' }}>{p.name}</span>
+                <span style={{ fontWeight: 600 }}>{p.count}</span>
+              </div>
+            )) : <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>Sin datos de página</div>}
+          </div>
+
+          {/* Por País */}
+          <div>
+            <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}><i className="fa-solid fa-earth-americas" style={{marginRight: '0.5rem', color: '#ef4444'}}></i> Por País</h4>
+            {active.realtimeCountries?.length > 0 ? active.realtimeCountries.map((c: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--text-primary)' }}>{c.name}</span>
+                <span style={{ fontWeight: 600 }}>{c.count}</span>
+              </div>
+            )) : <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>Sin datos de país</div>}
+          </div>
+        </div>
       </div>
 
       {/* Selector de Rango de Tiempo idéntico a GA4 */}

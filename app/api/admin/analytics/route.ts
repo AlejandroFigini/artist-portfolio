@@ -402,38 +402,36 @@ export async function GET(request: Request) {
     // Exact deduplicated total from the dimension-less query
     const realtimeUsers = parseInt(realtimeResTotal[0].rows?.[0]?.metricValues?.[0]?.value || '0', 10);
     
-    // Most popular page from the dimension query
-    let realtimePage = 'Home';
+    // Detailed pages from the dimension query
+    let realtimePages: {name: string, count: number}[] = [];
     if (realtimeResPages[0].rows && realtimeResPages[0].rows.length > 0) {
-      // Sort by active users descending to get top page
       const sortedPages = [...realtimeResPages[0].rows].sort((a, b) => {
         const countA = parseInt(a.metricValues?.[0].value || '0', 10);
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      // Get up to 2 top pages and clean up titles
-      const topPages = sortedPages.slice(0, 2).map(r => {
+      realtimePages = sortedPages.map(r => {
         let name = r.dimensionValues?.[0].value || 'Home';
         if (name === '(not set)') name = 'Home';
-        // Clean up "Management - Lucia Montaña | Portfolio" -> "Management"
         if (name.includes(' - ')) name = name.split(' - ')[0];
         if (name.includes(' | ')) name = name.split(' | ')[0];
-        return name;
+        const count = parseInt(r.metricValues?.[0].value || '0', 10);
+        return { name, count };
       });
-      realtimePage = Array.from(new Set(topPages)).join(', ');
     }
     
-    // Most popular country from the dimension query
-    let realtimeCountry = '';
+    // Detailed countries from the dimension query
+    let realtimeCountries: {name: string, count: number}[] = [];
     if (realtimeResCountries[0].rows && realtimeResCountries[0].rows.length > 0) {
       const sortedCountries = [...realtimeResCountries[0].rows].sort((a, b) => {
         const countA = parseInt(a.metricValues?.[0].value || '0', 10);
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      // Get up to 2 top countries
-      const topCountries = sortedCountries.slice(0, 2).map(r => r.dimensionValues?.[0].value || '');
-      realtimeCountry = topCountries.join(', ');
+      realtimeCountries = sortedCountries.map(r => ({
+        name: r.dimensionValues?.[0].value || 'Desconocido',
+        count: parseInt(r.metricValues?.[0].value || '0', 10)
+      }));
     }
 
     // Process Countries
@@ -526,8 +524,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       data: {
         realtimeUsers,
-        realtimePage,
-        realtimeCountry,
+        realtimePages,
+        realtimeCountries,
         uniqueUsers,
         newUsers,
         returningUsers,
