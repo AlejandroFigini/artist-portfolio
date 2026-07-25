@@ -276,7 +276,7 @@ export default function AnalyticsSection() {
               title=""
               value-suffix="visitantes"
               size="responsive"
-              data={active.countries.map((c: any) => ({ country: c.code.toLowerCase(), value: c.count }))}
+              data={(active.countries || []).map((c: any) => ({ country: c.code.toLowerCase(), value: c.count }))}
               backgroundColor="transparent"
             />
           </div>
@@ -297,7 +297,7 @@ export default function AnalyticsSection() {
                 <i className="fa-solid fa-caret-down ga-metric-caret"></i>
               </div>
             </div>
-            {active.countries.map((c: any, idx: number) => {
+            {(active.countries || []).map((c: any, idx: number) => {
               let displayCount = c.count;
               let displayPct = c.pct;
               if (countryMetric === 'nuevos') {
@@ -331,7 +331,7 @@ export default function AnalyticsSection() {
             <i className="fa-solid fa-arrow-trend-up"></i> Origen del Tráfico <i className="fa-solid fa-circle-info ga-info-icon" title="Canales o sitios web de procedencia desde los que llegaron tus visitantes (Directo, Instagram, LinkedIn, Google Search)."></i>
           </div>
           <div className="ga-list">
-            {active.sources.map((src: any, idx: number) => (
+            {(active.sources || []).map((src: any, idx: number) => (
               <div key={idx} className="ga-list-item">
                 <div className="ga-list-info">
                   <span className="ga-list-name">{src.name}</span>
@@ -352,7 +352,7 @@ export default function AnalyticsSection() {
             <i className="fa-solid fa-share-nodes"></i> Clics por Red Social <i className="fa-solid fa-circle-info ga-info-icon" title="Desglose individual y específico del número de clics en cada una de tus redes sociales."></i>
           </div>
           <div className="ga-list">
-            {active.socialList.map((soc: any, idx: number) => (
+            {(active.socialList || []).map((soc: any, idx: number) => (
               <div key={idx} className="ga-list-item">
                 <div className="ga-list-info">
                   <span className="ga-list-name">

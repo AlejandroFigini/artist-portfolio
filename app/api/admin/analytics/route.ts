@@ -371,7 +371,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       data: {
-        ...fallbackData, // Rellena sections y socialList
+        ...fallbackData, // Solo se usa para sections y socialList
         realtimeUsers,
         realtimePage,
         uniqueUsers,
@@ -380,12 +380,12 @@ export async function GET(request: Request) {
         totalViews,
         avgTime: `${mins}m ${secs}s`,
         devices,
-        countries: countries.length > 0 ? countries : fallbackData.countries,
-        sources: sources.length > 0 ? sources : fallbackData.sources,
-        chartDays: chartDays.length > 0 ? chartDays : fallbackData.chartDays,
-        cvDownloads: cvDownloads > 0 ? cvDownloads : fallbackData.cvDownloads,
-        fullscreenOpens: fullscreenOpens > 0 ? fullscreenOpens : fallbackData.fullscreenOpens,
-        // socialList sigue siendo mock hasta que se configure la dimensión personalizada en GA4
+        countries,
+        sources,
+        chartDays,
+        cvDownloads,
+        fullscreenOpens,
+        socialClicks, // Nueva métrica real
       },
       _status: 'connected'
     });
