@@ -308,7 +308,6 @@
 .anim-lightbox__close:hover {
   background: var(--accent);
   border-color: var(--accent);
-  transform: scale(1.1);
 }
 
 .anim-lightbox__video {

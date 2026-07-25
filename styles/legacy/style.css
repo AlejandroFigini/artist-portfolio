@@ -1334,7 +1334,7 @@ footer {
 .settings-gear i {
     transition: transform 0.5s ease;
 }
-.settings-gear:hover i {
+.settings-gear:not(.settings-gear--admin):hover i {
     transform: rotate(180deg);
 }
 
@@ -1371,6 +1371,9 @@ footer {
 .settings-gear--admin:hover {
     background: #3a2c66;
     box-shadow: 0 8px 22px rgba(58, 44, 102, 0.6);
+}
+.settings-gear--admin:hover i {
+    transform: none;
 }
 .settings-panel--admin {
     left: 85px;
@@ -2178,7 +2181,7 @@ input:checked+.slider:before {
 
 .lightbox-close:hover {
     opacity: 1;
-    transform: rotate(90deg);
+    color: var(--accent);
 }
 
 /* Info Toggle Button */
@@ -2486,12 +2489,11 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     background: rgba(255, 255, 255, 0.25);
     border-color: rgba(255, 255, 255, 0.6);
     color: #fff;
-    transform: scale(1.08);
     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
 }
 
 .loader-preview-close:active {
-    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .loader-stage {

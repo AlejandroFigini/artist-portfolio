@@ -143,16 +143,15 @@
 /* Sombra SOLO cuando hay contenido (vacío = neutralizado por .cms-empty-slot). */
 .illu-cell:not(.cms-empty-slot) {
   box-shadow:
-    0 10px 30px -12px rgba(20, 12, 40, 0.34),
-    0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+    0 10px 30px -12px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 /* Hover SOLO con contenido (vacío no reacciona). */
 .illu-cell:not(.cms-empty-slot):hover {
   transform: translateY(-4px);
   box-shadow:
-    0 16px 28px -10px rgba(124, 58, 237, 0.3),
-    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+    0 16px 32px -10px rgba(0, 0, 0, 0.28);
   z-index: 4;
 }
 .illu-cell.cms-empty-slot { cursor: default; }
