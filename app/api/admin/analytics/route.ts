@@ -199,7 +199,8 @@ export async function GET(request: Request) {
   else if (range === '365d') startDate = '365daysAgo';
 
   try {
-    const [response] = await analyticsDataClient.runReport({
+    // 1. General Overview
+    const overviewReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate, endDate: 'today' }],
       metrics: [
@@ -210,6 +211,47 @@ export async function GET(request: Request) {
       ],
     });
 
+    // 2. Devices
+    const devicesReq = analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate: 'today' }],
+      dimensions: [{ name: 'deviceCategory' }],
+      metrics: [{ name: 'activeUsers' }]
+    });
+
+    // 3. Countries
+    const countriesReq = analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate: 'today' }],
+      dimensions: [{ name: 'countryId' }, { name: 'country' }],
+      metrics: [{ name: 'activeUsers' }],
+      limit: 15
+    });
+
+    // 4. Sources
+    const sourcesReq = analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate: 'today' }],
+      dimensions: [{ name: 'sessionSource' }],
+      metrics: [{ name: 'activeUsers' }],
+      limit: 10
+    });
+
+    // 5. Time Series (Chart)
+    const timeDimension = range === 'today' ? 'hour' : 'date';
+    const timeReq = analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate: 'today' }],
+      dimensions: [{ name: timeDimension }],
+      metrics: [{ name: 'activeUsers' }],
+      orderBys: [{ dimension: { dimensionName: timeDimension } }]
+    });
+
+    const [overviewRes, devicesRes, countriesRes, sourcesRes, timeRes] = await Promise.all([
+      overviewReq, devicesReq, countriesReq, sourcesReq, timeReq
+    ]);
+
+    // Realtime (Fire-and-forget logic so it doesn't fail the whole block)
     let realtimeUsers = 0;
     let realtimePage = 'Ninguna';
     try {
@@ -234,7 +276,8 @@ export async function GET(request: Request) {
       console.error("Error fetching realtime data:", e);
     }
 
-    const row = response.rows?.[0];
+    // Process Overview
+    const row = overviewRes[0].rows?.[0];
     const uniqueUsers = parseInt(row?.metricValues?.[0]?.value || '0', 10);
     const newUsers = parseInt(row?.metricValues?.[1]?.value || '0', 10);
     const totalViews = parseInt(row?.metricValues?.[2]?.value || '0', 10);
@@ -244,11 +287,71 @@ export async function GET(request: Request) {
     const secs = Math.floor(avgSec % 60);
     const returningUsers = Math.max(0, uniqueUsers - newUsers);
 
+    // Process Devices
+    let totalDevices = 0;
+    const devicesData = { desktop: 0, mobile: 0 };
+    devicesRes[0].rows?.forEach(r => {
+      const category = r.dimensionValues?.[0].value?.toLowerCase();
+      const users = parseInt(r.metricValues?.[0].value || '0', 10);
+      totalDevices += users;
+      if (category === 'desktop') devicesData.desktop += users;
+      else devicesData.mobile += users; // mobile & tablet
+    });
+    const devices = {
+      desktop: totalDevices ? Math.round((devicesData.desktop / totalDevices) * 100) : 0,
+      mobile: totalDevices ? Math.round((devicesData.mobile / totalDevices) * 100) : 0
+    };
+
+    // Process Countries
+    let totalCountriesUsers = 0;
+    const countriesRaw = countriesRes[0].rows?.map(r => {
+      const code = r.dimensionValues?.[0].value || 'XX';
+      const name = r.dimensionValues?.[1].value || 'Unknown';
+      const count = parseInt(r.metricValues?.[0].value || '0', 10);
+      totalCountriesUsers += count;
+      return { code, name, count };
+    }) || [];
+    const countries = countriesRaw.map(c => ({
+      ...c,
+      pct: totalCountriesUsers ? Math.round((c.count / totalCountriesUsers) * 100) : 0
+    })).sort((a, b) => b.count - a.count);
+
+    // Process Sources
+    let totalSourcesUsers = 0;
+    const sourcesRaw = sourcesRes[0].rows?.map(r => {
+      let name = r.dimensionValues?.[0].value || 'Directo';
+      if (name === '(direct)') name = 'Directo / URL';
+      const count = parseInt(r.metricValues?.[0].value || '0', 10);
+      totalSourcesUsers += count;
+      return { name, count };
+    }) || [];
+    const sources = sourcesRaw.map(s => ({
+      ...s,
+      pct: totalSourcesUsers ? Math.round((s.count / totalSourcesUsers) * 100) : 0
+    })).sort((a, b) => b.count - a.count);
+
+    // Process Chart Days
+    const chartDays = timeRes[0].rows?.map(r => {
+      const dim = r.dimensionValues?.[0].value || '';
+      let dayStr = dim;
+      if (range === 'today') {
+        dayStr = dim + ':00';
+      } else if (dim.length === 8) {
+        dayStr = dim.substring(6,8) + '/' + dim.substring(4,6);
+      }
+      return {
+        day: dayStr,
+        val: parseInt(r.metricValues?.[0].value || '0', 10)
+      };
+    }) || [];
+
+    // Para Sections y SocialList, usaremos los mocks por ahora para que no rompa la maqueta,
+    // ya que requieren queries más pesadas
     const fallbackData = mockDataMap[range] || mockDataMap['30d'];
 
     return NextResponse.json({
       data: {
-        ...fallbackData,
+        ...fallbackData, // Rellena sections y socialList
         realtimeUsers,
         realtimePage,
         uniqueUsers,
@@ -256,6 +359,10 @@ export async function GET(request: Request) {
         returningUsers,
         totalViews,
         avgTime: `${mins}m ${secs}s`,
+        devices,
+        countries: countries.length > 0 ? countries : fallbackData.countries,
+        sources: sources.length > 0 ? sources : fallbackData.sources,
+        chartDays: chartDays.length > 0 ? chartDays : fallbackData.chartDays,
       },
       _status: 'connected'
     });
