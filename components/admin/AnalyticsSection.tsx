@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import WorldMap from "react-svg-worldmap"
 /* AnalyticsSection — Layout visual de gestión de tráfico y métricas de Google Analytics (GA4).
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
@@ -12,149 +12,52 @@ export default function AnalyticsSection() {
   const [range, setRange] = useState<TimeRange>('7d')
   const [countryMetric, setCountryMetric] = useState<'activos' | 'nuevos' | 'recurrentes'>('activos')
 
-  // Datos mock para el layout de vista previa visual (se reemplazarán con GA4 Data API)
-  const mockData = {
-    today: {
-      realtimeUsers: 3,
-      realtimePage: 'Portafolio 3D & Hero',
-      uniqueUsers: 24,
-      newUsers: 18,
-      returningUsers: 6,
-      totalViews: 86,
-      avgTime: '2m 18s',
-      cvDownloads: 5,
-      fullscreenOpens: 12,
-      socialClicks: 8,
-      emailClicks: 3,
-      failedLogins: 0,
-      socialList: [
-        { name: 'Instagram', icon: 'fa-instagram', count: 5, pct: 62 },
-        { name: 'LinkedIn', icon: 'fa-linkedin', count: 3, pct: 38 },
-      ],
-      sections: [
-        { name: '3D Generalist & Hero', path: '/', views: 38, pct: 44 },
-        { name: 'Animations Showcase', path: '#animations', views: 24, pct: 28 },
-        { name: 'Character Design', path: '#characters', views: 14, pct: 16 },
-        { name: 'Illustrations Bento', path: '#illustrations', views: 10, pct: 12 },
-      ],
-      sources: [
-        { name: 'Directo / URL', pct: 45, count: 11 },
-        { name: 'Instagram', pct: 30, count: 7 },
-        { name: 'LinkedIn', pct: 15, count: 4 },
-        { name: 'Google Search', pct: 10, count: 2 },
-      ],
-      countries: [
-        { code: 'UY', name: 'Uruguay', flag: '🇺🇾', pct: 50, count: 12 },
-        { code: 'AR', name: 'Argentina', flag: '🇦🇷', pct: 25, count: 6 },
-        { code: 'US', name: 'Estados Unidos', flag: '🇺🇸', pct: 15, count: 4 },
-        { code: 'ES', name: 'España', flag: '🇪🇸', pct: 10, count: 2 },
-      ],
-      devices: { desktop: 68, mobile: 32 },
-      chartDays: [
-        { day: '00:00', val: 2 },
-        { day: '04:00', val: 0 },
-        { day: '08:00', val: 5 },
-        { day: '12:00', val: 9 },
-        { day: '16:00', val: 14 },
-        { day: '20:00', val: 8 },
-      ],
-    },
-    '7d': {
-      realtimeUsers: 3,
-      realtimePage: 'Portafolio 3D & Hero',
-      uniqueUsers: 142,
-      newUsers: 98,
-      returningUsers: 44,
-      totalViews: 520,
-      avgTime: '2m 45s',
-      cvDownloads: 28,
-      fullscreenOpens: 64,
-      socialClicks: 46,
-      emailClicks: 16,
-      failedLogins: 2,
-      socialList: [
-        { name: 'Instagram', icon: 'fa-instagram', count: 24, pct: 52 },
-        { name: 'LinkedIn', icon: 'fa-linkedin', count: 12, pct: 26 },
-        { name: 'ArtStation', icon: 'fa-artstation', count: 6, pct: 13 },
-        { name: 'YouTube', icon: 'fa-youtube', count: 4, pct: 9 },
-      ],
-      sections: [
-        { name: '3D Generalist & Hero', path: '/', views: 218, pct: 42 },
-        { name: 'Animations Showcase', path: '#animations', views: 145, pct: 28 },
-        { name: 'Character Design', path: '#characters', views: 93, pct: 18 },
-        { name: 'Illustrations Bento', path: '#illustrations', views: 64, pct: 12 },
-      ],
-      sources: [
-        { name: 'Directo / URL', pct: 48, count: 68 },
-        { name: 'Instagram', pct: 28, count: 40 },
-        { name: 'LinkedIn', pct: 14, count: 20 },
-        { name: 'Google Search', pct: 10, count: 14 },
-      ],
-      countries: [
-        { code: 'UY', name: 'Uruguay', flag: '🇺🇾', pct: 52, count: 74 },
-        { code: 'AR', name: 'Argentina', flag: '🇦🇷', pct: 22, count: 31 },
-        { code: 'US', name: 'Estados Unidos', flag: '🇺🇸', pct: 16, count: 23 },
-        { code: 'ES', name: 'España', flag: '🇪🇸', pct: 10, count: 14 },
-      ],
-      devices: { desktop: 65, mobile: 35 },
-      chartDays: [
-        { day: 'Lun', val: 18 },
-        { day: 'Mar', val: 24 },
-        { day: 'Mié', val: 31 },
-        { day: 'Jue', val: 22 },
-        { day: 'Vie', val: 29 },
-        { day: 'Sáb', val: 35 },
-        { day: 'Dom', val: 19 },
-      ],
-    },
-    '30d': {
-      realtimeUsers: 3,
-      realtimePage: 'Portafolio 3D & Hero',
-      uniqueUsers: 580,
-      newUsers: 412,
-      returningUsers: 168,
-      totalViews: 2150,
-      avgTime: '2m 58s',
-      cvDownloads: 112,
-      fullscreenOpens: 248,
-      socialClicks: 185,
-      emailClicks: 54,
-      failedLogins: 5,
-      socialList: [
-        { name: 'Instagram', icon: 'fa-instagram', count: 104, pct: 56 },
-        { name: 'LinkedIn', icon: 'fa-linkedin', count: 55, pct: 30 },
-        { name: 'ArtStation', icon: 'fa-artstation', count: 26, pct: 14 },
-      ],
-      sections: [
-        { name: '3D Generalist & Hero', path: '/', views: 903, pct: 42 },
-        { name: 'Animations Showcase', path: '#animations', views: 602, pct: 28 },
-        { name: 'Character Design', path: '#characters', views: 387, pct: 18 },
-        { name: 'Illustrations Bento', path: '#illustrations', views: 258, pct: 12 },
-      ],
-      sources: [
-        { name: 'Directo / URL', pct: 44, count: 255 },
-        { name: 'Instagram', pct: 32, count: 185 },
-        { name: 'LinkedIn', pct: 15, count: 87 },
-        { name: 'Google Search', pct: 9, count: 53 },
-      ],
-      countries: [
-        { code: 'UY', name: 'Uruguay', flag: '🇺🇾', pct: 48, count: 278 },
-        { code: 'AR', name: 'Argentina', flag: '🇦🇷', pct: 24, count: 139 },
-        { code: 'US', name: 'Estados Unidos', flag: '🇺🇸', pct: 18, count: 104 },
-        { code: 'ES', name: 'España', flag: '🇪🇸', pct: 10, count: 59 },
-      ],
-      devices: { desktop: 62, mobile: 38 },
-      chartDays: [
-        { day: 'Semana 1', val: 125 },
-        { day: 'Semana 2', val: 148 },
-        { day: 'Semana 3', val: 162 },
-        { day: 'Semana 4', val: 145 },
-      ],
-    },
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/admin/analytics?range=${range}`)
+        const json = await res.json()
+        if (json.data) {
+          setData(json.data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch analytics data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+    
+    // Refresh realtime data every 30 seconds
+    intervalId = setInterval(fetchData, 30000)
+
+    return () => clearInterval(intervalId)
+  }, [range])
+
+  if (loading && !data) {
+    return (
+      <div className="admin-card ga-analytics-card" id="seccion-analitica">
+        <div className="ga-header">
+          <div>
+            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Tráfico & Analítica</h2>
+          </div>
+        </div>
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-primary)', opacity: 0.6 }}>
+          Cargando datos de Google Analytics...
+        </div>
+      </div>
+    )
   }
 
-  const active = mockData[range]
-  const maxChartVal = Math.max(...active.chartDays.map((d) => d.val))
+  const active = data || {}
+  const maxChartVal = active.chartDays ? Math.max(...active.chartDays.map((d: any) => d.val)) : 1
 
   return (
     <div className="admin-card ga-analytics-card" id="seccion-analitica">

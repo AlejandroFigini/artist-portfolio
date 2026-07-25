@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.1.0",
     "@next/third-parties": "^16.2.11",
     "@radix-ui/react-slot": "^1.2.5",
     "bcryptjs": "^3.0.3",
