@@ -18,6 +18,7 @@ import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminM
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal, SelectContainerActionModal } from './modals'
 import { seedUsedContent } from '../cms/engine'
 import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
+import RealtimeCard from './RealtimeCard'
 import SocialSettings from './SocialSettings'
 import UsersSection from './UsersSection'
 import AnalyticsSection from './AnalyticsSection'
@@ -279,6 +280,9 @@ export default function AdminDashboard() {
                 <Stat label="unused items" count={unusedArr.length} size={fmtBytes(sumSizes(unusedArr))} />
                 <Stat label="in trash" count={trashArr.length} size={fmtBytes(sumSizes(trashArr))} warn />
                 <Stat label="total repository" count={repoArr.length} size={fmtBytes(sumSizes(repoArr))} />
+              </div>
+              <div style={{ marginTop: '2rem' }}>
+                <RealtimeCard />
               </div>
               <div className="admin-quick">
                 <button type="button" className="cms-btn" onClick={() => goto('ajustes')}><i className="fa-solid fa-sliders"></i> Site settings</button>

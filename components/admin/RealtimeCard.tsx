@@ -1,0 +1,94 @@
+'use client'
+import React, { useEffect, useState } from 'react'
+
+export default function RealtimeCard() {
+  const [active, setActive] = useState<any>({
+    realtimeUsers: 0,
+    realtimePages: [],
+    realtimeCountries: []
+  })
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const fetchRealtime = async () => {
+      try {
+        const res = await fetch('/api/admin/analytics?realtimeOnly=true')
+        const json = await res.json()
+        if (res.ok && json.data) {
+          setActive({
+            realtimeUsers: json.data.realtimeUsers,
+            realtimePages: json.data.realtimePages || [],
+            realtimeCountries: json.data.realtimeCountries || []
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch realtime data', err)
+      }
+    }
+
+    fetchRealtime()
+    
+    intervalId = setInterval(fetchRealtime, 30000)
+
+    return () => clearInterval(intervalId)
+  }, [])
+
+  return (
+    <div className="admin-card ga-analytics-card" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#444444', border: '1px solid #555555', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)' }}>
+      <div className="ga-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '0.4rem', marginBottom: '0.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <div className="ga-pulse-wrapper">
+            <div className="ga-pulse" style={{ background: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }}></div>
+            <span className="ga-pulse-dot" style={{ background: '#3b82f6' }}></span>
+          </div>
+          <h2 style={{ color: '#ffffff', margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+            Tráfico en Vivo
+            <span className="cms-info-tip" tabIndex={0} aria-label="Se actualiza al instante, pero cada usuario 'vive y muere' en este contador durante una ventana móvil de 30 minutos desde su última acción." style={{ marginLeft: '0.6rem' }}>
+              <i className="fa-solid fa-circle-info" style={{ fontSize: '0.9rem', color: '#e5e5e5' }}></i>
+              <span className="cms-info-bubble" role="tooltip">Se actualiza al instante, pero cada usuario 'vive y muere' en este contador durante una ventana móvil de 30 minutos desde su última acción.</span>
+            </span>
+          </h2>
+        </div>
+      </div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'stretch' }}>
+        {/* Total */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '1.5rem', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: '3.5rem', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{active.realtimeUsers}</div>
+          <div style={{ color: '#e5e5e5', textTransform: 'uppercase', fontSize: '0.75rem', marginTop: '0.8rem', letterSpacing: '0.05em', fontWeight: 600 }}>Usuarios Activos</div>
+        </div>
+        
+        {/* Por Página */}
+        <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '1.2rem', border: 'none', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <h4 style={{ color: '#e5e5e5', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <i className="fa-solid fa-file-lines" style={{ color: '#3b82f6' }}></i> Por Página
+          </h4>
+          <div style={{ flexGrow: 1 }}>
+            {active.realtimePages?.length > 0 ? active.realtimePages.map((p: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', fontSize: '0.9rem', background: 'rgba(0, 0, 0, 0.2)', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
+                <span style={{ color: '#ffffff' }}>{p.name}</span>
+                <span style={{ fontWeight: 600, color: '#3b82f6' }}>{p.count}</span>
+              </div>
+            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: '#ffffff' }}>Sin datos de página</div>}
+          </div>
+        </div>
+
+        {/* Por País */}
+        <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '1.2rem', border: 'none', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <h4 style={{ color: '#e5e5e5', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <i className="fa-solid fa-earth-americas" style={{ color: '#3b82f6' }}></i> Por País
+          </h4>
+          <div style={{ flexGrow: 1 }}>
+            {active.realtimeCountries?.length > 0 ? active.realtimeCountries.map((c: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', fontSize: '0.9rem', background: 'rgba(0, 0, 0, 0.2)', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
+                <span style={{ color: '#ffffff' }}>{c.name}</span>
+                <span style={{ fontWeight: 600, color: '#3b82f6' }}>{c.count}</span>
+              </div>
+            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: '#ffffff' }}>Sin datos de país</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

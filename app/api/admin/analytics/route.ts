@@ -180,6 +180,7 @@ const mockDataMap: any = {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '7d';
+  const realtimeOnly = searchParams.get('realtimeOnly') === 'true';
 
   // Si estamos en entorno local de desarrollo (npm run dev), O si faltan las credenciales, usamos mock data
   if (process.env.NODE_ENV === 'development' || !analyticsDataClient || !propertyId) {
@@ -275,6 +276,79 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Realtime Pulse (Total Users)
+    const realtimeReqTotal = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }]
+    });
+
+    // Realtime Pulse (Pages)
+    const realtimeReqPages = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }],
+      dimensions: [{ name: 'unifiedScreenName' }],
+    });
+
+    // Realtime Pulse (Countries)
+    const realtimeReqCountries = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }],
+      dimensions: [{ name: 'country' }],
+    });
+
+    const [
+      realtimeResTotal,
+      realtimeResPages,
+      realtimeResCountries
+    ] = await Promise.all([
+      realtimeReqTotal,
+      realtimeReqPages,
+      realtimeReqCountries
+    ]);
+
+    const realtimeUsers = parseInt(realtimeResTotal[0].rows?.[0]?.metricValues?.[0]?.value || '0', 10);
+    
+    let realtimePages: {name: string, count: number}[] = [];
+    if (realtimeResPages[0].rows && realtimeResPages[0].rows.length > 0) {
+      const sortedPages = [...realtimeResPages[0].rows].sort((a, b) => {
+        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
+        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
+        return countB - countA;
+      });
+      realtimePages = sortedPages.map(r => {
+        let name = r.dimensionValues?.[0].value || 'Home';
+        if (name === '(not set)') name = 'Home';
+        if (name.includes(' - ')) name = name.split(' - ')[0];
+        if (name.includes(' | ')) name = name.split(' | ')[0];
+        const count = parseInt(r.metricValues?.[0].value || '0', 10);
+        return { name, count };
+      });
+    }
+    
+    let realtimeCountries: {name: string, count: number}[] = [];
+    if (realtimeResCountries[0].rows && realtimeResCountries[0].rows.length > 0) {
+      const sortedCountries = [...realtimeResCountries[0].rows].sort((a, b) => {
+        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
+        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
+        return countB - countA;
+      });
+      realtimeCountries = sortedCountries.map(r => ({
+        name: r.dimensionValues?.[0].value || 'Desconocido',
+        count: parseInt(r.metricValues?.[0].value || '0', 10)
+      }));
+    }
+
+    if (realtimeOnly) {
+      return NextResponse.json({
+        data: {
+          realtimeUsers,
+          realtimePages,
+          realtimeCountries,
+          uniqueUsers: 0, newUsers: 0, returningUsers: 0, totalViews: 0, avgTime: '0s', cvDownloads: 0, fullscreenOpens: 0, socialClicks: 0, emailClicks: 0, failedLogins: 0, socialList: [], sections: [], trafficSources: [], dailyUsers: [], devices: []
+        }
+      });
+    }
+
     // 1. General Overview
     const overviewReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
@@ -329,110 +403,6 @@ export async function GET(request: Request) {
       dimensions: [{ name: 'eventName' }],
       metrics: [{ name: 'eventCount' }]
     });
-
-    // Realtime Pulse (Total Users)
-    const realtimeReqTotal = analyticsDataClient.runRealtimeReport({
-      property: `properties/${propertyId}`,
-      metrics: [{ name: 'activeUsers' }]
-    });
-
-    // Realtime Pulse (Pages)
-    const realtimeReqPages = analyticsDataClient.runRealtimeReport({
-      property: `properties/${propertyId}`,
-      metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'unifiedScreenName' }],
-    });
-
-    // Realtime Pulse (Countries)
-    const realtimeReqCountries = analyticsDataClient.runRealtimeReport({
-      property: `properties/${propertyId}`,
-      metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'country' }],
-    });
-
-    const [
-      realtimeResTotal,
-      realtimeResPages,
-      realtimeResCountries,
-      overviewRes,
-      devicesRes,
-      countriesRes,
-      sourcesRes,
-      timeRes,
-      eventsRes
-    ] = await Promise.all([
-      realtimeReqTotal,
-      realtimeReqPages,
-      realtimeReqCountries,
-      overviewReq,
-      devicesReq,
-      countriesReq,
-      sourcesReq,
-      timeReq,
-      eventsReq
-    ]);
-
-    // Process Overview
-    const row = overviewRes[0].rows?.[0];
-    const uniqueUsers = parseInt(row?.metricValues?.[0]?.value || '0', 10);
-    const newUsers = parseInt(row?.metricValues?.[1]?.value || '0', 10);
-    const totalViews = parseInt(row?.metricValues?.[2]?.value || '0', 10);
-    const avgSec = parseFloat(row?.metricValues?.[3]?.value || '0');
-    
-    const mins = Math.floor(avgSec / 60);
-    const secs = Math.floor(avgSec % 60);
-    const returningUsers = Math.max(0, uniqueUsers - newUsers);
-
-    // Process Devices
-    let totalDevices = 0;
-    const devicesData = { desktop: 0, mobile: 0 };
-    devicesRes[0].rows?.forEach(r => {
-      const category = r.dimensionValues?.[0].value?.toLowerCase();
-      const users = parseInt(r.metricValues?.[0].value || '0', 10);
-      totalDevices += users;
-      if (category === 'desktop') devicesData.desktop += users;
-      else devicesData.mobile += users; // mobile & tablet
-    });
-    const devices = {
-      desktop: totalDevices ? Math.round((devicesData.desktop / totalDevices) * 100) : 0,
-      mobile: totalDevices ? Math.round((devicesData.mobile / totalDevices) * 100) : 0
-    };
-
-    // Process Realtime
-    // Exact deduplicated total from the dimension-less query
-    const realtimeUsers = parseInt(realtimeResTotal[0].rows?.[0]?.metricValues?.[0]?.value || '0', 10);
-    
-    // Detailed pages from the dimension query
-    let realtimePages: {name: string, count: number}[] = [];
-    if (realtimeResPages[0].rows && realtimeResPages[0].rows.length > 0) {
-      const sortedPages = [...realtimeResPages[0].rows].sort((a, b) => {
-        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
-        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
-        return countB - countA;
-      });
-      realtimePages = sortedPages.map(r => {
-        let name = r.dimensionValues?.[0].value || 'Home';
-        if (name === '(not set)') name = 'Home';
-        if (name.includes(' - ')) name = name.split(' - ')[0];
-        if (name.includes(' | ')) name = name.split(' | ')[0];
-        const count = parseInt(r.metricValues?.[0].value || '0', 10);
-        return { name, count };
-      });
-    }
-    
-    // Detailed countries from the dimension query
-    let realtimeCountries: {name: string, count: number}[] = [];
-    if (realtimeResCountries[0].rows && realtimeResCountries[0].rows.length > 0) {
-      const sortedCountries = [...realtimeResCountries[0].rows].sort((a, b) => {
-        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
-        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
-        return countB - countA;
-      });
-      realtimeCountries = sortedCountries.map(r => ({
-        name: r.dimensionValues?.[0].value || 'Desconocido',
-        count: parseInt(r.metricValues?.[0].value || '0', 10)
-      }));
-    }
 
     // Process Countries
     let totalCountriesUsers = 0;
