@@ -304,7 +304,7 @@ export async function GET(request: Request) {
     const realtimeReqPages = analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'pagePath' }],
+      dimensions: [{ name: 'unifiedScreenName' }],
     });
 
     // Realtime Pulse (Countries)
@@ -328,20 +328,28 @@ export async function GET(request: Request) {
     
     let realtimePages: {name: string, count: number}[] = [];
     if (realtimeResPages[0].rows && realtimeResPages[0].rows.length > 0) {
-      const sortedPages = [...realtimeResPages[0].rows].sort((a, b) => {
-        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
-        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
-        return countB - countA;
-      });
-      realtimePages = sortedPages
-        .map(r => {
-          let name = r.dimensionValues?.[0].value || '/';
-          return { name, count: parseInt(r.metricValues?.[0].value || '0', 10) };
-        })
-        .filter(p => p.name !== '(not set)' && p.name !== '(other)');
+      const pageMap = new Map<string, number>();
       
-      // Limit realtime pages to top 4 for visual consistency
-      realtimePages = realtimePages.slice(0, 4);
+      for (const r of realtimeResPages[0].rows) {
+        let name = r.dimensionValues?.[0].value || '/';
+        const count = parseInt(r.metricValues?.[0].value || '0', 10);
+        
+        if (name === '(not set)' || name === '(other)') continue;
+        
+        // GA4 Realtime API does not support pagePath, only unifiedScreenName (Page Title)
+        // We manually map known titles to paths to match the GA dashboard appearance
+        if (name.includes('Management')) name = '/admin';
+        else if (name.includes('Lucia') || name === 'Home' || name === 'Inicio') name = '/';
+        else if (name.includes(' - ')) name = '/' + name.split(' - ')[0].toLowerCase().replace(/\s+/g, '-');
+        else if (name.includes(' | ')) name = '/' + name.split(' | ')[0].toLowerCase().replace(/\s+/g, '-');
+        
+        pageMap.set(name, (pageMap.get(name) || 0) + count);
+      }
+      
+      realtimePages = Array.from(pageMap.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4);
     }
     
     let realtimeCountries: {name: string, count: number}[] = [];
