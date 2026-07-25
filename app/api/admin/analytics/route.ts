@@ -300,7 +300,7 @@ export async function GET(request: Request) {
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'countryId' }, { name: 'country' }],
-      metrics: [{ name: 'activeUsers' }],
+      metrics: [{ name: 'activeUsers' }, { name: 'newUsers' }],
       limit: 15
     });
 
@@ -391,8 +391,10 @@ export async function GET(request: Request) {
       const code = r.dimensionValues?.[0].value || 'XX';
       const name = r.dimensionValues?.[1].value || 'Unknown';
       const count = parseInt(r.metricValues?.[0].value || '0', 10);
+      const newUsers = parseInt(r.metricValues?.[1].value || '0', 10);
+      const returningUsers = Math.max(0, count - newUsers);
       totalCountriesUsers += count;
-      return { code, name, count };
+      return { code, name, count, newUsers, returningUsers };
     }) || [];
     const countries = countriesRaw.map(c => ({
       ...c,

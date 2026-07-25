@@ -286,11 +286,11 @@ export default function AnalyticsSection() {
               let displayCount = c.count;
               let displayPct = c.pct;
               if (countryMetric === 'nuevos') {
-                displayCount = Math.floor(c.count * 0.7);
-                displayPct = Math.floor(c.pct * 0.7);
+                displayCount = c.newUsers || 0;
+                displayPct = Math.round((displayCount / Math.max(1, active.newUsers)) * 100);
               } else if (countryMetric === 'recurrentes') {
-                displayCount = Math.ceil(c.count * 0.3);
-                displayPct = Math.ceil(c.pct * 0.3);
+                displayCount = c.returningUsers || 0;
+                displayPct = Math.round((displayCount / Math.max(1, active.returningUsers)) * 100);
               }
               return (
                 <div key={idx} className="ga-list-item">
