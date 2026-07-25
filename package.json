@@ -2,9 +2,6 @@
   "name": "artist-portfolio-next",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "preinstall": "rm -rf node_modules/safe-array-concat || true",
     "dev": "next dev",
