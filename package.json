@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.11",
     "@radix-ui/react-slot": "^1.2.5",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",

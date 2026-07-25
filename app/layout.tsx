@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import '@/styles/globals.css'
 import Providers from '@/components/ui/Providers'
 import { getSiteSettingsServer } from '@/lib/site-server'
@@ -92,6 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
         />
         <Providers initialSettings={initialSettings}>{children}</Providers>
+        <GoogleAnalytics gaId="G-SPJEZ45JR0" />
       </body>
     </html>
   )
