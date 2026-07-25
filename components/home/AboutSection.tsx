@@ -180,7 +180,7 @@ export default function AboutSection() {
                 <ul className="about-socials">
                   {SOCIALS.map((s) => (
                     <li key={s.label} className="about-social">
-                      <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} onClick={() => sendGAEvent('event', 'social_click', { network: s.label.toLowerCase() })}>
+                      <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} onClick={() => sendGAEvent('event', s.label === 'Email' ? 'email_click' : 'social_click', { network: s.label.toLowerCase() })}>
                         <i className={`fa-brands ${s.icon}`} aria-hidden="true" />
                         <span className="about-social-label">{s.label}</span>
                       </a>
