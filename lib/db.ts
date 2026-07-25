@@ -76,6 +76,18 @@ const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '2026_07_failed_logins',
+    sql: `
+      CREATE TABLE IF NOT EXISTS failed_logins (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(64),
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

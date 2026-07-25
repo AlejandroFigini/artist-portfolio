@@ -1,5 +1,6 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
+import { getPool, ensureDb, hasDb } from '@/lib/db';
 
 const propertyId = process.env.GA4_PROPERTY_ID;
 let clientEmail = process.env.GA_CLIENT_EMAIL;
@@ -184,11 +185,28 @@ export async function GET(request: Request) {
 
   // Si estamos en entorno local de desarrollo (npm run dev), O si faltan las credenciales, usamos mock data
   if (process.env.NODE_ENV === 'development' || !analyticsDataClient || !propertyId) {
+    let mockFailedLogins = 0;
+    if (hasDb) {
+      try {
+        await ensureDb();
+        const pool = getPool();
+        if (pool) {
+          const { rows } = await pool.query(
+            'SELECT COUNT(*)::int as count FROM failed_logins WHERE created_at >= $1::date AND created_at <= $2::date',
+            ['2024-01-01', '2027-12-31']
+          );
+          mockFailedLogins = rows[0]?.count || 0;
+        }
+      } catch (err) {
+        console.error('Error fetching failed logins from DB (mock mode):', err);
+      }
+    }
+
     if (process.env.NODE_ENV !== 'development') {
       console.warn("GA4 Credentials missing. Using mock data.");
     }
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulamos latencia
-    const data = mockDataMap[range] || mockDataMap['30d'];
+    const data = { ...mockDataMap[range] || mockDataMap['30d'], failedLogins: mockFailedLogins };
     return NextResponse.json({ data, _status: 'mock' });
   }
 
@@ -533,6 +551,24 @@ export async function GET(request: Request) {
       pct: socialClicks > 0 ? Math.round((s.count / socialClicks) * 100) : 0
     })).sort((a, b) => b.count - a.count);
 
+    // Query local DB for failed logins
+    let failedLogins = 0;
+    if (hasDb) {
+      try {
+        await ensureDb();
+        const pool = getPool();
+        if (pool) {
+          const { rows } = await pool.query(
+            'SELECT COUNT(*)::int as count FROM failed_logins WHERE created_at >= $1::date AND created_at <= $2::date',
+            [startDate, endDate]
+          );
+          failedLogins = rows[0]?.count || 0;
+        }
+      } catch (err) {
+        console.error('Error fetching failed logins from DB:', err);
+      }
+    }
+
     return NextResponse.json({
       data: {
         realtimeUsers,
@@ -551,7 +587,7 @@ export async function GET(request: Request) {
         fullscreenOpens,
         socialClicks,
         emailClicks,
-        failedLogins: 0, // Eventos del sistema backend, se podrían extraer de los logs luego
+        failedLogins,
         socialList, // Desglose de redes detectadas a través de eventos social_click_X
         sections: [],
       },

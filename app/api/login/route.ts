@@ -38,6 +38,13 @@ export async function POST(req: Request) {
     // comparar siempre (hash dummy si no existe) → no filtrar qué usuarios existen por timing
     const ok = await verifyPassword(pass, u?.password_hash || '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva')
     if (!u || !ok) {
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+      const ua = req.headers.get('user-agent') || 'unknown'
+      await pool.query(
+        'INSERT INTO failed_logins (username, ip_address, user_agent) VALUES ($1, $2, $3)',
+        [user.substring(0, 64), ip.substring(0, 45), ua]
+      ).catch(e => console.error('[login] db failed_logins error:', e))
+      
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
     }
 
@@ -47,6 +54,13 @@ export async function POST(req: Request) {
       }
       const result = await verify({ token: String(code), secret: u.totp_secret, epochTolerance: 30 })
       if (!result.valid) {
+        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+        const ua = req.headers.get('user-agent') || 'unknown'
+        await pool.query(
+          'INSERT INTO failed_logins (username, ip_address, user_agent) VALUES ($1, $2, $3)',
+          [user.substring(0, 64), ip.substring(0, 45), ua]
+        ).catch(e => console.error('[login] db failed_logins error:', e))
+        
         return NextResponse.json({ success: false, error: 'Incorrect 2FA code' }, { status: 401 })
       }
     }
