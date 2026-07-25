@@ -76,19 +76,23 @@ function ProjectCard({ index }: { index: number }) {
       >
         {galleryKeys.map((gKey, idx) => {
           const src = state.items[gKey]
-          if (!src || src.includes('placeholder')) return null
+          const isMain = idx === 0
+          
+          // Si no es la principal y no tiene imagen, no la renderizamos
+          if (!isMain && (!src || src.includes('placeholder'))) return null
           
           return (
             <img
               key={gKey}
-              className="proj-card-img absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
+              data-cms-key={isMain ? key : undefined}
+              className={`${isMain ? 'proj-card-img' : 'proj-concept-img'} absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out`}
               style={{
                 opacity: activeSlide === idx ? 1 : 0,
                 transform: `scale(${activeSlide === idx && isHovered ? 1.05 : 1})`,
                 zIndex: activeSlide === idx ? 2 : 1,
               }}
               loading="lazy" decoding="async"
-              src={src}
+              src={(!src || src.includes('placeholder')) ? undefined : src}
               alt={title || `Project image ${idx}`}
             />
           )
