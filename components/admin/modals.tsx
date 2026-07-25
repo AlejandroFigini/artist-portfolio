@@ -717,17 +717,41 @@ function downloadCsv(filename: string, headers: string[], rows: string[][]) {
 
 export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAuditResult }) {
   const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken'>('orphaned')
+  const [localResult, setLocalResult] = useState<SyncAuditResult>(result)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const downloadReport = () => {
     const rows: string[][] = []
-    result.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, 'Synced']))
-    result.orphaned.forEach((r) => rows.push([r.publicId, r.url, 'N/A', r.publicId, 'Orphaned in Cloudinary']))
-    result.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from Cloudinary']))
+    localResult.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, 'Synced']))
+    localResult.orphaned.forEach((r) => rows.push([r.publicId, r.url, 'N/A', r.publicId, 'Orphaned in Cloudinary']))
+    localResult.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from Cloudinary']))
     downloadCsv(
       `sync-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Name', 'URL', 'CMS State', 'Cloudinary ID', 'Status'],
       rows,
     )
+  }
+
+  const handleDeleteOrphan = async (url: string, publicId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this orphaned file from Cloudinary?')) return
+    setIsDeleting(publicId)
+    try {
+      const res = await fetch('/api/delete-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      setLocalResult(prev => ({
+        ...prev,
+        orphaned: prev.orphaned.filter(o => o.publicId !== publicId)
+      }))
+    } catch (err) {
+      alert('Failed to delete file. Check console for details.')
+      console.error(err)
+    } finally {
+      setIsDeleting(null)
+    }
   }
 
   const tabStyle = (t: string): React.CSSProperties => ({
@@ -752,15 +776,15 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#22c55e' }}>{result.matching.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#22c55e' }}>{localResult.matching.length}</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Synced</div>
         </div>
         <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>{result.orphaned.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>{localResult.orphaned.length}</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Orphaned in Cloudinary</div>
         </div>
         <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', textAlign: 'center' }}>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#eab308' }}>{result.broken.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#eab308' }}>{localResult.broken.length}</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Missing from Cloudinary</div>
         </div>
       </div>
@@ -769,37 +793,57 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
       <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
         <button type="button" style={tabStyle('orphaned')} onClick={() => setTab('orphaned')}>
           <i className="fa-solid fa-ghost" style={{ marginRight: '0.4rem', color: '#ef4444' }}></i>
-          Orphaned ({result.orphaned.length})
+          Orphaned ({localResult.orphaned.length})
         </button>
         <button type="button" style={tabStyle('broken')} onClick={() => setTab('broken')}>
           <i className="fa-solid fa-link-slash" style={{ marginRight: '0.4rem', color: '#eab308' }}></i>
-          Broken refs ({result.broken.length})
+          Broken refs ({localResult.broken.length})
         </button>
         <button type="button" style={tabStyle('matching')} onClick={() => setTab('matching')}>
           <i className="fa-solid fa-circle-check" style={{ marginRight: '0.4rem', color: '#22c55e' }}></i>
-          Synced ({result.matching.length})
+          Synced ({localResult.matching.length})
         </button>
       </div>
 
       {/* Tab content */}
       <div style={{ maxHeight: '40vh', overflow: 'auto' }}>
         {tab === 'orphaned' && (
-          result.orphaned.length === 0
+          localResult.orphaned.length === 0
             ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
                 No orphaned files. Everything in Cloudinary is tracked by the CMS.
               </p>
             : <div className="cms-audit-table-wrap">
                 <table className="cms-audit-table">
-                  <thead><tr><th>Public ID</th><th>Type</th><th>Format</th><th>Size</th><th>Folder</th></tr></thead>
+                  <thead><tr><th>Public ID</th><th>Type</th><th>Format</th><th>Size</th><th>Folder</th><th>Action</th></tr></thead>
                   <tbody>
-                    {result.orphaned.map((r, i) => (
+                    {localResult.orphaned.map((r, i) => (
                       <tr key={i}>
                         <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>{r.publicId}</td>
                         <td>{r.resourceType}</td>
                         <td>{r.format}</td>
                         <td>{fmtBytes(r.bytes)}</td>
                         <td>{r.folder}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrphan(r.url, r.publicId)}
+                            disabled={isDeleting === r.publicId}
+                            style={{
+                              padding: '0.3rem 0.6rem',
+                              background: isDeleting === r.publicId ? '#fca5a5' : '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: isDeleting === r.publicId ? 'not-allowed' : 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              transition: 'background 0.2s'
+                            }}
+                          >
+                            {isDeleting === r.publicId ? <><i className="fa-solid fa-spinner fa-spin mr-1"></i> Deleting...</> : <><i className="fa-solid fa-trash mr-1"></i> Delete</>}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -807,7 +851,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
               </div>
         )}
         {tab === 'broken' && (
-          result.broken.length === 0
+          localResult.broken.length === 0
             ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
                 No broken references. All CMS content exists in Cloudinary.
@@ -816,7 +860,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                 <table className="cms-audit-table">
                   <thead><tr><th>Name</th><th>State</th><th>Section</th><th>URL</th></tr></thead>
                   <tbody>
-                    {result.broken.map((r, i) => (
+                    {localResult.broken.map((r, i) => (
                       <tr key={i}>
                         <td>{r.name}</td>
                         <td>
@@ -833,13 +877,15 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
               </div>
         )}
         {tab === 'matching' && (
-          result.matching.length === 0
-            ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No matching content found.</p>
+          localResult.matching.length === 0
+            ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
+                No synced files found.
+              </p>
             : <div className="cms-audit-table-wrap">
                 <table className="cms-audit-table">
-                  <thead><tr><th>Name</th><th>State</th><th>Cloudinary ID</th></tr></thead>
+                  <thead><tr><th>Name</th><th>State</th><th>Cloudinary ID</th><th>URL</th></tr></thead>
                   <tbody>
-                    {result.matching.map((r, i) => (
+                    {localResult.matching.map((r, i) => (
                       <tr key={i}>
                         <td>{r.name}</td>
                         <td>
@@ -848,6 +894,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                           </span>
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>{r.cloudinaryId}</td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', maxWidth: 300 }}>{r.url}</td>
                       </tr>
                     ))}
                   </tbody>
