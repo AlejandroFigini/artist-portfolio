@@ -340,7 +340,7 @@ export async function GET(request: Request) {
     const realtimeReqPages = analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'pagePath' }],
+      dimensions: [{ name: 'unifiedScreenName' }],
     });
 
     // Realtime Pulse (Countries)
@@ -411,14 +411,14 @@ export async function GET(request: Request) {
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      // Get up to 2 top pages and format them nicely
+      // Get up to 2 top pages and clean up titles
       const topPages = sortedPages.slice(0, 2).map(r => {
-        const path = r.dimensionValues?.[0].value || '/';
-        if (path === '/') return 'Home';
-        if (path.includes('/admin')) return 'Panel Admin';
-        // Capitalize the first letter of the route (e.g. /about -> About)
-        const clean = path.replace('/', '').split('/')[0];
-        return clean.charAt(0).toUpperCase() + clean.slice(1);
+        let name = r.dimensionValues?.[0].value || 'Home';
+        if (name === '(not set)') name = 'Home';
+        // Clean up "Management - Lucia Montaña | Portfolio" -> "Management"
+        if (name.includes(' - ')) name = name.split(' - ')[0];
+        if (name.includes(' | ')) name = name.split(' | ')[0];
+        return name;
       });
       realtimePage = Array.from(new Set(topPages)).join(', ');
     }
