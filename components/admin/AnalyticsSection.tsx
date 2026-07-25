@@ -5,11 +5,9 @@ import WorldMap from "react-svg-worldmap"
 /* AnalyticsSection — Layout visual de gestión de tráfico y métricas de Google Analytics (GA4).
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
    visitantes únicos, páginas más vistas, origen del tráfico y dispositivos. */
-
-type TimeRange = 'today' | '7d' | '30d' | '90d' | '180d' | '365d'
-
 export default function AnalyticsSection() {
-  const [range, setRange] = useState<TimeRange>('7d')
+  const [range, setRange] = useState('30daysAgo')
+  const [pendingRange, setPendingRange] = useState('30daysAgo')
   const [countryMetric, setCountryMetric] = useState<'activos' | 'nuevos' | 'recurrentes'>('activos')
 
   const [data, setData] = useState<any>(null)
@@ -105,49 +103,36 @@ export default function AnalyticsSection() {
         </span>
       </div>
 
-      {/* Selector de Rango de Tiempo (afecta a los contadores de abajo) */}
-      <div className="ga-range-selector" style={{ marginBottom: '1.5rem', display: 'inline-flex' }}>
+      {/* Selector de Rango de Tiempo idéntico a GA4 */}
+      <div className="ga-range-selector" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <select
+          value={pendingRange}
+          onChange={(e) => setPendingRange(e.target.value)}
+          className="admin-select"
+          style={{ padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+        >
+          <option value="today">Hoy</option>
+          <option value="yesterday">Ayer</option>
+          <option value="thisWeek">Esta semana (De dom. a hoy)</option>
+          <option value="7daysAgo">los últimos 7 días</option>
+          <option value="lastWeek">La semana pasada (De dom. a sáb.)</option>
+          <option value="28daysAgo">los últimos 28 días</option>
+          <option value="30daysAgo">los últimos 30 días</option>
+          <option value="thisMonth">Este mes</option>
+          <option value="lastMonth">El mes pasado</option>
+          <option value="90daysAgo">los últimos 90 días</option>
+          <option value="thisQuarter">Trimestre hasta la fecha</option>
+          <option value="thisYear">Este año (de enero a hoy)</option>
+          <option value="lastYear">Último año natural</option>
+        </select>
         <button
           type="button"
-          className={`ga-range-btn ${range === 'today' ? 'active' : ''}`}
-          onClick={() => setRange('today')}
+          className="admin-btn primary"
+          onClick={() => setRange(pendingRange)}
+          style={{ padding: '0.4rem 1rem' }}
+          disabled={loading || pendingRange === range}
         >
-          Hoy
-        </button>
-        <button
-          type="button"
-          className={`ga-range-btn ${range === '7d' ? 'active' : ''}`}
-          onClick={() => setRange('7d')}
-        >
-          7D
-        </button>
-        <button
-          type="button"
-          className={`ga-range-btn ${range === '30d' ? 'active' : ''}`}
-          onClick={() => setRange('30d')}
-        >
-          30D
-        </button>
-        <button
-          type="button"
-          className={`ga-range-btn ${range === '90d' ? 'active' : ''}`}
-          onClick={() => setRange('90d')}
-        >
-          Trimestre
-        </button>
-        <button
-          type="button"
-          className={`ga-range-btn ${range === '180d' ? 'active' : ''}`}
-          onClick={() => setRange('180d')}
-        >
-          Semestre
-        </button>
-        <button
-          type="button"
-          className={`ga-range-btn ${range === '365d' ? 'active' : ''}`}
-          onClick={() => setRange('365d')}
-        >
-          Anual
+          {loading && pendingRange === range ? 'Cargando...' : 'Aplicar'}
         </button>
       </div>
 

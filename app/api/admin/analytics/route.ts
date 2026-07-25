@@ -191,18 +191,94 @@ export async function GET(request: Request) {
     return NextResponse.json({ data, _status: 'mock' });
   }
 
-  let startDate = '7daysAgo';
-  if (range === 'today') startDate = 'today';
-  else if (range === '30d') startDate = '30daysAgo';
-  else if (range === '90d') startDate = '90daysAgo';
-  else if (range === '180d') startDate = '180daysAgo';
-  else if (range === '365d') startDate = '365daysAgo';
+  let startDate = '30daysAgo';
+  let endDate = 'today';
+  let timeDimension = 'date';
+
+  const d = new Date();
+  
+  switch (range) {
+    case 'today':
+      startDate = 'today'; endDate = 'today'; timeDimension = 'hour';
+      break;
+    case 'yesterday':
+      startDate = 'yesterday'; endDate = 'yesterday'; timeDimension = 'hour';
+      break;
+    case 'thisWeek': {
+      const day = d.getDay();
+      const diff = d.getDate() - day;
+      const sun = new Date(d.setDate(diff));
+      startDate = sun.toISOString().split('T')[0];
+      endDate = 'today';
+      break;
+    }
+    case '7daysAgo':
+      startDate = '7daysAgo'; endDate = 'yesterday';
+      break;
+    case 'lastWeek': {
+      const day = d.getDay();
+      const lastSat = new Date(d);
+      lastSat.setDate(d.getDate() - day - 1);
+      endDate = lastSat.toISOString().split('T')[0];
+      const lastSun = new Date(lastSat);
+      lastSun.setDate(lastSat.getDate() - 6);
+      startDate = lastSun.toISOString().split('T')[0];
+      break;
+    }
+    case '28daysAgo':
+      startDate = '28daysAgo'; endDate = 'yesterday';
+      break;
+    case '30daysAgo':
+      startDate = '30daysAgo'; endDate = 'yesterday';
+      break;
+    case 'thisMonth':
+      d.setDate(1);
+      startDate = d.toISOString().split('T')[0];
+      endDate = 'today';
+      break;
+    case 'lastMonth': {
+      d.setDate(1);
+      d.setHours(-1); // goes to last day of previous month
+      endDate = d.toISOString().split('T')[0];
+      d.setDate(1); // goes to first day of previous month
+      startDate = d.toISOString().split('T')[0];
+      break;
+    }
+    case '90daysAgo':
+      startDate = '90daysAgo'; endDate = 'yesterday'; timeDimension = 'yearMonth';
+      break;
+    case 'thisQuarter': {
+      const qMonth = Math.floor(d.getMonth() / 3) * 3;
+      d.setMonth(qMonth, 1);
+      startDate = d.toISOString().split('T')[0];
+      endDate = 'today';
+      timeDimension = 'yearMonth';
+      break;
+    }
+    case 'thisYear':
+      d.setMonth(0, 1);
+      startDate = d.toISOString().split('T')[0];
+      endDate = 'today';
+      timeDimension = 'yearMonth';
+      break;
+    case 'lastYear': {
+      d.setFullYear(d.getFullYear() - 1, 11, 31);
+      endDate = d.toISOString().split('T')[0];
+      d.setMonth(0, 1);
+      startDate = d.toISOString().split('T')[0];
+      timeDimension = 'yearMonth';
+      break;
+    }
+    default:
+      startDate = '30daysAgo'; endDate = 'yesterday';
+      break;
+  }
 
   try {
     // 1. General Overview
     const overviewReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       metrics: [
         { name: 'activeUsers' },
         { name: 'newUsers' },
@@ -214,7 +290,7 @@ export async function GET(request: Request) {
     // 2. Devices
     const devicesReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'deviceCategory' }],
       metrics: [{ name: 'activeUsers' }]
     });
@@ -222,7 +298,7 @@ export async function GET(request: Request) {
     // 3. Countries
     const countriesReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'countryId' }, { name: 'country' }],
       metrics: [{ name: 'activeUsers' }],
       limit: 15
@@ -231,17 +307,16 @@ export async function GET(request: Request) {
     // 4. Sources
     const sourcesReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'sessionSource' }],
       metrics: [{ name: 'activeUsers' }],
       limit: 10
     });
 
     // 5. Time Series (Chart)
-    const timeDimension = range === 'today' ? 'hour' : 'date';
     const timeReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: timeDimension }],
       metrics: [{ name: 'activeUsers' }],
       orderBys: [{ dimension: { dimensionName: timeDimension } }]
@@ -250,7 +325,7 @@ export async function GET(request: Request) {
     // 6. Events
     const eventsReq = analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
+      dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'eventName' }],
       metrics: [{ name: 'eventCount' }]
     });
@@ -342,10 +417,12 @@ export async function GET(request: Request) {
     const chartDays = timeRes[0].rows?.map(r => {
       const dim = r.dimensionValues?.[0].value || '';
       let dayStr = dim;
-      if (range === 'today') {
+      if (timeDimension === 'hour' || dim.length === 2) {
         dayStr = dim + ':00';
       } else if (dim.length === 8) {
         dayStr = dim.substring(6,8) + '/' + dim.substring(4,6);
+      } else if (dim.length === 6) {
+        dayStr = dim.substring(4,6) + '/' + dim.substring(0,4);
       }
       return {
         day: dayStr,
