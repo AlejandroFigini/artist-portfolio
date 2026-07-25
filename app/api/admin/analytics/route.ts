@@ -404,6 +404,22 @@ export async function GET(request: Request) {
       metrics: [{ name: 'eventCount' }]
     });
 
+    const [
+      overviewRes,
+      devicesRes,
+      countriesRes,
+      sourcesRes,
+      timeRes,
+      eventsRes
+    ] = await Promise.all([
+      overviewReq,
+      devicesReq,
+      countriesReq,
+      sourcesReq,
+      timeReq,
+      eventsReq
+    ]);
+
     // Process Countries
     let totalCountriesUsers = 0;
     const countriesRaw = countriesRes[0].rows?.map(r => {
