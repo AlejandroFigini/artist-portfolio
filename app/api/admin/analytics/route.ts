@@ -330,34 +330,38 @@ export async function GET(request: Request) {
       metrics: [{ name: 'eventCount' }]
     });
 
-    const [overviewRes, devicesRes, countriesRes, sourcesRes, timeRes, eventsRes] = await Promise.all([
-      overviewReq, devicesReq, countriesReq, sourcesReq, timeReq, eventsReq
-    ]);
+    // Realtime Pulse (Total Users)
+    const realtimeReqTotal = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }]
+    });
 
-    // Realtime (Fire-and-forget logic so it doesn't fail the whole block)
-    let realtimeUsers = 0;
-    let realtimePage = 'Ninguna';
-    try {
-      const [rtResponse] = await analyticsDataClient.runRealtimeReport({
-        property: `properties/${propertyId}`,
-        metrics: [{ name: 'activeUsers' }],
-        dimensions: [{ name: 'unifiedScreenName' }],
-      });
-      
-      if (rtResponse.rows && rtResponse.rows.length > 0) {
-        let maxUsers = 0;
-        rtResponse.rows.forEach(row => {
-          const users = parseInt(row.metricValues?.[0]?.value || '0', 10);
-          realtimeUsers += users;
-          if (users > maxUsers) {
-            maxUsers = users;
-            realtimePage = row.dimensionValues?.[0]?.value || 'Ninguna';
-          }
-        });
-      }
-    } catch (e) {
-      console.error("Error fetching realtime data:", e);
-    }
+    // Realtime Pulse (Pages)
+    const realtimeReqPages = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }],
+      dimensions: [{ name: 'unifiedScreenName' }],
+    });
+
+    const [
+      realtimeResTotal,
+      realtimeResPages,
+      overviewRes,
+      devicesRes,
+      countriesRes,
+      sourcesRes,
+      timeRes,
+      eventsRes
+    ] = await Promise.all([
+      realtimeReqTotal,
+      realtimeReqPages,
+      overviewReq,
+      devicesReq,
+      countriesReq,
+      sourcesReq,
+      timeReq,
+      eventsReq
+    ]);
 
     // Process Overview
     const row = overviewRes[0].rows?.[0];
@@ -384,6 +388,22 @@ export async function GET(request: Request) {
       desktop: totalDevices ? Math.round((devicesData.desktop / totalDevices) * 100) : 0,
       mobile: totalDevices ? Math.round((devicesData.mobile / totalDevices) * 100) : 0
     };
+
+    // Process Realtime
+    // Exact deduplicated total from the dimension-less query
+    const realtimeUsers = parseInt(realtimeResTotal[0].rows?.[0]?.metricValues?.[0]?.value || '0', 10);
+    
+    // Most popular page from the dimension query
+    let realtimePage = 'Home';
+    if (realtimeResPages[0].rows && realtimeResPages[0].rows.length > 0) {
+      // Sort by active users descending to get top page
+      const sortedPages = [...realtimeResPages[0].rows].sort((a, b) => {
+        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
+        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
+        return countB - countA;
+      });
+      realtimePage = sortedPages[0].dimensionValues?.[0].value || 'Home';
+    }
 
     // Process Countries
     let totalCountriesUsers = 0;
