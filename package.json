@@ -2,8 +2,10 @@
   "name": "artist-portfolio-next",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "preinstall": "rm -rf node_modules/safe-array-concat || true",
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
