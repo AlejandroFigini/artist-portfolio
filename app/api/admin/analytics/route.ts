@@ -420,6 +420,32 @@ export async function GET(request: Request) {
       eventsReq
     ]);
 
+    // Process Overview
+    const row = overviewRes[0].rows?.[0];
+    const uniqueUsers = parseInt(row?.metricValues?.[0]?.value || '0', 10);
+    const newUsers = parseInt(row?.metricValues?.[1]?.value || '0', 10);
+    const totalViews = parseInt(row?.metricValues?.[2]?.value || '0', 10);
+    const avgSec = parseFloat(row?.metricValues?.[3]?.value || '0');
+    
+    const mins = Math.floor(avgSec / 60);
+    const secs = Math.floor(avgSec % 60);
+    const returningUsers = Math.max(0, uniqueUsers - newUsers);
+
+    // Process Devices
+    let totalDevices = 0;
+    const devicesData = { desktop: 0, mobile: 0 };
+    devicesRes[0].rows?.forEach(r => {
+      const category = r.dimensionValues?.[0].value?.toLowerCase();
+      const users = parseInt(r.metricValues?.[0].value || '0', 10);
+      totalDevices += users;
+      if (category === 'desktop') devicesData.desktop += users;
+      else devicesData.mobile += users; // mobile & tablet
+    });
+    const devices = {
+      desktop: totalDevices ? Math.round((devicesData.desktop / totalDevices) * 100) : 0,
+      mobile: totalDevices ? Math.round((devicesData.mobile / totalDevices) * 100) : 0
+    };
+
     // Process Countries
     let totalCountriesUsers = 0;
     const countriesRaw = countriesRes[0].rows?.map(r => {
