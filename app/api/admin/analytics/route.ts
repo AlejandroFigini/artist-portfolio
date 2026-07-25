@@ -247,8 +247,16 @@ export async function GET(request: Request) {
       orderBys: [{ dimension: { dimensionName: timeDimension } }]
     });
 
-    const [overviewRes, devicesRes, countriesRes, sourcesRes, timeRes] = await Promise.all([
-      overviewReq, devicesReq, countriesReq, sourcesReq, timeReq
+    // 6. Events
+    const eventsReq = analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate: 'today' }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }]
+    });
+
+    const [overviewRes, devicesRes, countriesRes, sourcesRes, timeRes, eventsRes] = await Promise.all([
+      overviewReq, devicesReq, countriesReq, sourcesReq, timeReq, eventsReq
     ]);
 
     // Realtime (Fire-and-forget logic so it doesn't fail the whole block)
@@ -345,8 +353,20 @@ export async function GET(request: Request) {
       };
     }) || [];
 
-    // Para Sections y SocialList, usaremos los mocks por ahora para que no rompa la maqueta,
-    // ya que requieren queries más pesadas
+    // Process Events
+    let cvDownloads = 0;
+    let socialClicks = 0;
+    let fullscreenOpens = 0;
+    
+    eventsRes[0].rows?.forEach(r => {
+      const eventName = r.dimensionValues?.[0].value;
+      const count = parseInt(r.metricValues?.[0].value || '0', 10);
+      if (eventName === 'cv_download') cvDownloads += count;
+      if (eventName === 'social_click') socialClicks += count;
+      if (eventName === 'fullscreen_open') fullscreenOpens += count;
+    });
+
+    // Para Sections y SocialList, usaremos los mocks por ahora (ya que requerirían custom dimensions)
     const fallbackData = mockDataMap[range] || mockDataMap['30d'];
 
     return NextResponse.json({
@@ -363,6 +383,9 @@ export async function GET(request: Request) {
         countries: countries.length > 0 ? countries : fallbackData.countries,
         sources: sources.length > 0 ? sources : fallbackData.sources,
         chartDays: chartDays.length > 0 ? chartDays : fallbackData.chartDays,
+        cvDownloads: cvDownloads > 0 ? cvDownloads : fallbackData.cvDownloads,
+        fullscreenOpens: fullscreenOpens > 0 ? fullscreenOpens : fallbackData.fullscreenOpens,
+        // socialList sigue siendo mock hasta que se configure la dimensión personalizada en GA4
       },
       _status: 'connected'
     });

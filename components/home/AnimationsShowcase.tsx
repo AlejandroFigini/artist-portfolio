@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import { sendGAEvent } from '@next/third-parties/google'
 
 const CARD_COUNT = 6
 
@@ -148,6 +149,7 @@ function AnimCard({ index }: { index: number }) {
   const openExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     setExpanded(true)
+    sendGAEvent('event', 'fullscreen_open')
   }, [])
 
   const closeExpanded = useCallback(() => {

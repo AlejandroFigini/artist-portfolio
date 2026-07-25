@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 import { openLightbox } from '@/components/ui/lightbox'
+import { sendGAEvent } from '@next/third-parties/google'
 const CELL_COUNT = 15
 /* Abrir lightbox solo si la celda tiene contenido (img con src real). Vacía →
    el overlay del engine maneja el click (picker en admin). */
@@ -23,6 +24,7 @@ function onCellClick(e: React.MouseEvent<HTMLElement>) {
     project: cell.dataset.project,
     inspiration: cell.dataset.inspiration,
   })
+  sendGAEvent('event', 'fullscreen_open')
 }
 
 function Cell() {

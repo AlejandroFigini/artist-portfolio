@@ -16,6 +16,7 @@ import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { sendGAEvent } from '@next/third-parties/google'
 
 const GALLERY_LINKS = [
   { href: '/illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
@@ -211,7 +212,7 @@ export default function Nav() {
               </div>
               <div className="dropdown-content">
                 {portfolioNets.map((n) => (
-                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer">
+                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', 'social_click', { network: n.id })}>
                     <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
                   </a>
                 ))}
@@ -233,6 +234,7 @@ export default function Nav() {
               title={settings.cvUrl ? 'Download CV' : 'CV not available yet'}
               aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
               data-i18n-title="download_cv" data-i18n-aria="download_cv"
+              onClick={() => sendGAEvent('event', 'cv_download')}
             >
               <i className="fa-solid fa-file-arrow-down"></i>
               <span data-i18n="cv">CV</span>

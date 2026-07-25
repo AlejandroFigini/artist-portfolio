@@ -5,6 +5,7 @@
 
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from './SocialProvider'
+import { sendGAEvent } from '@next/third-parties/google'
 
 export default function FooterSocial() {
   const { links } = useSocial()
@@ -20,6 +21,7 @@ export default function FooterSocial() {
           rel="noopener noreferrer"
           className="social-bubble"
           title={n.label}
+          onClick={() => sendGAEvent('event', 'social_click', { network: n.id })}
         >
           <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i>
         </a>
