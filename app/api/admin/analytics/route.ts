@@ -558,9 +558,19 @@ export async function GET(request: Request) {
         await ensureDb();
         const pool = getPool();
         if (pool) {
+          const resolveDbDate = (str: string) => {
+            if (str.match(/^\d{4}-\d{2}-\d{2}$/)) return str;
+            const dt = new Date();
+            if (str === 'yesterday') dt.setDate(dt.getDate() - 1);
+            else if (str === '7daysAgo') dt.setDate(dt.getDate() - 7);
+            else if (str === '28daysAgo') dt.setDate(dt.getDate() - 28);
+            else if (str === '30daysAgo') dt.setDate(dt.getDate() - 30);
+            else if (str === '90daysAgo') dt.setDate(dt.getDate() - 90);
+            return dt.toISOString().split('T')[0];
+          };
           const { rows } = await pool.query(
             'SELECT COUNT(*)::int as count FROM failed_logins WHERE created_at >= $1::date AND created_at <= $2::date',
-            [startDate, endDate]
+            [resolveDbDate(startDate), resolveDbDate(endDate)]
           );
           failedLogins = rows[0]?.count || 0;
         }
