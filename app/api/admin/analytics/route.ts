@@ -163,8 +163,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '7d';
 
-  if (!analyticsDataClient || !propertyId) {
-    console.warn("GA4 Credentials missing. Using mock data.");
+  // Si estamos en entorno local de desarrollo (npm run dev), O si faltan las credenciales, usamos mock data
+  if (process.env.NODE_ENV === 'development' || !analyticsDataClient || !propertyId) {
+    if (process.env.NODE_ENV !== 'development') {
+      console.warn("GA4 Credentials missing. Using mock data.");
+    }
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulamos latencia
     const data = mockDataMap[range] || mockDataMap['30d'];
     return NextResponse.json({ data, _status: 'mock' });
@@ -179,7 +182,7 @@ export async function GET(request: Request) {
 
   try {
     const [response] = await analyticsDataClient.runReport({
-      property: \`properties/\${propertyId}\`,
+      property: `properties/${propertyId}`,
       dateRanges: [{ startDate, endDate: 'today' }],
       metrics: [
         { name: 'activeUsers' },
@@ -193,7 +196,7 @@ export async function GET(request: Request) {
     let realtimePage = 'Ninguna';
     try {
       const [rtResponse] = await analyticsDataClient.runRealtimeReport({
-        property: \`properties/\${propertyId}\`,
+        property: `properties/${propertyId}`,
         metrics: [{ name: 'activeUsers' }],
         dimensions: [{ name: 'unifiedScreenName' }],
       });
@@ -234,7 +237,7 @@ export async function GET(request: Request) {
         newUsers,
         returningUsers,
         totalViews,
-        avgTime: \`\${mins}m \${secs}s\`,
+        avgTime: `${mins}m ${secs}s`,
       },
       _status: 'connected'
     });
