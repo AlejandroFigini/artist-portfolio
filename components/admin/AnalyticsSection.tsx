@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import RealtimeCard from './RealtimeCard'
 import WorldMap from "react-svg-worldmap"
+import { CmsModal } from '@/components/ui/Modal'
 /* AnalyticsSection — Layout visual de gestión de tráfico y métricas de Google Analytics (GA4).
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
    visitantes únicos, páginas más vistas, origen del tráfico y dispositivos. */
@@ -15,6 +16,26 @@ export default function AnalyticsSection() {
   const [loading, setLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const [showFailedLogins, setShowFailedLogins] = useState(false)
+  const [failedLoginsList, setFailedLoginsList] = useState<any[]>([])
+  const [loadingLogins, setLoadingLogins] = useState(false)
+
+  const handleOpenFailedLogins = async () => {
+    setShowFailedLogins(true)
+    setLoadingLogins(true)
+    try {
+      const res = await fetch(`/api/admin/analytics/failed-logins?range=${range}`)
+      const json = await res.json()
+      if (res.ok && json.data) {
+        setFailedLoginsList(json.data)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingLogins(false)
+    }
+  }
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -253,7 +274,14 @@ export default function AnalyticsSection() {
           </div>
         </div>
 
-        <div className="ga-stat-card" style={active.failedLogins > 0 ? { borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)' } : undefined}>
+        <div 
+          className="ga-stat-card" 
+          style={{
+            ...(active.failedLogins > 0 ? { borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)' } : {}),
+            cursor: active.failedLogins > 0 ? 'pointer' : 'default'
+          }}
+          onClick={() => active.failedLogins > 0 && handleOpenFailedLogins()}
+        >
           <div className="ga-stat-icon" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
             <i className="fa-solid fa-shield-cat"></i>
           </div>
@@ -420,6 +448,54 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
+      {/* Modal de Logins Fallidos */}
+      {showFailedLogins && (
+        <CmsModal
+          title={
+            <>
+              <i className="fa-solid fa-shield-cat" style={{ color: '#ef4444', marginRight: '0.6rem' }}></i>
+              Registro de Intrusiones
+            </>
+          }
+          onClose={() => setShowFailedLogins(false)}
+          wide
+          actions={[{ label: 'Cerrar', primary: true, onClick: () => {} }]}
+        >
+          {loadingLogins ? (
+            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>Cargando datos...</div>
+          ) : (
+            <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}>
+              <table className="cms-table" style={{ minWidth: '600px', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Fecha</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>IP</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Usuario Intentado</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Navegador/Sistema</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedLoginsList.map(l => (
+                    <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '0.8rem', whiteSpace: 'nowrap' }}>{new Date(l.created_at).toLocaleString()}</td>
+                      <td style={{ padding: '0.8rem', fontFamily: 'monospace' }}>{l.ip_address}</td>
+                      <td style={{ padding: '0.8rem', fontWeight: 'bold' }}>{l.username}</td>
+                      <td style={{ padding: '0.8rem', fontSize: '0.85rem', opacity: 0.8, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={l.user_agent}>
+                        {l.user_agent}
+                      </td>
+                    </tr>
+                  ))}
+                  {failedLoginsList.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>No hay registros de intrusiones en este periodo.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CmsModal>
+      )}
     </div>
   )
 }
