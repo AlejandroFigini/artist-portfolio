@@ -247,7 +247,7 @@ export type CmsStatePayload = {
 /* Trae el estado CMS compartido del servidor. Degrada a {} sin backend. */
 export async function getState(): Promise<CmsStatePayload> {
   try {
-    const r = await fetch('/api/state', { cache: 'no-store' })
+    const r = await fetch('/api/app-state', { cache: 'no-store' })
     if (!r.ok) return {}
     return await r.json()
   } catch {
@@ -258,7 +258,7 @@ export async function getState(): Promise<CmsStatePayload> {
 /* Persiste (parcial) el estado CMS al servidor. Silencioso si falla. */
 export async function saveState(payload: CmsStatePayload): Promise<void> {
   try {
-    await fetch('/api/state', {
+    await fetch('/api/app-state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -284,7 +284,7 @@ export type CloudinaryResourceInfo = {
  *  Silencioso si el backend no responde (devuelve array vacío). */
 export async function listCloudinaryResources(): Promise<CloudinaryResourceInfo[]> {
   try {
-    const r = await fetch('/api/list-cloudinary', { cache: 'no-store' })
+    const r = await fetch('/api/cloudinary-sync', { cache: 'no-store' })
     if (!r.ok) return []
     const data = await r.json()
     return (data as { resources?: CloudinaryResourceInfo[] }).resources || []
