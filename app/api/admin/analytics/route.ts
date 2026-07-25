@@ -357,6 +357,7 @@ export async function GET(request: Request) {
     let cvDownloads = 0;
     let socialClicks = 0;
     let fullscreenOpens = 0;
+    let emailClicks = 0;
     
     eventsRes[0].rows?.forEach(r => {
       const eventName = r.dimensionValues?.[0].value;
@@ -364,14 +365,11 @@ export async function GET(request: Request) {
       if (eventName === 'cv_download') cvDownloads += count;
       if (eventName === 'social_click') socialClicks += count;
       if (eventName === 'fullscreen_open') fullscreenOpens += count;
+      if (eventName === 'email_click') emailClicks += count;
     });
-
-    // Para Sections y SocialList, usaremos los mocks por ahora (ya que requerirían custom dimensions)
-    const fallbackData = mockDataMap[range] || mockDataMap['30d'];
 
     return NextResponse.json({
       data: {
-        ...fallbackData, // Solo se usa para sections y socialList
         realtimeUsers,
         realtimePage,
         uniqueUsers,
@@ -385,7 +383,11 @@ export async function GET(request: Request) {
         chartDays,
         cvDownloads,
         fullscreenOpens,
-        socialClicks, // Nueva métrica real
+        socialClicks,
+        emailClicks,
+        failedLogins: 0, // Eventos del sistema backend, se podrían extraer de los logs luego
+        socialList: [], // Lista detallada, pendiente de configurar custom dimensions en GA4
+        sections: [],
       },
       _status: 'connected'
     });
