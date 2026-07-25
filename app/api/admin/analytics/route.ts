@@ -331,10 +331,10 @@ export async function GET(request: Request) {
       const pageMap = new Map<string, number>();
       
       for (const r of realtimeResPages[0].rows) {
-        let name = r.dimensionValues?.[0].value || 'Inicio';
+        let name = (r.dimensionValues?.[0].value || '(not set)').trim();
         const count = parseInt(r.metricValues?.[0].value || '0', 10);
         
-        if (name === '(not set)' || name === '(other)') continue;
+        if (!name || name === '(not set)' || name === '(other)') continue;
         
         // Remove known prefixes to keep titles clean
         if (name.includes(' - ')) name = name.split(' - ')[0];
