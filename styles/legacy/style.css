@@ -835,7 +835,7 @@ section {
     background: rgba(10, 10, 15, 0.96);
     /* Obsidian Glass - High Contrast */
     padding: 1.2rem;
-    border-radius: 12px;
+    border-radius: 6px;
     backdrop-filter: blur(15px);
     border: 1px solid rgba(139, 92, 246, 0.3);
     transform: translateY(-15px);
@@ -851,7 +851,7 @@ section {
     align-items: center;
     gap: 1.2rem;
     padding: 0.8rem 1rem;
-    border-radius: 10px;
+    border-radius: 4px;
     transition: all 0.25s ease;
     text-decoration: none;
     width: 100%;
