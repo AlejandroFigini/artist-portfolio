@@ -99,7 +99,7 @@ export default function AnalyticsSection() {
         <span className="ga-pulse-dot" style={{ width: '8px', height: '8px', margin: 0 }}></span>
         <span style={{ fontWeight: 600, color: '#ef4444', letterSpacing: '0.05em' }}>EN VIVO:</span>
         <span style={{ color: 'var(--text-primary)', opacity: 0.8 }}>
-          Usuarios activos durante los últimos 30 minutos: <strong>{active.realtimeUsers}</strong> — viendo <em>{active.realtimePage}</em>
+          Usuarios activos durante los últimos 30 minutos: <strong>{active.realtimeUsers}</strong> {active.realtimeCountry && `(desde ${active.realtimeCountry})`} — viendo <em>{active.realtimePage}</em>
         </span>
       </div>
 

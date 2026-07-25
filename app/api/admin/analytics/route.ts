@@ -343,9 +343,17 @@ export async function GET(request: Request) {
       dimensions: [{ name: 'unifiedScreenName' }],
     });
 
+    // Realtime Pulse (Countries)
+    const realtimeReqCountries = analyticsDataClient.runRealtimeReport({
+      property: `properties/${propertyId}`,
+      metrics: [{ name: 'activeUsers' }],
+      dimensions: [{ name: 'country' }],
+    });
+
     const [
       realtimeResTotal,
       realtimeResPages,
+      realtimeResCountries,
       overviewRes,
       devicesRes,
       countriesRes,
@@ -355,6 +363,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       realtimeReqTotal,
       realtimeReqPages,
+      realtimeReqCountries,
       overviewReq,
       devicesReq,
       countriesReq,
@@ -403,6 +412,19 @@ export async function GET(request: Request) {
         return countB - countA;
       });
       realtimePage = sortedPages[0].dimensionValues?.[0].value || 'Home';
+    }
+    
+    // Most popular country from the dimension query
+    let realtimeCountry = '';
+    if (realtimeResCountries[0].rows && realtimeResCountries[0].rows.length > 0) {
+      const sortedCountries = [...realtimeResCountries[0].rows].sort((a, b) => {
+        const countA = parseInt(a.metricValues?.[0].value || '0', 10);
+        const countB = parseInt(b.metricValues?.[0].value || '0', 10);
+        return countB - countA;
+      });
+      // Get up to 2 top countries
+      const topCountries = sortedCountries.slice(0, 2).map(r => r.dimensionValues?.[0].value || '');
+      realtimeCountry = topCountries.join(', ');
     }
 
     // Process Countries
@@ -496,6 +518,7 @@ export async function GET(request: Request) {
       data: {
         realtimeUsers,
         realtimePage,
+        realtimeCountry,
         uniqueUsers,
         newUsers,
         returningUsers,
