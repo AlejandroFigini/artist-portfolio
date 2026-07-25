@@ -437,15 +437,40 @@ export async function GET(request: Request) {
     let socialClicks = 0;
     let fullscreenOpens = 0;
     let emailClicks = 0;
+    let socialListRaw: { id: string, count: number }[] = [];
     
     eventsRes[0].rows?.forEach(r => {
-      const eventName = r.dimensionValues?.[0].value;
+      const eventName = r.dimensionValues?.[0].value || '';
       const count = parseInt(r.metricValues?.[0].value || '0', 10);
       if (eventName === 'cv_download') cvDownloads += count;
-      if (eventName === 'social_click') socialClicks += count;
+      if (eventName === 'social_click') socialClicks += count; // Legacy fallback
       if (eventName === 'fullscreen_open') fullscreenOpens += count;
       if (eventName === 'email_click') emailClicks += count;
+      
+      // Parse specific social clicks
+      if (eventName.startsWith('social_click_')) {
+        const networkId = eventName.replace('social_click_', '');
+        socialClicks += count;
+        socialListRaw.push({ id: networkId, count });
+      }
     });
+
+    // Map network IDs to friendly names and icons
+    const socialIcons: Record<string, string> = {
+      instagram: 'fa-instagram', linkedin: 'fa-linkedin-in', artstation: 'fa-artstation',
+      youtube: 'fa-youtube', vimeo: 'fa-vimeo-v', behance: 'fa-behance'
+    };
+    const socialNames: Record<string, string> = {
+      instagram: 'Instagram', linkedin: 'LinkedIn', artstation: 'ArtStation',
+      youtube: 'YouTube', vimeo: 'Vimeo', behance: 'Behance'
+    };
+
+    const socialList = socialListRaw.map(s => ({
+      name: socialNames[s.id] || s.id,
+      icon: socialIcons[s.id] || 'fa-link',
+      count: s.count,
+      pct: socialClicks > 0 ? Math.round((s.count / socialClicks) * 100) : 0
+    })).sort((a, b) => b.count - a.count);
 
     return NextResponse.json({
       data: {
@@ -465,7 +490,7 @@ export async function GET(request: Request) {
         socialClicks,
         emailClicks,
         failedLogins: 0, // Eventos del sistema backend, se podrían extraer de los logs luego
-        socialList: [], // Lista detallada, pendiente de configurar custom dimensions en GA4
+        socialList, // Desglose de redes detectadas a través de eventos social_click_X
         sections: [],
       },
       _status: 'connected'

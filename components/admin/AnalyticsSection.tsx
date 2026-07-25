@@ -352,6 +352,12 @@ export default function AnalyticsSection() {
                 </div>
               </div>
             ))}
+            {(!active.socialList || active.socialList.length === 0) && (
+              <div style={{ padding: '1.5rem', textAlign: 'center', opacity: 0.6, fontSize: '0.85rem' }}>
+                <i className="fa-solid fa-clock" style={{ fontSize: '1.2rem', marginBottom: '0.5rem', display: 'block' }}></i>
+                Aún no hay clics en redes registrados en este período.
+              </div>
+            )}
           </div>
         </div>
 

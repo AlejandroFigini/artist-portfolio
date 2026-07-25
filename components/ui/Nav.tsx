@@ -212,7 +212,7 @@ export default function Nav() {
               </div>
               <div className="dropdown-content">
                 {portfolioNets.map((n) => (
-                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : 'social_click', { network: n.id })}>
+                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}>
                     <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
                   </a>
                 ))}

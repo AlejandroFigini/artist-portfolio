@@ -21,7 +21,7 @@ export default function FooterSocial() {
           rel="noopener noreferrer"
           className="social-bubble"
           title={n.label}
-          onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : 'social_click', { network: n.id })}
+          onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}
         >
           <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i>
         </a>
