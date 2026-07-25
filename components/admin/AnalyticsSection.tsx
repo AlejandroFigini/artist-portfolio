@@ -94,37 +94,13 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
-      {/* Tarjeta de Tráfico en Tiempo Real */}
-      <div className="ga-realtime-card">
-        <div className="ga-realtime-card-header">
-          <div className="ga-pulse-wrapper">
-            <div className="ga-pulse"></div>
-            <span className="ga-pulse-dot"></span>
-          </div>
-          <h3>TRÁFICO EN VIVO (Últimos 30 min)</h3>
-        </div>
-        <div className="ga-realtime-card-body">
-          <div className="ga-realtime-main-stat">
-            <span className="ga-realtime-number">{active.realtimeUsers}</span>
-            <span className="ga-realtime-label">Usuarios Activos</span>
-          </div>
-          <div className="ga-realtime-details">
-            <div className="ga-realtime-detail-item">
-              <i className="fa-solid fa-earth-americas ga-realtime-icon"></i>
-              <div className="ga-detail-text">
-                <span className="ga-detail-label">Desde</span>
-                <span className="ga-detail-value">{active.realtimeCountry || 'Global'}</span>
-              </div>
-            </div>
-            <div className="ga-realtime-detail-item">
-              <i className="fa-solid fa-file-lines ga-realtime-icon"></i>
-              <div className="ga-detail-text">
-                <span className="ga-detail-label">Viendo</span>
-                <span className="ga-detail-value">{active.realtimePage || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Banner de Tráfico en Tiempo Real */}
+      <div className="ga-realtime-banner" style={{ marginBottom: '1.5rem', background: 'var(--bg-secondary)', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.95rem' }}>
+        <div className="ga-pulse"></div>
+        <span style={{ fontWeight: 600, color: '#ef4444', letterSpacing: '0.05em' }}>EN VIVO:</span>
+        <span style={{ color: 'var(--text-primary)', opacity: 0.8 }}>
+          Usuarios activos durante los últimos 30 minutos: <strong>{active.realtimeUsers}</strong> {active.realtimeCountry ? `(desde ${active.realtimeCountry})` : ''} — viendo <em>{active.realtimePage || 'tu portafolio'}</em>
+        </span>
       </div>
 
       {/* Selector de Rango de Tiempo idéntico a GA4 */}

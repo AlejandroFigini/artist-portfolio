@@ -340,7 +340,7 @@ export async function GET(request: Request) {
     const realtimeReqPages = analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
-      dimensions: [{ name: 'unifiedScreenName' }],
+      dimensions: [{ name: 'pagePath' }],
     });
 
     // Realtime Pulse (Countries)
@@ -411,8 +411,15 @@ export async function GET(request: Request) {
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      // Get up to 2 top pages
-      const topPages = sortedPages.slice(0, 2).map(r => r.dimensionValues?.[0].value || 'Home');
+      // Get up to 2 top pages and format them nicely
+      const topPages = sortedPages.slice(0, 2).map(r => {
+        const path = r.dimensionValues?.[0].value || '/';
+        if (path === '/') return 'Home';
+        if (path.includes('/admin')) return 'Panel Admin';
+        // Capitalize the first letter of the route (e.g. /about -> About)
+        const clean = path.replace('/', '').split('/')[0];
+        return clean.charAt(0).toUpperCase() + clean.slice(1);
+      });
       realtimePage = Array.from(new Set(topPages)).join(', ');
     }
     
