@@ -331,17 +331,14 @@ export async function GET(request: Request) {
       const pageMap = new Map<string, number>();
       
       for (const r of realtimeResPages[0].rows) {
-        let name = r.dimensionValues?.[0].value || '/';
+        let name = r.dimensionValues?.[0].value || 'Inicio';
         const count = parseInt(r.metricValues?.[0].value || '0', 10);
         
         if (name === '(not set)' || name === '(other)') continue;
         
-        // GA4 Realtime API does not support pagePath, only unifiedScreenName (Page Title)
-        // We manually map known titles to paths to match the GA dashboard appearance
-        if (name.includes('Management')) name = '/admin';
-        else if (name.includes('Lucia') || name === 'Home' || name === 'Inicio') name = '/';
-        else if (name.includes(' - ')) name = '/' + name.split(' - ')[0].toLowerCase().replace(/\s+/g, '-');
-        else if (name.includes(' | ')) name = '/' + name.split(' | ')[0].toLowerCase().replace(/\s+/g, '-');
+        // Remove known prefixes to keep titles clean
+        if (name.includes(' - ')) name = name.split(' - ')[0];
+        if (name.includes(' | ')) name = name.split(' | ')[0];
         
         pageMap.set(name, (pageMap.get(name) || 0) + count);
       }
@@ -578,7 +575,7 @@ export async function GET(request: Request) {
             return dt.toISOString().split('T')[0];
           };
           const { rows } = await pool.query(
-            'SELECT COUNT(*)::int as count FROM failed_logins WHERE created_at >= $1::date AND created_at <= $2::date',
+            'SELECT COUNT(*)::int as count FROM failed_logins WHERE created_at::date >= $1::date AND created_at::date <= $2::date',
             [resolveDbDate(startDate), resolveDbDate(endDate)]
           );
           failedLogins = rows[0]?.count || 0;
