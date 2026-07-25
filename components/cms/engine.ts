@@ -948,6 +948,19 @@ function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
     cleared[`${p}.settings`] = state.items[`${p}.settings`]
     broadcastCarousel(p)
   })
+
+  // Limpiar también las tarjetas dinámicas si se borran sus contenidos (count:0)
+  const managerPrefixes = ['proj', 'char', 'illu', 'mod', 'mm']
+  const affectedManagers = new Set<string>()
+  for (const key of keys) {
+    managerPrefixes.forEach(m => {
+      if (key.startsWith(`${m}#`)) affectedManagers.add(m)
+    })
+  }
+  affectedManagers.forEach(p => {
+    state.items[`${p}.settings`] = JSON.stringify({ count: 0 })
+    cleared[`${p}.settings`] = state.items[`${p}.settings`]
+  })
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   emit()
   if (Object.keys(cleared).length) saveContent(cleared).catch(() => {})
