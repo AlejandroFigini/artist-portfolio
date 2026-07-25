@@ -411,7 +411,9 @@ export async function GET(request: Request) {
         const countB = parseInt(b.metricValues?.[0].value || '0', 10);
         return countB - countA;
       });
-      realtimePage = sortedPages[0].dimensionValues?.[0].value || 'Home';
+      // Get up to 2 top pages
+      const topPages = sortedPages.slice(0, 2).map(r => r.dimensionValues?.[0].value || 'Home');
+      realtimePage = Array.from(new Set(topPages)).join(', ');
     }
     
     // Most popular country from the dimension query
