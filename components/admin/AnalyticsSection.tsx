@@ -12,13 +12,15 @@ export default function AnalyticsSection() {
 
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
-    const fetchData = async () => {
+    const fetchData = async (isBackgroundPulse = false) => {
       if (!data) setLoading(true)
+      if (!isBackgroundPulse) setIsUpdating(true)
       try {
         const res = await fetch(`/api/admin/analytics?range=${range}`)
         const json = await res.json()
@@ -33,13 +35,14 @@ export default function AnalyticsSection() {
         setErrorMsg(err.message || 'Fallo en la red')
       } finally {
         setLoading(false)
+        setIsUpdating(false)
       }
     }
 
-    fetchData()
+    fetchData(false)
     
-    // Refresh realtime data every 30 seconds
-    intervalId = setInterval(fetchData, 30000)
+    // Refresh realtime data every 30 seconds (background pulse)
+    intervalId = setInterval(() => fetchData(true), 30000)
 
     return () => clearInterval(intervalId)
   }, [range])
@@ -130,9 +133,9 @@ export default function AnalyticsSection() {
           type="button"
           className="ga-custom-btn"
           onClick={() => setRange(pendingRange)}
-          disabled={loading || pendingRange === range}
+          disabled={isUpdating || pendingRange === range}
         >
-          {loading && pendingRange === range ? (
+          {isUpdating && pendingRange === range ? (
             <><i className="fa-solid fa-spinner fa-spin"></i> Cargando</>
           ) : (
             <><i className="fa-solid fa-check"></i> Aplicar</>
