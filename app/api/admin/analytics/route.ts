@@ -3,7 +3,14 @@ import { NextResponse } from 'next/server';
 
 const propertyId = process.env.GA4_PROPERTY_ID;
 const clientEmail = process.env.GA_CLIENT_EMAIL;
-const privateKey = process.env.GA_PRIVATE_KEY?.replace(/\\n/gm, '\n');
+// Fix private key formatting from env vars (replaces literal \n with newline characters and removes quotes)
+let privateKey = process.env.GA_PRIVATE_KEY || '';
+if (privateKey) {
+  // Elimina comillas dobles al principio y al final si las tiene (Railway a veces las inyecta)
+  privateKey = privateKey.replace(/^"|"$/g, '');
+  // Reemplaza los saltos de línea literales (\n) por saltos de línea reales
+  privateKey = privateKey.replace(/\\n/gm, '\n');
+}
 
 // Initialize GA Data API Client
 let analyticsDataClient: BetaAnalyticsDataClient | null = null;
