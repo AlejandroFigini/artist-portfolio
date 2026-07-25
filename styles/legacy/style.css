@@ -5780,3 +5780,502 @@ body.hide-cms-controls .cms-placeholder-inner {
         min-width: 250px;
     }
 }
+
+/* ============================================================
+   GOOGLE ANALYTICS DASHBOARD — Estilos del Panel de Tráfico
+   ============================================================ */
+.ga-analytics-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    padding: 1.8rem !important;
+}
+
+.ga-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ga-range-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.25rem;
+    border-radius: 8px;
+    gap: 0.25rem;
+}
+
+.ga-range-btn {
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.78rem;
+    font-family: 'Fira Code', monospace;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-primary);
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.ga-range-btn:hover {
+    opacity: 1;
+}
+
+.ga-range-btn.active {
+    background: #ffffff;
+    opacity: 1;
+    color: var(--accent);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Live Pulse Banner */
+.ga-realtime-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 0.9rem 1.2rem;
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 10px;
+}
+
+.ga-realtime-pulse {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ga-pulse-dot {
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: livePulse 1.8s infinite;
+}
+
+@keyframes livePulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.ga-pulse-text {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #10b981;
+}
+
+.ga-realtime-info {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.ga-realtime-count {
+    font-family: var(--font-display, 'Syne', sans-serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #10b981;
+    margin-right: 0.4rem;
+}
+
+/* Key Stats Grid */
+.ga-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.1rem;
+}
+
+.ga-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.2rem;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ga-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+}
+
+.ga-stat-icon {
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.ga-stat-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.ga-stat-value {
+    font-family: var(--font-display, 'Syne', sans-serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
+}
+
+.ga-stat-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 0.15rem;
+    display: flex;
+    align-items: center;
+}
+
+.ga-info-icon {
+    font-size: 0.72rem;
+    color: var(--text-primary);
+    opacity: 0.45;
+    margin-left: 0.35rem;
+    cursor: help;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.ga-info-icon:hover {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.ga-stat-desc {
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+
+/* Chart Section */
+.ga-chart-section {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 1.3rem;
+    box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.05);
+}
+
+.ga-section-title {
+    font-family: var(--font-display, 'Syne', sans-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1.2rem;
+}
+
+.ga-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 160px;
+    gap: 0.8rem;
+    padding-top: 1.5rem;
+}
+
+.ga-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+}
+
+.ga-bar-val {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+
+.ga-bar-wrapper {
+    flex: 1;
+    width: 100%;
+    max-width: 40px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.ga-bar-fill {
+    width: 100%;
+    background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);
+    border-radius: 6px 6px 0 0;
+    transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ga-bar-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 0.5rem;
+}
+
+/* Secondary Grids */
+.ga-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.2rem;
+}
+
+.ga-box {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.05);
+}
+
+.ga-box--countries {
+    grid-column: 1 / -1;
+}
+
+.ga-countries-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .ga-countries-layout {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .ga-countries-layout .ga-map-wrapper {
+        flex: 1.5;
+        max-width: 60%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .ga-countries-layout .ga-list--countries {
+        flex: 1;
+        max-width: 35%;
+    }
+}
+
+.ga-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+}
+
+.ga-header-col {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    opacity: 0.6;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.ga-metric-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+}
+
+select.ga-metric-select {
+    appearance: none;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    text-align: right;
+    padding: 0;
+    margin: 0;
+    opacity: 0.8;
+    color: var(--accent);
+    transition: opacity 0.2s ease;
+}
+
+.ga-metric-caret {
+    font-size: 0.75rem;
+    color: var(--accent);
+    opacity: 0.8;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.ga-metric-select-wrapper:hover select.ga-metric-select,
+.ga-metric-select-wrapper:hover .ga-metric-caret {
+    opacity: 1;
+}
+
+select.ga-metric-select option {
+    color: #1a1a1a;
+    background: #ffffff;
+}
+
+.ga-countries-layout .ga-list-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    margin-bottom: 0;
+}
+
+.ga-countries-layout .ga-list-item:last-child {
+    border-bottom: none;
+}
+
+.ga-countries-layout .ga-list-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.ga-countries-layout .ga-list-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.ga-countries-layout .ga-list-sub {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.ga-box-header {
+    font-family: var(--font-display, 'Syne', sans-serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.ga-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.ga-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.ga-list-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+}
+
+.ga-list-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.ga-list-sub {
+    font-size: 0.72rem;
+    opacity: 0.65;
+    font-family: 'Fira Code', monospace;
+}
+
+.ga-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+}
+
+.ga-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--accent);
+    flex: 1;
+}
+
+.ga-progress-bar--blue {
+    background: #3b82f6;
+}
+
+.ga-progress-bar--green {
+    background: #10b981;
+}
+
+.ga-pct-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    width: 2.2rem;
+    text-align: right;
+    opacity: 0.75;
+}
+
+/* Devices */
+.ga-devices-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 1.5rem 0.5rem;
+}
+
+.ga-device-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.ga-device-pct {
+    font-family: var(--font-display, 'Syne', sans-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.ga-device-label {
+    font-size: 0.78rem;
+    opacity: 0.7;
+}
+
+.ga-device-divider {
+    width: 1px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* Footer Status */
+.ga-footer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1.1rem;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0.85;
+}

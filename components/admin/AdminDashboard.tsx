@@ -20,6 +20,7 @@ import { seedUsedContent } from '../cms/engine'
 import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
 import SocialSettings from './SocialSettings'
 import UsersSection from './UsersSection'
+import AnalyticsSection from './AnalyticsSection'
 import { MediaCard, type AnyEntry } from './cards'
 
 const NAV_BOTTOM = [
@@ -203,6 +204,9 @@ export default function AdminDashboard() {
             <button type="button" className={`admin-nav-item${section === 'resumen' ? ' active' : ''}`} onClick={() => goto('resumen')}>
               <i className="fa-solid fa-gauge-high"></i><span>Summary</span>
             </button>
+            <button type="button" className={`admin-nav-item${section === 'analitica' ? ' active' : ''}`} onClick={() => goto('analitica')}>
+              <i className="fa-solid fa-chart-line"></i><span>Traffic Analytics</span>
+            </button>
             <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
               <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
             </button>
@@ -360,6 +364,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {section === 'analitica' && <AnalyticsSection />}
           {section === 'usuarios' && <UsersSection />}
 
           {isAjustes && (
