@@ -481,7 +481,15 @@ export default function AnalyticsSection() {
                       <td style={{ padding: '0.8rem', fontFamily: 'monospace' }}>{l.ip_address}</td>
                       <td style={{ padding: '0.8rem', fontWeight: 'bold' }}>{l.username}</td>
                       <td style={{ padding: '0.8rem', fontSize: '0.85rem', opacity: 0.8, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={l.user_agent}>
-                        {l.user_agent}
+                        {(() => {
+                          const ua = (l.user_agent || '').toLowerCase();
+                          if (ua.includes('edg/')) return 'Edge';
+                          if (ua.includes('chrome/')) return 'Chrome';
+                          if (ua.includes('safari/') && !ua.includes('chrome/')) return 'Safari';
+                          if (ua.includes('firefox/')) return 'Firefox';
+                          if (ua.includes('curl') || ua.includes('bot') || ua.includes('postman')) return 'Script / Bot';
+                          return l.user_agent.split(' ')[0] || 'Desconocido';
+                        })()}
                       </td>
                     </tr>
                   ))}
