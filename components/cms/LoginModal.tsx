@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { login } from '@/lib/api'
 
-type Props = { onSuccess: (username?: string) => void; onClose: () => void }
+type Props = { onSuccess: (username?: string, role?: string, needsSetup?: boolean) => void; onClose: () => void }
 
 export default function LoginModal({ onSuccess, onClose }: Props) {
   const toast = useToast()
@@ -32,7 +32,7 @@ export default function LoginModal({ onSuccess, onClose }: Props) {
           creds.current = { user, pass }
           setPhase('2fa')
         } else if (data.success) {
-          onSuccess(data.user?.username)
+          onSuccess(data.user?.username, data.user?.role, data.user?.needsSetup)
           onClose()
           toast('Logged in successfully')
         } else {

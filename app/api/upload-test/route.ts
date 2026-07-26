@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { uploadDataUrl, folderSlug } from '@/lib/storage'
-import { requireSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,12 +9,24 @@ export const dynamic = 'force-dynamic'
    del entorno (Cloudinary en prod, filesystem local en dev). Devuelve la URL +
    métricas (lo que espera el cliente: lib/api.ts → uploadMedia). */
 export async function POST(req: Request) {
-  const auth = await requireSession(req)
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
 
   let body: { base64Data?: string; originalSize?: number; originalName?: string; section?: string; mediaState?: 'used' | 'unused' | 'trash' }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { base64Data, originalSize = 0, originalName = 'archivo', section, mediaState } = body
+
+  if (auth.user.role === 'demo') {
+    return NextResponse.json({
+      success: true,
+      secure_url: 'https://via.placeholder.com/800x600?text=Demo+Upload',
+      final_bytes: originalSize,
+      final_format: base64Data?.startsWith('data:video') ? 'mp4' : 'jpg',
+      original_size: originalSize,
+      original_name: originalName,
+      asset_id: 'demo-asset-id',
+    })
+  }
 
   if (!base64Data || typeof base64Data !== 'string') {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })

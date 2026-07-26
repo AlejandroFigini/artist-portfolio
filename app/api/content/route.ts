@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { uploadDataUrl } from '@/lib/storage'
-import { requireSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,8 +28,12 @@ export async function GET() {
    Si algún value es una data URL (base64), se sube al storage (Cloudinary en
    prod, filesystem local en dev) y se guarda la URL resultante, no el base64. */
 export async function POST(req: Request) {
-  const auth = await requireSession(req)
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+
+  if (auth.user.role === 'demo') {
+    return NextResponse.json({ success: true, message: 'Content saved successfully (Demo Mode)' })
+  }
 
   let body: { items?: Record<string, unknown> }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }

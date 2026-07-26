@@ -178,10 +178,20 @@ const mockDataMap: any = {
   }
 }
 
+import { requireRole } from '@/lib/auth';
+
 export async function GET(request: Request) {
+  const auth = await requireRole(request, ['owner', 'admin', 'demo']);
+  if ('deny' in auth) return auth.deny;
+
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '7d';
   const realtimeOnly = searchParams.get('realtimeOnly') === 'true';
+
+  if (auth.user.role === 'demo') {
+    const data = { ...mockDataMap[range] || mockDataMap['30d'], failedLogins: 0 };
+    return NextResponse.json({ data, _status: 'mock-demo' });
+  }
 
   // Si estamos en entorno local de desarrollo (npm run dev), O si faltan las credenciales, usamos mock data
   if (process.env.NODE_ENV === 'development' || !analyticsDataClient || !propertyId) {

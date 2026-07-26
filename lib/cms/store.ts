@@ -105,6 +105,8 @@ export const state = {
   containerNames: {} as Record<string, string>,
   isAdmin: false,
   username: '',                                               // usuario de la sesión actual
+  role: '',                                                   // rol del usuario (owner, admin, demo)
+  needsSetup: false,                                          // indica si el usuario debe cambiar credenciales
   lang: BASE_LANG as Lang,                                   // idioma activo
   translations: {} as Record<string, Record<string, string>>, // lang -> key -> valor traducido
 }
@@ -308,9 +310,11 @@ export function recordAudit(entry: Partial<AuditEntry> & { user?: string }) {
   emit()
 }
 
-export function setAdminFlag(on: boolean, username?: string) {
+export function setAdminFlag(on: boolean, username?: string, role?: string, needsSetup?: boolean) {
   state.isAdmin = on
   state.username = on ? username || state.username : ''
+  state.role = on ? role || state.role : ''
+  state.needsSetup = on ? needsSetup || false : false
   // la sesión real vive en la cookie httpOnly `sid` (server-side); el
   // localStorage es solo un hint de UX para pintar rápido al recargar.
   try { localStorage.setItem(LS.ADMIN, on ? '1' : '0') } catch {}

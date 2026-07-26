@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   const auth = await requireSession(req)
   if ('deny' in auth) return auth.deny
-  const { username, totpEnabled } = auth.user
-  return NextResponse.json({ success: true, user: { username, totpEnabled } })
+  const { username, role, needsSetup, totpEnabled } = auth.user
+  return NextResponse.json({ success: true, user: { username, role, needsSetup, totpEnabled } })
 }
 
 /* PATCH /api/account → el usuario logeado edita SUS credenciales.
@@ -25,6 +25,10 @@ export async function PATCH(req: Request) {
 
   let body: { username?: string; currentPassword?: string; newPassword?: string }
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
+
+  if (me.needsSetup && (!body.username || !body.newPassword)) {
+    return NextResponse.json({ success: false, error: 'You must change both username and password to complete setup.' }, { status: 400 })
+  }
 
   const pool = getPool()!
   const updates: string[] = []
@@ -59,6 +63,10 @@ export async function PATCH(req: Request) {
     passwordChanged = true
   }
 
+  if (me.needsSetup) {
+    updates.push(`needs_setup = FALSE`)
+  }
+
   if (!updates.length) {
     return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
   }
@@ -68,5 +76,5 @@ export async function PATCH(req: Request) {
   if (passwordChanged) await destroyOtherSessions(me.id, me.sid)
 
   const username = body.username !== undefined ? String(body.username).trim() : me.username
-  return NextResponse.json({ success: true, user: { username, totpEnabled: me.totpEnabled } })
+  return NextResponse.json({ success: true, user: { username, role: me.role, needsSetup: false, totpEnabled: me.totpEnabled } })
 }

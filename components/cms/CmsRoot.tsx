@@ -30,6 +30,7 @@ const EditTextModal = dynamic(() => import('./TextModals').then((m) => m.EditTex
 const EditInfoModal = dynamic(() => import('./TextModals').then((m) => m.EditInfoModal), { ssr: false })
 const ConfirmMoveModal = dynamic(() => import('./TextModals').then((m) => m.ConfirmMoveModal), { ssr: false })
 const ExportModal = dynamic(() => import('./TextModals').then((m) => m.ExportModal), { ssr: false })
+const ForceSetupView = dynamic(() => import('../admin/ForceSetupView'), { ssr: false })
 
 export default function CmsRoot() {
   const toast = useToast()
@@ -63,10 +64,10 @@ export default function CmsRoot() {
   }, [])
 
   // Modo admin: overlay de edición + slots (port setAdmin)
-  const setAdmin = useCallback((on: boolean, username?: string) => {
-    setAdminFlag(on, username)
+  const setAdmin = useCallback((on: boolean, username?: string, role?: string, needsSetup?: boolean) => {
+    setAdminFlag(on, username, role, needsSetup)
     document.body.classList.toggle('is-admin', on)
-    if (on) {
+    if (on && !needsSetup) {
       engine.indexEditables()
       engine.seedUsedContent()
       engine.attachEditControls()
@@ -92,7 +93,7 @@ export default function CmsRoot() {
     engine.hydrate()
     engine.refreshRetired()
 
-    if (state.isAdmin) {
+    if (state.isAdmin && !state.needsSetup) {
       engine.attachEditControls()
     }
   }, [pathname])
@@ -143,7 +144,7 @@ export default function CmsRoot() {
         })
 
         // Session & i18n handling (unchanged)
-        getAccount().then((account) => setAdmin(!!account, account?.username))
+        getAccount().then((account) => setAdmin(!!account, account?.username, account?.role, account?.needsSetup))
         getTranslations()
           .then((tr) => {
             state.translations = tr
@@ -215,6 +216,14 @@ export default function CmsRoot() {
             authHost,
           )}
 
+          {state.needsSetup && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9999999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: 500, margin: '1rem' }}>
+                <ForceSetupView />
+              </div>
+            </div>
+          )}
+
           {/* input de archivo para "Subir desde tu PC" (gesto sincrónico) */}
           <input
             ref={fileInputRef} type="file" style={{ display: 'none' }}
@@ -257,7 +266,7 @@ export default function CmsRoot() {
           )}
 
           {cmd?.type === 'login' && (
-            <LoginModal onClose={close} onSuccess={(username) => setAdmin(true, username)} />
+            <LoginModal onClose={close} onSuccess={(username, role, needsSetup) => setAdmin(true, username, role, needsSetup)} />
           )}
           {cmd?.type === 'editText' && <EditTextModal cmsKey={cmd.key} onClose={close} />}
           {cmd?.type === 'editInfo' && <EditInfoModal cmsKey={cmd.key} onClose={close} />}

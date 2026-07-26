@@ -64,7 +64,7 @@ export default function AdminDashboard() {
     if (!state.loaded) loadState()
     // verificación real contra la sesión server (cookie httpOnly) — el flag
     // de localStorage es solo un hint de pintado.
-    getAccount().then((account) => setAdminFlag(!!account, account?.username))
+    getAccount().then((account) => setAdminFlag(!!account, account?.username, account?.role, account?.needsSetup))
     // Sincronizar estado compartido desde el server (usedContent, unused,
     // retired, etc.) para reflejar cambios de otros dispositivos/usuarios.
     loadServerState().then(() => {
@@ -156,7 +156,9 @@ export default function AdminDashboard() {
       </div>
     )
   }
-
+  if (state.needsSetup) {
+    return null
+  }
 
 
   const navBadge = (label: string, count: number, size: number) => (
@@ -178,7 +180,7 @@ export default function AdminDashboard() {
         <div className="admin-topbar-right">
           <div className="admin-dropdown-wrapper">
             <span className="cms-user-chip" title={`Sesión iniciada como ${state.username || 'Administrador'}`}>
-              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} {state.role === 'demo' && <span style={{ marginLeft: 4, padding: '2px 6px', background: 'var(--accent)', color: 'white', borderRadius: 4, fontSize: '0.7em' }}>DEMO</span>} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
             </span>
             <div className="admin-dropdown-menu">
               <div className="admin-menu-header">Sesión actual: {state.username || 'Administrador'}</div>
@@ -208,9 +210,11 @@ export default function AdminDashboard() {
             <button type="button" className={`admin-nav-item${section === 'analitica' ? ' active' : ''}`} onClick={() => goto('analitica')}>
               <i className="fa-solid fa-chart-line"></i><span>Traffic Analytics</span>
             </button>
-            <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
-              <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
-            </button>
+            {state.role === 'owner' && (
+              <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
+                <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
+              </button>
+            )}
             <div className="admin-nav-group">
               <button type="button" className={`admin-nav-item${isAjustes ? ' active' : ''}`} onClick={() => setAjustesOpen(!ajustesOpen)}>
                 <i className="fa-solid fa-sliders"></i>
@@ -266,6 +270,12 @@ export default function AdminDashboard() {
         </aside>
 
         <main className="admin-root">
+          {state.role === 'demo' && (
+            <div style={{ background: '#ffa500', color: '#000', padding: '0.8rem 1rem', borderRadius: 8, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+              <i className="fa-solid fa-triangle-exclamation"></i>
+              <span>You are in Demo Mode. You can interact with the dashboard, but changes will not be saved to production.</span>
+            </div>
+          )}
           {section === 'resumen' && (
             <div className="admin-card">
               <h2><i className="fa-solid fa-gauge-high"></i> Summary
@@ -369,7 +379,7 @@ export default function AdminDashboard() {
           )}
 
           {section === 'analitica' && <AnalyticsSection />}
-          {section === 'usuarios' && <UsersSection />}
+          {section === 'usuarios' && state.role === 'owner' && <UsersSection />}
 
           {isAjustes && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>

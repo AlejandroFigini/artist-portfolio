@@ -9,11 +9,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toDataURL } from 'qrcode'
 import { state, useCmsStore, setAdminFlag, recordAudit } from '@/lib/cms/store'
-import { updateAccount, twoFa, getUsers, type UserRow } from '@/lib/api'
+import { updateAccount, twoFa, getUsers, createUser, updateUserAdmin, deleteUserAdmin, type UserRow } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { fmtDate } from '@/lib/utils'
 
-type View = 'menu' | 'username' | 'password' | '2fa-setup' | '2fa-disable'
+type View = 'menu' | 'username' | 'password' | '2fa-setup' | '2fa-disable' | 'create-user' | 'manage-user'
 
 const GUIDE_STEPS = [
   { icon: 'fa-mobile-screen-button', text: 'Install an authenticator app on your phone: Google Authenticator, Microsoft Authenticator, or Authy (free on App Store / Play Store).' },
@@ -27,9 +27,11 @@ export default function UsersSection() {
   const toast = useToast()
   const [users, setUsers] = useState<UserRow[]>([])
   const [view, setView] = useState<View>('menu')
+  const [openMenuUser, setOpenMenuUser] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [activeUser, setActiveUser] = useState<UserRow | null>(null)
   const [qr, setQr] = useState<{ img: string; secret: string } | null>(null)
-  const [form, setForm] = useState({ username: '', current: '', next: '', repeat: '', code: '', password: '' })
+  const [form, setForm] = useState({ username: '', current: '', next: '', repeat: '', code: '', password: '', newRole: 'demo', sessionTtl: '60' })
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -92,15 +94,131 @@ export default function UsersSection() {
     setView('menu')
   })
 
+  const handleCreateUser = () => run(async () => {
+    if (form.next !== form.repeat) throw new Error('Passwords do not match')
+    await createUser({ username: form.username, password: form.next, role: form.newRole })
+    setForm((f) => ({ ...f, username: '', next: '', repeat: '', newRole: 'demo' }))
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Created user ${form.username} (${form.newRole})` })
+    toast('User created successfully')
+    refresh()
+    setView('menu')
+  })
+
+  const handleBlockUser = (u: UserRow, blocked: boolean) => run(async () => {
+    await updateUserAdmin(u.username, { action: 'block', is_blocked: blocked })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `${blocked ? 'Blocked' : 'Unblocked'} user ${u.username}` })
+    toast(`User ${u.username} ${blocked ? 'blocked' : 'unblocked'}`)
+    refresh()
+    if (activeUser?.username === u.username) setActiveUser({ ...u, isBlocked: blocked })
+  })
+
+  const handleRoleChange = (u: UserRow, newRole: string) => run(async () => {
+    await updateUserAdmin(u.username, { action: 'role', role: newRole })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Changed role of ${u.username} to ${newRole}` })
+    toast(`Role changed to ${newRole}`)
+    refresh()
+    if (activeUser?.username === u.username) setActiveUser({ ...u, role: newRole })
+  })
+
+  const handleForceReset = (u: UserRow) => run(async () => {
+    await updateUserAdmin(u.username, { action: 'reset' })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Forced reset for ${u.username}` })
+    toast(`Force reset applied to ${u.username}`)
+  })
+
+  const handleSetTtl = (u: UserRow) => run(async () => {
+    const minutes = parseInt(form.sessionTtl, 10)
+    await updateUserAdmin(u.username, { action: 'ttl', session_ttl_minutes: minutes })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Set session TTL for ${u.username} to ${minutes}m` })
+    toast(`Session TTL updated for ${u.username}`)
+    refresh()
+    if (activeUser?.username === u.username) setActiveUser({ ...u, sessionTtlMinutes: minutes })
+  })
+
+  const handleKillSessions = (u: UserRow) => run(async () => {
+    await updateUserAdmin(u.username, { action: 'kill_sessions' })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Killed active sessions for ${u.username}` })
+    toast(`All sessions for ${u.username} destroyed`)
+  })
+
+  const handleUpdateCreds = (u: UserRow) => run(async () => {
+    if (form.next && form.next !== form.repeat) throw new Error('Passwords do not match')
+    await updateUserAdmin(u.username, { action: 'credentials', newUsername: form.username, newPassword: form.next })
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Updated credentials for ${u.username}` })
+    toast(`Credentials updated successfully`)
+    setForm(f => ({ ...f, next: '', repeat: '' }))
+    if (form.username && form.username !== u.username) {
+      setView('menu')
+    }
+    refresh()
+  })
+
+  const handleDeleteUser = (u: UserRow) => run(async () => {
+    if (!confirm(`Are you sure you want to completely delete ${u.username}?`)) return
+    await deleteUserAdmin(u.username)
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Deleted user ${u.username}` })
+    toast(`User ${u.username} deleted`)
+    refresh()
+    setView('menu')
+  })
+
   return (
     <div className="admin-card">
       <h2><i className="fa-solid fa-users-gear"></i> Manage Users</h2>
       <p className="cms-admin-sub">Site users and your account credentials.</p>
 
       {/* ----- Lista de usuarios ----- */}
-      <div className="cms-audit-table-wrap">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        {state.role === 'owner' && view !== 'create-user' && (
+          <button type="button" className="cms-btn cms-btn--primary" onClick={() => {
+            setForm(f => ({ ...f, username: '', next: '', repeat: '', newRole: 'demo' }))
+            setView('create-user')
+          }}>
+            <i className="fa-solid fa-user-plus"></i> Create User
+          </button>
+        )}
+      </div>
+
+      {view === 'create-user' && (
+        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>Create New User</div>
+            <button type="button" className="cms-btn" onClick={() => setView('menu')}>
+              <i className="fa-solid fa-xmark"></i> Cancel
+            </button>
+          </div>
+          <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+            <label className="cms-field"><span>Username (min 3 chars)</span>
+              <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
+            </label>
+            <label className="cms-field"><span>Password (min 8 chars)</span>
+              <input type="password" value={form.next} onChange={set('next')} />
+            </label>
+            <label className="cms-field"><span>Repeat password</span>
+              <input type="password" value={form.repeat} onChange={set('repeat')} />
+            </label>
+            <label className="cms-field"><span>Role</span>
+              <select value={form.newRole} onChange={e => setForm(f => ({ ...f, newRole: e.target.value }))} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                <option value="demo">Demo (Read-only sandbox)</option>
+                <option value="admin">Admin (Full access, no user management)</option>
+              </select>
+            </label>
+            <div className="cms-confirm-actions">
+              <button
+                type="button" className="cms-btn cms-btn--primary"
+                disabled={busy || form.username.length < 3 || form.next.length < 8 || !form.repeat}
+                onClick={handleCreateUser}
+              >
+                {busy ? 'Creating…' : 'Create User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="cms-audit-table-wrap" style={{ display: view === 'create-user' ? 'none' : 'block' }}>
         <table className="cms-audit-table">
-          <thead><tr><th>User</th><th>2FA</th><th>Last login</th><th>Created</th></tr></thead>
+          <thead><tr><th>User</th><th>Role</th><th>2FA</th><th>Last login</th><th>Created</th><th>Actions</th></tr></thead>
           <tbody>
             {users.length === 0 && <tr><td colSpan={4} className="cms-audit-empty">Loading users…</td></tr>}
             {users.map((u) => (
@@ -110,25 +228,134 @@ export default function UsersSection() {
                   {u.username === state.username && <span className="cms-tag" style={{ marginLeft: 8 }}>your session</span>}
                 </td>
                 <td>
+                  {u.isBlocked ? (
+                    <span className="cms-tag" style={{ background: '#d32f2f' }}>BLOCKED</span>
+                  ) : (
+                    <span className="cms-tag" style={{ background: u.role === 'demo' ? '#ffa500' : u.role === 'owner' ? 'var(--accent)' : 'var(--color-primary)' }}>
+                      {u.role ? u.role.toUpperCase() : 'UNKNOWN'}
+                    </span>
+                  )}
+                </td>
+                <td>
                   <span className="cms-tag" style={{ color: u.totpEnabled ? 'var(--color-primary)' : undefined }}>
                     <i className={`fa-solid ${u.totpEnabled ? 'fa-shield-halved' : 'fa-shield'}`}></i> {u.totpEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </td>
                 <td>{u.lastLoginAt ? fmtDate(new Date(u.lastLoginAt).getTime()) : 'Never'}</td>
                 <td>{fmtDate(new Date(u.createdAt).getTime())}</td>
+                <td style={{ position: 'relative' }}>
+                  {u.username !== state.username && u.role !== 'owner' && (
+                    <>
+                      <button type="button" className="cms-btn" style={{ padding: '0.4rem 0.6rem' }} onClick={() => setOpenMenuUser(openMenuUser === u.username ? null : u.username)}>
+                        <i className="fa-solid fa-gear"></i>
+                      </button>
+
+                      {openMenuUser === u.username && (
+                        <div style={{ position: 'absolute', right: '10px', top: '100%', zIndex: 100, background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', minWidth: '200px', padding: '0.5rem', overflow: 'hidden' }}>
+                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleBlockUser(u, !u.isBlocked); setOpenMenuUser(null) }}>
+                            <i className={`fa-solid ${u.isBlocked ? 'fa-unlock' : 'fa-lock'}`} style={{ width: 20 }}></i> {u.isBlocked ? 'Unblock' : 'Block'}
+                          </button>
+
+                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleRoleChange(u, u.role === 'demo' ? 'admin' : 'demo'); setOpenMenuUser(null) }}>
+                            <i className="fa-solid fa-user-shield" style={{ width: 20 }}></i> Make {u.role === 'demo' ? 'Admin' : 'Demo'}
+                          </button>
+
+                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleForceReset(u); setOpenMenuUser(null) }}>
+                            <i className="fa-solid fa-rotate-left" style={{ width: 20 }}></i> Force Reset
+                          </button>
+
+                          {u.role === 'demo' && (
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ff9800', borderBottom: '1px solid var(--border)' }} onClick={() => { handleKillSessions(u); setOpenMenuUser(null) }}>
+                              <i className="fa-solid fa-skull" style={{ width: 20 }}></i> Kill Sessions
+                            </button>
+                          )}
+
+                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => {
+                            setActiveUser(u)
+                            setForm(f => ({ ...f, username: u.username, next: '', repeat: '', newRole: u.role, sessionTtl: String(u.sessionTtlMinutes || 60) }))
+                            setView('manage-user')
+                            setOpenMenuUser(null)
+                          }}>
+                            <i className="fa-solid fa-key" style={{ width: 20 }}></i> Credentials & TTL
+                          </button>
+
+                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#d32f2f' }} onClick={() => { handleDeleteUser(u); setOpenMenuUser(null) }}>
+                            <i className="fa-solid fa-trash" style={{ width: 20 }}></i> Delete User
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {view === 'manage-user' && activeUser && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--bg-primary)', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden', width: '100%', maxWidth: 500, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', margin: '1rem', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>Manage: {activeUser.username}</div>
+              <button type="button" className="cms-btn" onClick={() => setView('menu')}>
+                <i className="fa-solid fa-xmark"></i> Close
+              </button>
+            </div>
+            <div className="cms-login-form" style={{ padding: '1.5rem', overflowY: 'auto' }}>
+
+              {activeUser.role === 'demo' && (
+                <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
+                  <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}><i className="fa-solid fa-stopwatch"></i> Demo Session Controls</h4>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <select value={form.sessionTtl} onChange={e => setForm(f => ({ ...f, sessionTtl: e.target.value }))} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                      <option value="10">10 Minutes</option>
+                      <option value="15">15 Minutes</option>
+                      <option value="30">30 Minutes</option>
+                      <option value="60">1 Hour</option>
+                      <option value="1440">24 Hours</option>
+                    </select>
+                    <button type="button" className="cms-btn cms-btn--primary" disabled={busy} onClick={() => handleSetTtl(activeUser)}>
+                      Set Expiry
+                    </button>
+                  </div>
+                  <button type="button" className="cms-btn cms-btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={() => handleKillSessions(activeUser)}>
+                    <i className="fa-solid fa-skull"></i> Kill Active Sessions
+                  </button>
+                </div>
+              )}
+
+              <h4 style={{ margin: '1rem 0 0.5rem', fontSize: '0.9rem' }}>Directly Change Credentials</h4>
+              <label className="cms-field"><span>New Username (leave blank to keep current)</span>
+                <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
+              </label>
+              <label className="cms-field"><span>New Password (leave blank to keep current)</span>
+                <input type="password" value={form.next} onChange={set('next')} />
+              </label>
+              <label className="cms-field"><span>Repeat New Password</span>
+                <input type="password" value={form.repeat} onChange={set('repeat')} />
+              </label>
+              <div className="cms-confirm-actions">
+                <button
+                  type="button" className="cms-btn cms-btn--primary"
+                  disabled={busy || (!form.username && !form.next)}
+                  onClick={() => handleUpdateCreds(activeUser)}
+                >
+                  {busy ? 'Saving…' : 'Update Credentials'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ----- Mi cuenta ----- */}
-      <h2 style={{ marginTop: '2.5rem', marginBottom: '1rem' }}>
+      <h2 style={{ marginTop: '2.5rem', marginBottom: '1rem', display: view === 'create-user' ? 'none' : 'block' }}>
         <i className="fa-solid fa-user-pen"></i> Edit Account
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 600 }}>
-        
+      <div style={{ display: view === 'create-user' ? 'none' : 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 600 }}>
+
         {/* Username Block */}
         <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
@@ -208,7 +435,7 @@ export default function UsersSection() {
               </button>
             )}
           </div>
-          
+
           {view === '2fa-setup' && qr && (
             <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
               <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>

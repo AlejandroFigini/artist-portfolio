@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     await ensureDb()
     const pool = getPool()!
     const { rows } = await pool.query(
-      'SELECT id, username, password_hash, totp_secret, totp_enabled FROM users WHERE username = $1',
+      'SELECT id, username, role, needs_setup, is_blocked, password_hash, totp_secret, totp_enabled FROM users WHERE username = $1',
       [user],
     )
     const u = rows[0]
@@ -46,6 +46,10 @@ export async function POST(req: Request) {
       ).catch(e => console.error('[login] db failed_logins error:', e))
       
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
+    }
+
+    if (u.is_blocked) {
+      return NextResponse.json({ success: false, error: 'Account is locked. Please contact the administrator.' }, { status: 403 })
     }
 
     if (u.totp_enabled) {
@@ -65,12 +69,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const { token, maxAge } = await createSession(u.id)
+    const { token, maxAge } = await createSession(u.id, u.role || 'owner')
     await pool.query('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1', [u.id])
     const res = NextResponse.json({
       success: true,
       message: 'Login successful',
-      user: { username: u.username, totpEnabled: !!u.totp_enabled },
+      user: { username: u.username, role: u.role || 'owner', needsSetup: !!u.needs_setup, totpEnabled: !!u.totp_enabled },
     })
     setSessionCookie(res, token, maxAge)
     return res

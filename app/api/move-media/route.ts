@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server'
 import { moveAssetFolder } from '@/lib/storage'
-import { requireSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /* POST /api/move-media → mueve un asset de Cloudinary a una nueva carpeta. */
 export async function POST(req: Request) {
-  const auth = await requireSession(req)
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
 
   let body: { url?: string; newFolder?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { url, newFolder } = body
+
+  if (auth.user.role === 'demo') {
+    return NextResponse.json({ success: true, newUrl: url })
+  }
 
   if (!url || typeof url !== 'string' || !newFolder || typeof newFolder !== 'string') {
     return NextResponse.json({ error: 'url and newFolder are required' }, { status: 400 })

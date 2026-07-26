@@ -88,6 +88,18 @@ const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '2026_07_users_role',
+    sql: "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'owner'",
+  },
+  {
+    id: '2026_07_users_needs_setup',
+    sql: "ALTER TABLE users ADD COLUMN IF NOT EXISTS needs_setup BOOLEAN DEFAULT FALSE",
+  },
+  {
+    id: '2026_07_users_adv_mgmt',
+    sql: "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE, ADD COLUMN IF NOT EXISTS session_ttl_minutes INTEGER",
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

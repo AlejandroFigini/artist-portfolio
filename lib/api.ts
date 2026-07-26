@@ -3,14 +3,14 @@
 
 export type ContentItems = Record<string, string>
 
-export type AccountUser = { username: string; totpEnabled: boolean }
+export type AccountUser = { username: string; role: string; needsSetup?: boolean; totpEnabled: boolean }
 
 export type LoginResponse = {
   success: boolean
   require2FA?: boolean
   message?: string
   error?: string
-  user?: AccountUser
+  user?: AccountUser & { needsSetup?: boolean }
 }
 
 export type UploadResponse = {
@@ -65,7 +65,7 @@ export async function login(user: string, pass: string, code: string | null): Pr
 }
 
 export async function logout(): Promise<void> {
-  try { await fetch('/api/logout', { method: 'POST' }) } catch {}
+  try { await fetch('/api/logout', { method: 'POST' }) } catch { }
 }
 
 /* Sesión actual (fuente de verdad de "estoy logeado"): 200 = sesión válida. */
@@ -95,13 +95,41 @@ export async function updateAccount(payload: {
   return (data as { user: AccountUser }).user
 }
 
-export type UserRow = AccountUser & { lastLoginAt: string | null; createdAt: string }
+export type UserRow = AccountUser & { lastLoginAt: string | null; createdAt: string; isBlocked?: boolean; sessionTtlMinutes?: number | null }
 
 export async function getUsers(): Promise<UserRow[]> {
   const r = await fetch('/api/users', { cache: 'no-store' })
   if (!r.ok) return []
   const data = await r.json().catch(() => ({}))
   return (data as { users?: UserRow[] }).users || []
+}
+
+export async function createUser(payload: { username: string; password: string; role: string }): Promise<void> {
+  const r = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error creando usuario')
+}
+
+export async function updateUserAdmin(username: string, payload: any): Promise<void> {
+  const r = await fetch(`/api/users/${encodeURIComponent(username)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error updating user')
+}
+
+export async function deleteUserAdmin(username: string): Promise<void> {
+  const r = await fetch(`/api/users/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error deleting user')
 }
 
 export async function twoFa(payload:
