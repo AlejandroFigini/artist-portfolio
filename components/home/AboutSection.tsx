@@ -18,6 +18,8 @@ import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterReveal
 import { sendGAEvent } from '@next/third-parties/google'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
+import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
+import { useSocial } from '@/components/ui/SocialProvider'
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
@@ -29,13 +31,7 @@ const SPECS = [
   { k: 'EDUCATION', v: 'B.A. Animation' },
 ]
 
-const SOCIALS = [
-  { href: 'https://www.instagram.com/',  label: 'Instagram',  icon: 'fa-instagram' },
-  { href: 'https://www.artstation.com/', label: 'ArtStation', icon: 'fa-artstation' },
-  { href: 'https://www.behance.net/',    label: 'Behance',    icon: 'fa-behance' },
-  { href: 'https://www.linkedin.com/',   label: 'LinkedIn',   icon: 'fa-linkedin-in' },
-  { href: 'https://vimeo.com/',          label: 'Vimeo',      icon: 'fa-vimeo-v' },
-]
+
 
 function Corners() {
   return (
@@ -54,6 +50,8 @@ export default function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null)
   useCmsStore()
   const isAdmin = state.isAdmin
+  const { links } = useSocial()
+  const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -178,11 +176,11 @@ export default function AboutSection() {
               <div className="about-meta-block">
                 <span className="about-meta-row about-meta-head">{"// CONTACT"}</span>
                 <ul className="about-socials">
-                  {SOCIALS.map((s) => (
-                    <li key={s.label} className="about-social">
-                      <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} onClick={() => sendGAEvent('event', s.label === 'Email' ? 'email_click' : `social_click_${s.label.toLowerCase()}`)}>
-                        <i className={`fa-brands ${s.icon}`} aria-hidden="true" />
-                        <span className="about-social-label">{s.label}</span>
+                  {nets.map((n) => (
+                    <li key={n.id} className="about-social">
+                      <a href={socialHref(n, links[n.id])} target={n.type === 'email' ? undefined : '_blank'} rel="noopener noreferrer" aria-label={n.label} onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}>
+                        <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`} aria-hidden="true" />
+                        <span className="about-social-label">{n.label}</span>
                       </a>
                     </li>
                   ))}

@@ -5888,7 +5888,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 /* Key Stats Grid */
 .ga-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.1rem;
 }
 
@@ -5921,19 +5921,27 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 .ga-stat-body {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0 0.4rem;
+    width: 100%;
 }
 
 .ga-stat-value {
+    grid-column: 1;
+    grid-row: 1;
     font-family: var(--font-display, 'Syne', sans-serif);
     font-size: 1.4rem;
     font-weight: 700;
     line-height: 1.1;
     color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .ga-stat-title {
+    grid-column: 2;
+    grid-row: 1;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -5957,8 +5965,11 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 .ga-stat-desc {
+    grid-column: 1 / -1;
+    grid-row: 2;
     font-size: 0.7rem;
     opacity: 0.6;
+    margin-top: 0.25rem;
 }
 
 /* Chart Section */
@@ -6468,3 +6479,6 @@ select.ga-metric-select option {
     width: 100%;
   }
 }
+
+
+

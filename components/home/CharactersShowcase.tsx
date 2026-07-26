@@ -25,6 +25,7 @@ import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { rescan } from '@/components/cms/engine'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
+import { sendGAEvent } from '@next/third-parties/google'
 
 const CONCEPTS_PER = 3
 
@@ -296,6 +297,7 @@ export default function CharactersShowcase() {
   const openLightbox = useCallback((lb: Lightbox) => {
     setLightbox(lb)
     setShowInfo(false)
+    sendGAEvent('event', 'fullscreen_open')
   }, [])
   const closeLightbox = useCallback(() => {
     setLightbox(null)

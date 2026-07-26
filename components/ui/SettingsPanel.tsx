@@ -14,6 +14,7 @@ import { fileToDataURL } from '@/lib/media'
 import { getTranslations, importTranslations } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
+import { sendGAEvent } from '@next/third-parties/google'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -235,6 +236,7 @@ export default function SettingsPanel() {
             target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
             title={settings.cvUrl ? 'Download Curriculum Vitae (PDF)' : 'CV not available yet'}
             aria-disabled={!settings.cvUrl || undefined}
+            onClick={() => sendGAEvent('event', 'cv_download')}
           >
             <i className="fa-solid fa-file-arrow-down"></i>
             <span>CV</span>

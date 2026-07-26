@@ -1,7 +1,11 @@
+'use client'
+
 /* Footer — portado de shared-ui.js (FOOTER). Server component estático. */
 
 import Link from 'next/link'
 import FooterSocial from './FooterSocial'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { sendGAEvent } from '@next/third-parties/google'
 
 const EXPLORE_LINKS = [
   { href: '/#presentacion', label: 'About me', i18n: 'nav_about' },
@@ -13,6 +17,7 @@ const EXPLORE_LINKS = [
 ]
 
 export default function Footer() {
+  const { settings } = useSiteSettings()
   return (
     <footer className="main-footer" id="contacto">
       <div className="footer-grid">
@@ -39,9 +44,19 @@ export default function Footer() {
           <a href="mailto:lumontana23@gmail.com" className="contact-email">
             <i className="fa-solid fa-envelope"></i> lumontana23@gmail.com
           </a>
-          <button type="button" className="cv-btn cv-btn-footer" id="cv-download-footer" title="Download CV" aria-label="Download CV" data-i18n-title="download_cv" data-i18n-aria="download_cv">
+          <a
+            className={`cv-btn cv-btn-footer${settings.cvUrl ? '' : ' is-disabled'}`}
+            id="cv-download-footer"
+            href={settings.cvUrl || undefined}
+            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
+            title={settings.cvUrl ? 'Download CV' : 'CV not available yet'}
+            aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
+            data-i18n-title="download_cv" data-i18n-aria="download_cv"
+            onClick={() => sendGAEvent('event', 'cv_download')}
+          >
             <i className="fa-solid fa-file-arrow-down"></i><span data-i18n="cv">CV</span>
-          </button>
+          </a>
         </div>
       </div>
       <div className="footer-bottom-bar">
