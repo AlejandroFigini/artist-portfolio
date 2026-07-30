@@ -37,6 +37,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 })
   }
 
+  // Límites de tamaño: el base64 es ~33% más grande que el binario.
+  // 20 MB binario ≈ 27 MB base64, 100 MB binario ≈ 134 MB base64.
+  const MAX_IMAGE_BASE64 = 27 * 1024 * 1024 // ~20 MB original
+  const MAX_VIDEO_BASE64 = 134 * 1024 * 1024 // ~100 MB original
+  const maxSize = isVideo ? MAX_VIDEO_BASE64 : MAX_IMAGE_BASE64
+  if (base64Data.length > maxSize) {
+    const limitMb = isVideo ? 100 : 20
+    return NextResponse.json({ error: `File too large. Maximum ${limitMb} MB for ${isVideo ? 'videos' : 'images'}.` }, { status: 413 })
+  }
+
   try {
     const folder = folderSlug(typeof section === 'string' ? section : '', mediaState)
     const media = await uploadDataUrl(base64Data, isVideo ? 'video' : 'image', folder, originalName)

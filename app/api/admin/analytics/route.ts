@@ -622,6 +622,8 @@ export async function GET(request: Request) {
 
   } catch (err: any) {
     console.error('GA4 API Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const isDev = (process.env.NODE_ENV as string) === 'development';
+    const safeMessage = isDev ? err.message : 'Analytics service error';
+    return NextResponse.json({ error: safeMessage }, { status: 500 });
   }
 }

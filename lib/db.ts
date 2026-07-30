@@ -27,7 +27,7 @@ export function getPool(): Pool | null {
   if (!g._pgPool) {
     g._pgPool = new Pool({
       connectionString: dbUrl,
-      ssl: needsSsl(dbUrl) ? { rejectUnauthorized: false } : false,
+      ssl: needsSsl(dbUrl) ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false,
       max: 5,
     })
   }
