@@ -51,10 +51,19 @@ export function approxDataUrlBytes(s: string): number {
 
 // Miniatura optimizada de Cloudinary (igual que admin.js thumb())
 export function cloudinaryThumb(src: string, video?: boolean): string {
-  if (!src.includes('res.cloudinary.com')) return src
+  if (!src || !src.includes('res.cloudinary.com')) return src
   let t = src.replace('/upload/', '/upload/c_fill,w_150,h_150,q_auto,f_auto/')
   if (video) t = t.replace(/\.webm|\.mp4|\.mov/i, '.jpg')
   return t
+}
+
+// Optimización general de imágenes de Cloudinary para el frontend (f_auto, q_auto, ancho máximo)
+export function cloudinaryOptimize(src?: string | null, opts: { width?: number; quality?: string } = {}): string {
+  if (!src || typeof src !== 'string' || !src.includes('res.cloudinary.com')) return src || ''
+  if (src.includes('f_auto') && src.includes('q_auto')) return src
+  const w = opts.width ? `,w_${opts.width},c_limit` : ''
+  const q = opts.quality || 'auto'
+  return src.replace('/upload/', `/upload/f_auto,q_${q}${w}/`)
 }
 
 export function getFileExtension(filename?: string | null): string {

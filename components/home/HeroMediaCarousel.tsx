@@ -5,6 +5,7 @@ import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 
+import { cloudinaryOptimize } from '@/lib/utils';
 // Default duration if not provided by CMS
 const DEFAULT_DURATION_MS = 7000;
 
@@ -99,7 +100,7 @@ export default function HeroMediaCarousel({
               {isFilled ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={src}
+                  src={cloudinaryOptimize(src, { width: 1200 })}
                   alt=""
                   className={className}
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}

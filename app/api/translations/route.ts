@@ -24,15 +24,23 @@ export async function GET() {
     await ensureDb()
     const pool = getPool()!
     const items = emptyMaps()
-    const base = await pool.query('SELECT key, value FROM cms_data')
-    for (const row of base.rows as { key: string; value: string }[]) {
+    
+    // Consultas en paralelo a Postgres
+    const [baseRes, trRes] = await Promise.all([
+      pool.query('SELECT key, value FROM cms_data'),
+      pool.query('SELECT key, lang, value FROM cms_translations'),
+    ])
+
+    for (const row of baseRes.rows as { key: string; value: string }[]) {
       if (isTranslatableEntry(row.key, row.value)) items[BASE_LANG][row.key] = row.value
     }
-    const tr = await pool.query('SELECT key, lang, value FROM cms_translations')
-    for (const row of tr.rows as { key: string; lang: string; value: string }[]) {
+    for (const row of trRes.rows as { key: string; lang: string; value: string }[]) {
       if (items[row.lang as Lang]) items[row.lang as Lang][row.key] = row.value
     }
-    return NextResponse.json({ base: BASE_LANG, langs: ALL_LANGS, items })
+
+    const res = NextResponse.json({ base: BASE_LANG, langs: ALL_LANGS, items })
+    res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+    return res
   } catch (err) {
     console.error('[translations GET] error:', err)
     return NextResponse.json(empty)

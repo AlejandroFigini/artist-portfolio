@@ -21,7 +21,9 @@ export async function GET() {
     for (const row of res.rows as { key: string; value: string }[]) {
       items[row.key.replace('social.', '')] = row.value
     }
-    return NextResponse.json({ items })
+    const response = NextResponse.json({ items })
+    response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+    return response
   } catch (err) {
     console.error('[social GET] error:', err)
     return NextResponse.json(empty)

@@ -6,5 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const settings = await getSiteSettingsServer()
-  return NextResponse.json(settings)
+  const res = NextResponse.json(settings)
+  res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  return res
 }

@@ -11,6 +11,8 @@ import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { useCmsStore } from '@/lib/cms/store'
 
+import { cloudinaryOptimize } from '@/lib/utils'
+
 const DEFAULT_INTERVAL_MS = 6000
 
 type HeroDetail = { slides: string[]; duration: number }
@@ -65,7 +67,7 @@ export default function HeroSlideshow() {
           <div
             key={`${i}-${src}`}
             className="carousel-slide"
-            style={{ backgroundImage: `url('${src}')`, ...(i === 0 ? { opacity: 1 } : {}) }}
+            style={{ backgroundImage: `url('${cloudinaryOptimize(src, { width: 1600 })}')`, ...(i === 0 ? { opacity: 1 } : {}) }}
           ></div>
         ))}
         <div className="carousel-overlay"></div>
