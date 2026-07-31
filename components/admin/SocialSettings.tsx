@@ -57,7 +57,7 @@ export default function SocialSettings() {
           <div key={n.id} className="setting-item">
             <span><i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`} style={{ width: '1.2em' }}></i> {n.label}</span>
             <input
-              type={n.type === 'email' ? 'email' : 'url'}
+              type={n.type === 'email' ? 'text' : 'url'}
               className="social-input"
               placeholder={n.placeholder}
               value={vals[n.id]}

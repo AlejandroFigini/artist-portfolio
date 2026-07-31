@@ -22,6 +22,7 @@ import RealtimeCard from './RealtimeCard'
 import SocialSettings from './SocialSettings'
 import UsersSection from './UsersSection'
 import AnalyticsSection from './AnalyticsSection'
+import MessagesSection, { useUnreadCount } from './MessagesSection'
 import { MediaCard, type AnyEntry } from './cards'
 
 const NAV_BOTTOM = [
@@ -54,6 +55,7 @@ export default function AdminDashboard() {
   const { confirm } = useModal()
   const toast = useToast()
   const [section, setSection] = useState('resumen')
+  const unreadCount = useUnreadCount()
   const [subOpen, setSubOpen] = useState(false)
   const [ajustesOpen, setAjustesOpen] = useState(false)
   const [modal, setModal] = useState<AdminModal | null>(null)
@@ -209,6 +211,26 @@ export default function AdminDashboard() {
             </button>
             <button type="button" className={`admin-nav-item${section === 'analitica' ? ' active' : ''}`} onClick={() => goto('analitica')}>
               <i className="fa-solid fa-chart-line"></i><span>Traffic Analytics</span>
+            </button>
+            <button type="button" className={`admin-nav-item${section === 'mensajes' ? ' active' : ''}`} onClick={() => goto('mensajes')}>
+              <i className="fa-solid fa-envelope"></i>
+              <span>
+                Messages
+                {unreadCount > 0 && (
+                  <span style={{
+                    marginLeft: '0.4rem',
+                    background: 'var(--accent)',
+                    color: 'white',
+                    fontSize: '0.65em',
+                    padding: '1px 6px',
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    verticalAlign: 'middle',
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </span>
             </button>
             {state.role === 'owner' && (
               <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
@@ -379,6 +401,7 @@ export default function AdminDashboard() {
           )}
 
           {section === 'analitica' && <AnalyticsSection />}
+          {section === 'mensajes' && <MessagesSection />}
           {section === 'usuarios' && state.role === 'owner' && <UsersSection />}
 
           {isAjustes && (

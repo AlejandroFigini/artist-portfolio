@@ -8,7 +8,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { setLanguage } from '@/components/cms/engine'
@@ -17,6 +17,8 @@ import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { sendGAEvent } from '@next/third-parties/google'
+
+const ContactModal = lazy(() => import('@/components/ui/ContactModal'))
 
 const GALLERY_LINKS = [
   { href: '/illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
@@ -37,6 +39,7 @@ export default function Nav() {
   const [navOpen, setNavOpen] = useState(false)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
   const [langOpen, setLangOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
   const activeLang = LANG_META[state.lang]
   const headerRef = useRef<HTMLElement>(null)
   const linksRef = useRef<HTMLElement>(null)
@@ -212,9 +215,15 @@ export default function Nav() {
               </div>
               <div className="dropdown-content">
                 {portfolioNets.map((n) => (
-                  <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}>
-                    <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
-                  </a>
+                  n.type === 'email' ? (
+                    <a key={n.id} href="#" onClick={(e) => { e.preventDefault(); setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}>
+                      <i className={`fa-solid ${n.icon}`}></i> {n.label}
+                    </a>
+                  ) : (
+                    <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', `social_click_${n.id}`)}>
+                      <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
+                    </a>
+                  )
                 ))}
               </div>
             </div>
@@ -274,6 +283,11 @@ export default function Nav() {
         </span>
       </header>
       <div className="nav-backdrop" id="nav-backdrop" onClick={closeNav}></div>
+      {contactOpen && (
+        <Suspense fallback={null}>
+          <ContactModal onClose={() => setContactOpen(false)} />
+        </Suspense>
+      )}
     </>
   )
 }

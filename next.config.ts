@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     ];
   },
   // bcryptjs funciona mejor cuando Node.js lo resuelve fuera del bundle de webpack.
-  serverExternalPackages: ['bcryptjs'],
+  serverExternalPackages: ['bcryptjs', 'resend'],
 };
 
 export default nextConfig;

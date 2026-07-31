@@ -19,15 +19,21 @@ export const SOCIAL_NETWORKS: SocialNetwork[] = [
   { id: 'instagram', label: 'Instagram', icon: 'fa-instagram', brand: true, placeholder: 'https://instagram.com/usuario', home: 'https://www.instagram.com/' },
   { id: 'behance', label: 'Behance', icon: 'fa-behance', brand: true, placeholder: 'https://www.behance.net/usuario', home: 'https://www.behance.net/' },
   { id: 'linkedin', label: 'LinkedIn', icon: 'fa-linkedin-in', brand: true, placeholder: 'https://www.linkedin.com/in/usuario', home: 'https://www.linkedin.com/' },
-  { id: 'email', label: 'Email', icon: 'fa-envelope', brand: false, type: 'email', placeholder: 'tucorreo@dominio.com' },
+  { id: 'email', label: 'Email', icon: 'fa-envelope', brand: false, type: 'email', placeholder: 'correo@dominio.com  (o dos separados por coma)' },
 ]
 
 export const socialKey = (id: string) => `social.${id}`
 
-/** href final según el tipo de red (mailto: para email). Vacío → sin enlace. */
+/** href final según el tipo de red (mailto: para email). Vacío → sin enlace.
+ *  Para email soporta "email1, email2" — el mailto usa el primero. */
 export function socialHref(net: SocialNetwork, value: string): string {
   const v = (value || '').trim()
   if (!v) return ''
-  if (net.type === 'email') return v.startsWith('mailto:') ? v : `mailto:${v}`
+  if (net.type === 'email') {
+    // Tomar el primer email si hay varios separados por coma
+    const first = v.split(',')[0].trim()
+    if (!first) return ''
+    return first.startsWith('mailto:') ? first : `mailto:${first}`
+  }
   return v
 }

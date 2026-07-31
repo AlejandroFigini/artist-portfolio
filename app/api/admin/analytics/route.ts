@@ -1,39 +1,10 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 import { getPool, ensureDb, hasDb } from '@/lib/db';
+import { getAnalyticsClient, getAnalyticsPropertyId } from '@/lib/analytics';
 
-const propertyId = process.env.GA4_PROPERTY_ID;
-let clientEmail = process.env.GA_CLIENT_EMAIL;
-let privateKey = process.env.GA_PRIVATE_KEY || '';
-
-// Si el usuario guardó el JSON completo en una variable (mucho más seguro contra errores de formato en Railway)
-if (process.env.GA_CREDENTIALS_JSON) {
-  try {
-    const creds = JSON.parse(process.env.GA_CREDENTIALS_JSON);
-    if (creds.client_email) clientEmail = creds.client_email;
-    if (creds.private_key) privateKey = creds.private_key;
-  } catch (e) {
-    console.error("Error parsing GA_CREDENTIALS_JSON", e);
-  }
-}
-
-if (privateKey) {
-  // Elimina comillas dobles al principio y al final
-  privateKey = privateKey.replace(/^"|"$/g, '');
-  // Reemplaza los saltos de línea literales (\n) por saltos de línea reales
-  privateKey = privateKey.replace(/\\n/gm, '\n');
-}
-
-// Initialize GA Data API Client
-let analyticsDataClient: BetaAnalyticsDataClient | null = null;
-if (propertyId && clientEmail && privateKey) {
-  analyticsDataClient = new BetaAnalyticsDataClient({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
-  });
-}
+const propertyId = getAnalyticsPropertyId();
+const analyticsDataClient = getAnalyticsClient();
 
 // Datos mock para el layout de vista previa visual
 // Estos se usarán como respaldo si las credenciales de GA4 no están configuradas en el archivo .env

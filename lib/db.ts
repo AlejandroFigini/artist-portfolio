@@ -100,6 +100,21 @@ const MIGRATIONS: { id: string; sql: string }[] = [
     id: '2026_07_users_adv_mgmt',
     sql: "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE, ADD COLUMN IF NOT EXISTS session_ttl_minutes INTEGER",
   },
+  {
+    id: '2026_07_contact_messages',
+    sql: `
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id SERIAL PRIMARY KEY,
+        sender_name VARCHAR(100) NOT NULL,
+        sender_email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) DEFAULT '',
+        message TEXT NOT NULL,
+        ip_address VARCHAR(45),
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales
