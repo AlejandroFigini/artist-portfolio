@@ -192,6 +192,36 @@ export default function ProjectsShowcase() {
   // Reinitialize carousel when content changes using shared hook
   useCarouselSync(carouselApi, projSignature, [displayCount])
 
+  // Pausar autoplay del carrusel cuando hay un modal abierto
+  useEffect(() => {
+    if (!carouselApi) return
+    const onModalOpen = () => {
+      try {
+        const autoplay = carouselApi.plugins()?.autoplay as any
+        if (autoplay) autoplay.stop()
+      } catch {}
+    }
+    const onModalClose = () => {
+      try {
+        const autoplay = carouselApi.plugins()?.autoplay as any
+        if (autoplay && !document.body.classList.contains('contact-modal-open') && !document.body.classList.contains('cms-modal-open')) {
+          autoplay.play()
+        }
+      } catch {}
+    }
+
+    if (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open')) {
+      onModalOpen()
+    }
+
+    window.addEventListener('modal:open', onModalOpen)
+    window.addEventListener('modal:close', onModalClose)
+    return () => {
+      window.removeEventListener('modal:open', onModalOpen)
+      window.removeEventListener('modal:close', onModalClose)
+    }
+  }, [carouselApi])
+
   useEffect(() => {
     if (prefersReducedMotion()) return
     ensureGSAP()

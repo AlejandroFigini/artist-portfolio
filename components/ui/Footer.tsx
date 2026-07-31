@@ -41,7 +41,14 @@ export default function Footer() {
         <div className="footer-col contact-col">
           <h3 className="footer-label" data-i18n="footer_connect">Connect</h3>
           <p className="contact-item"><i className="fa-solid fa-location-dot"></i> Montevideo, Uruguay</p>
-          <a href="mailto:lumontana23@gmail.com" className="contact-email">
+          <a 
+            href="mailto:lumontana23@gmail.com" 
+            className="contact-email"
+            onClick={(e) => {
+              e.preventDefault()
+              window.dispatchEvent(new Event('open-contact'))
+            }}
+          >
             <i className="fa-solid fa-envelope"></i> lumontana23@gmail.com
           </a>
           <a

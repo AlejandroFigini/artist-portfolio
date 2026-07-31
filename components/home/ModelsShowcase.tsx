@@ -141,7 +141,8 @@ function Coverflow() {
       : null
     if (stage && io) io.observe(stage)
     const id = setInterval(() => {
-      if (!hoverRef.current && inView && !dragRef.current.active) go(1)
+      const isModalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
+      if (!hoverRef.current && inView && !dragRef.current.active && !isModalOpen) go(1)
     }, AUTOPLAY_MS)
     return () => { clearInterval(id); io?.disconnect() }
   }, [go])

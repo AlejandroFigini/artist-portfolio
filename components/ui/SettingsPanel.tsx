@@ -246,14 +246,14 @@ export default function SettingsPanel() {
           <span>Language</span>
           <div className="lang-selector-settings" id="lang-selector-settings">
             <button className="lang-btn-settings" id="lang-toggle-settings" aria-label="Change language" onClick={() => setLangOpen((o) => !o)}>
-              <span className={`fi fi-${activeLang.flag}`} id="lang-flag-settings"></span>
+              <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-settings" />
               <span className="lang-code" id="lang-code-settings">{state.lang.toUpperCase()}</span>
               <i className="fa-solid fa-chevron-down chev"></i>
             </button>
             <div className={`lang-dropdown-settings${langOpen ? ' active' : ''}`} id="lang-dropdown-settings">
               {ALL_LANGS.map((code) => (
                 <button key={code} className="lang-option" data-lang={code} title={LANG_META[code].label} onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}>
-                  <span className={`fi fi-${LANG_META[code].flag}`}></span> {LANG_META[code].label}
+                  <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
                 </button>
               ))}
             </div>

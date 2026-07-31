@@ -264,7 +264,7 @@ export default function Nav() {
                 title="Language"
                 onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
               >
-                <span className={`fi fi-${activeLang.flag}`} id="lang-flag-nav"></span>
+                <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-nav" />
                 <span className="lang-code" id="lang-code-nav">{state.lang.toUpperCase()}</span>
               </button>
               <div className={`lang-dropdown${langOpen ? ' active' : ''}`} id="lang-dropdown-nav">
@@ -276,7 +276,7 @@ export default function Nav() {
                     title={LANG_META[code].label}
                     onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
                   >
-                    <span className={`fi fi-${LANG_META[code].flag}`}></span> {LANG_META[code].label}
+                    <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
                   </button>
                 ))}
               </div>

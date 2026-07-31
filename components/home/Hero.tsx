@@ -159,6 +159,9 @@ export default function Hero() {
 
     // replay: quita la clase, fuerza reflow y la re-agrega → reinicia el CSS anim
     const replay = () => {
+      if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
+        return
+      }
       title.classList.remove('anim-in')
       void (title as HTMLElement).offsetWidth
       title.classList.add('anim-in')

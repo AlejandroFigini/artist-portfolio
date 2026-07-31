@@ -87,9 +87,9 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
   }
 
   const cycle = () => {
-    if (killed) return
-    // pausa global activada mid-loop → dejar el texto pleno y no re-animar
-    if (motionOffActive()) { wait = gsap.delayedCall(intervalSec, cycle); return }
+    // pausa global o modal abierto mid-loop → dejar el texto pleno y no re-animar
+    const modalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
+    if (motionOffActive() || modalOpen) { wait = gsap.delayedCall(intervalSec, cycle); return }
     const tools = detachTools()
     const text = el.textContent || ''
     lastText = text

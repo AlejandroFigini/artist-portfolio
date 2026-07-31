@@ -230,21 +230,42 @@ export default function CharactersShowcase() {
     if (!autoScroll) return
 
     let timer: NodeJS.Timeout
+    const isModalOpen = () => document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open')
+
     const resumeFast = () => {
       clearTimeout(timer)
       timer = setTimeout(() => {
-        if (isHoveringRef.current) return // Si el usuario está posado con el mouse en el carrusel o tarjeta, NUNCA reanudar
+        if (isHoveringRef.current || isModalOpen()) return // NUNCA reanudar si el usuario está hover o hay modal abierto
         autoScroll.play()
       }, 0)
     }
 
+    const onModalOpen = () => {
+      try { autoScroll.stop() } catch {}
+    }
+    const onModalClose = () => {
+      try {
+        if (!isHoveringRef.current && !isModalOpen()) {
+          autoScroll.play()
+        }
+      } catch {}
+    }
+
+    if (isModalOpen()) {
+      onModalOpen()
+    }
+
     api.on('pointerUp', resumeFast)
     api.on('settle', resumeFast)
+    window.addEventListener('modal:open', onModalOpen)
+    window.addEventListener('modal:close', onModalClose)
 
     return () => {
       clearTimeout(timer)
       api.off('pointerUp', resumeFast)
       api.off('settle', resumeFast)
+      window.removeEventListener('modal:open', onModalOpen)
+      window.removeEventListener('modal:close', onModalClose)
     }
   }, [api])
 

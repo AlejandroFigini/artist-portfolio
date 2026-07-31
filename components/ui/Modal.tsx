@@ -10,6 +10,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useKeyHandler } from '@/hooks/useKeyHandler'
+import { gsap } from '@/hooks/useGSAP'
 
 export type ModalAction = {
   label: React.ReactNode
@@ -27,6 +28,7 @@ type CmsModalProps = {
   actions?: ModalAction[]
   wide?: boolean
   className?: string
+  overlayClassName?: string
   // acciones en un único renglón (sin wrap), botones compactos
   compactActions?: boolean
   // sin X / Escape / click-afuera (p.ej. durante una subida)
@@ -36,7 +38,7 @@ type CmsModalProps = {
   onClose: () => void
 }
 
-export function CmsModal({ title, children, actions, wide, className = '', compactActions, locked, show = true, zIndex, onClose }: CmsModalProps) {
+export function CmsModal({ title, children, actions, wide, className = '', overlayClassName = '', compactActions, locked, show = true, zIndex, onClose }: CmsModalProps) {
   const [visible, setVisible] = useState(false)
   // Solo cierra si el gesto EMPEZÓ y TERMINÓ sobre el overlay. Evita que
   // arrastrar una selección de texto desde dentro y soltar afuera cierre el modal.
@@ -47,8 +49,14 @@ export function CmsModal({ title, children, actions, wide, className = '', compa
 
   useEffect(() => {
     document.body.classList.add('cms-modal-open')
+    try { gsap.globalTimeline.pause() } catch {}
+    window.dispatchEvent(new CustomEvent('modal:open'))
     return () => {
-      if (!document.querySelector('.cms-modal-overlay')) document.body.classList.remove('cms-modal-open')
+      if (!document.querySelector('.cms-modal-overlay')) {
+        document.body.classList.remove('cms-modal-open')
+        try { gsap.globalTimeline.play() } catch {}
+        window.dispatchEvent(new CustomEvent('modal:close'))
+      }
     }
   }, [])
 
@@ -56,7 +64,7 @@ export function CmsModal({ title, children, actions, wide, className = '', compa
 
   return (
     <div
-      className={`cms-modal-overlay${visible && show !== false ? ' show' : ''}`}
+      className={`cms-modal-overlay ${overlayClassName}${visible && show !== false ? ' show' : ''}`}
       style={{
         display: show === false ? 'none' : undefined,
         ...(zIndex ? { zIndex } : {}),

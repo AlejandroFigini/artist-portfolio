@@ -30,8 +30,6 @@ const BOOT_SCRIPT = `
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
-    // "Pausar animaciones" persistido: la clase debe existir ANTES de que
-    // monten las secciones (sus setups GSAP la chequean vía prefersReducedMotion).
     if (localStorage.getItem('cms_motion_off_v1') === '1') {
       document.documentElement.classList.add('motion-off');
     }
@@ -69,12 +67,9 @@ const BOOT_SCRIPT = `
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const initialSettings = await getSiteSettingsServer()
-  const iconUrl = initialSettings.faviconUrl || '/favicon.ico'
   return (
     <html lang="en" data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <head></head>
-      <body suppressHydrationWarning>
-        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${BOOT_SCRIPT}</script>` }} style={{ display: 'none' }} />
+      <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
@@ -82,19 +77,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
         <link
           rel="stylesheet"
-          precedence="default"
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@200..800&family=Syne:wght@400..800&family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap"
         />
         <link
           rel="stylesheet"
-          precedence="default"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
         />
         <link
           rel="stylesheet"
-          precedence="default"
           href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
         />
+      </head>
+      <body suppressHydrationWarning>
+        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${BOOT_SCRIPT}</script>` }} style={{ display: 'none' }} />
         <Providers initialSettings={initialSettings}>{children}</Providers>
         <GoogleAnalytics gaId="G-SPJEZ45JR0" />
       </body>

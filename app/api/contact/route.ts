@@ -81,17 +81,26 @@ export async function POST(req: Request) {
   const turnstileToken = (body.turnstileToken || '').trim()
 
   // Validaciones
-  if (!name || name.length > 100) {
-    return NextResponse.json({ error: 'Name is required (max 100 characters).' }, { status: 400 })
+  if (!name) {
+    return NextResponse.json({ error: 'Name is required.', field: 'name' }, { status: 400 })
   }
-  if (!email || !EMAIL_RE.test(email) || email.length > 255) {
-    return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
+  if (name.length > 100) {
+    return NextResponse.json({ error: 'Name must be 100 characters or less.', field: 'name' }, { status: 400 })
+  }
+  if (!email) {
+    return NextResponse.json({ error: 'Email is required.', field: 'email' }, { status: 400 })
+  }
+  if (!EMAIL_RE.test(email) || email.length > 255) {
+    return NextResponse.json({ error: 'Please provide a valid email address.', field: 'email' }, { status: 400 })
   }
   if (subject.length > 255) {
-    return NextResponse.json({ error: 'Subject is too long (max 255 characters).' }, { status: 400 })
+    return NextResponse.json({ error: 'Subject is too long (max 255 characters).', field: 'subject' }, { status: 400 })
   }
-  if (!message || message.length > 5000) {
-    return NextResponse.json({ error: 'Message is required (max 5000 characters).' }, { status: 400 })
+  if (!message) {
+    return NextResponse.json({ error: 'Message is required.', field: 'message' }, { status: 400 })
+  }
+  if (message.length > 5000) {
+    return NextResponse.json({ error: 'Message must be 5000 characters or less.', field: 'message' }, { status: 400 })
   }
 
   const ip = getClientIp(req)

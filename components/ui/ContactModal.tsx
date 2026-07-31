@@ -6,11 +6,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
+import { gsap } from '@/hooks/useGSAP'
 import '@/styles/contact-modal.css'
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
 
 export default function ContactModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
@@ -20,9 +21,34 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileStatus, setTurnstileStatus] = useState<'loading' | 'success'>('loading')
   const turnstileRef = useRef<HTMLDivElement>(null)
   const turnstileWidgetId = useRef<string | null>(null)
   const [charCount, setCharCount] = useState(0)
+
+  // Pause background animations, GSAP timelines, and videos when contact modal is open
+  useEffect(() => {
+    document.body.classList.add('contact-modal-open')
+    const pausedVideos: HTMLVideoElement[] = []
+    document.querySelectorAll<HTMLVideoElement>('video').forEach((v) => {
+      if (!v.paused) {
+        v.pause()
+        pausedVideos.push(v)
+      }
+    })
+
+    try { gsap.globalTimeline.pause() } catch {}
+    window.dispatchEvent(new CustomEvent('modal:open'))
+
+    return () => {
+      document.body.classList.remove('contact-modal-open')
+      pausedVideos.forEach((v) => {
+        try { v.play() } catch {}
+      })
+      try { gsap.globalTimeline.play() } catch {}
+      window.dispatchEvent(new CustomEvent('modal:close'))
+    }
+  }, [])
 
   // Load Turnstile script + render widget
   useEffect(() => {
@@ -32,10 +58,19 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       if (turnstileRef.current && (window as any).turnstile && !turnstileWidgetId.current) {
         turnstileWidgetId.current = (window as any).turnstile.render(turnstileRef.current, {
           sitekey: TURNSTILE_SITE_KEY,
-          callback: (token: string) => setTurnstileToken(token),
-          'expired-callback': () => setTurnstileToken(''),
+          callback: (token: string) => {
+            setTurnstileToken(token)
+            setTurnstileStatus('success')
+          },
+          'expired-callback': () => {
+            setTurnstileToken('')
+            setTurnstileStatus('loading')
+            if (turnstileWidgetId.current) {
+              (window as any).turnstile.reset(turnstileWidgetId.current)
+            }
+          },
           theme: 'auto',
-          size: 'flexible',
+          size: 'invisible',
         })
       }
     }
@@ -59,10 +94,40 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
-  const canSend = name.trim() && email.trim() && message.trim() && status !== 'sending'
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; subject?: string; message?: string }>({})
+
+  const validateField = useCallback((field: 'name' | 'email' | 'subject' | 'message', val: string) => {
+    let err: string | undefined = undefined
+    const trimmed = val.trim()
+    if (field === 'name') {
+      if (!trimmed) err = 'Name is required'
+      else if (trimmed.length > 100) err = 'Max 100 characters'
+    } else if (field === 'email') {
+      if (!trimmed) err = 'Email is required'
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) err = 'Invalid email address'
+      else if (trimmed.length > 255) err = 'Max 255 characters'
+    } else if (field === 'subject') {
+      if (trimmed.length > 255) err = 'Max 255 characters'
+    } else if (field === 'message') {
+      if (!trimmed) err = 'Message is required'
+      else if (trimmed.length > 5000) err = 'Max 5000 characters'
+    }
+    setFieldErrors((prev) => ({ ...prev, [field]: err }))
+    return !err
+  }, [])
+
+  const validateAll = useCallback(() => {
+    const nOk = validateField('name', name)
+    const eOk = validateField('email', email)
+    const sOk = validateField('subject', subject)
+    const mOk = validateField('message', message)
+    return nOk && eOk && sOk && mOk
+  }, [name, email, subject, message, validateField])
+
+  const canSend = status !== 'sending'
 
   const handleSubmit = useCallback(async () => {
-    if (!canSend) return
+    if (!validateAll()) return
 
     setStatus('sending')
     setErrorMsg('')
@@ -85,13 +150,17 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         setStatus('success')
       } else {
         setStatus('error')
-        setErrorMsg(data.error || 'Something went wrong. Please try again.')
+        if (data.field && ['name', 'email', 'subject', 'message'].includes(data.field)) {
+          setFieldErrors((prev) => ({ ...prev, [data.field]: data.error }))
+        } else {
+          setErrorMsg(data.error || 'Something went wrong. Please try again.')
+        }
       }
     } catch {
       setStatus('error')
       setErrorMsg('Network error. Please check your connection.')
     }
-  }, [canSend, name, email, subject, message, turnstileToken])
+  }, [name, email, subject, message, turnstileToken, validateAll])
 
   const handleMessageChange = (val: string) => {
     if (val.length <= 5000) {
@@ -104,26 +173,25 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
   if (status === 'success') {
     return (
       <CmsModal
-        title={<><i className="fa-solid fa-envelope-circle-check" style={{ color: '#10b981', marginRight: 8 }}></i> Message sent</>}
+        title={<></>} // Oculto vía CSS para estado success
         onClose={onClose}
-        className="contact-modal"
+        className="contact-modal contact-modal--success"
+        overlayClassName="contact-modal-overlay-custom"
       >
-        <div className="contact-success">
-          <div className="contact-success-icon">
-            <i className="fa-solid fa-check"></i>
+        <div className="contact-success-minimal">
+          <div className="contact-success-icon-minimal">
+            <i className="fa-regular fa-paper-plane"></i>
           </div>
-          <p className="contact-success-text">
-            Thank you, <strong>{name}</strong>! Your message has been sent successfully.
-          </p>
-          <p className="contact-success-sub">
-            I&apos;ll get back to you as soon as possible.
+          <p className="contact-success-title">Message sent</p>
+          <p className="contact-success-subtitle">
+            Thank you{name ? `, ${name}` : ''}. I'll get back to you shortly.
           </p>
           <button
             type="button"
-            className="cms-btn cms-btn--primary contact-close-btn"
+            className="contact-success-btn-minimal"
             onClick={onClose}
           >
-            Close
+            Okay
           </button>
         </div>
       </CmsModal>
@@ -135,6 +203,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       title={<><i className="fa-solid fa-paper-plane" style={{ color: 'var(--accent)', marginRight: 8 }}></i> Contact me</>}
       onClose={onClose}
       className="contact-modal"
+      overlayClassName="contact-modal-overlay-custom"
     >
       <form
         className="contact-form"
@@ -142,21 +211,31 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         noValidate
       >
         <p className="contact-form-intro">
-          Have a question or want to work together? Fill out the form below and I&apos;ll get back to you.
+          For professional inquiries or collaborations, please leave a message below.
         </p>
 
         {/* Name */}
         <div className="contact-field">
-          <label htmlFor="contact-name" className="contact-label">
-            <i className="fa-solid fa-user"></i> Name <span className="contact-required">*</span>
-          </label>
+          <div className="contact-label-row">
+            <label htmlFor="contact-name" className="contact-label">
+              <i className="fa-solid fa-user"></i> Name <span className="contact-required">*</span>
+            </label>
+            {fieldErrors.name && (
+              <span className="contact-field-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.name}
+              </span>
+            )}
+          </div>
           <input
             id="contact-name"
             type="text"
             className="contact-input"
-            placeholder="Your name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value)
+              if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+            }}
+            onBlur={() => validateField('name', name)}
             maxLength={100}
             autoFocus
             required
@@ -165,16 +244,26 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
 
         {/* Email */}
         <div className="contact-field">
-          <label htmlFor="contact-email" className="contact-label">
-            <i className="fa-solid fa-envelope"></i> Email <span className="contact-required">*</span>
-          </label>
+          <div className="contact-label-row">
+            <label htmlFor="contact-email" className="contact-label">
+              <i className="fa-solid fa-envelope"></i> Email <span className="contact-required">*</span>
+            </label>
+            {fieldErrors.email && (
+              <span className="contact-field-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.email}
+              </span>
+            )}
+          </div>
           <input
             id="contact-email"
             type="email"
             className="contact-input"
-            placeholder="your@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
+            }}
+            onBlur={() => validateField('email', email)}
             maxLength={255}
             required
           />
@@ -182,40 +271,85 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
 
         {/* Subject */}
         <div className="contact-field">
-          <label htmlFor="contact-subject" className="contact-label">
-            <i className="fa-solid fa-tag"></i> Subject <span className="contact-optional">(optional)</span>
-          </label>
+          <div className="contact-label-row">
+            <label htmlFor="contact-subject" className="contact-label">
+              <i className="fa-solid fa-tag"></i> Subject <span className="contact-optional">(optional)</span>
+            </label>
+            {fieldErrors.subject && (
+              <span className="contact-field-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.subject}
+              </span>
+            )}
+          </div>
           <input
             id="contact-subject"
             type="text"
             className="contact-input"
-            placeholder="What is this about?"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => {
+              setSubject(e.target.value)
+              if (fieldErrors.subject) setFieldErrors((prev) => ({ ...prev, subject: undefined }))
+            }}
+            onBlur={() => validateField('subject', subject)}
             maxLength={255}
           />
         </div>
 
         {/* Message */}
         <div className="contact-field">
-          <label htmlFor="contact-message" className="contact-label">
-            <i className="fa-solid fa-message"></i> Message <span className="contact-required">*</span>
-          </label>
+          <div className="contact-label-row">
+            <label htmlFor="contact-message" className="contact-label">
+              <i className="fa-solid fa-message"></i> Message <span className="contact-required">*</span>
+            </label>
+            {fieldErrors.message && (
+              <span className="contact-field-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.message}
+              </span>
+            )}
+          </div>
           <textarea
             id="contact-message"
             className="contact-input contact-textarea"
-            placeholder="Write your message here..."
             value={message}
-            onChange={(e) => handleMessageChange(e.target.value)}
+            onChange={(e) => {
+              handleMessageChange(e.target.value)
+              if (fieldErrors.message) setFieldErrors((prev) => ({ ...prev, message: undefined }))
+            }}
+            onBlur={() => validateField('message', message)}
             rows={5}
             required
           />
           <span className="contact-charcount">{charCount}/5000</span>
         </div>
 
-        {/* Turnstile */}
+        {/* Turnstile (Invisible) */}
         {TURNSTILE_SITE_KEY && (
-          <div className="contact-turnstile" ref={turnstileRef}></div>
+          <div className={`contact-turnstile-disclaimer ${turnstileStatus}`}>
+            <div ref={turnstileRef}></div>
+            {turnstileStatus === 'loading' ? (
+              <>
+                <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center' }}>
+                  <i className="fa-solid fa-circle-notch fa-spin"></i> 
+                </span>
+                Securing with 
+                <span style={{ width: '22px', display: 'inline-flex', justifyContent: 'center', margin: '0 2px' }}>
+                  <i className="fa-brands fa-cloudflare" style={{ color: '#f38020', fontSize: '1.1rem' }}></i>
+                </span>
+                Cloudflare Turnstile...
+              </>
+            ) : (
+              <>
+                <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center' }}>
+                  <i className="fa-solid fa-lock" style={{ color: '#10b981' }}></i> 
+                </span>
+                Protected by 
+                <span style={{ width: '22px', display: 'inline-flex', justifyContent: 'center', margin: '0 2px' }}>
+                  <i className="fa-brands fa-cloudflare" style={{ color: '#f38020', fontSize: '1.1rem' }}></i>
+                </span>
+                Cloudflare Turnstile
+              </>
+            )}
+          </div>
         )}
 
         {/* Error */}

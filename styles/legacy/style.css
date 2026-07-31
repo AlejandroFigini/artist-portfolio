@@ -965,20 +965,22 @@ section {
 
 /* Personajes - Layout Moderno AcordeÃ³n */
 
-/* Fondo: grid blueprint sutil con degradado radial para darle profundidad */
-
-/* Spotlight central suave */
-
-/* Ocultar los cd-blobs (reemplazados por el grid blueprint) */
-
-/* ============ Language Selectors (flag-icons) ============ */
-/* TamaÃ±o base de bandera; .fi mantiene proporciÃ³n 4:3 */
-.lang-btn .fi,
-.lang-btn-settings .fi,
-.lang-option .fi {
-    font-size: 1.35rem;
+/* ============ Language Selectors (inline SVG <img> flags) ============ */
+.lang-flag-img {
+    display: inline-block;
+    width: 1.333em;
+    height: 1em;
+    object-fit: cover;
+    vertical-align: middle;
     border-radius: 3px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.lang-btn .lang-flag-img,
+.lang-btn-settings .lang-flag-img,
+.lang-option .lang-flag-img {
+    width: 1.6rem;
+    height: 1.2rem;
 }
 
 /* BotÃ³n de descarga de CV (navbar + settings) */

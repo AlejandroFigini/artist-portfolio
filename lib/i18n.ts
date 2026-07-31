@@ -9,11 +9,23 @@ export const ALL_LANGS = [BASE_LANG, ...TARGET_LANGS] as const
 
 export type Lang = (typeof ALL_LANGS)[number]
 
-export const LANG_META: Record<Lang, { flag: string; label: string }> = {
-  en: { flag: 'us', label: 'English' },
-  es: { flag: 'es', label: 'Español' },
-  pt: { flag: 'pt', label: 'Português' },
-  fr: { flag: 'fr', label: 'Français' },
+export const LANG_META: Record<Lang, { flag: string; label: string; svg: string }> = {
+  en: {
+    flag: 'us', label: 'English',
+    svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Cpath fill='%23bd3d44' d='M0 0h640v480H0z'/%3E%3Cpath stroke='%23fff' stroke-width='37' d='M0 55.5h640M0 129.5h640M0 203.5h640M0 277.5h640M0 351.5h640M0 425.5h640'/%3E%3Cpath fill='%23192f5d' d='M0 0h285v258.5H0z'/%3E%3Cg fill='%23fff'%3E%3Cg id='d'%3E%3Cg id='c'%3E%3Cg id='e'%3E%3Cg id='b'%3E%3Cpath id='a' d='M24.7 13l1.5 4.5h4.7l-3.8 2.8 1.4 4.5-3.8-2.8-3.8 2.8 1.4-4.5-3.8-2.8h4.7z'/%3E%3Cuse href='%23a' x='43.8'/%3E%3Cuse href='%23a' x='87.6'/%3E%3Cuse href='%23a' x='131.4'/%3E%3Cuse href='%23a' x='175.2'/%3E%3C/g%3E%3Cuse href='%23a' x='219'/%3E%3C/g%3E%3Cuse href='%23b' y='43' x='21.9'/%3E%3C/g%3E%3Cuse href='%23c' y='86'/%3E%3C/g%3E%3Cuse href='%23d' y='129'/%3E%3Cuse href='%23e' y='172'/%3E%3C/g%3E%3C/svg%3E",
+  },
+  es: {
+    flag: 'es', label: 'Español',
+    svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Cpath fill='%23c60b1e' d='M0 0h640v480H0z'/%3E%3Cpath fill='%23ffc400' d='M0 120h640v240H0z'/%3E%3C/svg%3E",
+  },
+  pt: {
+    flag: 'pt', label: 'Português',
+    svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Cpath fill='%23046a38' d='M0 0h240v480H0z'/%3E%3Cpath fill='%23da291c' d='M240 0h400v480H240z'/%3E%3Ccircle cx='240' cy='240' r='80' fill='%23ffc400'/%3E%3Ccircle cx='240' cy='240' r='64' fill='%23da291c'/%3E%3Cpath fill='%23fff' d='M210 200h60v80h-60z'/%3E%3C/svg%3E",
+  },
+  fr: {
+    flag: 'fr', label: 'Français',
+    svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Cpath fill='%23002654' d='M0 0h213.3v480H0z'/%3E%3Cpath fill='%23fff' d='M213.3 0h213.4v480H213.3z'/%3E%3Cpath fill='%23ce1126' d='M426.7 0H640v480H426.7z'/%3E%3C/svg%3E",
+  },
 }
 
 /** Un valor es media (no traducible) si es una URL, ruta absoluta o data URL. */

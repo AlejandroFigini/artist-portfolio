@@ -43,6 +43,9 @@ export default function HeroSlideshow() {
     let current = 0
     gsap.set(els[0], { opacity: 1 })
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
+        return
+      }
       const next = (current + 1) % els.length
       gsap.fromTo(els[next], { scale: 1, opacity: 0 }, { scale: 1.05, opacity: 1, duration: 3, ease: 'power1.inOut' })
       gsap.to(els[current], { opacity: 0, duration: 3, ease: 'power1.inOut' })

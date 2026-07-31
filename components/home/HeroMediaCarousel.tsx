@@ -63,6 +63,9 @@ export default function HeroMediaCarousel({
     if (els.length < 2) return;
     let current = 0;
     const timer = setInterval(() => {
+      if (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open')) {
+        return;
+      }
       const next = (current + 1) % els.length;
       try {
         gsap.fromTo(
