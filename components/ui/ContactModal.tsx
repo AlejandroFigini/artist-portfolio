@@ -389,7 +389,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         {/* Turnstile (Invisible) */}
         {TURNSTILE_SITE_KEY && (
           <div className={`contact-turnstile-disclaimer ${turnstileStatus}`}>
-            <div ref={turnstileRef}></div>
+            <div ref={turnstileRef} style={{ position: 'absolute', top: '-9999px', opacity: 0, pointerEvents: 'none' }}></div>
             {turnstileStatus === 'loading' ? (
               <>
                 <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center' }}>
