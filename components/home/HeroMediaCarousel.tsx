@@ -57,7 +57,6 @@ export default function HeroMediaCarousel({
     const onCarousel = () => force();
     ensureGSAP();
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
-    console.log(`[HeroMediaCarousel] prefix=${prefix} re-render. slidesKey=${slidesKey}, els.length=${els.length}`);
     if (els.length === 0) return;
     gsap.set(els, { opacity: 0 });
     gsap.set(els[0], { opacity: 1 });
@@ -65,7 +64,6 @@ export default function HeroMediaCarousel({
     let current = 0;
     const timer = setInterval(() => {
       const next = (current + 1) % els.length;
-      console.log(`[HeroMediaCarousel] ${prefix} crossfade from ${current} to ${next}`);
       try {
         gsap.fromTo(
           els[next],
@@ -79,7 +77,6 @@ export default function HeroMediaCarousel({
       }
     }, duration);
     return () => {
-      console.log(`[HeroMediaCarousel] ${prefix} cleanup`);
       clearInterval(timer);
       gsap.killTweensOf(els);
     };

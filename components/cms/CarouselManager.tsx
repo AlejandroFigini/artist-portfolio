@@ -83,7 +83,6 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     original.forEach((k) => { 
       oldData[k] = slideSrc(k, prefix) 
     })
-    console.log('[saveGraph] original:', original, 'finalSlides:', finalSlides, 'oldData:', oldData)
 
     const oldUsed: Record<string, any> = {}
     original.forEach((k) => {
