@@ -16,12 +16,20 @@ export default function FooterSocial() {
       {nets.map((n) => (
         <a
           key={n.id}
-          href={socialHref(n, links[n.id])}
+          href={n.type === 'email' ? '#' : socialHref(n, links[n.id])}
           target={n.type === 'email' ? undefined : '_blank'}
           rel="noopener noreferrer"
           className="social-bubble"
           title={n.label}
-          onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}
+          onClick={(e) => {
+            if (n.type === 'email') {
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent('open-contact'));
+              sendGAEvent('event', 'email_click');
+            } else {
+              sendGAEvent('event', `social_click_${n.id}`);
+            }
+          }}
         >
           <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i>
         </a>

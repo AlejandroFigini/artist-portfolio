@@ -52,6 +52,12 @@ export default function Nav() {
   }, [navOpen])
 
   useEffect(() => {
+    const handler = () => { setContactOpen(true); setNavOpen(false); setDropdown(null); }
+    window.addEventListener('open-contact', handler)
+    return () => window.removeEventListener('open-contact', handler)
+  }, [])
+
+  useEffect(() => {
     const closeAll = () => { setDropdown(null); setLangOpen(false) }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { closeAll(); setNavOpen(false) }

@@ -178,7 +178,21 @@ export default function AboutSection() {
                 <ul className="about-socials">
                   {nets.map((n) => (
                     <li key={n.id} className="about-social">
-                      <a href={socialHref(n, links[n.id])} target={n.type === 'email' ? undefined : '_blank'} rel="noopener noreferrer" aria-label={n.label} onClick={() => sendGAEvent('event', n.id === 'email' ? 'email_click' : `social_click_${n.id}`)}>
+                      <a 
+                        href={n.type === 'email' ? '#' : socialHref(n, links[n.id])} 
+                        target={n.type === 'email' ? undefined : '_blank'} 
+                        rel="noopener noreferrer" 
+                        aria-label={n.label} 
+                        onClick={(e) => {
+                          if (n.type === 'email') {
+                            e.preventDefault();
+                            window.dispatchEvent(new CustomEvent('open-contact'));
+                            sendGAEvent('event', 'email_click');
+                          } else {
+                            sendGAEvent('event', `social_click_${n.id}`);
+                          }
+                        }}
+                      >
                         <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`} aria-hidden="true" />
                         <span className="about-social-label">{n.label}</span>
                       </a>
