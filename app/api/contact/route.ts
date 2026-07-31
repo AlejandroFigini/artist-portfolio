@@ -157,11 +157,11 @@ export async function POST(req: Request) {
       // FROM: dirección verificada en Resend (dominio propio), o fallback
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
       await resend.emails.send({
-        from: `Portfolio Contact <${fromEmail}>`,
+        from: `luciamontana.art <${fromEmail}>`,
         to: destEmails,
         subject: subject
-          ? `luciamontana.art: ${subject}`
-          : `luciamontana.art: New message from ${name}`,
+          ? subject
+          : `New message from ${name}`,
         replyTo: email,
         html: `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
