@@ -122,9 +122,9 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; subject?: string; message?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; country?: string; subject?: string; message?: string }>({})
 
-  const validateField = useCallback((field: 'name' | 'email' | 'subject' | 'message', val: string) => {
+  const validateField = useCallback((field: 'name' | 'email' | 'country' | 'subject' | 'message', val: string) => {
     let err: string | undefined = undefined
     const trimmed = val.trim()
     if (field === 'name') {
