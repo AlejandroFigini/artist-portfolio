@@ -98,7 +98,6 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
             }
           },
           theme: 'auto',
-          size: 'invisible',
         })
       }
     }

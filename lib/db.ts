@@ -115,6 +115,15 @@ const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '2026_07_contact_messages_additions',
+    sql: `
+      ALTER TABLE contact_messages 
+      ADD COLUMN IF NOT EXISTS is_starred BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS is_trashed BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales
