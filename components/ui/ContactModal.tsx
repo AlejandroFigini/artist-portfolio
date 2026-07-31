@@ -399,7 +399,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
                 <span style={{ width: '22px', display: 'inline-flex', justifyContent: 'center', margin: '0 2px' }}>
                   <i className="fa-brands fa-cloudflare" style={{ color: '#f38020', fontSize: '1.1rem' }}></i>
                 </span>
-                Cloudflare Turnstile...
+                Cloudflare Turnstile
               </>
             ) : (
               <>
