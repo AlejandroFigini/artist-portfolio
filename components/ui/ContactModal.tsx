@@ -9,6 +9,33 @@ import { CmsModal } from '@/components/ui/Modal'
 import { gsap } from '@/hooks/useGSAP'
 import '@/styles/contact-modal.css'
 
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia (Czech Republic)",
+  "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini (fmr. Swaziland)", "Ethiopia",
+  "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+  "Haiti", "Honduras", "Hungary",
+  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+  "Jamaica", "Japan", "Jordan",
+  "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
+  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+  "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar (formerly Burma)",
+  "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman",
+  "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar",
+  "Romania", "Russia", "Rwanda",
+  "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+  "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+  "Vanuatu", "Venezuela", "Vietnam",
+  "Yemen",
+  "Zambia", "Zimbabwe"
+]
+
 type Status = 'idle' | 'sending' | 'success' | 'error'
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
@@ -16,6 +43,7 @@ const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x0000
 export default function ContactModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<Status>('idle')
@@ -106,6 +134,9 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       if (!trimmed) err = 'Email is required'
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) err = 'Invalid email address'
       else if (trimmed.length > 255) err = 'Max 255 characters'
+    } else if (field === 'country') {
+      if (!trimmed) err = 'Country is required'
+      else if (trimmed.length > 100) err = 'Max 100 characters'
     } else if (field === 'subject') {
       if (trimmed.length > 255) err = 'Max 255 characters'
     } else if (field === 'message') {
@@ -119,10 +150,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
   const validateAll = useCallback(() => {
     const nOk = validateField('name', name)
     const eOk = validateField('email', email)
+    const cOk = validateField('country', country)
     const sOk = validateField('subject', subject)
     const mOk = validateField('message', message)
-    return nOk && eOk && sOk && mOk
-  }, [name, email, subject, message, validateField])
+    return nOk && eOk && cOk && sOk && mOk
+  }, [name, email, country, subject, message, validateField])
 
   const canSend = status !== 'sending'
 
@@ -139,6 +171,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
+          country: country.trim(),
           subject: subject.trim(),
           message: message.trim(),
           turnstileToken,
@@ -150,7 +183,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         setStatus('success')
       } else {
         setStatus('error')
-        if (data.field && ['name', 'email', 'subject', 'message'].includes(data.field)) {
+        if (data.field && ['name', 'email', 'country', 'subject', 'message'].includes(data.field)) {
           setFieldErrors((prev) => ({ ...prev, [data.field]: data.error }))
         } else {
           setErrorMsg(data.error || 'Something went wrong. Please try again.')
@@ -160,7 +193,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       setStatus('error')
       setErrorMsg('Network error. Please check your connection.')
     }
-  }, [name, email, subject, message, turnstileToken, validateAll])
+  }, [name, email, country, subject, message, turnstileToken, validateAll])
 
   const handleMessageChange = (val: string) => {
     if (val.length <= 5000) {
@@ -235,11 +268,46 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
               setName(e.target.value)
               if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
             }}
-            onBlur={() => validateField('name', name)}
             maxLength={100}
             autoFocus
             required
           />
+        </div>
+
+        {/* Country */}
+        <div className="contact-field">
+          <div className="contact-label-row">
+            <label htmlFor="contact-country" className="contact-label">
+              <i className="fa-solid fa-globe"></i> Country <span className="contact-required">*</span>
+            </label>
+            {fieldErrors.country && (
+              <span className="contact-field-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.country}
+              </span>
+            )}
+          </div>
+          <select
+            id="contact-country"
+            className="contact-input"
+            value={country}
+            onChange={(e) => {
+              setCountry(e.target.value)
+              if (fieldErrors.country) setFieldErrors((prev) => ({ ...prev, country: undefined }))
+            }}
+            required
+            style={{ 
+              appearance: 'none', 
+              backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 1rem top 50%',
+              backgroundSize: '0.65rem auto',
+              paddingRight: '2.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="" disabled></option>
+            {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
 
         {/* Email */}
@@ -263,7 +331,6 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
               setEmail(e.target.value)
               if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
             }}
-            onBlur={() => validateField('email', email)}
             maxLength={255}
             required
           />
@@ -290,7 +357,6 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
               setSubject(e.target.value)
               if (fieldErrors.subject) setFieldErrors((prev) => ({ ...prev, subject: undefined }))
             }}
-            onBlur={() => validateField('subject', subject)}
             maxLength={255}
           />
         </div>
@@ -315,7 +381,6 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
               handleMessageChange(e.target.value)
               if (fieldErrors.message) setFieldErrors((prev) => ({ ...prev, message: undefined }))
             }}
-            onBlur={() => validateField('message', message)}
             rows={5}
             required
           />

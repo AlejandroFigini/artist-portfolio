@@ -55,7 +55,15 @@ export default function AdminDashboard() {
   const { confirm } = useModal()
   const toast = useToast()
   const [section, setSection] = useState('resumen')
-  const unreadCount = useUnreadCount()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    fetch('/api/messages?limit=1')
+      .then((r) => r.json())
+      .then((d) => setUnreadCount(d.unread || 0))
+      .catch(() => {})
+  }, [])
+
   const [subOpen, setSubOpen] = useState(false)
   const [ajustesOpen, setAjustesOpen] = useState(false)
   const [modal, setModal] = useState<AdminModal | null>(null)
@@ -401,7 +409,7 @@ export default function AdminDashboard() {
           )}
 
           {section === 'analitica' && <AnalyticsSection />}
-          {section === 'mensajes' && <MessagesSection />}
+          {section === 'mensajes' && <MessagesSection onUnreadChange={setUnreadCount} />}
           {section === 'usuarios' && state.role === 'owner' && <UsersSection />}
 
           {isAjustes && (

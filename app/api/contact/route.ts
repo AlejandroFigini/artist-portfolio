@@ -67,7 +67,7 @@ async function getDestinationEmails(): Promise<string[]> {
 }
 
 export async function POST(req: Request) {
-  let body: { name?: string; email?: string; subject?: string; message?: string; turnstileToken?: string }
+  let body: { name?: string; email?: string; country?: string; subject?: string; message?: string; turnstileToken?: string }
   try {
     body = await req.json()
   } catch {
@@ -76,6 +76,7 @@ export async function POST(req: Request) {
 
   const name = (body.name || '').trim()
   const email = (body.email || '').trim()
+  const country = (body.country || '').trim()
   const subject = (body.subject || '').trim()
   const message = (body.message || '').trim()
   const turnstileToken = (body.turnstileToken || '').trim()
@@ -92,6 +93,12 @@ export async function POST(req: Request) {
   }
   if (!EMAIL_RE.test(email) || email.length > 255) {
     return NextResponse.json({ error: 'Please provide a valid email address.', field: 'email' }, { status: 400 })
+  }
+  if (!country) {
+    return NextResponse.json({ error: 'Country is required.', field: 'country' }, { status: 400 })
+  }
+  if (country.length > 100) {
+    return NextResponse.json({ error: 'Country must be 100 characters or less.', field: 'country' }, { status: 400 })
   }
   if (subject.length > 255) {
     return NextResponse.json({ error: 'Subject is too long (max 255 characters).', field: 'subject' }, { status: 400 })
@@ -131,9 +138,9 @@ export async function POST(req: Request) {
   if (hasDb) {
     const pool = getPool()!
     await pool.query(
-      `INSERT INTO contact_messages (sender_name, sender_email, subject, message, ip_address)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [name, email, subject, message, ip],
+      `INSERT INTO contact_messages (sender_name, sender_email, country, subject, message, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [name, email, country, subject, message, ip],
     )
   }
 
@@ -153,15 +160,16 @@ export async function POST(req: Request) {
         from: `Portfolio Contact <${fromEmail}>`,
         to: destEmails,
         subject: subject
-          ? `[Portfolio] ${subject}`
-          : `[Portfolio] New message from ${name}`,
+          ? `luciamontana.art: ${subject}`
+          : `luciamontana.art: New message from ${name}`,
         replyTo: email,
         html: `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-            <h2 style="color: #8b5cf6; margin-bottom: 4px;">New contact message</h2>
+            <h2 style="color: #8b5cf6; margin-bottom: 4px;">new email</h2>
             <hr style="border: none; border-top: 2px solid #8b5cf6; margin: 12px 0 24px;">
             <p><strong>Name:</strong> ${escapeHtml(name)}</p>
             <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
+            <p><strong>Country:</strong> ${escapeHtml(country)}</p>
             ${subject ? `<p><strong>Subject:</strong> ${escapeHtml(subject)}</p>` : ''}
             <h3 style="color: #64748b; margin-top: 24px;">Message:</h3>
             <div style="background: #f8fafc; border-left: 3px solid #8b5cf6; padding: 16px; border-radius: 4px; white-space: pre-wrap;">${escapeHtml(message)}</div>

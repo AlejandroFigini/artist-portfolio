@@ -240,6 +240,17 @@ export default function Nav() {
             <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
           </nav>
           <div className="nav-actions">
+            <button
+              type="button"
+              className="cv-min-btn"
+              onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
+              title="Contact me"
+              aria-label="Contact me"
+              style={{ marginRight: '0.5rem' }}
+            >
+              <i className="fa-solid fa-envelope"></i>
+              <span>Email</span>
+            </button>
             {/* Siempre presente; sin CV subido queda deshabilitado (sin href). */}
             <a
               className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`} id="cv-download"
