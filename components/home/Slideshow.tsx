@@ -41,7 +41,9 @@ export default function HeroSlideshow() {
     if (els.length < 2) return
 
     let current = 0
-    gsap.set(els[0], { opacity: 1 })
+    gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 2.5, ease: 'power2.out' })
+    if (els.length < 2) return
+
     const timer = setInterval(() => {
       if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
         return
@@ -72,7 +74,10 @@ export default function HeroSlideshow() {
           <div
             key={`${i}-${src}`}
             className="carousel-slide"
-            style={{ backgroundImage: `url('${cloudinaryOptimize(src, { width: 1600 })}')`, ...(i === 0 ? { opacity: 1 } : {}) }}
+            style={{
+              backgroundImage: `url('${cloudinaryOptimize(src, { width: 1600 })}')`,
+              opacity: 0,
+            }}
           ></div>
         ))}
         <div className="carousel-overlay"></div>

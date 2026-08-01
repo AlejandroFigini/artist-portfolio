@@ -1,6 +1,4 @@
-// 'use client'
-
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
@@ -21,6 +19,28 @@ function readCarousel(prefix: string): { slides: string[]; duration: number } {
   const n = Number.isFinite(count) ? Math.max(0, count) : 0;
   for (let i = 0; i < n; i++) slides.push(state.items[`${prefix}.slide#${i}`] || '');
   return { slides, duration };
+}
+
+function SmoothImage({ src, className }: { src: string; className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={cloudinaryOptimize(src, { width: 1200 })}
+      alt=""
+      className={className}
+      onLoad={() => setLoaded(true)}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        opacity: loaded ? 1 : 0,
+        transition: 'opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+    />
+  );
 }
 
 type Props = {
@@ -59,7 +79,7 @@ export default function HeroMediaCarousel({
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
     if (els.length === 0) return;
     gsap.set(els, { opacity: 0 });
-    gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power2.out' });
+    gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 2.0, ease: 'power2.out' });
     if (els.length < 2) return;
     let current = 0;
     const timer = setInterval(() => {
@@ -71,9 +91,9 @@ export default function HeroMediaCarousel({
         gsap.fromTo(
           els[next],
           { opacity: 0 },
-          { opacity: 1, duration: 1.6, ease: 'power1.inOut' },
+          { opacity: 1, duration: 2.0, ease: 'power1.inOut' },
         );
-        gsap.to(els[current], { opacity: 0, duration: 1.6, ease: 'power1.inOut' });
+        gsap.to(els[current], { opacity: 0, duration: 2.0, ease: 'power1.inOut' });
         current = next;
       } catch (err) {
         console.error(`[HeroMediaCarousel] GSAP error:`, err);
@@ -98,13 +118,7 @@ export default function HeroMediaCarousel({
               style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: i === 0 ? 1 : 0 }}
             >
               {isFilled ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={cloudinaryOptimize(src, { width: 1200 })}
-                  alt=""
-                  className={className}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                <SmoothImage src={src} className={className} />
               ) : (
                 <div className="hero-carousel-empty" aria-hidden="true">
                   <i className="fa-solid fa-cloud-arrow-up" />
