@@ -12,7 +12,7 @@ import {
   state, sumSizes, deduplicateMedia, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
   performRestore, loadJSON, saveJSON, LS, type UsedEntry,
 } from '@/lib/cms/store'
-import { buildPageTree } from '@/lib/cms/pages'
+import { buildPageTree, getCloudinaryFolder } from '@/lib/cms/pages'
 import { listCloudinaryResources, type CloudinaryResourceInfo } from '@/lib/api'
 import {
   deletePermanent, emptyTrash, purgeUnused, autoCleanTrash,
