@@ -11,8 +11,8 @@ import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, ensureCharacterMeta, rescan, cleanTemporaryKeys } from './engine'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
+import { elementsByKey, currentSrcOf, ensureCharacterMeta, rescan, cleanTemporaryKeys, seedUsedContent } from './engine'
 
 type Props = {
   show?: boolean
@@ -147,6 +147,20 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     saveJSON(LS.OVERRIDES, overrides)
 
     await saveContent(payload)
+
+    // Sincroniza usedContent con los keys reales después de guardar.
+    const activeKeys = new Set(Array.from({ length: newCount }, (_, i) => `char#${i}`))
+    Object.keys(state.usedContent).forEach((k) => {
+      if (k.startsWith('char#') && !activeKeys.has(k.split('::')[0])) {
+        delete state.usedContent[k]
+      }
+    })
+    // Limpia keys retiradas que ahora tienen contenido válido
+    state.retired = state.retired.filter((k) => !k.startsWith('char#') || !state.items[k])
+    persistRetired()
+    persistUsed()
+    seedUsedContent()
+
     emit()
     setTimeout(() => rescan(), 100)
 

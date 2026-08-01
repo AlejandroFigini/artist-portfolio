@@ -611,6 +611,26 @@ export function seedUsedContent() {
     }
     changed = true
   })
+
+  // Limpieza de entries huérfanas: si una key en usedContent ya no tiene
+  // contenido en state.items NI tiene elemento DOM, la entrada es un
+  // remanente de un reordenamiento o eliminación → purgarla.
+  Object.keys(state.usedContent).forEach((key) => {
+    if (key === 'loader.gallop' || key === 'settings.faviconUrl') return
+    if (!allKeys.has(key)) {
+      // Key completamente desconocida (no está en ningún registro)
+      delete state.usedContent[key]
+      changed = true
+      return
+    }
+    // Key conocida pero sin contenido real
+    const src = state.items[key] || (elementsByKey[key] ? currentSrcOf(elementsByKey[key]) : '')
+    if (!src && state.usedContent[key] && !state.usedContent[key].src) {
+      delete state.usedContent[key]
+      changed = true
+    }
+  })
+
   if (changed) { persistUsed(); emit() }
 }
 

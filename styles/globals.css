@@ -3,9 +3,8 @@
    Preflight de Tailwind omitido a propósito: el CSS legacy fue escrito
    contra defaults del browser; el reset alteraría la identidad visual.
    ============================================================ */
-@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
 
 /* CSS legacy portado verbatim (Sesión 1). Cada archivo de página está
    scoped por prefijo de clase (.anim-, .char-, .illu-, .m3d-, .mm-). */

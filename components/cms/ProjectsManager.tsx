@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan, cleanTemporaryKeys } from './engine'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
+import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan, cleanTemporaryKeys, seedUsedContent } from './engine'
 
 type Props = { show?: boolean; onClose: () => void; onPickImage: (key: string) => void; onEditInfo?: (key: string) => void }
 
@@ -158,7 +158,22 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     saveJSON(LS.OVERRIDES, overrides)
 
     await saveContent(payload)
-    
+
+    // Sincroniza usedContent con los keys reales después de guardar.
+    // Limpia entries de usedContent que corresponden a keys de proyectos
+    // que ya no existen (huérfanos por reordenamiento o eliminación).
+    const activeKeys = new Set(Array.from({ length: newCount }, (_, i) => `proj#${i}`))
+    Object.keys(state.usedContent).forEach((k) => {
+      if (k.startsWith('proj#') && !activeKeys.has(k.split('::')[0])) {
+        delete state.usedContent[k]
+      }
+    })
+    // Limpia keys retiradas que ahora tienen contenido válido
+    state.retired = state.retired.filter((k) => !k.startsWith('proj#') || !state.items[k])
+    persistRetired()
+    persistUsed()
+    seedUsedContent()
+
     emit()
     // El contenido lo pinta React (ProjectCard lee de state.items). rescan sólo
     // re-indexa la(s) card(s) nueva(s) para los controles de edición de admin.
