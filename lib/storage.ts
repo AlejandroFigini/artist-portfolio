@@ -434,29 +434,27 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
   const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
   let lastError: unknown = null
   for (const type of types) {
-    for (const typeOpt of ['upload', undefined]) {
-      let cursor: string | undefined = undefined
-      do {
-        try {
-          const opts: Record<string, unknown> = {
-            resource_type: type,
-            max_results: 500,
-            next_cursor: cursor,
-          }
-          if (typeOpt) opts.type = typeOpt
-
-          const res = await cloudinary.api.resources(opts as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
-
-          if (res?.resources) {
-            res.resources.forEach(r => addResource(r))
-          }
-          cursor = res?.next_cursor
-        } catch (err) {
-          lastError = err
-          cursor = undefined
+    let cursor: string | undefined = undefined
+    do {
+      try {
+        const opts: Record<string, unknown> = {
+          resource_type: type,
+          max_results: 500,
+          next_cursor: cursor,
+          type: 'upload'
         }
-      } while (cursor)
-    }
+
+        const res = await cloudinary.api.resources(opts as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+
+        if (res?.resources) {
+          res.resources.forEach(r => addResource(r))
+        }
+        cursor = res?.next_cursor
+      } catch (err) {
+        lastError = err
+        cursor = undefined
+      }
+    } while (cursor)
   }
 
   if (allMap.size === 0 && lastError) {
