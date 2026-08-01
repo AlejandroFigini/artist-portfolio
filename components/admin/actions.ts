@@ -9,7 +9,7 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit,
   persistUsed, persistUnused, persistRetired, persistTrash,
-  retireUsedEntryToUnused, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry,
+  retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
@@ -94,11 +94,7 @@ export async function resolveSizes(entries: { size?: number | null; src?: string
 export function batchMoveUsedToUnused(keys: string[]): number {
   let count = 0
   keys.forEach((key) => {
-    const entry = state.usedContent[key]
-    if (!entry) return
-    retireUsedEntryToUnused(entry, 'retired', keys)
-    delete state.usedContent[key]
-    if (!state.retired.includes(key)) state.retired.push(key)
+    archiveMediaKey(key, 'retired')
     count++
   })
   clearItemOverrides(keys)

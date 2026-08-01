@@ -11,7 +11,7 @@ import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import { fileToDataURL } from '@/lib/media'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, retireUsedEntryToUnused, emit, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, type FieldValue,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
@@ -103,11 +103,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
       })
       .then((data) => {
         // versión anterior → no usados (solo si tenía contenido real)
-        const prev = state.usedContent[cmsKey]
-        if (prev && prev.src) {
-          retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
-          persistUnused()
-        }
+        archiveMediaKey(cmsKey, 'replaced')
+        persistUnused()
 
         state.items[cmsKey] = data.secure_url
         applyMedia(cmsKey, data.secure_url)

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, archiveMediaKey, emit, useCmsStore } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, ensureProjectMeta, rescan, cleanTemporaryKeys, seedUsedContent } from './engine'
 
 type Props = { show?: boolean; onClose: () => void; onPickImage: (key: string) => void; onEditInfo?: (key: string) => void }
@@ -111,15 +111,18 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
       })
     })
 
-    // Papelera: marca los originales eliminados como "no usados"
-    original.forEach((k) => {
+    // Papelera: marca los originales eliminados como "no usados" (tarjeta + galerías)
+    const allKnownProjKeys = new Set<string>([
+      ...original,
+      ...projects,
+      ...Object.keys(state.items).filter((k) => /^proj#(?:new_)?\d+/.test(k)),
+      ...Object.keys(state.usedContent).filter((k) => /^proj#(?:new_)?\d+/.test(k)),
+    ])
+
+    allKnownProjKeys.forEach((k) => {
       if (finalProjects.includes(k)) return
       ;[k, ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${k}::c${m}`)].forEach((mk) => {
-        const prev = state.usedContent[mk]
-        if (prev) {
-          retireUsedEntryToUnused(prev, 'retired', [mk])
-          delete state.usedContent[mk]
-        }
+        archiveMediaKey(mk, 'deleted')
       })
     })
     persistUnused()

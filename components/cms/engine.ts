@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, retireUsedEntryToUnused, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -854,8 +854,11 @@ export async function deleteProjectSite(key: string) {
   } catch {}
   if (!count) return
 
-  // Archiva la imagen del proyecto borrado (si tiene contenido) a "no usados".
-  if (state.items[key]) archiveMediaKey(key)
+  // Archiva la imagen del proyecto borrado y sus conceptos a "no usados".
+  archiveMediaKey(key, 'deleted')
+  for (let m = 0; m < 6; m++) {
+    archiveMediaKey(`${key}::c${m}`, 'deleted')
+  }
 
   // Backup de todas las claves proj#N (+ campos) y limpieza del estado actual.
   const oldData: Record<string, string> = {}
@@ -897,24 +900,7 @@ export async function deleteProjectSite(key: string) {
   await saveContent(payload).catch(() => {})
 }
 
-// Archiva a "no usados" un media key, armando el entry desde usedContent o DOM/meta.
-function archiveMediaKey(key: string) {
-  let entry = state.usedContent[key]
-  if (!entry) {
-    const el = elementsByKey[key]
-    const meta = metaByKey[key]
-    const src = state.items[key] || currentSrcOf(el)
-    if (!src || !meta) return // contenedor ya vacío: nada que archivar
-    const label = meta?.label || state.containerNames[key] || key
-    const section = meta?.section || 'Otros'
-    const kind: 'image' | 'video' = meta?.kind === 'video' ? 'video' : 'image'
-    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
-    entry = { key, label, section, kind, src, name: mm?.name || resolveMediaName(src, key), size: mm?.size ?? null, original: mm ? false : true }
-  }
-  retireUsedEntryToUnused(entry, 'retired', [key])
-  delete state.usedContent[key]
-  if (!state.retired.includes(key)) state.retired.push(key)
-}
+
 
 // Mueve a "no usados" cada media key dada, dejando el contenedor vacío. Núcleo
 // compartido por "Clear All" y "Clear current section". El texto NO se toca.

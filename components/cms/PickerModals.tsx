@@ -11,7 +11,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, retireUsedEntryToUnused, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
+  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
@@ -187,10 +187,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
         applyMedia(selected._key, '')
       }
 
-      const prev = state.usedContent[cmsKey]
-      if (prev && prev.src) {
-        retireUsedEntryToUnused(prev, 'replaced', [cmsKey])
-      }
+      archiveMediaKey(cmsKey, 'replaced')
 
       state.usedContent[cmsKey] = {
         key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',

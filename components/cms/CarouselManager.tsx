@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, retireUsedEntryToUnused, useCmsStore, emit } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 0
@@ -89,12 +89,18 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
       if (state.usedContent[k]) oldUsed[k] = state.usedContent[k]
     })
 
-    // slides eliminadas → no usados
-    original.forEach((k) => {
+    // Recopila todas las claves conocidas de diapositivas antes de guardar
+    const allPreviousSlideKeys = new Set<string>([
+      ...original,
+      ...slides,
+      ...Object.keys(state.items).filter((k) => k.startsWith(`${prefix}.slide#`)),
+      ...Object.keys(state.usedContent).filter((k) => k.startsWith(`${prefix}.slide#`)),
+    ])
+
+    // slides eliminadas → archivar a "sin usar"
+    allPreviousSlideKeys.forEach((k) => {
       if (finalSlides.includes(k)) return
-      if (oldUsed[k]) {
-        retireUsedEntryToUnused(oldUsed[k], 'deleted', [k])
-      }
+      archiveMediaKey(k, 'deleted')
     })
 
     finalSlides.forEach((vKey, i) => {

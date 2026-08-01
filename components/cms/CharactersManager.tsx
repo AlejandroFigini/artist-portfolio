@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, emit, useCmsStore, retireUsedEntryToUnused } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, persistRetired, archiveMediaKey, emit, useCmsStore } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, ensureCharacterMeta, rescan, cleanTemporaryKeys, seedUsedContent } from './engine'
 
 type Props = {
@@ -112,14 +112,17 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     })
 
     // Papelera: los originales eliminados → "no usados" (retrato + concepts).
-    original.forEach((k) => {
+    const allKnownCharKeys = new Set<string>([
+      ...original,
+      ...characters,
+      ...Object.keys(state.items).filter((k) => /^char#(?:new_)?\d+/.test(k)),
+      ...Object.keys(state.usedContent).filter((k) => /^char#(?:new_)?\d+/.test(k)),
+    ])
+
+    allKnownCharKeys.forEach((k) => {
       if (finalChars.includes(k)) return
       ;[k, ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${k}::c${m}`)].forEach((mk) => {
-        const prev = state.usedContent[mk]
-        if (prev) {
-          retireUsedEntryToUnused(prev, 'deleted', [mk])
-          delete state.usedContent[mk]
-        }
+        archiveMediaKey(mk, 'deleted')
       })
     })
     persistUnused()

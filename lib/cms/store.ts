@@ -405,6 +405,21 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' } {
   const customLabel = state.containerNames[key]
+  const conceptMatch = key.match(/^([^#]+)#(\d+)::c(\d+)$/)
+  if (conceptMatch) {
+    const [, base, itemIdxStr, conceptIdxStr] = conceptMatch
+    const itemN = parseInt(itemIdxStr, 10) + 1
+    const conceptN = parseInt(conceptIdxStr, 10) + 1
+    const def = CONTAINER_BASES[base]
+    const section = def ? def.section : 'Otros'
+    const name = base === 'char' ? 'Character' : base === 'proj' ? 'Project' : base
+    return {
+      label: customLabel || `${name} #${itemN} — Concept #${conceptN}`,
+      section,
+      kind: 'image',
+    }
+  }
+
   const [base, idxStr] = key.split('#')
   const n = (idxStr ? parseInt(idxStr, 10) : 0) + 1
   const def = CONTAINER_BASES[base]
@@ -616,6 +631,46 @@ export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'r
       if (entry.src) cloudinaryMove(entry.src, 'portfolio/sin-usar')
     }
   }
+}
+
+function resolveMediaName(url: string, key?: string): string {
+  if (!url) return key || 'Archivo'
+  try {
+    const clean = url.split('?')[0].split('#')[0]
+    const part = clean.split('/').pop() || ''
+    return decodeURIComponent(part) || key || 'Archivo'
+  } catch {
+    return key || 'Archivo'
+  }
+}
+
+/** Archiva a "sin usar" la media asociada a una clave, construyendo la entrada
+ *  desde usedContent o state.items/getContainerMeta si no existía en usedContent. */
+export function archiveMediaKey(key: string, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired') {
+  let entry = state.usedContent[key]
+  const src = (entry && entry.src) || state.items[key] || ''
+  if (!src) return // nada que archivar si no hay URL/fuente
+
+  if (!entry) {
+    const meta = getContainerMeta(key)
+    const label = state.containerNames[key] || meta.label || key
+    const section = meta.section || 'Otros'
+    const kind: 'image' | 'video' = meta.kind === 'video' ? 'video' : 'image'
+    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
+    entry = {
+      key,
+      label,
+      section,
+      kind,
+      src,
+      name: mm?.name || resolveMediaName(src, key),
+      size: mm?.size ?? null,
+      original: !mm,
+    }
+  }
+  retireUsedEntryToUnused(entry, reason, [key])
+  delete state.usedContent[key]
+  if (!state.retired.includes(key)) state.retired.push(key)
 }
 
 function compactList(prefix: string, deletedIndices: Set<number>, cleared: Record<string, string>) {
@@ -834,14 +889,11 @@ export function cleanOrphanOverrides() {
 }
 
 export function moveUsedToUnused(key: string) {
-  const entry = state.usedContent[key]
-  if (!entry) return
-  retireUsedEntryToUnused(entry, 'retired', [key])
-  delete state.usedContent[key]
-  if (!state.retired.includes(key)) state.retired.push(key)
+  archiveMediaKey(key, 'retired')
   clearItemOverrides([key])
   persistUsed(); persistUnused(); persistRetired()
-  recordAudit({ section: entry.section, label: entry.label, summary: 'Contenido movido a no usados' })
+  const meta = getContainerMeta(key)
+  recordAudit({ section: meta.section, label: meta.label, summary: 'Contenido movido a no usados' })
 }
 
 export function moveUnusedToTrash(idx: number) {
