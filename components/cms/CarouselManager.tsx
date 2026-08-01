@@ -29,9 +29,7 @@ function parseSettings(prefix: string) {
 }
 
 const slideSrc = (vKey: string, prefix: string) =>
-  vKey.startsWith(`${prefix}.slide#`)
-    ? state.items[vKey] || currentSrcOf(elementsByKey[vKey] || null)
-    : ''
+  state.items[vKey] || currentSrcOf(elementsByKey[vKey] || null) || ''
 
 export default function CarouselManager({ prefix, show = true, onClose, onPickImage }: Props) {
   const toast = useToast()
@@ -79,52 +77,55 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
 
   // Reescribe slide#0..n según el orden actual y manda el payload (port saveGraph)
   const saveGraph = async (finalSlides: string[]) => {
-    const oldData: Record<string, string | undefined> = {}
-    original.forEach((k) => { 
-      oldData[k] = slideSrc(k, prefix) 
-    })
-
-    const oldUsed: Record<string, any> = {}
-    original.forEach((k) => {
-      if (state.usedContent[k]) oldUsed[k] = state.usedContent[k]
-    })
-
-    // Recopila todas las claves conocidas de diapositivas antes de guardar
-    const allPreviousSlideKeys = new Set<string>([
+    // 1. Recopilar todos los datos y entradas usadas de todas las diapositivas (reales y virtuales)
+    const allKnownSlideKeys = new Set<string>([
       ...original,
       ...slides,
+      ...finalSlides,
       ...Object.keys(state.items).filter((k) => k.startsWith(`${prefix}.slide#`)),
       ...Object.keys(state.usedContent).filter((k) => k.startsWith(`${prefix}.slide#`)),
     ])
 
-    // slides eliminadas → archivar a "sin usar"
-    allPreviousSlideKeys.forEach((k) => {
+    const oldData: Record<string, string> = {}
+    const oldUsed: Record<string, any> = {}
+    allKnownSlideKeys.forEach((k) => {
+      const src = slideSrc(k, prefix)
+      if (src) oldData[k] = src
+      if (state.usedContent[k]) oldUsed[k] = state.usedContent[k]
+    })
+
+    // 2. slides eliminadas → archivar a "sin usar"
+    allKnownSlideKeys.forEach((k) => {
       if (finalSlides.includes(k)) return
       archiveMediaKey(k, 'deleted')
+      delete state.items[k]
+      delete state.usedContent[k]
     })
 
+    // 3. Re-mapear finalSlides a realKey (prefix.slide#0, prefix.slide#1...)
     finalSlides.forEach((vKey, i) => {
       const realKey = `${prefix}.slide#${i}`
-      
-      // Items mapping
-      if (vKey.startsWith(`${prefix}.slide#`) && oldData[vKey]) {
-        state.items[realKey] = oldData[vKey]!
-      } else {
-        if (vKey.startsWith(`${prefix}.slide#`)) {
-          console.warn(`[saveGraph] Deleting ${realKey} because oldData[${vKey}] is falsy!`)
+      const src = oldData[vKey] || state.items[vKey] || ''
+      if (src) {
+        state.items[realKey] = src
+        const usedEntry = oldUsed[vKey] || state.usedContent[vKey]
+        if (usedEntry) {
+          state.usedContent[realKey] = { ...usedEntry, key: realKey }
         }
+      } else {
         delete state.items[realKey]
+        delete state.usedContent[realKey]
       }
 
-      // UsedContent mapping
-      if (oldUsed[vKey]) {
-        state.usedContent[realKey] = { ...oldUsed[vKey], key: realKey }
-      } else {
-        delete state.usedContent[realKey]
+      if (vKey !== realKey) {
+        delete state.items[vKey]
+        delete state.usedContent[vKey]
       }
     })
 
-    for (let i = finalSlides.length; i < Math.max(original.length, finalSlides.length); i++) {
+    // 4. Limpiar claves sobrantes que estén por encima de finalSlides.length
+    const maxCount = Math.max(original.length, slides.length, Object.keys(state.items).filter(k => k.startsWith(`${prefix}.slide#`)).length)
+    for (let i = finalSlides.length; i < maxCount; i++) {
       const rk = `${prefix}.slide#${i}`
       delete state.items[rk]
       delete state.usedContent[rk]
@@ -145,10 +146,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     }
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
-    // Aplica el payload, pero limpia los keys huérfanos (vacíos por encima del
-    // newCount) para no dejar basura en el storage tras una poda.
     Object.keys(payload).forEach((k) => { overrides[k] = payload[k] })
-    for (let i = newCount; i < original.length; i++) {
+    for (let i = newCount; i < Math.max(original.length, maxCount); i++) {
       delete overrides[`${prefix}.slide#${i}`]
     }
     saveJSON(LS.OVERRIDES, overrides)
@@ -161,10 +160,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     fresh.forEach((k) => { newSrcs[k] = slideSrc(k, prefix) })
     setInitialSrcs(newSrcs)
     setInitialDuration(duration)
+    seedUsedContent()
     emit()
     broadcastCarousel(prefix)
-    
-    // Esperamos a que React renderice la nueva slide en el DOM para poder detectar su imagen
     setTimeout(() => seedUsedContent(), 100)
   }
 
