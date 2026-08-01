@@ -499,32 +499,55 @@ export function cloudinaryMove(oldUrl: string, newFolder: string) {
 export function syncCloudinaryFolders(): number {
   if (!state.isAdmin) return 0
   let count = 0
-  // 1. Contenidos en uso -> portfolio/<seccion>
+
+  const processedSrc = new Set<string>()
+
+  // 1. Contenidos en uso (tienen prioridad, pueden tener multiples carpetas validas)
+  const validFoldersBySrc = new Map<string, Set<string>>()
   Object.values(state.usedContent).forEach((entry) => {
     if (entry && entry.src && entry.src.includes('cloudinary.com')) {
-      const correctFolder = getCloudinaryFolder(entry.section)
-      // Chequeamos si ya está en la carpeta correcta. 
-      // Cloudinary expone la ruta en la URL (ej: /upload/v1234/portfolio/projects/...)
-      if (!entry.src.includes(`/${correctFolder}/`)) {
-        cloudinaryMove(entry.src, correctFolder)
+      if (!validFoldersBySrc.has(entry.src)) validFoldersBySrc.set(entry.src, new Set())
+      validFoldersBySrc.get(entry.src)!.add(getCloudinaryFolder(entry.section))
+    }
+  })
+
+  validFoldersBySrc.forEach((validFolders, src) => {
+    processedSrc.add(src)
+    let isInValidFolder = false
+    for (const folder of validFolders) {
+      if (src.includes(`/${folder}/`)) {
+        isInValidFolder = true
+        break
+      }
+    }
+    if (!isInValidFolder) {
+      const targetFolder = Array.from(validFolders)[0]
+      cloudinaryMove(src, targetFolder)
+      count++
+    }
+  })
+
+  // 2. Contenidos sin usar -> portfolio/sin-usar
+  state.unused.forEach((entry) => {
+    const src = entry.src || entry.dataUrl
+    if (src && src.includes('cloudinary.com') && !processedSrc.has(src)) {
+      processedSrc.add(src)
+      if (!src.includes('/portfolio/sin-usar/')) {
+        cloudinaryMove(src, 'portfolio/sin-usar')
         count++
       }
     }
   })
-  // 2. Contenidos sin usar -> portfolio/sin-usar
-  state.unused.forEach((entry) => {
-    const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com') && !src.includes('/portfolio/sin-usar/')) {
-      cloudinaryMove(src, 'portfolio/sin-usar')
-      count++
-    }
-  })
+
   // 3. Contenidos en basurero -> portfolio/basurero
   state.trash.forEach((entry) => {
     const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com') && !src.includes('/portfolio/basurero/')) {
-      cloudinaryMove(src, 'portfolio/basurero')
-      count++
+    if (src && src.includes('cloudinary.com') && !processedSrc.has(src)) {
+      processedSrc.add(src)
+      if (!src.includes('/portfolio/basurero/')) {
+        cloudinaryMove(src, 'portfolio/basurero')
+        count++
+      }
     }
   })
   if (count > 0) {

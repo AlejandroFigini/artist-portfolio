@@ -324,6 +324,11 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
               })
             }
           }
+          const pageAllItems = page.sections.flatMap((s) => s.items)
+          const pageUniqueSrcs = new Set(pageAllItems.map(item => item.src || item.dataUrl || (item as any).key || ''))
+          const pageUniqueCount = pageUniqueSrcs.size
+          const pageReusedCount = pageAllItems.length - pageUniqueCount
+
           return (
             <div className="admin-tree-page" key={page.id}>
               <div className={`admin-tree-row admin-tree-row--page${pOpen ? ' open' : ''}`}>
@@ -337,7 +342,18 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                   <i className={`fa-solid ${page.icon} admin-tree-icon`}></i>
                   <span className="admin-tree-label">{page.label}</span>
                   {page.count > 0 && (
-                    <span className="admin-badge">{page.count} files · {fmtBytes(page.size)}</span>
+                    <span className="admin-badge">
+                      {pageUniqueCount} {pageUniqueCount === 1 ? 'file' : 'files'}
+                      {pageReusedCount > 0 && (
+                        <span className="cms-info-tip" style={{ marginLeft: '4px', verticalAlign: 'middle' }} tabIndex={0}>
+                          <span style={{ opacity: 0.7, cursor: 'help' }}>(+{pageReusedCount} reused)</span>
+                          <span className="cms-info-bubble" role="tooltip" style={{ fontWeight: 'normal', textTransform: 'none', whiteSpace: 'normal', minWidth: '220px' }}>
+                            This page contains {pageUniqueCount} unique files. An additional {pageReusedCount} usages come from repeating those same files within the page.
+                          </span>
+                        </span>
+                      )}
+                      {' · '}{fmtBytes(page.size)}
+                    </span>
                   )}
                 </button>
                 {sel.multiSelect && page.count > 0 && (
@@ -364,7 +380,6 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                       const src = item.src || item.dataUrl || (item as any).key || ''
                       if ((srcToSections.get(src)?.size || 0) > 1) reusedCount++
                     })
-                    const uniqueCount = s.count - reusedCount
 
                     return (
                       <div className="admin-tree-section" key={sid}>
@@ -378,8 +393,15 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                             <span className="admin-tree-label">{s.label}</span>
                             {s.count > 0 && (
                               <span className="admin-badge">
-                                {uniqueCount} {uniqueCount === 1 ? 'file' : 'files'}
-                                {reusedCount > 0 && <span style={{ opacity: 0.7, marginLeft: '4px' }}>(+{reusedCount} reused)</span>}
+                                {s.count} {s.count === 1 ? 'file' : 'files'}
+                                {reusedCount > 0 && (
+                                  <span className="cms-info-tip" style={{ marginLeft: '4px', verticalAlign: 'middle' }} tabIndex={0}>
+                                    <span style={{ opacity: 0.7, cursor: 'help' }}>({reusedCount} reused)</span>
+                                    <span className="cms-info-bubble" role="tooltip" style={{ fontWeight: 'normal', textTransform: 'none', whiteSpace: 'normal', minWidth: '220px' }}>
+                                      This section has {s.count} total files, but {reusedCount} of them are also being used in other sections.
+                                    </span>
+                                  </span>
+                                )}
                                 {' · '}{fmtBytes(s.size)}
                               </span>
                             )}
