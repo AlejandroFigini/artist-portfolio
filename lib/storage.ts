@@ -208,37 +208,54 @@ export async function moveAssetFolder(url: string, newFolder: string): Promise<s
   try {
     const parsed = parseCloudinaryUrl(url)
     if (!parsed) return url
-    // Extraer solo el nombre del archivo (última parte del public_id)
     const parts = parsed.publicId.split('/')
     const filename = parts[parts.length - 1]
     const newPublicId = `${newFolder}/${filename}`
+
+    // Probar primero el publicId exacto y luego carpetas candidatas por si el CMS ya actualizó su URL localmente
+    const currentFolder = parts.slice(0, -1).join('/')
+    const candidateFolders = Array.from(new Set([currentFolder, 'portfolio/en-uso', 'portfolio/sin-usar', 'portfolio/basurero', 'portfolio']))
     
-    if (parsed.publicId === newPublicId) {
-      // Si el public_id ya tiene la ruta correcta, actualizamos asset_folder en la UI de Cloudinary por si quedó desfasado
+    let successUrl = url
+    let renamed = false
+
+    for (const folder of candidateFolders) {
+      const candidateId = `${folder}/${filename}`
+      if (candidateId === newPublicId && folder === newFolder) {
+        // Ya está en la carpeta destino, solo aseguramos asset_folder
+        await cloudinary.api.update(newPublicId, {
+          resource_type: parsed.resourceType,
+          asset_folder: newFolder,
+        }).catch(() => {})
+        renamed = true
+        break
+      }
+
+      try {
+        const result = await cloudinary.uploader.rename(candidateId, newPublicId, {
+          resource_type: parsed.resourceType,
+          overwrite: true,
+          invalidate: true,
+        })
+        successUrl = result.secure_url || url
+        renamed = true
+        break
+      } catch {
+        // Probar la siguiente carpeta candidata
+      }
+    }
+
+    if (renamed) {
       await cloudinary.api.update(newPublicId, {
         resource_type: parsed.resourceType,
         asset_folder: newFolder,
-      }).catch(() => {})
-      return url
+      }).catch((e) => console.warn('[moveAssetFolder] no se pudo actualizar asset_folder:', e))
     }
 
-    const result = await cloudinary.uploader.rename(parsed.publicId, newPublicId, {
-      resource_type: parsed.resourceType,
-      overwrite: true,
-      invalidate: true,
-    })
-
-    // En cuentas modernas de Cloudinary (con Dynamic/Asset Folders), rename cambia el public_id
-    // pero no mueve la ubicación visual en la biblioteca de medios. Actualizamos asset_folder explícitamente:
-    await cloudinary.api.update(newPublicId, {
-      resource_type: parsed.resourceType,
-      asset_folder: newFolder,
-    }).catch((e) => console.warn('[moveAssetFolder] no se pudo actualizar asset_folder:', e))
-
-    return result.secure_url || url
+    return successUrl
   } catch (err) {
     console.error('[moveAssetFolder] error:', err)
-    return url // devolver la original si falla — no romper el flujo
+    return url
   }
 }
 

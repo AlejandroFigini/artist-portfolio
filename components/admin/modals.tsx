@@ -14,7 +14,7 @@ import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
   loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta, getAllKnownContainerKeys,
-  moveUsedToUnused, type UsedEntry,
+  moveUsedToUnused, cloudinaryMove, syncCloudinaryFolders, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
@@ -823,20 +823,44 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
                 No folder mismatches. All files are in their correct Cloudinary folders.
               </p>
-            : <div className="cms-audit-table-wrap">
-                <table className="cms-audit-table">
-                  <thead><tr><th>Name</th><th>Expected Folder</th><th>Actual Folder (Cloudinary)</th><th>CMS Section</th></tr></thead>
-                  <tbody>
-                    {localResult.folderMismatch.map((r, i) => (
-                      <tr key={i}>
-                        <td style={{ fontWeight: 600 }}>{r.name}</td>
-                        <td style={{ color: '#3b82f6', fontFamily: 'monospace' }}>{r.expectedFolder}</td>
-                        <td style={{ color: '#ef4444', fontFamily: 'monospace' }}>{r.actualFolder}</td>
-                        <td>{r.section}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            : <div>
+                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    These files exist in Cloudinary but are in a different folder than expected by the CMS state.
+                  </span>
+                  <button
+                    type="button"
+                    className="cms-btn"
+                    style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={async () => {
+                      toast('Synchronizing mismatched folders in Cloudinary...', 'info')
+                      localResult.folderMismatch.forEach(item => {
+                        const target = item.expectedFolder.split(' OR ')[0]
+                        if (target) cloudinaryMove(item.url, target)
+                      })
+                      toast(`Triggered folder moves for ${localResult.folderMismatch.length} items.`, 'success')
+                      onClose()
+                    }}
+                  >
+                    <i className="fa-solid fa-folder-arrow-up"></i>
+                    Move {localResult.folderMismatch.length} files to correct folders
+                  </button>
+                </div>
+                <div className="cms-audit-table-wrap">
+                  <table className="cms-audit-table">
+                    <thead><tr><th>Name</th><th>Expected Folder</th><th>Actual Folder (Cloudinary)</th><th>CMS Section</th></tr></thead>
+                    <tbody>
+                      {localResult.folderMismatch.map((r, i) => (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 600 }}>{r.name}</td>
+                          <td style={{ color: '#3b82f6', fontFamily: 'monospace' }}>{r.expectedFolder}</td>
+                          <td style={{ color: '#ef4444', fontFamily: 'monospace' }}>{r.actualFolder}</td>
+                          <td>{r.section}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
         )}
         {tab === 'orphaned' && (
