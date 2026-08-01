@@ -763,9 +763,9 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const exportCloudinary = async (close: () => void) => {
     close()
     toast('Fetching Cloudinary resources...', 'info')
-    const resources = await listCloudinaryResources()
-    if (resources.length === 0) {
-      toast('No resources found in Cloudinary (or Cloudinary not configured).', 'error')
+    const { resources, error } = await listCloudinaryResources()
+    if (error || resources.length === 0) {
+      toast(error ? `Cloudinary Error: ${error}` : 'No resources found in Cloudinary (or Cloudinary not configured).', 'error')
       return
     }
 
@@ -822,17 +822,23 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
     setSyncing(true)
     toast('Comparing Cloudinary vs Management... This may take a few seconds.', 'info')
     try {
-      const [cloudinaryList, cmsList] = await Promise.all([
+      const [cloudinaryRes, cmsList] = await Promise.all([
         listCloudinaryResources(),
         Promise.resolve(collectCmsCloudinaryUrls()),
       ])
+      const cloudinaryList = cloudinaryRes.resources || []
+      if (cloudinaryRes.error) {
+        toast(`Cloudinary API Error: ${cloudinaryRes.error}`, 'error')
+        setSyncing(false)
+        return
+      }
       if (cloudinaryList.length === 0 && cmsList.length === 0) {
         toast('No content to compare.', 'error')
         setSyncing(false)
         return
       }
       if (cloudinaryList.length === 0 && cmsList.length > 0) {
-        toast('Could not retrieve resources from Cloudinary. Please verify Cloudinary credentials.', 'error')
+        toast('Cloudinary API returned 0 resources (Check Cloudinary settings).', 'error')
         setSyncing(false)
         return
       }
@@ -840,8 +846,9 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
       setSyncAudit(result)
       const hasErrors = result.orphaned.length + result.broken.length + result.folderMismatch.length > 0
       toast(`Audit complete: ${result.matching.length} synced, ${result.folderMismatch.length} wrong folder, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`, hasErrors ? 'error' : 'success')
-    } catch {
-      toast('Error comparing Cloudinary vs CMS.', 'error')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e)
+      toast(`Error comparing: ${message}`, 'error')
     }
     setSyncing(false)
   }

@@ -310,13 +310,16 @@ export type CloudinaryResourceInfo = {
 
 /** Lista todos los recursos de Cloudinary bajo portfolio/.
  *  Silencioso si el backend no responde (devuelve array vacío). */
-export async function listCloudinaryResources(): Promise<CloudinaryResourceInfo[]> {
+export async function listCloudinaryResources(): Promise<{ resources: CloudinaryResourceInfo[]; error?: string }> {
   try {
     const r = await fetch('/api/cloudinary-sync', { cache: 'no-store' })
-    if (!r.ok) return []
-    const data = await r.json()
-    return (data as { resources?: CloudinaryResourceInfo[] }).resources || []
-  } catch {
-    return []
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) {
+      return { resources: [], error: data.error || `HTTP ${r.status}` }
+    }
+    return { resources: (data.resources as CloudinaryResourceInfo[]) || [], error: data.error }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { resources: [], error: message || 'Network error' }
   }
 }
