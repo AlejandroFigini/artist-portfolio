@@ -237,8 +237,10 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
     const map = new Map<string, AnyEntry>()
     for (const e of usedArr) {
       const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
-      if (!map.has(src)) {
-        map.set(src, e)
+      const section = (e as any).section || 'unknown'
+      const dupKey = `${src}::${section}`
+      if (!map.has(dupKey)) {
+        map.set(dupKey, e)
       }
     }
     return Array.from(map.values())

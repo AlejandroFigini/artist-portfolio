@@ -159,10 +159,12 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     state.retired = state.retired.filter((k) => !k.startsWith('char#') || !state.items[k])
     persistRetired()
     persistUsed()
-    seedUsedContent()
 
     emit()
-    setTimeout(() => rescan(), 100)
+    setTimeout(() => {
+      rescan()
+      seedUsedContent()
+    }, 100)
 
     const fresh = Array.from({ length: newCount }, (_, i) => `char#${i}`)
     setOriginal(fresh)

@@ -172,12 +172,14 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     state.retired = state.retired.filter((k) => !k.startsWith('proj#') || !state.items[k])
     persistRetired()
     persistUsed()
-    seedUsedContent()
 
     emit()
     // El contenido lo pinta React (ProjectCard lee de state.items). rescan sólo
     // re-indexa la(s) card(s) nueva(s) para los controles de edición de admin.
-    setTimeout(() => rescan(), 80)
+    setTimeout(() => {
+      rescan()
+      seedUsedContent()
+    }, 100)
     setTimeout(() => rescan(), 300)
 
     const fresh = Array.from({ length: newCount }, (_, i) => `proj#${i}`)

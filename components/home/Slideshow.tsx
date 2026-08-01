@@ -47,7 +47,9 @@ export default function HeroSlideshow() {
         return
       }
       const next = (current + 1) % els.length
-      gsap.fromTo(els[next], { scale: 1, opacity: 0 }, { scale: 1.05, opacity: 1, duration: 3, ease: 'power1.inOut' })
+      // Separamos la animación de fade in y la de zoom para que el zoom sea constante y lentísimo
+      gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 3, ease: 'power1.inOut' })
+      gsap.fromTo(els[next], { scale: 1 }, { scale: 1.03, duration: (intervalMs / 1000) + 3, ease: 'none' })
       gsap.to(els[current], { opacity: 0, duration: 3, ease: 'power1.inOut' })
       current = next
     }, intervalMs)

@@ -148,7 +148,6 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     saveJSON(LS.OVERRIDES, overrides)
 
     await saveContent(payload)
-    seedUsedContent()
     const fresh = Array.from({ length: newCount }, (_, i) => `${prefix}.slide#${i}`)
     setOriginal(fresh)
     setSlides(fresh)
@@ -158,6 +157,9 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     setInitialDuration(duration)
     emit()
     broadcastCarousel(prefix)
+    
+    // Esperamos a que React renderice la nueva slide en el DOM para poder detectar su imagen
+    setTimeout(() => seedUsedContent(), 100)
   }
 
   // Guardar Grafo: persiste la estructura pero NO cierra el modal — el usuario
