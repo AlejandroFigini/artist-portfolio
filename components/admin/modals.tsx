@@ -717,7 +717,7 @@ function downloadCsv(filename: string, headers: string[], rows: string[][]) {
 }
 
 export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAuditResult }) {
-  const { toast } = useToast()
+  const toast = useToast()
   const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken' | 'folderMismatch'>('folderMismatch')
   const [localResult, setLocalResult] = useState<SyncAuditResult>(result)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
