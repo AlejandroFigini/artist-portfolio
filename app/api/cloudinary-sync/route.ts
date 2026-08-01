@@ -29,11 +29,20 @@ export async function GET(req: Request) {
       count: resources.length,
       debug: { cloudName, apiKey: maskedKey }
     })
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
+  } catch (err: any) {
+    let message = 'Error listing resources'
+    if (err instanceof Error) {
+      message = err.message
+    } else if (err && typeof err === 'object') {
+      if (err.error && err.error.message) message = err.error.message
+      else if (err.message) message = err.message
+      else message = JSON.stringify(err)
+    } else {
+      message = String(err)
+    }
     console.error('[cloudinary-sync] error:', err)
     return NextResponse.json({
-      error: `Cloudinary error on cloud "${cloudName}": ${message || 'Error listing resources'}`
+      error: `Cloudinary error on cloud "${cloudName}": ${message}`
     }, { status: 500 })
   }
 }
