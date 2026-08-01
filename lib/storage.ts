@@ -364,95 +364,98 @@ export type CloudinaryResource = {
  *  Intenta primero Search API y luego cae en Admin API si fuera necesario. */
 export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
   if (!hasCloudinary) return []
-  const all: CloudinaryResource[] = []
-  const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+  const allMap = new Map<string, CloudinaryResource>()
 
-  // 1. Probar listar con prefix 'portfolio' y type 'upload'
-  for (const type of types) {
+  const addResource = (r: Record<string, unknown>, defaultFolder = '') => {
+    const secure_url = (r.secure_url as string) || ''
+    const public_id = (r.public_id as string) || ''
+    if (!public_id && !secure_url) return
+    const key = public_id || secure_url
+
+    if (!allMap.has(key)) {
+      let folder = (r.asset_folder as string) || (r.folder as string) || defaultFolder
+      if (!folder && secure_url) {
+        if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
+        else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
+        else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
+        else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
+      }
+      allMap.set(key, {
+        public_id,
+        secure_url,
+        resource_type: (r.resource_type as string) || 'image',
+        format: (r.format as string) || '',
+        bytes: (r.bytes as number) || 0,
+        folder,
+        created_at: (r.created_at as string) || '',
+      })
+    }
+  }
+
+  // Método 1: Search API (si está disponible)
+  try {
     let cursor: string | undefined = undefined
     do {
-      try {
-        const res = await cloudinary.api.resources({
-          resource_type: type,
-          type: 'upload',
-          prefix: 'portfolio',
+      const searchRes = await (cloudinary as any).search
+        .expression('public_id:* OR asset_folder:* OR folder:*')
+        .max_results(500)
+        .next_cursor(cursor)
+        .execute() as { resources?: Record<string, unknown>[]; next_cursor?: string }
+
+      if (searchRes?.resources) {
+        searchRes.resources.forEach(r => addResource(r))
+      }
+      cursor = searchRes?.next_cursor
+    } while (cursor)
+  } catch (err) {
+    console.warn('[listAllCloudinaryResources] Search API not available:', err)
+  }
+
+  // Método 2: resources_by_asset_folder (para Asset Folders dinámicos)
+  const knownFolders = ['portfolio/en-uso', 'portfolio/sin-usar', 'portfolio/basurero', 'portfolio']
+  for (const folderPath of knownFolders) {
+    try {
+      let cursor: string | undefined = undefined
+      do {
+        const res = await (cloudinary.api as any).resources_by_asset_folder(folderPath, {
           max_results: 500,
           next_cursor: cursor,
         }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
 
-        if (res && res.resources && res.resources.length > 0) {
-          for (const r of res.resources) {
-            const secure_url = (r.secure_url as string) || ''
-            const public_id = (r.public_id as string) || ''
-            let folder = (r.asset_folder as string) || (r.folder as string) || ''
-            if (!folder && secure_url) {
-              if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
-              else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
-              else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
-              else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
-            }
-            all.push({
-              public_id,
-              secure_url,
-              resource_type: type,
-              format: (r.format as string) || '',
-              bytes: (r.bytes as number) || 0,
-              folder,
-              created_at: (r.created_at as string) || '',
-            })
-          }
+        if (res?.resources) {
+          res.resources.forEach(r => addResource(r, folderPath))
         }
-        cursor = res ? res.next_cursor : undefined
-      } catch (err) {
-        console.error(`[listAllCloudinaryResources] error listing ${type} (prefix):`, err)
-        cursor = undefined
-      }
-    } while (cursor)
+        cursor = res?.next_cursor
+      } while (cursor)
+    } catch {}
   }
 
-  // 2. Si con prefix no trajo nada (por prefijo de cuenta o carpeta raíz), listar globalmente todos los subidos
-  if (all.length === 0) {
-    for (const type of types) {
+  // Método 3: Admin API estándar (api.resources) con type 'upload' y global
+  const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+  for (const type of types) {
+    for (const typeOpt of ['upload', undefined]) {
       let cursor: string | undefined = undefined
       do {
         try {
-          const res = await cloudinary.api.resources({
+          const opts: Record<string, unknown> = {
             resource_type: type,
-            type: 'upload',
             max_results: 500,
             next_cursor: cursor,
-          }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
-
-          if (res && res.resources) {
-            for (const r of res.resources) {
-              const secure_url = (r.secure_url as string) || ''
-              const public_id = (r.public_id as string) || ''
-              let folder = (r.asset_folder as string) || (r.folder as string) || ''
-              if (!folder && secure_url) {
-                if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
-                else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
-                else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
-                else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
-              }
-              all.push({
-                public_id,
-                secure_url,
-                resource_type: type,
-                format: (r.format as string) || '',
-                bytes: (r.bytes as number) || 0,
-                folder,
-                created_at: (r.created_at as string) || '',
-              })
-            }
           }
-          cursor = res ? res.next_cursor : undefined
-        } catch (err) {
-          console.error(`[listAllCloudinaryResources] error listing ${type} (global):`, err)
+          if (typeOpt) opts.type = typeOpt
+
+          const res = await cloudinary.api.resources(opts as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+
+          if (res?.resources) {
+            res.resources.forEach(r => addResource(r))
+          }
+          cursor = res?.next_cursor
+        } catch {
           cursor = undefined
         }
       } while (cursor)
     }
   }
 
-  return all
+  return Array.from(allMap.values())
 }
