@@ -432,6 +432,7 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
 
   // Método 3: Admin API estándar (api.resources) con type 'upload' y global
   const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+  let lastError: unknown = null
   for (const type of types) {
     for (const typeOpt of ['upload', undefined]) {
       let cursor: string | undefined = undefined
@@ -450,11 +451,16 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
             res.resources.forEach(r => addResource(r))
           }
           cursor = res?.next_cursor
-        } catch {
+        } catch (err) {
+          lastError = err
           cursor = undefined
         }
       } while (cursor)
     }
+  }
+
+  if (allMap.size === 0 && lastError) {
+    throw lastError
   }
 
   return Array.from(allMap.values())
