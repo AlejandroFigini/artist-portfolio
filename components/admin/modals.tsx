@@ -702,6 +702,7 @@ export type SyncAuditResult = {
   matching: { url: string; name: string; state: string; cloudinaryId: string }[]
   orphaned: { url: string; publicId: string; resourceType: string; format: string; bytes: number; folder: string }[]
   broken: { url: string; name: string; state: string; section: string }[]
+  folderMismatch: { url: string; name: string; state: string; section: string; cloudinaryId: string; actualFolder: string; expectedFolder: string }[]
 }
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
@@ -716,7 +717,7 @@ function downloadCsv(filename: string, headers: string[], rows: string[][]) {
 }
 
 export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAuditResult }) {
-  const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken'>('orphaned')
+  const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken' | 'folderMismatch'>('folderMismatch')
   const [localResult, setLocalResult] = useState<SyncAuditResult>(result)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
@@ -725,6 +726,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
     localResult.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, 'Synced']))
     localResult.orphaned.forEach((r) => rows.push([r.publicId, r.url, 'N/A', r.publicId, 'Orphaned in Cloudinary']))
     localResult.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from Cloudinary']))
+    localResult.folderMismatch.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `Folder mismatch: expected ${r.expectedFolder}, found in ${r.actualFolder}`]))
     downloadCsv(
       `sync-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Name', 'URL', 'CMS State', 'Cloudinary ID', 'Status'],
@@ -775,22 +777,30 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
     >
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#22c55e' }}>{localResult.matching.length}</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Synced</div>
         </div>
-        <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>{localResult.orphaned.length}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Orphaned in Cloudinary</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Orphaned</div>
         </div>
-        <div style={{ flex: 1, minWidth: 140, padding: '1rem', borderRadius: 12, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#eab308' }}>{localResult.broken.length}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Missing from Cloudinary</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Missing</div>
+        </div>
+        <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>{localResult.folderMismatch.length}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Wrong Folder</div>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+        <button type="button" style={tabStyle('folderMismatch')} onClick={() => setTab('folderMismatch')}>
+          <i className="fa-solid fa-folder-tree" style={{ marginRight: '0.4rem', color: '#3b82f6' }}></i>
+          Wrong Folder ({localResult.folderMismatch.length})
+        </button>
         <button type="button" style={tabStyle('orphaned')} onClick={() => setTab('orphaned')}>
           <i className="fa-solid fa-ghost" style={{ marginRight: '0.4rem', color: '#ef4444' }}></i>
           Orphaned ({localResult.orphaned.length})
@@ -807,6 +817,28 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
 
       {/* Tab content */}
       <div style={{ maxHeight: '40vh', overflow: 'auto' }}>
+        {tab === 'folderMismatch' && (
+          localResult.folderMismatch.length === 0
+            ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
+                <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
+                No folder mismatches. All files are in their correct Cloudinary folders.
+              </p>
+            : <div className="cms-audit-table-wrap">
+                <table className="cms-audit-table">
+                  <thead><tr><th>Name</th><th>Expected Folder</th><th>Actual Folder (Cloudinary)</th><th>CMS Section</th></tr></thead>
+                  <tbody>
+                    {localResult.folderMismatch.map((r, i) => (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 600 }}>{r.name}</td>
+                        <td style={{ color: '#3b82f6', fontFamily: 'monospace' }}>{r.expectedFolder}</td>
+                        <td style={{ color: '#ef4444', fontFamily: 'monospace' }}>{r.actualFolder}</td>
+                        <td>{r.section}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+        )}
         {tab === 'orphaned' && (
           localResult.orphaned.length === 0
             ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>

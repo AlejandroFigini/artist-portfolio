@@ -627,8 +627,21 @@ function buildSyncAuditResult(
   // Crear un Set de URLs del CMS
   const cmsUrlSet = new Set(cmsList.map((r) => r.url))
 
-  // Matching: están en ambos
+  // Agrupar recursos de Cloudinary por nombre de archivo para encontrar mismatches de carpeta
+  const cloudinaryByFilename = new Map<string, CloudinaryResourceInfo[]>()
+  cloudinaryList.forEach(cr => {
+    const filename = cr.secure_url.split('/').pop() || ''
+    if (filename) {
+      if (!cloudinaryByFilename.has(filename)) cloudinaryByFilename.set(filename, [])
+      cloudinaryByFilename.get(filename)!.push(cr)
+    }
+  })
+
   const matching: SyncAuditResult['matching'] = []
+  const folderMismatch: SyncAuditResult['folderMismatch'] = []
+  const broken: SyncAuditResult['broken'] = []
+  const mismatchedCloudinaryUrls = new Set<string>()
+
   cmsList.forEach((cms) => {
     if (cloudinaryUrlSet.has(cms.url)) {
       const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url)
@@ -638,13 +651,31 @@ function buildSyncAuditResult(
         state: cms.state,
         cloudinaryId: cloudRes?.public_id || '',
       })
+    } else {
+      const filename = cms.url.split('/').pop() || ''
+      const possibleMatches = cloudinaryByFilename.get(filename) || []
+      if (possibleMatches.length > 0) {
+        const cloudRes = possibleMatches[0] // Tomamos el primero que coincida en nombre
+        mismatchedCloudinaryUrls.add(cloudRes.secure_url)
+        folderMismatch.push({
+          url: cms.url,
+          name: cms.name,
+          state: cms.state,
+          section: cms.section,
+          cloudinaryId: cloudRes.public_id,
+          actualFolder: cloudRes.folder,
+          expectedFolder: cms.url.split('/').slice(-2, -1)[0] || 'unknown',
+        })
+      } else {
+        broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
+      }
     }
   })
 
-  // Orphaned: en Cloudinary pero NO en el CMS
+  // Orphaned: en Cloudinary pero NO en el CMS, y que tampoco sean parte de un mismatch
   const orphaned: SyncAuditResult['orphaned'] = []
   cloudinaryList.forEach((cr) => {
-    if (!cmsUrlSet.has(cr.secure_url)) {
+    if (!cmsUrlSet.has(cr.secure_url) && !mismatchedCloudinaryUrls.has(cr.secure_url)) {
       orphaned.push({
         url: cr.secure_url,
         publicId: cr.public_id,
@@ -656,15 +687,7 @@ function buildSyncAuditResult(
     }
   })
 
-  // Broken: en CMS pero NO en Cloudinary
-  const broken: SyncAuditResult['broken'] = []
-  cmsList.forEach((cms) => {
-    if (!cloudinaryUrlSet.has(cms.url)) {
-      broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
-    }
-  })
-
-  return { matching, orphaned, broken }
+  return { matching, orphaned, broken, folderMismatch }
 }
 
 export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
@@ -769,7 +792,8 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
       }
       const result = buildSyncAuditResult(cloudinaryList, cmsList)
       setSyncAudit(result)
-      toast(`Audit complete: ${result.matching.length} synced, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`, result.orphaned.length + result.broken.length > 0 ? 'error' : 'success')
+      const hasErrors = result.orphaned.length + result.broken.length + result.folderMismatch.length > 0
+      toast(`Audit complete: ${result.matching.length} synced, ${result.folderMismatch.length} wrong folder, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`, hasErrors ? 'error' : 'success')
     } catch {
       toast('Error comparing Cloudinary vs CMS.', 'error')
     }
