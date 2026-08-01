@@ -73,7 +73,7 @@ export default function Hero() {
       gsap.set('.hero-subtitle', { autoAlpha: 0, y: 18 })
       gsap.set('.bp-line-h', { strokeDasharray: 600, strokeDashoffset: 600 })
       gsap.set('.bp-measure-label, .bp-fig, .bp-tick', { autoAlpha: 0 })
-      gsap.set('.hero-media-wrapper .media-container', { autoAlpha: 0, clipPath: 'inset(0% 0% 100% 0%)' })
+      gsap.set('.hero-media-wrapper .media-container', { autoAlpha: 0, scale: 1.04 })
       gsap.set('.bp-corner', { autoAlpha: 0, scale: 0.4 })
       gsap.set('.hero-software-wave', { autoAlpha: 0, y: 24 })
 
@@ -83,9 +83,9 @@ export default function Hero() {
         .to('.bp-tick', { autoAlpha: 1, duration: 0.3 }, '-=0.25')
         .to('.bp-measure-label', { autoAlpha: 1, duration: 0.5 }, '-=0.3')
         .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 0.9 }, '-=0.75')
-        // media: wipe vertical (clip-path no pelea con la animación CSS de flotado)
-        .to('.hero-primary', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.25, ease: 'expo.out' }, 0.5)
-        .to('.hero-secondary', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, 0.72)
+        // media: entrada delicada con fade in + micro-zoom suave
+        .to('.hero-primary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.4)
+        .to('.hero-secondary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.6)
         .to('.bp-corner', { autoAlpha: 1, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out' }, '-=0.9')
         .to('.bp-fig', { autoAlpha: 0.85, duration: 0.5 }, '-=0.5')
         .to('.hero-software-wave', { autoAlpha: 1, y: 0, duration: 0.9 }, '-=0.7')

@@ -51,12 +51,30 @@ export const SITE_PAGES: PageDef[] = [
       { id: 'illustrations', label: 'Illustrations', match: bySection('Ilustraciones', 'Illustrations') },
     ],
   },
-  { id: 'illustrations', label: 'Illustrations', route: '/illustrations', icon: 'fa-paintbrush', sections: [] },
-  { id: 'animations', label: 'Animations', route: '/animations', icon: 'fa-clapperboard', sections: [] },
-  { id: 'characters', label: 'Characters', route: '/characters', icon: 'fa-user-astronaut', sections: [] },
-  { id: 'models3d', label: '3D Models', route: '/models-3d', icon: 'fa-cube', sections: [] },
-  { id: 'multimedia', label: 'Multimedia', route: '/multimedia', icon: 'fa-photo-film', sections: [] },
-  { id: 'aboutme', label: 'About me', route: '/about', icon: 'fa-id-badge', sections: [] },
+  {
+    id: 'illustrations', label: 'Illustrations', route: '/illustrations', icon: 'fa-paintbrush',
+    sections: [{ id: 'illustrations', label: 'Illustrations', match: bySection('Ilustraciones', 'Illustrations') }]
+  },
+  {
+    id: 'animations', label: 'Animations', route: '/animations', icon: 'fa-clapperboard',
+    sections: [{ id: 'animations', label: 'Animations', match: bySection('Animations', 'Animaciones') }]
+  },
+  {
+    id: 'characters', label: 'Characters', route: '/characters', icon: 'fa-user-astronaut',
+    sections: [{ id: 'characters', label: 'Characters', match: bySection('Characters') }]
+  },
+  {
+    id: 'models3d', label: '3D Models', route: '/models-3d', icon: 'fa-cube',
+    sections: [{ id: 'models3d', label: '3D Models', match: bySection('3D Models') }]
+  },
+  {
+    id: 'multimedia', label: 'Multimedia', route: '/multimedia', icon: 'fa-photo-film',
+    sections: [{ id: 'projects', label: 'Projects', match: bySection('Proyectos', 'Projects') }]
+  },
+  {
+    id: 'aboutme', label: 'About me', route: '/about', icon: 'fa-id-badge',
+    sections: [{ id: 'about', label: 'About me', match: bySection('Sobre mí', 'About me') }]
+  },
 ]
 
 export type SectionNode<T> = { id: string; label: string; items: T[]; count: number; size: number }
@@ -69,14 +87,18 @@ export type PageNode<T> = {
    Las entradas que no caen en ninguna sección conocida se juntan en "Otros"
    bajo Feed, para no perder contenido de vista. */
 export function buildPageTree<T extends TreeEntry>(arr: T[]): PageNode<T>[] {
-  const matched = new Set<T>()
   const pages: PageNode<T>[] = SITE_PAGES.map((p) => {
     const sections: SectionNode<T>[] = p.sections.map((s) => {
       const items = arr.filter((e) => s.match(e))
-      items.forEach((e) => matched.add(e))
       return { id: s.id, label: s.label, items, count: items.length, size: sumSizes(items) }
     })
     return { id: p.id, label: p.label, route: p.route, icon: p.icon, sections, count: 0, size: 0 }
+  })
+  const matched = new Set<T>()
+  pages.forEach((p) => {
+    p.sections.forEach((s) => {
+      s.items.forEach((e) => matched.add(e))
+    })
   })
   const unmatched = arr.filter((e) => !matched.has(e))
   const feed = pages.find((p) => p.id === 'feed')

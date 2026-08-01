@@ -220,10 +220,10 @@ function SectionHeading({ icon, title, info }: { icon: string; title: string; in
 }
 
 // Cantidad de archivos + tamaño total, destacados — mismo patrón en las 4 subsecciones
-function ContentStats({ count, size }: { count: number; size: number }) {
+function ContentStats({ count, reusedCount, size }: { count: number; reusedCount?: number; size: number }) {
   return (
     <div className="admin-content-stats">
-      <span>Files: <span className="admin-badge">{count}</span></span>
+      <span>Files: <span className="admin-badge">{count} {count === 1 ? 'file' : 'files'}{Boolean(reusedCount && reusedCount > 0) && <span style={{ marginLeft: '4px', opacity: 0.85 }}>(+{reusedCount} reused)</span>}</span></span>
       <span>Total size: <span className="admin-badge">{fmtBytes(size)}</span></span>
     </div>
   )
@@ -286,7 +286,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={deduplicatedArr.length} size={sumSizes(deduplicatedArr)} />
+      <ContentStats count={deduplicatedArr.length} reusedCount={usedArr.length - deduplicatedArr.length} size={sumSizes(deduplicatedArr)} />
       {sel.multiSelect && (
         <BatchBar
           count={count} actionLabel="Move to Unused"
@@ -452,6 +452,14 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
   const { confirm } = useModal()
   const { unusedMenu } = useMenus({ openModal })
   const count = sel.selected.length
+  const { uniqueCount, reusedCount } = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of unusedArr) {
+      const src = e.src || e.dataUrl || (e as any).key || ''
+      if (src) set.add(src)
+    }
+    return { uniqueCount: set.size, reusedCount: unusedArr.length - set.size }
+  }, [unusedArr])
 
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
@@ -471,7 +479,7 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={unusedArr.length} size={sumSizes(unusedArr)} />
+      <ContentStats count={uniqueCount} reusedCount={reusedCount} size={sumSizes(unusedArr)} />
       {sel.multiSelect && (
         <BatchBar
           count={count} actionLabel="Move to Trash" danger
@@ -508,6 +516,14 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
   const { trashMenu } = useMenus({ openModal })
   const [policy, setPolicy] = useState(() => loadJSON<string>(LS.TRASH_POLICY, 'manual'))
   const count = sel.selected.length
+  const { uniqueCount, reusedCount } = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of trashArr) {
+      const src = e.src || e.dataUrl || (e as any).key || ''
+      if (src) set.add(src)
+    }
+    return { uniqueCount: set.size, reusedCount: trashArr.length - set.size }
+  }, [trashArr])
 
   return (
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
@@ -543,7 +559,7 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={trashArr.length} size={sumSizes(trashArr)} />
+      <ContentStats count={uniqueCount} reusedCount={reusedCount} size={sumSizes(trashArr)} />
       {sel.multiSelect && (
         <BatchBar
           count={count} actionLabel="Delete Permanently" danger
@@ -853,6 +869,15 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
     setSyncing(false)
   }
 
+  const { uniqueCount, reusedCount } = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of filtered) {
+      const src = e.src || e.dataUrl || (e as any).key || ''
+      if (src) set.add(src)
+    }
+    return { uniqueCount: set.size, reusedCount: filtered.length - set.size }
+  }, [filtered])
+
   return (
     <>
     <div className={`admin-card${sel.multiSelect ? ' cms-multi-mode' : ''}`}>
@@ -890,7 +915,7 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={filtered.length} size={sumSizes(filtered)} />
+      <ContentStats count={uniqueCount} reusedCount={reusedCount} size={sumSizes(filtered)} />
       {sel.multiSelect && (
         <BatchBar
           count={sel.selected.length} actionLabel={batchLabel}

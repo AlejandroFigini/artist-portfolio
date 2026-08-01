@@ -59,7 +59,7 @@ export default function HeroMediaCarousel({
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
     if (els.length === 0) return;
     gsap.set(els, { opacity: 0 });
-    gsap.set(els[0], { opacity: 1 });
+    gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power2.out' });
     if (els.length < 2) return;
     let current = 0;
     const timer = setInterval(() => {
