@@ -357,15 +357,252 @@ export type CloudinaryResource = {
   format: string
   bytes: number
   folder: string
+    await cloudinary.api.resource(parsed.publicId, { resource_type: parsed.resourceType })
+    return true
+  } catch (err: unknown) {
+    // El SDK de Cloudinary devuelve objetos puros con http_code en lugar de Error instances
+    const errObj = err as Record<string, unknown>
+    const errError = (errObj?.error ?? {}) as Record<string, unknown>
+    const httpCode = errObj?.http_code ?? errError?.http_code ?? errObj?.status ?? errObj?.statusCode
+    if (httpCode === 404) return false
+
+    const message = (errObj?.message ?? errError?.message ?? (typeof err === 'string' ? err : JSON.stringify(err))) as string
+    if (typeof message === 'string' && (message.toLowerCase().includes('not found') || message.toLowerCase().includes('404'))) {
+      return false
+    }
+    // Otro error (rate limit, etc.) → asumir que existe para no borrar datos por error
+    console.warn('[verifyAssetExists] error no concluyente:', message, err)
+    return true
+  }
+}
+
+/** Verifica en lote si múltiples assets de Cloudinary existen.
+ *  Procesa en paralelo con Promise.allSettled (máx 10 concurrentes). */
+export async function verifyAssetsExist(urls: string[]): Promise<{ url: string; exists: boolean }[]> {
+  if (!hasCloudinary) return urls.map((url) => ({ url, exists: true }))
+  const results: { url: string; exists: boolean }[] = []
+  // Procesar en lotes de 10 para no sobrecargar la API
+  const BATCH_SIZE = 10
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE)
+    const settled = await Promise.allSettled(
+      batch.map(async (url) => ({ url, exists: await verifyAssetExists(url) }))
+    )
+    for (const r of settled) {
+      if (r.status === 'fulfilled') results.push(r.value)
+      else results.push({ url: batch[settled.indexOf(r)], exists: true }) // error → asumir existe
+    }
+  }
+  return results
+}
+
+/** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id y update de asset_folder).
+ *  Devuelve la nueva URL. Si falla, devuelve la URL original sin romper. */
+export async function moveAssetFolder(url: string, newFolder: string): Promise<string> {
+  if (!hasCloudinary || !url.includes('cloudinary.com')) return url
+  try {
+    const parsed = parseCloudinaryUrl(url)
+    if (!parsed) return url
+    const parts = parsed.publicId.split('/')
+    const filename = parts[parts.length - 1]
+    const newPublicId = `${newFolder}/${filename}`
+
+    // Probar primero el publicId exacto y luego carpetas candidatas por si el CMS ya actualizó su URL localmente
+    const currentFolder = parts.slice(0, -1).join('/')
+    const candidateFolders = Array.from(new Set([currentFolder, 'portfolio/en-uso', 'portfolio/sin-usar', 'portfolio/basurero', 'portfolio']))
+    
+    let successUrl = url
+    let renamed = false
+
+    for (const folder of candidateFolders) {
+      const candidateId = `${folder}/${filename}`
+      if (candidateId === newPublicId && folder === newFolder) {
+        // Ya está en la carpeta destino, solo aseguramos asset_folder
+        await cloudinary.api.update(newPublicId, {
+          resource_type: parsed.resourceType,
+          asset_folder: newFolder,
+        }).catch(() => {})
+        renamed = true
+        break
+      }
+
+      try {
+        const result = await cloudinary.uploader.rename(candidateId, newPublicId, {
+          resource_type: parsed.resourceType,
+          overwrite: true,
+          invalidate: true,
+        })
+        successUrl = result.secure_url || url
+        renamed = true
+        break
+      } catch {
+        // Probar la siguiente carpeta candidata
+      }
+    }
+
+    if (renamed) {
+      await cloudinary.api.update(newPublicId, {
+        resource_type: parsed.resourceType,
+        asset_folder: newFolder,
+      }).catch((e) => console.warn('[moveAssetFolder] no se pudo actualizar asset_folder:', e))
+    }
+
+    return successUrl
+  } catch (err) {
+    console.error('[moveAssetFolder] error:', err)
+    return url
+  }
+}
+
+/** Crea la estructura de carpetas vacías en Cloudinary según la taxonomía del sitio.
+ *  Es idempotente: si una carpeta ya existe, no falla. */
+export async function scaffoldFolders(folderPaths: string[]): Promise<{ created: number; skipped: number }> {
+  if (!hasCloudinary) return { created: 0, skipped: 0 }
+  let created = 0
+  let skipped = 0
+  for (const folderPath of folderPaths) {
+    try {
+      await cloudinary.api.create_folder(folderPath)
+      created++
+    } catch (err: unknown) {
+      // Cloudinary devuelve error si la carpeta ya existe — eso está bien
+      const message = err instanceof Error ? err.message : String(err)
+      if (message.includes('already exists')) {
+        skipped++
+      } else {
+        console.error(`[scaffoldFolders] error creating ${folderPath}:`, err)
+        skipped++
+      }
+    }
+  }
+  await cleanupLegacyFolders()
+  return { created, skipped }
+}
+
+/** Migra recursos de subcarpetas viejas a las 3 carpetas principales y elimina las carpetas vacías. */
+async function cleanupLegacyFolders(): Promise<void> {
+  if (!hasCloudinary) return
+  try {
+    await cleanSubFoldersRecursively('portfolio/en-uso', 'portfolio/en-uso')
+    await cleanSubFoldersRecursively('portfolio/sin-usar', 'portfolio/sin-usar')
+    await cleanSubFoldersRecursively('portfolio/basurero', 'portfolio/basurero')
+
+    const rootSub: { folders?: { name?: string; path: string }[] } | null = await cloudinary.api.sub_folders('portfolio').catch(() => null)
+    if (rootSub && rootSub.folders) {
+      for (const f of rootSub.folders) {
+        const folderName = f.name || f.path.split('/').pop()
+        if (folderName !== 'en-uso' && folderName !== 'sin-usar' && folderName !== 'basurero') {
+          await cleanSubFoldersRecursively(f.path, 'portfolio/en-uso')
+          await cloudinary.api.delete_folder(f.path).catch(() => {})
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[cleanupLegacyFolders] error:', err)
+  }
+}
+
+async function cleanSubFoldersRecursively(parentFolder: string, targetFolder: string): Promise<void> {
+  const subRes: { folders?: { path: string }[] } | null = await cloudinary.api.sub_folders(parentFolder).catch(() => null)
+  if (!subRes || !subRes.folders || subRes.folders.length === 0) return
+
+  for (const f of subRes.folders) {
+    const fPath = f.path
+    await cleanSubFoldersRecursively(fPath, targetFolder)
+
+    try {
+      let cursor: string | undefined = undefined
+      do {
+        const resourcesRes: { resources?: { public_id: string; resource_type?: string }[]; next_cursor?: string } | null = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: `${fPath}/`,
+          max_results: 100,
+          next_cursor: cursor,
+        }).catch(() => null)
+
+        if (resourcesRes && resourcesRes.resources) {
+          for (const r of resourcesRes.resources) {
+            const filename = r.public_id.split('/').pop()
+            const newPublicId = `${targetFolder}/${filename}`
+            if (r.public_id !== newPublicId) {
+              await cloudinary.uploader.rename(r.public_id, newPublicId, {
+                resource_type: r.resource_type || 'image',
+                overwrite: true,
+                invalidate: true,
+              }).catch(() => {})
+            }
+          }
+        }
+        cursor = resourcesRes?.next_cursor
+      } while (cursor)
+
+      await cloudinary.api.delete_folder(fPath).catch(() => {})
+    } catch (e) {
+      console.warn(`[cleanSubFoldersRecursively] error in ${fPath}:`, e)
+    }
+  }
+}
+
+// ----- Listado completo de Cloudinary (para auditoría de sincronización) ------
+
+export type CloudinaryResource = {
+  public_id: string
+  secure_url: string
+  resource_type: string
+  format: string
+  bytes: number
+  folder: string
   created_at: string
 }
 
 /** Lista TODOS los recursos de Cloudinary.
  *  Pagina automáticamente con cursor (máx 500 por request).
- *  Itera sobre los 3 resource_types: image, video, raw. */
+ *  Itera sobre los 3 tipos: image, video, raw. */
 export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
   if (!hasCloudinary) return []
   const all: CloudinaryResource[] = []
+
+  // Intento 1: Usar Cloudinary Search API (más potente y soporta carpetas y todos los tipos en 1 sola consulta)
+  try {
+    let cursor: string | undefined = undefined
+    do {
+      const searchRes = await (cloudinary as any).search
+        .expression('public_id:portfolio* OR folder:portfolio* OR asset_folder:portfolio* OR public_id:*')
+        .max_results(500)
+        .next_cursor(cursor)
+        .execute() as { resources?: Record<string, unknown>[]; next_cursor?: string }
+
+      if (searchRes && searchRes.resources) {
+        for (const r of searchRes.resources) {
+          const secure_url = (r.secure_url as string) || ''
+          const public_id = (r.public_id as string) || ''
+          let folder = (r.asset_folder as string) || (r.folder as string) || ''
+          if (!folder && secure_url) {
+            if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
+            else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
+            else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
+            else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
+          }
+          all.push({
+            public_id,
+            secure_url,
+            resource_type: (r.resource_type as string) || 'image',
+            format: (r.format as string) || '',
+            bytes: (r.bytes as number) || 0,
+            folder,
+            created_at: (r.created_at as string) || '',
+          })
+        }
+      }
+      cursor = searchRes.next_cursor
+    } while (cursor)
+
+    if (all.length > 0) return all
+  } catch (err) {
+    console.warn('[listAllCloudinaryResources] Search API fallback to Admin API:', err)
+  }
+
+  // Intento 2: Fallback a Admin API (api.resources)
   const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
   for (const type of types) {
     let cursor: string | undefined = undefined
@@ -373,8 +610,7 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
       try {
         const res = await cloudinary.api.resources({
           resource_type: type,
-          type: 'upload',
-          max_results: 500,
+          max_results: 100,
           next_cursor: cursor,
         }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
         if (res.resources) {
@@ -406,5 +642,6 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
       }
     } while (cursor)
   }
+
   return all
 }

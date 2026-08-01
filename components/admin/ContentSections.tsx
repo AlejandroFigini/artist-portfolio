@@ -831,6 +831,11 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
         setSyncing(false)
         return
       }
+      if (cloudinaryList.length === 0 && cmsList.length > 0) {
+        toast('Could not retrieve resources from Cloudinary. Please verify Cloudinary credentials.', 'error')
+        setSyncing(false)
+        return
+      }
       const result = buildSyncAuditResult(cloudinaryList, cmsList)
       setSyncAudit(result)
       const hasErrors = result.orphaned.length + result.broken.length + result.folderMismatch.length > 0
