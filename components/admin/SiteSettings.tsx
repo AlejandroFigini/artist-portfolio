@@ -122,8 +122,6 @@ export function useSaveSettings() {
           delete state.usedContent['settings.faviconUrl']
         }
       }
-      }
-    }
     if (final.appleIconUrl !== undefined) {
       applyMedia('settings.appleIconUrl', final.appleIconUrl)
       if (final.appleIconUrl !== '') {
