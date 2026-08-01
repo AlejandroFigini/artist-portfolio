@@ -95,7 +95,7 @@ export default function HeroMediaCarousel({
             <div
               key={`${i}-${src || 'empty'}`}
               className={`${prefix}-carousel-slide hero-slide-panel`}
-              style={{ position: 'absolute', inset: 0, opacity: i === 0 ? 1 : 0, zIndex: i === 0 ? 1 : 0 }}
+              style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: i === 0 ? 1 : 0 }}
             >
               {isFilled ? (
                 // eslint-disable-next-line @next/next/no-img-element

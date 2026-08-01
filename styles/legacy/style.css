@@ -5425,7 +5425,7 @@ body.cms-modal-open { overflow: hidden; }
 /* Los carruseles chicos NO reaccionan al click sobre el contenedor: sus acciones
    se disparan SOLO desde el engranaje (que vive fuera, como hijo del wrapper, y
    conserva pointer-events). */
-.hero-media-wrapper .media-container { pointer-events: none; }
+.hero-media-wrapper .media-container { pointer-events: none; opacity: 0; }
 .hero-media-wrapper .cms-hero-gear { pointer-events: auto; }
 
 .float-anim { animation: float 6s ease-in-out infinite; }
