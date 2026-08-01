@@ -429,10 +429,10 @@ export function getAllKnownContainerKeys(): string[] {
     'settings.faviconUrl',
     'anim.bg',
     'about.video',
-    ...Array.from({ length: 5 }, (_, i) => `hero-main.slide#${i}`),
-    ...Array.from({ length: 5 }, (_, i) => `hero-sub.slide#${i}`),
-    ...Array.from({ length: 5 }, (_, i) => `hero.slide#${i}`),
-    ...Array.from({ length: 5 }, (_, i) => `about-carousel.slide#${i}`),
+    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero-main.settings'], 5)) }, (_, i) => `hero-main.slide#${i}`),
+    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero-sub.settings'], 5)) }, (_, i) => `hero-sub.slide#${i}`),
+    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero.settings'], 5)) }, (_, i) => `hero.slide#${i}`),
+    ...Array.from({ length: Math.max(5, tryParseCount(state.items['about-carousel.settings'], 5)) }, (_, i) => `about-carousel.slide#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
@@ -456,7 +456,7 @@ export function getAllKnownContainerKeys(): string[] {
   Object.keys(state.containerNames).forEach(k => keys.add(k))
   // 3) Claves en items que correspondan a contenedores de media conocidos
   Object.keys(state.items).forEach(k => {
-    if (/^(?:char|proj|anim|illustration|model3d|hero|hero-main|hero-sub|about-carousel|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
+    if (/^(?:char|proj|anim|illustration|model3d|hero\.slide|hero-main\.slide|hero-sub\.slide|about-carousel\.slide|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
       keys.add(k)
     }
   })

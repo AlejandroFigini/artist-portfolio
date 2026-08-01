@@ -34,8 +34,8 @@ export const SITE_PAGES: PageDef[] = [
         id: 'favicon',
         label: 'Favicon',
         match: (e) =>
-          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon', 'Site Settings', 'Site Configuration')(e) ||
-          ((e.section === 'Configuración del sitio' || e.section === 'Site Configuration') && e.key === 'settings.faviconUrl'),
+          bySection('Ajustes del sitio', 'Icono de la página', 'Favicon', 'Site Settings')(e) ||
+          ((e.section === 'Configuración del sitio' || e.section === 'Site Configuration') && (e.key === 'settings.faviconUrl' || e.key === 'settings.appleIconUrl')),
       },
     ],
   },

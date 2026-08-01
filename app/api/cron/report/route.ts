@@ -34,6 +34,7 @@ export async function GET(req: Request) {
   const cronSecret = process.env.CRON_SECRET;
   const url = new URL(req.url);
   const secretQuery = url.searchParams.get('secret');
+  const preview = url.searchParams.get('preview') === 'true';
   const authHeader = req.headers.get('authorization');
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
@@ -172,7 +173,7 @@ export async function GET(req: Request) {
   const destEmails = await getDestinationEmails();
   const resendKey = process.env.RESEND_API_KEY;
 
-  if (destEmails.length === 0 || !resendKey) {
+  if (!preview && (destEmails.length === 0 || !resendKey)) {
     return NextResponse.json({ 
       success: true, 
       message: 'Reporte generado pero no se pudo enviar (falta email destino o Resend Key)',
@@ -185,11 +186,7 @@ export async function GET(req: Request) {
     const resend = new Resend(resendKey);
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-    await resend.emails.send({
-      from: `Portfolio Analytics <${fromEmail}>`,
-      to: destEmails,
-      subject: `[Portfolio] Reporte Semanal de Tráfico`,
-      html: `
+    const htmlContent = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #8b5cf6; margin-bottom: 4px;">Tu reporte de tráfico semanal</h2>
           <p style="color: #64748b; font-size: 14px; margin-top: 0;">Resumen de los últimos 7 días de tu portfolio.</p>
@@ -277,7 +274,19 @@ export async function GET(req: Request) {
             Para ver más detalles, ingresá al panel de administración.
           </p>
         </div>
-      `,
+      `;
+
+    if (preview) {
+      return new NextResponse(htmlContent, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      });
+    }
+
+    await resend.emails.send({
+      from: `Portfolio Analytics <${fromEmail}>`,
+      to: destEmails,
+      subject: `[Portfolio] Reporte Semanal de Tráfico`,
+      html: htmlContent,
     });
   } catch (err) {
     console.error('[cron/report] Resend error:', err);

@@ -86,7 +86,7 @@ export function useSaveSettings() {
         const mm = state.mediaMeta['loader.gallop'] || state.mediaMeta[final.loaderVideo]
         const isImage = mm?.type?.startsWith('image/') || final.loaderVideo.match(/\.(png|jpe?g|webp|gif|svg)$/i)
         state.usedContent['loader.gallop'] = {
-          key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', section: 'Site Settings', kind: isImage ? 'image' : 'video',
+          key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', section: 'Site Configuration', kind: isImage ? 'image' : 'video',
           src: final.loaderVideo, name: mm?.name || (isImage ? 'loader-image' : 'video'), size: mm?.size ?? null, original: false,
           ts: Date.now(), type: mm?.type || (isImage ? 'image/webp' : 'video/webm'),
         }
@@ -109,7 +109,7 @@ export function useSaveSettings() {
         }
         const mm = state.mediaMeta['settings.faviconUrl'] || state.mediaMeta[final.faviconUrl]
         state.usedContent['settings.faviconUrl'] = {
-          key: 'settings.faviconUrl', label: 'Favicon (.favicon-preview-img)', section: 'Site Settings', kind: 'image',
+          key: 'settings.faviconUrl', label: 'Favicon (.favicon-preview-img)', section: 'Site Configuration', kind: 'image',
           src: final.faviconUrl, name: mm?.name || 'favicon', size: mm?.size ?? null, original: false,
           ts: Date.now(), type: mm?.type || 'image/webp',
         }
@@ -132,7 +132,7 @@ export function useSaveSettings() {
         }
         const mm = state.mediaMeta['settings.appleIconUrl'] || state.mediaMeta[final.appleIconUrl]
         state.usedContent['settings.appleIconUrl'] = {
-          key: 'settings.appleIconUrl', label: 'Apple Touch Icon (.apple-icon-preview-img)', section: 'Site Settings', kind: 'image',
+          key: 'settings.appleIconUrl', label: 'Apple Touch Icon (.apple-icon-preview-img)', section: 'Site Configuration', kind: 'image',
           src: final.appleIconUrl, name: mm?.name || 'apple-icon', size: mm?.size ?? null, original: false,
           ts: Date.now(), type: mm?.type || 'image/webp',
         }
