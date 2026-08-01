@@ -365,59 +365,22 @@ export type CloudinaryResource = {
 export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
   if (!hasCloudinary) return []
   const all: CloudinaryResource[] = []
-
-  // Intento 1: Search API
-  try {
-    let cursor: string | undefined = undefined
-    do {
-      const searchRes = await (cloudinary as any).search
-        .expression('public_id:portfolio* OR folder:portfolio* OR asset_folder:portfolio* OR public_id:*')
-        .max_results(500)
-        .next_cursor(cursor)
-        .execute() as { resources?: Record<string, unknown>[]; next_cursor?: string }
-
-      if (searchRes && searchRes.resources) {
-        for (const r of searchRes.resources) {
-          const secure_url = (r.secure_url as string) || ''
-          const public_id = (r.public_id as string) || ''
-          let folder = (r.asset_folder as string) || (r.folder as string) || ''
-          if (!folder && secure_url) {
-            if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
-            else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
-            else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
-            else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
-          }
-          all.push({
-            public_id,
-            secure_url,
-            resource_type: (r.resource_type as string) || 'image',
-            format: (r.format as string) || '',
-            bytes: (r.bytes as number) || 0,
-            folder,
-            created_at: (r.created_at as string) || '',
-          })
-        }
-      }
-      cursor = searchRes.next_cursor
-    } while (cursor)
-
-    if (all.length > 0) return all
-  } catch (err) {
-    console.warn('[listAllCloudinaryResources] Search API fallback:', err)
-  }
-
-  // Intento 2: Admin API
   const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+
+  // 1. Probar listar con prefix 'portfolio' y type 'upload'
   for (const type of types) {
     let cursor: string | undefined = undefined
     do {
       try {
         const res = await cloudinary.api.resources({
           resource_type: type,
+          type: 'upload',
+          prefix: 'portfolio',
           max_results: 500,
           next_cursor: cursor,
         }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
-        if (res.resources) {
+
+        if (res && res.resources && res.resources.length > 0) {
           for (const r of res.resources) {
             const secure_url = (r.secure_url as string) || ''
             const public_id = (r.public_id as string) || ''
@@ -439,12 +402,56 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
             })
           }
         }
-        cursor = res.next_cursor
+        cursor = res ? res.next_cursor : undefined
       } catch (err) {
-        console.error(`[listAllCloudinaryResources] error listing ${type}:`, err)
+        console.error(`[listAllCloudinaryResources] error listing ${type} (prefix):`, err)
         cursor = undefined
       }
     } while (cursor)
+  }
+
+  // 2. Si con prefix no trajo nada (por prefijo de cuenta o carpeta raíz), listar globalmente todos los subidos
+  if (all.length === 0) {
+    for (const type of types) {
+      let cursor: string | undefined = undefined
+      do {
+        try {
+          const res = await cloudinary.api.resources({
+            resource_type: type,
+            type: 'upload',
+            max_results: 500,
+            next_cursor: cursor,
+          }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+
+          if (res && res.resources) {
+            for (const r of res.resources) {
+              const secure_url = (r.secure_url as string) || ''
+              const public_id = (r.public_id as string) || ''
+              let folder = (r.asset_folder as string) || (r.folder as string) || ''
+              if (!folder && secure_url) {
+                if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
+                else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
+                else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
+                else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
+              }
+              all.push({
+                public_id,
+                secure_url,
+                resource_type: type,
+                format: (r.format as string) || '',
+                bytes: (r.bytes as number) || 0,
+                folder,
+                created_at: (r.created_at as string) || '',
+              })
+            }
+          }
+          cursor = res ? res.next_cursor : undefined
+        } catch (err) {
+          console.error(`[listAllCloudinaryResources] error listing ${type} (global):`, err)
+          cursor = undefined
+        }
+      } while (cursor)
+    }
   }
 
   return all
