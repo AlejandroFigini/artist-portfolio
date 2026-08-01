@@ -10,6 +10,7 @@ export const revalidate = 0
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettingsServer()
   const iconUrl = settings.faviconUrl || '/favicon.ico'
+  const appleUrl = settings.appleIconUrl || iconUrl
   return {
     title: 'Lucia Montaña | Portfolio',
     description:
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: iconUrl,
       shortcut: iconUrl,
-      apple: iconUrl,
+      apple: appleUrl,
     },
   }
 }

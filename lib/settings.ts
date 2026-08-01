@@ -9,6 +9,7 @@ export const SETTINGS_KEYS = {
   cvUrl: 'settings.cvUrl',
   cvName: 'settings.cvName',
   faviconUrl: 'settings.faviconUrl',
+  appleIconUrl: 'settings.appleIconUrl',
 } as const
 
 export type SiteSettings = {
@@ -18,9 +19,10 @@ export type SiteSettings = {
   cvUrl: string
   cvName: string
   faviconUrl: string
+  appleIconUrl: string
 }
 
-export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '' }
+export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '', appleIconUrl: '' }
 
 /** Duración del loader en ms, con default 3s y clamp defensivo (1s–15s). */
 export function loaderDurationMs(raw: string): number {

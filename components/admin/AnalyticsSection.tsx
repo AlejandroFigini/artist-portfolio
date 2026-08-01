@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import RealtimeCard from './RealtimeCard'
 import WorldMap from "react-svg-worldmap"
 import { CmsModal } from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
 /* AnalyticsSection — Layout visual de gestión de tráfico y métricas de Google Analytics (GA4).
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
    visitantes únicos, páginas más vistas, origen del tráfico y dispositivos. */
@@ -11,6 +12,9 @@ export default function AnalyticsSection() {
   const [range, setRange] = useState('thisWeek')
   const [pendingRange, setPendingRange] = useState('thisWeek')
   const [countryMetric, setCountryMetric] = useState<'activos' | 'nuevos' | 'recurrentes'>('activos')
+  const toast = useToast()
+
+  const [sendingReport, setSendingReport] = useState(false)
 
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -34,6 +38,23 @@ export default function AnalyticsSection() {
       console.error(err)
     } finally {
       setLoadingLogins(false)
+    }
+  }
+
+  const handleSendReport = async () => {
+    setSendingReport(true)
+    try {
+      const res = await fetch('/api/cron/report')
+      const json = await res.json()
+      if (res.ok) {
+        toast('Reporte enviado con éxito por email', 'success')
+      } else {
+        toast(json.error || 'Fallo al enviar el reporte', 'error')
+      }
+    } catch (err: any) {
+      toast(err.message || 'Fallo de red al enviar el reporte', 'error')
+    } finally {
+      setSendingReport(false)
     }
   }
 
@@ -107,7 +128,7 @@ export default function AnalyticsSection() {
   return (
     <div className="admin-card ga-analytics-card" id="seccion-analitica">
       {/* Header del Panel con Selector de Rango */}
-      <div className="ga-header">
+      <div className="ga-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h2>
             <i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>
@@ -117,6 +138,18 @@ export default function AnalyticsSection() {
             Métricas de audiencia y rendimiento conectadas con Google Analytics 4 (<code>G-SPJEZ45JR0</code>).
           </p>
         </div>
+        <button 
+          type="button" 
+          className="cms-btn cms-btn--primary" 
+          onClick={handleSendReport}
+          disabled={sendingReport}
+        >
+          {sendingReport ? (
+            <><i className="fa-solid fa-spinner fa-spin"></i> Enviando...</>
+          ) : (
+            <><i className="fa-solid fa-paper-plane"></i> Enviar Reporte Semanal</>
+          )}
+        </button>
       </div>
 
       <RealtimeCard />
