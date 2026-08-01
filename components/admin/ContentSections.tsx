@@ -622,12 +622,9 @@ function buildSyncAuditResult(
   cloudinaryList: CloudinaryResourceInfo[],
   cmsList: { url: string; name: string; state: string; section: string }[],
 ): SyncAuditResult {
-  // Crear un Set de secure_urls de Cloudinary para comparación rápida
   const cloudinaryUrlSet = new Set(cloudinaryList.map((r) => r.secure_url))
-  // Crear un Set de URLs del CMS
   const cmsUrlSet = new Set(cmsList.map((r) => r.url))
 
-  // Agrupar recursos de Cloudinary por nombre de archivo para encontrar mismatches de carpeta
   const cloudinaryByFilename = new Map<string, CloudinaryResourceInfo[]>()
   cloudinaryList.forEach(cr => {
     const filename = cr.secure_url.split('/').pop() || ''
@@ -637,25 +634,71 @@ function buildSyncAuditResult(
     }
   })
 
+  // Agrupar las carpetas válidas esperadas para cada CMS URL
+  const validFoldersByUrl = new Map<string, Set<string>>()
+  Object.values(state.usedContent).forEach((entry) => {
+    if (entry && entry.src && entry.src.includes('cloudinary.com')) {
+      if (!validFoldersByUrl.has(entry.src)) validFoldersByUrl.set(entry.src, new Set())
+      validFoldersByUrl.get(entry.src)!.add(getCloudinaryFolder(entry.section))
+    }
+  })
+  state.unused.forEach(entry => {
+    const src = entry.src || entry.dataUrl
+    if (src && src.includes('cloudinary.com')) {
+      if (!validFoldersByUrl.has(src)) validFoldersByUrl.set(src, new Set())
+      validFoldersByUrl.get(src)!.add('portfolio/sin-usar')
+    }
+  })
+  state.trash.forEach(entry => {
+    const src = entry.src || entry.dataUrl
+    if (src && src.includes('cloudinary.com')) {
+      if (!validFoldersByUrl.has(src)) validFoldersByUrl.set(src, new Set())
+      validFoldersByUrl.get(src)!.add('portfolio/basurero')
+    }
+  })
+
   const matching: SyncAuditResult['matching'] = []
   const folderMismatch: SyncAuditResult['folderMismatch'] = []
   const broken: SyncAuditResult['broken'] = []
   const mismatchedCloudinaryUrls = new Set<string>()
 
   cmsList.forEach((cms) => {
+    const validFolders = validFoldersByUrl.get(cms.url) || new Set<string>()
+    let isInExpectedFolder = false
+    for (const folder of validFolders) {
+      if (cms.url.includes(`/${folder}/`)) {
+        isInExpectedFolder = true
+        break
+      }
+    }
+
     if (cloudinaryUrlSet.has(cms.url)) {
       const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url)
-      matching.push({
-        url: cms.url,
-        name: cms.name,
-        state: cms.state,
-        cloudinaryId: cloudRes?.public_id || '',
-      })
+      if (!isInExpectedFolder) {
+        // Coincide exacto CMS=Cloudinary, pero ambos están en una carpeta incorrecta
+        mismatchedCloudinaryUrls.add(cms.url)
+        folderMismatch.push({
+          url: cms.url,
+          name: cms.name,
+          state: cms.state,
+          section: cms.section,
+          cloudinaryId: cloudRes?.public_id || '',
+          actualFolder: cloudRes?.folder || 'unknown',
+          expectedFolder: Array.from(validFolders).join(' OR '),
+        })
+      } else {
+        matching.push({
+          url: cms.url,
+          name: cms.name,
+          state: cms.state,
+          cloudinaryId: cloudRes?.public_id || '',
+        })
+      }
     } else {
       const filename = cms.url.split('/').pop() || ''
       const possibleMatches = cloudinaryByFilename.get(filename) || []
       if (possibleMatches.length > 0) {
-        const cloudRes = possibleMatches[0] // Tomamos el primero que coincida en nombre
+        const cloudRes = possibleMatches[0]
         mismatchedCloudinaryUrls.add(cloudRes.secure_url)
         folderMismatch.push({
           url: cms.url,
@@ -664,7 +707,7 @@ function buildSyncAuditResult(
           section: cms.section,
           cloudinaryId: cloudRes.public_id,
           actualFolder: cloudRes.folder,
-          expectedFolder: cms.url.split('/').slice(-2, -1)[0] || 'unknown',
+          expectedFolder: Array.from(validFolders).join(' OR '),
         })
       } else {
         broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
@@ -672,7 +715,6 @@ function buildSyncAuditResult(
     }
   })
 
-  // Orphaned: en Cloudinary pero NO en el CMS, y que tampoco sean parte de un mismatch
   const orphaned: SyncAuditResult['orphaned'] = []
   cloudinaryList.forEach((cr) => {
     if (!cmsUrlSet.has(cr.secure_url) && !mismatchedCloudinaryUrls.has(cr.secure_url)) {
