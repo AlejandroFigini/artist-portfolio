@@ -245,6 +245,17 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
     }
     return Array.from(map.values())
   }, [usedArr])
+
+  const srcToSections = useMemo(() => {
+    const map = new Map<string, Set<string>>()
+    for (const e of usedArr) {
+      const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
+      const section = (e as any).section || 'unknown'
+      if (!map.has(src)) map.set(src, new Set())
+      map.get(src)!.add(section)
+    }
+    return map
+  }, [usedArr])
   const count = sel.selected.length
   const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
   const [openSecs, setOpenSecs] = useState<Set<string>>(() => new Set())
@@ -348,6 +359,13 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                     const sOpen = openSecs.has(sid)
                     const secKeys = s.items.map(getItemSelKey)
                     const secAllSelected = secKeys.length > 0 && secKeys.every((k) => sel.isSel('used', k))
+                    let reusedCount = 0
+                    s.items.forEach(item => {
+                      const src = item.src || item.dataUrl || (item as any).key || ''
+                      if ((srcToSections.get(src)?.size || 0) > 1) reusedCount++
+                    })
+                    const uniqueCount = s.count - reusedCount
+
                     return (
                       <div className="admin-tree-section" key={sid}>
                         <div className={`admin-tree-row admin-tree-row--section${sOpen ? ' open' : ''}`}>
@@ -359,7 +377,11 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                             <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
                             <span className="admin-tree-label">{s.label}</span>
                             {s.count > 0 && (
-                              <span className="admin-badge">{s.count} files · {fmtBytes(s.size)}</span>
+                              <span className="admin-badge">
+                                {uniqueCount} {uniqueCount === 1 ? 'file' : 'files'}
+                                {reusedCount > 0 && <span style={{ opacity: 0.7, marginLeft: '4px' }}>(+{reusedCount} reused)</span>}
+                                {' · '}{fmtBytes(s.size)}
+                              </span>
                             )}
                           </button>
                           {sel.multiSelect && s.count > 0 && (
