@@ -617,38 +617,46 @@ function collectCmsCloudinaryUrls(): { url: string; name: string; state: string;
   return entries
 }
 
+/** Extrae el nombre base del archivo sin extensión ni parámetros para comparación flexible. */
+function getBaseFilename(url: string): string {
+  if (!url) return ''
+  const filenameWithExt = url.split('?')[0].split('#')[0].split('/').pop() || ''
+  return filenameWithExt.replace(/\.[a-zA-Z0-9]+$/, '').toLowerCase()
+}
+
 /** Compara la lista de Cloudinary con la del CMS y genera el resultado de auditoría. */
 function buildSyncAuditResult(
   cloudinaryList: CloudinaryResourceInfo[],
   cmsList: { url: string; name: string; state: string; section: string }[],
 ): SyncAuditResult {
-  const cloudinaryUrlSet = new Set(cloudinaryList.map((r) => r.secure_url))
-  const cmsUrlSet = new Set(cmsList.map((r) => r.url))
-
-  // Mapear recursos de Cloudinary por nombre de archivo para búsquedas rápidas
-  const cloudinaryByFilename = new Map<string, CloudinaryResourceInfo>()
+  // Mapear recursos de Cloudinary por nombre base (sin extensión ni versión)
+  const cloudinaryByBaseName = new Map<string, CloudinaryResourceInfo>()
   cloudinaryList.forEach(cr => {
-    const filename = cr.secure_url.split('/').pop() || ''
-    if (filename) cloudinaryByFilename.set(filename, cr)
+    const base = getBaseFilename(cr.secure_url) || getBaseFilename(cr.public_id)
+    if (base && !cloudinaryByBaseName.has(base)) {
+      cloudinaryByBaseName.set(base, cr)
+    }
   })
 
   const matching: SyncAuditResult['matching'] = []
   const folderMismatch: SyncAuditResult['folderMismatch'] = []
   const broken: SyncAuditResult['broken'] = []
-  const mismatchedCloudinaryUrls = new Set<string>()
 
   cmsList.forEach((cms) => {
-    const filename = cms.url.split('/').pop() || ''
+    const cmsBase = getBaseFilename(cms.url)
     const expectedFolder = cms.state === 'unused' ? 'portfolio/sin-usar' : cms.state === 'trash' ? 'portfolio/basurero' : 'portfolio/en-uso'
     
-    // Buscar el archivo en Cloudinary (por URL exacta o por nombre de archivo)
-    const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url) || cloudinaryByFilename.get(filename)
+    // Buscar el archivo en Cloudinary (por URL exacta, por public_id o por nombre base sin extensión)
+    const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url) ||
+                     (cmsBase ? cloudinaryByBaseName.get(cmsBase) : undefined)
 
     if (cloudRes) {
-      const actualFolder = cloudRes.folder || (cloudRes.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : cloudRes.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+      const actualFolder = cloudRes.folder ||
+        (cloudRes.public_id.includes('portfolio/sin-usar') || cloudRes.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar'
+        : cloudRes.public_id.includes('portfolio/basurero') || cloudRes.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero'
+        : 'portfolio/en-uso')
 
       if (actualFolder !== expectedFolder) {
-        mismatchedCloudinaryUrls.add(cloudRes.secure_url)
         folderMismatch.push({
           url: cms.url,
           name: cms.name,
@@ -671,10 +679,18 @@ function buildSyncAuditResult(
     }
   })
 
+  // Identificar huérfanos verdaderos
+  const matchedCloudinaryIds = new Set<string>()
+  matching.forEach(m => matchedCloudinaryIds.add(m.cloudinaryId))
+  folderMismatch.forEach(m => matchedCloudinaryIds.add(m.cloudinaryId))
+
   const orphaned: SyncAuditResult['orphaned'] = []
   cloudinaryList.forEach((cr) => {
-    if (!cmsUrlSet.has(cr.secure_url) && !mismatchedCloudinaryUrls.has(cr.secure_url)) {
-      const folder = cr.folder || (cr.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : cr.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+    if (!matchedCloudinaryIds.has(cr.public_id)) {
+      const folder = cr.folder ||
+        (cr.public_id.includes('portfolio/sin-usar') || cr.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar'
+        : cr.public_id.includes('portfolio/basurero') || cr.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero'
+        : 'portfolio/en-uso')
       orphaned.push({
         url: cr.secure_url,
         publicId: cr.public_id,
