@@ -360,7 +360,7 @@ export type CloudinaryResource = {
   created_at: string
 }
 
-/** Lista TODOS los recursos de Cloudinary dentro del prefijo `portfolio/`.
+/** Lista TODOS los recursos de Cloudinary.
  *  Pagina automáticamente con cursor (máx 500 por request).
  *  Itera sobre los 3 resource_types: image, video, raw. */
 export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
@@ -374,19 +374,27 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
         const res = await cloudinary.api.resources({
           resource_type: type,
           type: 'upload',
-          prefix: 'portfolio/',
           max_results: 500,
           next_cursor: cursor,
         }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
         if (res.resources) {
           for (const r of res.resources) {
+            const secure_url = (r.secure_url as string) || ''
+            const public_id = (r.public_id as string) || ''
+            let folder = (r.asset_folder as string) || (r.folder as string) || ''
+            if (!folder && secure_url) {
+              if (secure_url.includes('/portfolio/sin-usar/')) folder = 'portfolio/sin-usar'
+              else if (secure_url.includes('/portfolio/basurero/')) folder = 'portfolio/basurero'
+              else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
+              else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
+            }
             all.push({
-              public_id: r.public_id as string,
-              secure_url: r.secure_url as string,
+              public_id,
+              secure_url,
               resource_type: type,
               format: (r.format as string) || '',
               bytes: (r.bytes as number) || 0,
-              folder: (r.folder as string) || '',
+              folder,
               created_at: (r.created_at as string) || '',
             })
           }
@@ -394,7 +402,7 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
         cursor = res.next_cursor
       } catch (err) {
         console.error(`[listAllCloudinaryResources] error listing ${type}:`, err)
-        cursor = undefined // detener paginación para este tipo si falla
+        cursor = undefined
       }
     } while (cursor)
   }
