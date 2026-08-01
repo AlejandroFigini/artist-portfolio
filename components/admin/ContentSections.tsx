@@ -625,36 +625,11 @@ function buildSyncAuditResult(
   const cloudinaryUrlSet = new Set(cloudinaryList.map((r) => r.secure_url))
   const cmsUrlSet = new Set(cmsList.map((r) => r.url))
 
-  const cloudinaryByFilename = new Map<string, CloudinaryResourceInfo[]>()
+  // Mapear recursos de Cloudinary por nombre de archivo para búsquedas rápidas
+  const cloudinaryByFilename = new Map<string, CloudinaryResourceInfo>()
   cloudinaryList.forEach(cr => {
     const filename = cr.secure_url.split('/').pop() || ''
-    if (filename) {
-      if (!cloudinaryByFilename.has(filename)) cloudinaryByFilename.set(filename, [])
-      cloudinaryByFilename.get(filename)!.push(cr)
-    }
-  })
-
-  // Agrupar las carpetas válidas esperadas para cada CMS URL
-  const validFoldersByUrl = new Map<string, Set<string>>()
-  Object.values(state.usedContent).forEach((entry) => {
-    if (entry && entry.src && entry.src.includes('cloudinary.com')) {
-      if (!validFoldersByUrl.has(entry.src)) validFoldersByUrl.set(entry.src, new Set())
-      validFoldersByUrl.get(entry.src)!.add(getCloudinaryFolder(entry.section))
-    }
-  })
-  state.unused.forEach(entry => {
-    const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com')) {
-      if (!validFoldersByUrl.has(src)) validFoldersByUrl.set(src, new Set())
-      validFoldersByUrl.get(src)!.add('portfolio/sin-usar')
-    }
-  })
-  state.trash.forEach(entry => {
-    const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com')) {
-      if (!validFoldersByUrl.has(src)) validFoldersByUrl.set(src, new Set())
-      validFoldersByUrl.get(src)!.add('portfolio/basurero')
-    }
+    if (filename) cloudinaryByFilename.set(filename, cr)
   })
 
   const matching: SyncAuditResult['matching'] = []
@@ -663,42 +638,16 @@ function buildSyncAuditResult(
   const mismatchedCloudinaryUrls = new Set<string>()
 
   cmsList.forEach((cms) => {
-    const validFolders = validFoldersByUrl.get(cms.url) || new Set<string>()
-    let isInExpectedFolder = false
-    for (const folder of validFolders) {
-      if (cms.url.includes(`/${folder}/`)) {
-        isInExpectedFolder = true
-        break
-      }
-    }
+    const filename = cms.url.split('/').pop() || ''
+    const expectedFolder = cms.state === 'unused' ? 'portfolio/sin-usar' : cms.state === 'trash' ? 'portfolio/basurero' : 'portfolio/en-uso'
+    
+    // Buscar el archivo en Cloudinary (por URL exacta o por nombre de archivo)
+    const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url) || cloudinaryByFilename.get(filename)
 
-    if (cloudinaryUrlSet.has(cms.url)) {
-      const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url)
-      if (!isInExpectedFolder) {
-        // Coincide exacto CMS=Cloudinary, pero ambos están en una carpeta incorrecta
-        mismatchedCloudinaryUrls.add(cms.url)
-        folderMismatch.push({
-          url: cms.url,
-          name: cms.name,
-          state: cms.state,
-          section: cms.section,
-          cloudinaryId: cloudRes?.public_id || '',
-          actualFolder: cloudRes?.folder || 'unknown',
-          expectedFolder: Array.from(validFolders).join(' OR '),
-        })
-      } else {
-        matching.push({
-          url: cms.url,
-          name: cms.name,
-          state: cms.state,
-          cloudinaryId: cloudRes?.public_id || '',
-        })
-      }
-    } else {
-      const filename = cms.url.split('/').pop() || ''
-      const possibleMatches = cloudinaryByFilename.get(filename) || []
-      if (possibleMatches.length > 0) {
-        const cloudRes = possibleMatches[0]
+    if (cloudRes) {
+      const actualFolder = cloudRes.folder || (cloudRes.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : cloudRes.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+
+      if (actualFolder !== expectedFolder) {
         mismatchedCloudinaryUrls.add(cloudRes.secure_url)
         folderMismatch.push({
           url: cms.url,
@@ -706,25 +655,33 @@ function buildSyncAuditResult(
           state: cms.state,
           section: cms.section,
           cloudinaryId: cloudRes.public_id,
-          actualFolder: cloudRes.folder,
-          expectedFolder: Array.from(validFolders).join(' OR '),
+          actualFolder,
+          expectedFolder,
         })
       } else {
-        broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
+        matching.push({
+          url: cms.url,
+          name: cms.name,
+          state: cms.state,
+          cloudinaryId: cloudRes.public_id,
+        })
       }
+    } else {
+      broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
     }
   })
 
   const orphaned: SyncAuditResult['orphaned'] = []
   cloudinaryList.forEach((cr) => {
     if (!cmsUrlSet.has(cr.secure_url) && !mismatchedCloudinaryUrls.has(cr.secure_url)) {
+      const folder = cr.folder || (cr.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : cr.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
       orphaned.push({
         url: cr.secure_url,
         publicId: cr.public_id,
         resourceType: cr.resource_type,
         format: cr.format,
         bytes: cr.bytes,
-        folder: cr.folder,
+        folder,
       })
     }
   })
@@ -795,10 +752,21 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
       toast('No resources found in Cloudinary (or Cloudinary not configured).', 'error')
       return
     }
+
+    const sorted = [...resources].sort((a, b) => {
+      const folderA = a.folder || (a.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : a.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+      const folderB = b.folder || (b.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : b.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+      return folderA.localeCompare(folderB) || a.public_id.localeCompare(b.public_id)
+    })
+
     downloadCsv(
       `cloudinary-export-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Public ID', 'URL', 'Type', 'Format', 'Size (bytes)', 'Folder', 'Created At'],
-      resources.map((r) => [r.public_id, r.secure_url, r.resource_type, r.format, String(r.bytes), r.folder, r.created_at]),
+      ['Folder (Cloudinary)', 'Filename', 'Public ID', 'Type', 'Format', 'Size (bytes)', 'URL', 'Created At'],
+      sorted.map((r) => {
+        const folder = r.folder || (r.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : r.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso')
+        const filename = r.secure_url.split('/').pop() || ''
+        return [folder, filename, r.public_id, r.resource_type, r.format, String(r.bytes), r.secure_url, r.created_at]
+      }),
     )
     toast(`Exported ${resources.length} Cloudinary resources to CSV`, 'success')
   }
@@ -810,10 +778,25 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
       toast('No Cloudinary content found in the CMS.', 'error')
       return
     }
+
+    const items = cmsList.map(r => {
+      const filename = r.url.split('/').pop() || ''
+      const expectedFolder = r.state === 'unused' ? 'portfolio/sin-usar' : r.state === 'trash' ? 'portfolio/basurero' : 'portfolio/en-uso'
+      const actualFolderInUrl = r.url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : r.url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso'
+      return {
+        ...r,
+        filename,
+        expectedFolder,
+        actualFolderInUrl,
+      }
+    })
+
+    items.sort((a, b) => a.expectedFolder.localeCompare(b.expectedFolder) || a.filename.localeCompare(b.filename))
+
     downloadCsv(
       `cms-export-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Name', 'URL', 'State', 'Section'],
-      cmsList.map((r) => [r.name, r.url, r.state, r.section]),
+      ['Expected Folder (CMS)', 'Folder in URL', 'Filename', 'CMS State', 'Section', 'URL'],
+      items.map((r) => [r.expectedFolder, r.actualFolderInUrl, r.filename, r.state, r.section, r.url]),
     )
     toast(`Exported ${cmsList.length} CMS items to CSV`, 'success')
   }
