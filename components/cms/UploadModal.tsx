@@ -111,6 +111,13 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
 
         state.items[cmsKey] = data.secure_url
         applyMedia(cmsKey, data.secure_url)
+        
+        const ri = state.retired.indexOf(cmsKey)
+        if (ri >= 0) {
+          state.retired.splice(ri, 1)
+          persistRetired() // Asegura guardar el cambio localmente
+        }
+        
         seedUsedContent()
         persistUsed()
 
