@@ -109,10 +109,9 @@ export default function CmsRoot() {
 
     // First fetch overrides (content) – this may be stale, we will re‑broadcast only after server merge
     getContent()
-      .catch(() => loadJSON(LS.OVERRIDES, {}) as Record<string, string>)
+      .catch(() => ({}))
       .then((serverItems) => {
         state.items = serverItems
-        saveJSON(LS.OVERRIDES, state.items)
         // Do NOT broadcast carousel yet; wait for server state validation
         engine.hydrate()
         engine.refreshRetired()

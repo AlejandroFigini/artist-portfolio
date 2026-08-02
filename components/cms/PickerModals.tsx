@@ -6,7 +6,7 @@
    desde PC vs repositorio, con renombrado inline del contenedor) y
    openRepoPicker() (grilla del repo filtrada por tipo compatible). */
 
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useRef, useState, useEffect } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
@@ -138,24 +138,45 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
   const [verifying, setVerifying] = useState(false)
 
-  const [all] = useState<RepoEntry[]>(() => {
-    const list: RepoEntry[] = []
-    const seenSrc = new Set<string>()
-    Object.keys(state.usedContent).forEach((k) => {
-      const e = state.usedContent[k]
-      if (!e.src || seenSrc.has(e.src)) return
-      seenSrc.add(e.src)
-      list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
+  const [all, setAll] = useState<RepoEntry[]>([])
+  const [loadingDb, setLoadingDb] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    import('@/lib/api').then(({ getState }) => {
+      getState().then((server) => {
+        if (!mounted) return
+        const list: RepoEntry[] = []
+        const seenSrc = new Set<string>()
+
+        // Fallback to local state if DB returns empty
+        const usedSrc = server.used_content && Object.keys(server.used_content).length > 0 ? server.used_content : state.usedContent
+        const unusedSrc = server.unused && (server.unused as unknown[]).length > 0 ? (server.unused as unknown[]) : state.unused
+
+        Object.keys(usedSrc).forEach((k) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const e = (usedSrc as Record<string, any>)[k]
+          if (!e.src || seenSrc.has(e.src)) return
+          seenSrc.add(e.src)
+          list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
+        })
+
+        unusedSrc.forEach((entry: unknown) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const e = entry as Record<string, any>
+          const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
+          const src = e.src || e.dataUrl || ''
+          if (!src || seenSrc.has(src)) return
+          seenSrc.add(src)
+          list.push({ src, name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
+        })
+
+        setAll(list)
+        setLoadingDb(false)
+      })
     })
-    state.unused.forEach((e) => {
-      const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
-      const src = e.src || e.dataUrl || ''
-      if (!src || seenSrc.has(src)) return
-      seenSrc.add(src)
-      list.push({ src, name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
-    })
-    return list
-  })
+    return () => { mounted = false }
+  }, [])
 
   if (!meta) return null
   const filteredRaw = filter === 'all' ? all : all.filter((e) => e._state === filter)
@@ -335,14 +356,20 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           )
         })()}
         <div className="cms-repo-grid-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0, border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem 0.85rem', background: 'var(--bg-primary)' }}>
-          <div className="cms-repo-grid">
-            {filtered.length === 0 && (
-              <div className="cms-repo-empty">
-                <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
-                No content available of this type.
-              </div>
-            )}
-            {filtered.map((entry, i) => {
+          {loadingDb ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--accent)' }}></i>
+              <div>Loading repository from database...</div>
+            </div>
+          ) : (
+            <div className="cms-repo-grid">
+              {filtered.length === 0 && (
+                <div className="cms-repo-empty">
+                  <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
+                  No content available of this type.
+                </div>
+              )}
+              {filtered.map((entry, i) => {
               const isCompat = (entry.kind === 'video') === isVideoSlot
               const prevCompat = i > 0 && (filtered[i - 1].kind === 'video') === isVideoSlot
               const showHeader = !isCompat && (i === 0 || prevCompat)
@@ -395,6 +422,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               )
             })}
           </div>
+          )}
         </div>
       </div>
       {confirmEntry && (
