@@ -109,15 +109,17 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
           e.size = parseInt(cl, 10)
           changed = true
         }
-      } else {
-        // Fallback for CORS issues or servers blocking HEAD
+      }
+    } catch {
+      // Fallback for CORS issues or servers blocking HEAD: Fetch throws an error
+      try {
         const r2 = await fetch(src)
         if (r2.ok) {
           e.size = (await r2.blob()).size
           changed = true
         }
-      }
-    } catch {}
+      } catch {}
+    }
   }))
   if (changed) {
     emit()
