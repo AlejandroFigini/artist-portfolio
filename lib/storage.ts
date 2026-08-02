@@ -392,59 +392,20 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
     }
   }
 
-  // Método 1: Search API (si está disponible)
-  try {
-    let cursor: string | undefined = undefined
-    do {
-      const searchRes = await (cloudinary as any).search
-        .expression('public_id:* OR asset_folder:* OR folder:*')
-        .max_results(500)
-        .next_cursor(cursor)
-        .execute() as { resources?: Record<string, unknown>[]; next_cursor?: string }
-
-      if (searchRes?.resources) {
-        searchRes.resources.forEach(r => addResource(r))
-      }
-      cursor = searchRes?.next_cursor
-    } while (cursor)
-  } catch (err) {
-    console.warn('[listAllCloudinaryResources] Search API not available:', err)
-  }
-
-  // Método 2: resources_by_asset_folder (para Asset Folders dinámicos)
-  const knownFolders = ['portfolio/en-uso', 'portfolio/sin-usar', 'portfolio/basurero', 'portfolio']
-  for (const folderPath of knownFolders) {
-    try {
-      let cursor: string | undefined = undefined
-      do {
-        const res = await (cloudinary.api as any).resources_by_asset_folder(folderPath, {
-          max_results: 500,
-          next_cursor: cursor,
-        }) as { resources?: Record<string, unknown>[]; next_cursor?: string }
-
-        if (res?.resources) {
-          res.resources.forEach(r => addResource(r, folderPath))
-        }
-        cursor = res?.next_cursor
-      } while (cursor)
-    } catch {}
-  }
-
-  // Método 3: Admin API estándar (api.resources) con type 'upload' y global
-  const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
+  // Método simplificado: Admin API estándar (api.resources) con type 'upload'
+  const types: ('image' | 'video')[] = ['image', 'video']
   let lastError: unknown = null
+  
   for (const type of types) {
     let cursor: string | undefined = undefined
     do {
       try {
-        const opts: Record<string, unknown> = {
+        const res = await cloudinary.api.resources({
           resource_type: type,
           max_results: 500,
           next_cursor: cursor,
           type: 'upload'
-        }
-
-        const res = await cloudinary.api.resources(opts as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+        } as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
 
         if (res?.resources) {
           res.resources.forEach(r => addResource(r))
