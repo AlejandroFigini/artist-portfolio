@@ -103,6 +103,7 @@ export function batchMoveUsedToUnused(keys: string[]): number {
   clearItemOverrides(keys)
   persistUsed(); persistUnused(); persistRetired()
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Movidos a sin usar (Batch)' })
+  flushSyncToServer()
   return count
 }
 
@@ -118,6 +119,7 @@ export function batchMoveUnusedToTrash(indices: number[]): number {
   })
   persistUnused(); persistTrash()
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Movidos al basurero (Batch)' })
+  flushSyncToServer()
   return count
 }
 
@@ -153,4 +155,5 @@ export function purgeUnused() {
   persistUnused(); persistTrash()
   recordAudit({ user: 'superadmin', section: 'Sin usar', label: `${count} ítems`, summary: 'Movidos al basurero (vaciar)' })
   emit()
+  flushSyncToServer()
 }

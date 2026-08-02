@@ -170,7 +170,16 @@ const _pendingKeys = new Set<string>()
 export function scheduleSyncToServer(...keys: string[]) {
   keys.forEach((k) => _pendingKeys.add(k))
   if (_syncTimer) clearTimeout(_syncTimer)
-  _syncTimer = setTimeout(flushSyncToServer, 2000)
+  _syncTimer = setTimeout(flushSyncToServer, 500)
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (_syncTimer) {
+      clearTimeout(_syncTimer)
+      flushSyncToServer()
+    }
+  })
 }
 
 export function flushSyncToServer() {
@@ -753,9 +762,6 @@ export function purgeUrlsFromAllState(urls: string[]) {
   if (!urlSet.size) return
 
   const keysToClear: string[] = []
-  let usedChanged = false
-  let unusedChanged = false
-  let trashChanged = false
 
   Object.keys(state.usedContent).forEach((key) => {
     const entry = state.usedContent[key]
@@ -763,7 +769,6 @@ export function purgeUrlsFromAllState(urls: string[]) {
       delete state.usedContent[key]
       keysToClear.push(key)
       if (!state.retired.includes(key)) state.retired.push(key)
-      usedChanged = true
     }
   })
 
@@ -779,13 +784,12 @@ export function purgeUrlsFromAllState(urls: string[]) {
     }
   })
 
-  const initialUnusedLen = state.unused.length
   state.unused = state.unused.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
-  if (state.unused.length !== initialUnusedLen) unusedChanged = true
-
-  const initialTrashLen = state.trash.length
   state.trash = state.trash.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
-  if (state.trash.length !== initialTrashLen) trashChanged = true
+
+  urlSet.forEach((u) => {
+    delete state.mediaMeta[u]
+  })
 
   if (keysToClear.length > 0) {
     clearItemOverrides(keysToClear)
@@ -797,13 +801,14 @@ export function purgeUrlsFromAllState(urls: string[]) {
       saveJSON(LS.UPLOAD_TEST, newHist)
     }
   }
-  if (usedChanged) { persistUsed(); persistRetired() }
-  if (unusedChanged) { persistUnused() }
-  if (trashChanged) { persistTrash() }
-  if (usedChanged || unusedChanged || trashChanged || keysToClear.length > 0 || hist.length > 0) { 
-    emit() 
-    flushSyncToServer() // Ensure immediate sync to prevent reappearing on reload
-  }
+
+  persistUsed()
+  persistUnused()
+  persistTrash()
+  persistRetired()
+  persistMediaMeta()
+  emit()
+  flushSyncToServer()
 }
 
 export function cleanOrphanOverrides() {

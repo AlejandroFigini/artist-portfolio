@@ -290,6 +290,7 @@ export async function saveState(payload: CmsStatePayload): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      keepalive: true,
     })
   } catch {
     // backend no disponible → el estado sigue en localStorage

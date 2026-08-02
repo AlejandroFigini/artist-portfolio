@@ -11,7 +11,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit,
+  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
@@ -146,17 +146,24 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     import('@/lib/api').then(({ getState }) => {
       getState().then((server) => {
         if (!mounted) return
+        mergeServerState(server)
         const list: RepoEntry[] = []
         const seenSrc = new Set<string>()
 
-        // Fallback to local state if DB returns empty
-        const usedSrc = server.used_content && Object.keys(server.used_content).length > 0 ? server.used_content : state.usedContent
-        const unusedSrc = server.unused && (server.unused as unknown[]).length > 0 ? (server.unused as unknown[]) : state.unused
+        // Trash URLs should NEVER appear in the repository selector
+        const trashSrcs = new Set<string>()
+        state.trash.forEach((t) => {
+          if (t.src) trashSrcs.add(t.src)
+          if (t.dataUrl) trashSrcs.add(t.dataUrl)
+        })
+
+        const usedSrc = server.used_content && typeof server.used_content === 'object' && Object.keys(server.used_content).length > 0 ? server.used_content : state.usedContent
+        const unusedSrc = server.unused && Array.isArray(server.unused) ? (server.unused as unknown[]) : state.unused
 
         Object.keys(usedSrc).forEach((k) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const e = (usedSrc as Record<string, any>)[k]
-          if (!e.src || seenSrc.has(e.src)) return
+          if (!e || !e.src || seenSrc.has(e.src) || trashSrcs.has(e.src)) return
           seenSrc.add(e.src)
           list.push({ src: e.src, name: e.name, size: e.size, label: e.label, section: e.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts, type: e.type })
         })
@@ -164,9 +171,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
         unusedSrc.forEach((entry: unknown) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const e = entry as Record<string, any>
+          if (!e) return
           const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
           const src = e.src || e.dataUrl || ''
-          if (!src || seenSrc.has(src)) return
+          if (!src || seenSrc.has(src) || trashSrcs.has(src)) return
           seenSrc.add(src)
           list.push({ src, name: e.name, size: e.size, label: e.label, section: e.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts, type: e.type })
         })

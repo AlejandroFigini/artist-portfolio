@@ -833,6 +833,7 @@ export function moveToUnusedSite(key: string) {
   showEmptySlot(key)
   refreshTools(key)
   recordAudit({ section: entry.section, label: entry.label, kind: 'gestión', summary: 'Content moved to unused' })
+  flushSyncToServer()
 }
 
 // Elimina una tarjeta de proyecto del carrusel: archiva su imagen a "no usados"
