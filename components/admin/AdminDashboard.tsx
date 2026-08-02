@@ -74,21 +74,14 @@ export default function AdminDashboard() {
     if (!state.loaded) loadState()
     // verificación real contra la sesión server (cookie httpOnly) — el flag
     // de localStorage es solo un hint de pintado.
-    getAccount().then((account) => setAdminFlag(!!account, account?.username, account?.role, account?.needsSetup))
-    // Sincronizar estado compartido desde el server (usedContent, unused,
-    // retired, etc.) para reflejar cambios de otros dispositivos/usuarios.
-    loadServerState().then(() => {
+    Promise.all([getAccount(), loadServerState()]).then(([account]) => {
+      setAdminFlag(!!account, account?.username, account?.role, account?.needsSetup)
       cleanOrphanOverrides()
-      if (state.isAdmin) {
+      if (!!account || state.isAdmin) {
         autoCleanTrash()
         seedUsedContent()
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
-        // Crear estructura de carpetas vacías en Cloudinary (idempotente)
         scaffoldCloudinaryFolders()
-        // NOTA: syncCloudinaryFolders y validateCloudinaryContent fueron removidos
-        // de la carga inicial porque consumen la API de Administración (1 req por imagen)
-        // y agotan el límite de 500/hora casi instantáneamente si hay muchos medios.
-        // La sincronización ahora se realiza exclusivamente desde la herramienta "Sincronizar".
       }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

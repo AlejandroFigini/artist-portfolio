@@ -6,7 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
-import { state, getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { state, getFormat, getContainerMeta, emit, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
 
 /** Nombre de archivo sin su extensión (para el título de la tarjeta). */
 const stripExt = (name?: string) => (name ? name.replace(/\.[^./\\]+$/, '') : '')
@@ -126,6 +126,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
       if (!ts || Math.abs(ts - realTs) > 86400000) {
         ts = realTs
         e.ts = realTs // mutar para sincronizar
+        setTimeout(() => emit(), 0) // forzar re-render global
       }
     }
   }
@@ -142,6 +143,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
         if (data.results && data.results[e.src]) {
           setDynamicSize(data.results[e.src])
           e.size = data.results[e.src] // Mutar para que sumSizes lo vea
+          emit() // forzar re-render global para que se actualicen los totales
         }
       }).catch(() => {})
     }
