@@ -85,14 +85,10 @@ export default function AdminDashboard() {
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
         // Crear estructura de carpetas vacías en Cloudinary (idempotente)
         scaffoldCloudinaryFolders()
-        // Sincronizar carpetas de Cloudinary (mover archivos a sus carpetas correctas)
-        syncCloudinaryFolders()
-        // Validar que los contenidos sigan existiendo en Cloudinary (async, background)
-        validateCloudinaryContent().then((purged) => {
-          if (purged > 0) {
-            toast(`Removed ${purged} item(s) that no longer exist in Cloudinary`, 'error')
-          }
-        })
+        // NOTA: syncCloudinaryFolders y validateCloudinaryContent fueron removidos
+        // de la carga inicial porque consumen la API de Administración (1 req por imagen)
+        // y agotan el límite de 500/hora casi instantáneamente si hay muchos medios.
+        // La sincronización ahora se realiza exclusivamente desde la herramienta "Sincronizar".
       }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
