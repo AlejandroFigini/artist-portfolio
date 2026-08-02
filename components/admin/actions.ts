@@ -9,7 +9,7 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit,
   persistUsed, persistUnused, persistRetired, persistTrash,
-  retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry,
+  retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
@@ -26,6 +26,7 @@ export async function deletePermanent(idx: number) {
     recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Eliminado permanentemente (local)' })
   }
   emit()
+  flushSyncToServer()
 }
 
 // Política de borrado automático del basurero (manual / 1d / 3d / 7d)
@@ -54,6 +55,7 @@ export function autoCleanTrash() {
     persistTrash()
     purgeUrlsFromAllState(urlsToDelete)
     emit()
+    flushSyncToServer()
   }
 }
 
@@ -72,6 +74,7 @@ export async function emptyTrash() {
     const url = item.src || item.dataUrl
     return url && url.includes('cloudinary.com') ? deleteMedia(url).catch(() => {}) : Promise.resolve()
   }))
+  flushSyncToServer()
 }
 
 // Tamaños faltantes: dataURL se estima; URLs remotas se miden con un fetch
@@ -134,6 +137,7 @@ export async function batchDeletePermanent(indices: number[]): Promise<number> {
   emit()
   await Promise.all(urls.map((u) => u && u.includes('cloudinary.com') ? deleteMedia(u).catch(() => {}) : Promise.resolve()))
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Eliminados permanentemente (Batch)' })
+  flushSyncToServer()
   return count
 }
 
