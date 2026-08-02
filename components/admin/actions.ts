@@ -85,15 +85,17 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
     if (!src) return
 
     // Intentar deducir la fecha de subida (ts) desde la versión de Cloudinary (ej: v1784895000)
-    if (!e.ts && typeof src === 'string' && src.includes('/upload/v')) {
+    if (typeof src === 'string' && src.includes('/upload/v')) {
       const match = src.match(/\/upload\/v(\d{10,})\//)
       if (match && match[1]) {
-        e.ts = parseInt(match[1], 10) * 1000
-        changed = true
+        const realTs = parseInt(match[1], 10) * 1000
+        if (e.ts !== realTs) {
+          e.ts = realTs
+          changed = true
+        }
       }
     }
-
-    if (e.size != null) return
+    if (e.size != null && e.size > 0) return
 
     if (src.startsWith('data:')) {
       e.size = approxDataUrlBytes(src)
