@@ -111,7 +111,8 @@ type MediaCardProps = {
 }
 
 export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
-  const mm = e.src ? state.mediaMeta[e.src] : null
+  const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
+  const mm = srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null
   const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
   const size = e.size ?? mm?.size
   // Título = nombre del archivo sin extensión; el nombre completo y el formato

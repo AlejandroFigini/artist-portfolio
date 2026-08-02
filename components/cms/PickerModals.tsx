@@ -165,7 +165,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           const e = (usedSrc as Record<string, any>)[k]
           if (!e || !e.src || seenSrc.has(e.src) || trashSrcs.has(e.src)) return
           seenSrc.add(e.src)
-          const mm = state.mediaMeta[e.src] || state.mediaMeta[k] || {}
+          const srcKey = e.src.split('?')[0].split('#')[0]
+          const mm = state.mediaMeta[srcKey] || state.mediaMeta[e.src] || state.mediaMeta[k] || {}
           list.push({ src: e.src, name: e.name || mm.name, size: e.size ?? mm.size, label: e.label || mm.label, section: e.section || mm.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts ?? mm.ts, type: e.type || mm.type })
         })
 
@@ -177,7 +178,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           const src = e.src || e.dataUrl || ''
           if (!src || seenSrc.has(src) || trashSrcs.has(src)) return
           seenSrc.add(src)
-          const mm = state.mediaMeta[src] || (e.key ? state.mediaMeta[e.key] : null) || {}
+          const srcKey = src.split('?')[0].split('#')[0]
+          const mm = state.mediaMeta[srcKey] || state.mediaMeta[src] || (e.key ? state.mediaMeta[e.key] : null) || {}
           list.push({ src, name: e.name || mm.name, size: e.size ?? mm.size, label: e.label || mm.label, section: e.section || mm.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts ?? mm.ts, type: e.type || mm.type })
         })
 

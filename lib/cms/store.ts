@@ -329,7 +329,7 @@ export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: st
       if (seen.has(id)) return s
       seen.add(id)
     }
-    const size = (e as any).size ?? (id ? state.mediaMeta[id]?.size : 0) ?? 0
+    const size = (e as any).size ?? (id ? (state.mediaMeta[id.split('?')[0].split('#')[0]]?.size || state.mediaMeta[id]?.size) : 0) ?? 0
     return s + size
   }, 0)
 }
