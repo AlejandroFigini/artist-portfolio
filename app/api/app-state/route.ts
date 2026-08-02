@@ -45,7 +45,13 @@ export async function GET() {
     for (const row of result.rows as { key: string; value: unknown }[]) {
       out[row.key] = row.value
     }
-    return NextResponse.json(out)
+    return NextResponse.json(out, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
   } catch (err) {
     console.error('[state GET] error:', err)
     return NextResponse.json({})
