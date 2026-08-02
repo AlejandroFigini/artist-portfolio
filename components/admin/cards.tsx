@@ -115,8 +115,20 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
+  let ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
   
-  const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
+  // Extraer fecha real de la URL de Cloudinary (foolproof fallback)
+  if (cardType !== 'trash' && e.src && typeof e.src === 'string' && e.src.includes('/upload/v')) {
+    const match = e.src.match(/\/upload\/v(\d{10,})\//)
+    if (match && match[1]) {
+      const realTs = parseInt(match[1], 10) * 1000
+      // Si no hay ts, o difiere significativamente del real (ej. Date.now() erróneo de seedUsedContent)
+      if (!ts || Math.abs(ts - realTs) > 86400000) {
+        ts = realTs
+        e.ts = realTs // mutar para sincronizar
+      }
+    }
+  }
   const size = dynamicSize ?? e.size ?? mm?.size
 
   useEffect(() => {
