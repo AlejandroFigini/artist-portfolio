@@ -160,6 +160,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
       }
     })
     saveJSON(LS.OVERRIDES, overrides)
+    scheduleSyncToServer('overrides')
 
     await saveContent(payload)
     const fresh = Array.from({ length: newCount }, (_, i) => `${prefix}.slide#${i}`)
@@ -190,6 +191,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     overrides[`${prefix}.settings`] = payload[`${prefix}.settings`]
     saveJSON(LS.OVERRIDES, overrides)
+    scheduleSyncToServer('overrides')
     await saveContent(payload)
     emit()
     broadcastCarousel(prefix)

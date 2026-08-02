@@ -201,6 +201,7 @@ export const persistTrash = () => { saveJSON(LS.TRASH, state.trash); scheduleSyn
 export const persistOverridesLocal = () => {
   saveJSON(LS.OVERRIDES, state.items)
   saveJSON(LS.OVERRIDES_HASH, simpleHash(JSON.stringify(state.items)))
+  scheduleSyncToServer('overrides')
 }
 export const persistMediaMeta = () => { saveJSON(LS.MEDIA, state.mediaMeta); scheduleSyncToServer('media_meta') }
 
