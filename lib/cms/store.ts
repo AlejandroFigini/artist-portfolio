@@ -329,7 +329,8 @@ export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: st
       if (seen.has(id)) return s
       seen.add(id)
     }
-    return s + (e.size || 0)
+    const size = (e as any).size ?? (id ? state.mediaMeta[id]?.size : 0) ?? 0
+    return s + size
   }, 0)
 }
 
@@ -758,14 +759,15 @@ export function clearItemOverrides(keys: string[]) {
 export const clearOverridesForKeys = clearItemOverrides
 export function purgeUrlsFromAllState(urls: string[]) {
   if (!urls || !urls.length) return
-  const urlSet = new Set(urls.filter(Boolean))
+  const urlSet = new Set(urls.filter(Boolean).map(u => u.split('?')[0].split('#')[0]))
   if (!urlSet.size) return
 
   const keysToClear: string[] = []
+  const strip = (u: string) => u.split('?')[0].split('#')[0]
 
   Object.keys(state.usedContent).forEach((key) => {
     const entry = state.usedContent[key]
-    if (entry && (urlSet.has(entry.src) || ('dataUrl' in entry && typeof (entry as { dataUrl?: string }).dataUrl === 'string' && urlSet.has((entry as { dataUrl?: string }).dataUrl!)))) {
+    if (entry && (urlSet.has(strip(entry.src)) || ('dataUrl' in entry && typeof (entry as { dataUrl?: string }).dataUrl === 'string' && urlSet.has(strip((entry as { dataUrl?: string }).dataUrl!))))) {
       delete state.usedContent[key]
       keysToClear.push(key)
       if (!state.retired.includes(key)) state.retired.push(key)
@@ -774,7 +776,7 @@ export function purgeUrlsFromAllState(urls: string[]) {
 
   Object.keys(state.items).forEach((key) => {
     const val = state.items[key]
-    if (val && urlSet.has(val)) {
+    if (val && typeof val === 'string' && urlSet.has(strip(val))) {
       if (!keysToClear.includes(key)) {
         keysToClear.push(key)
         if (!state.retired.includes(key) && !key.includes('::') && !key.endsWith('.settings')) {
@@ -784,8 +786,8 @@ export function purgeUrlsFromAllState(urls: string[]) {
     }
   })
 
-  state.unused = state.unused.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
-  state.trash = state.trash.filter((e) => !urlSet.has(e.src) && (!e.dataUrl || !urlSet.has(e.dataUrl)))
+  state.unused = state.unused.filter((e) => (!e.src || !urlSet.has(strip(e.src))) && (!e.dataUrl || !urlSet.has(strip(e.dataUrl))))
+  state.trash = state.trash.filter((e) => (!e.src || !urlSet.has(strip(e.src))) && (!e.dataUrl || !urlSet.has(strip(e.dataUrl))))
 
   urlSet.forEach((u) => {
     delete state.mediaMeta[u]

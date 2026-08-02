@@ -111,10 +111,12 @@ type MediaCardProps = {
 }
 
 export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
-  const ts = cardType === 'trash' ? e.deletedAt : e.ts
+  const mm = e.src ? state.mediaMeta[e.src] : null
+  const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
+  const size = e.size ?? mm?.size
   // Título = nombre del archivo sin extensión; el nombre completo y el formato
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
-  const title = stripExt(e.name) || e.label || '—'
+  const title = stripExt(e.name || mm?.name) || e.label || '—'
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
   const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
   const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
@@ -155,9 +157,9 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           </span>
         </div>
         <div className="cms-mlib-meta">
-          <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || '—'}>{e.name || '—'}</span></div>
+          <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || mm?.name || '—'}>{e.name || mm?.name || '—'}</span></div>
           <div><strong>Format:</strong> {getFormat(e)}</div>
-          <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
+          <div><strong>Size:</strong> {fmtBytes(size)}</div>
           <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
           {occCount > 1 && (
             <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
