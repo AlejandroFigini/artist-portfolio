@@ -77,26 +77,54 @@ export async function emptyTrash() {
   flushSyncToServer()
 }
 
-// Tamaños faltantes: dataURL se estima; URLs remotas se miden con un fetch
-export async function resolveSizes(entries: { size?: number | null; src?: string; dataUrl?: string }[]) {
+// Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
+export async function resolveSizes(entries: { size?: number | null; ts?: number | null; src?: string; dataUrl?: string }[]) {
+  let changed = false
   await Promise.all(entries.map(async (e) => {
-    if (e.size != null) return
     const src = e.src || e.dataUrl || ''
     if (!src) return
-    if (src.startsWith('data:')) { e.size = approxDataUrlBytes(src); return }
+
+    // Intentar deducir la fecha de subida (ts) desde la versión de Cloudinary (ej: v1784895000)
+    if (!e.ts && typeof src === 'string' && src.includes('/upload/v')) {
+      const match = src.match(/\/upload\/v(\d{10,})\//)
+      if (match && match[1]) {
+        e.ts = parseInt(match[1], 10) * 1000
+        changed = true
+      }
+    }
+
+    if (e.size != null) return
+
+    if (src.startsWith('data:')) {
+      e.size = approxDataUrlBytes(src)
+      changed = true
+      return
+    }
+
     try {
       const r = await fetch(src, { method: 'HEAD' })
       if (r.ok) {
         const cl = r.headers.get('content-length')
-        if (cl) e.size = parseInt(cl, 10)
+        if (cl) {
+          e.size = parseInt(cl, 10)
+          changed = true
+        }
       } else {
         // Fallback for CORS issues or servers blocking HEAD
         const r2 = await fetch(src)
-        if (r2.ok) e.size = (await r2.blob()).size
+        if (r2.ok) {
+          e.size = (await r2.blob()).size
+          changed = true
+        }
       }
     } catch {}
   }))
-  emit()
+  if (changed) {
+    emit()
+    persistUsed()
+    persistUnused()
+    flushSyncToServer()
+  }
 }
 
 // ----- Lotes (selección múltiple) --------------------------------------------
