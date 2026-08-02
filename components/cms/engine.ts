@@ -625,7 +625,7 @@ export function seedUsedContent() {
     }
     // Key conocida pero sin contenido real
     const src = state.items[key] || (elementsByKey[key] ? currentSrcOf(elementsByKey[key]) : '')
-    if (!src && state.usedContent[key] && !state.usedContent[key].src) {
+    if (!src && state.usedContent[key]) {
       delete state.usedContent[key]
       changed = true
     }
