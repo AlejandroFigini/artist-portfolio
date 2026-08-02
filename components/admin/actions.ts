@@ -7,7 +7,7 @@
 import { deleteMedia } from '@/lib/api'
 import { approxDataUrlBytes } from '@/lib/utils'
 import {
-  state, emit, loadJSON, saveJSON, LS, recordAudit,
+  state, emit, loadJSON, saveJSON, LS, recordAudit, recordMediaMeta,
   persistUsed, persistUnused, persistRetired, persistTrash,
   retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer,
 } from '@/lib/cms/store'
@@ -79,6 +79,7 @@ export async function emptyTrash() {
 
 // Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
 export async function resolveSizes(entries: { size?: number | null; ts?: number | null; src?: string; dataUrl?: string }[]) {
+  console.log('[resolveSizes] Starting for', entries.length, 'entries')
   let changed = false
   const urlsToFetch: string[] = []
   
@@ -93,6 +94,7 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
         const realTs = parseInt(match[1], 10) * 1000
         if (e.ts !== realTs) {
           e.ts = realTs
+          recordMediaMeta((e as any).key || '', src, { ts: realTs, name: (e as any).name })
           changed = true
         }
       }
@@ -102,14 +104,17 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
 
     if (src.startsWith('data:')) {
       e.size = approxDataUrlBytes(src)
+      recordMediaMeta((e as any).key || '', src, { size: e.size, ts: e.ts ?? undefined, name: (e as any).name })
       changed = true
       continue
     }
 
-    if (src.startsWith('http')) {
+    if (src.startsWith('http') || src.startsWith('/')) {
       urlsToFetch.push(src)
     }
   }
+
+  console.log('[resolveSizes] URLs to fetch:', urlsToFetch.length)
 
   // Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del navegador
   if (urlsToFetch.length > 0) {
@@ -121,20 +126,26 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
       })
       if (res.ok) {
         const { results } = await res.json() as { results: Record<string, number> }
+        console.log('[resolveSizes] API returned sizes for:', Object.keys(results || {}).length, 'urls')
         if (results) {
           for (const e of entries) {
             const src = e.src || e.dataUrl || ''
             if (results[src] && (!e.size || e.size === 0)) {
               e.size = results[src]
+              recordMediaMeta((e as any).key || '', src, { size: results[src], ts: e.ts ?? undefined, name: (e as any).name })
               changed = true
             }
           }
         }
+      } else {
+        console.error('[resolveSizes] API returned error status:', res.status)
       }
     } catch (err) {
       console.warn('[resolveSizes] Backend API fetch error:', err)
     }
   }
+  
+  console.log('[resolveSizes] Finished. Changed?', changed)
   if (changed) {
     emit()
     persistUsed()

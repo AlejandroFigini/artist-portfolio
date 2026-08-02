@@ -10,7 +10,7 @@
 import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
-  state, emit, recordAudit, persistUsed, persistUnused, persistRetired,
+  state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
@@ -582,6 +582,15 @@ export function seedUsedContent() {
     const meta = metaByKey[key] || getContainerMeta(key)
     if (!meta || (meta.kind !== 'image' && meta.kind !== 'video')) return
     const src = state.items[key] || (el ? currentSrcOf(el) : '')
+    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
+    let ts: number | undefined = mm?.ts
+    if (!ts && src && typeof src === 'string' && src.includes('/upload/v')) {
+      const match = src.match(/\/upload\/v(\d{10,})\//)
+      if (match && match[1]) {
+        ts = parseInt(match[1], 10) * 1000
+      }
+    }
+
     if (state.usedContent[key]) {
       // Contenedor vacío marcado por error como "usado" (seed sin contenido):
       // purgar para que no contamine el repositorio ni se evacúe a "sin usar".
@@ -594,6 +603,14 @@ export function seedUsedContent() {
         state.usedContent[key].src = src
         changed = true
       }
+      if (!state.usedContent[key].ts && ts) {
+        state.usedContent[key].ts = ts
+        changed = true
+      }
+      if ((!state.usedContent[key].size || state.usedContent[key].size === 0) && mm?.size) {
+        state.usedContent[key].size = mm.size
+        changed = true
+      }
       if (meta.fields && !state.usedContent[key].fields) {
         state.usedContent[key].fields = computeFields(key, el, meta)
         changed = true
@@ -602,12 +619,14 @@ export function seedUsedContent() {
     }
     if (!src) return // contenedor vacío: no es contenido usado, no sembrar
     let name = resolveMediaName(src, key), size: number | null = null, original = true
-    const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
     if (mm) { name = mm.name || name; size = mm.size ?? null; original = false }
     state.usedContent[key] = {
       key, label: meta.label, section: meta.section,
-      kind: meta.kind as 'image' | 'video', src, name, size, original,
+      kind: meta.kind as 'image' | 'video', src, name, size, ts, original,
       fields: computeFields(key, el, meta),
+    }
+    if (ts || size) {
+      recordMediaMeta(key, src, { ts, size, name })
     }
     changed = true
   })

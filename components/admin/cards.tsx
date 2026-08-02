@@ -114,7 +114,14 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
-  const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
+  let ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
+
+  if (!ts && e.src && typeof e.src === 'string' && e.src.includes('/upload/v')) {
+    const match = e.src.match(/\/upload\/v(\d{10,})\//)
+    if (match && match[1]) {
+      ts = parseInt(match[1], 10) * 1000
+    }
+  }
   const size = e.size ?? mm?.size
 
   if (!mm || !size || size === 0) {
