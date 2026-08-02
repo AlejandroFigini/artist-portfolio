@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 0
