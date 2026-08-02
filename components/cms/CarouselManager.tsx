@@ -154,9 +154,11 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
 
     const overrides = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
     Object.keys(payload).forEach((k) => { overrides[k] = payload[k] })
-    for (let i = newCount; i < Math.max(original.length, maxCount); i++) {
-      delete overrides[`${prefix}.slide#${i}`]
-    }
+    Object.keys(overrides).forEach((k) => {
+      if (k.startsWith(`${prefix}.slide#`) && !(k in payload)) {
+        delete overrides[k]
+      }
+    })
     saveJSON(LS.OVERRIDES, overrides)
 
     await saveContent(payload)
@@ -167,10 +169,8 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     fresh.forEach((k) => { newSrcs[k] = slideSrc(k, prefix) })
     setInitialSrcs(newSrcs)
     setInitialDuration(duration)
-    seedUsedContent()
     emit()
     broadcastCarousel(prefix)
-    setTimeout(() => seedUsedContent(), 100)
   }
 
   // Guardar Grafo: persiste la estructura pero NO cierra el modal — el usuario
@@ -191,7 +191,6 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     overrides[`${prefix}.settings`] = payload[`${prefix}.settings`]
     saveJSON(LS.OVERRIDES, overrides)
     await saveContent(payload)
-    seedUsedContent()
     emit()
     broadcastCarousel(prefix)
   }
