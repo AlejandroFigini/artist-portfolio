@@ -80,11 +80,13 @@ export async function emptyTrash() {
 // Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
 export async function resolveSizes(entries: { size?: number | null; ts?: number | null; src?: string; dataUrl?: string }[]) {
   let changed = false
-  await Promise.all(entries.map(async (e) => {
+  const urlsToFetch: string[] = []
+  
+  // Primera pasada: procesar fechas, dataUrls y armar lista de URLs para el backend
+  for (const e of entries) {
     const src = e.src || e.dataUrl || ''
-    if (!src) return
+    if (!src) continue
 
-    // Intentar deducir la fecha de subida (ts) desde la versión de Cloudinary (ej: v1784895000)
     if (typeof src === 'string' && src.includes('/upload/v')) {
       const match = src.match(/\/upload\/v(\d{10,})\//)
       if (match && match[1]) {
@@ -95,34 +97,44 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
         }
       }
     }
-    if (e.size != null && e.size > 0) return
+
+    if (e.size != null && e.size > 0) continue
 
     if (src.startsWith('data:')) {
       e.size = approxDataUrlBytes(src)
       changed = true
-      return
+      continue
     }
 
+    if (src.startsWith('http')) {
+      urlsToFetch.push(src)
+    }
+  }
+
+  // Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del navegador
+  if (urlsToFetch.length > 0) {
     try {
-      const r = await fetch(src, { method: 'HEAD' })
-      if (r.ok) {
-        const cl = r.headers.get('content-length')
-        if (cl) {
-          e.size = parseInt(cl, 10)
-          changed = true
+      const res = await fetch('/api/resolve-sizes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: urlsToFetch })
+      })
+      if (res.ok) {
+        const { results } = await res.json() as { results: Record<string, number> }
+        if (results) {
+          for (const e of entries) {
+            const src = e.src || e.dataUrl || ''
+            if (results[src] && (!e.size || e.size === 0)) {
+              e.size = results[src]
+              changed = true
+            }
+          }
         }
       }
-    } catch {
-      // Fallback for CORS issues or servers blocking HEAD: Fetch throws an error
-      try {
-        const r2 = await fetch(src)
-        if (r2.ok) {
-          e.size = (await r2.blob()).size
-          changed = true
-        }
-      } catch {}
+    } catch (err) {
+      console.warn('[resolveSizes] Backend API fetch error:', err)
     }
-  }))
+  }
   if (changed) {
     emit()
     persistUsed()
