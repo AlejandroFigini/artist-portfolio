@@ -134,8 +134,9 @@ function parseCloudinaryUrl(url: string): { resourceType: 'image' | 'video' | 'r
   const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
   if (!match) return null
   const resourceType = match[1] as 'image' | 'video' | 'raw'
-  const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '')
-  return { resourceType, publicId }
+  let rawId = match[2]
+  if (resourceType !== 'raw') rawId = rawId.replace(/\.[a-zA-Z0-9]+$/, '')
+  return { resourceType, publicId: decodeURIComponent(rawId) }
 }
 
 /** Borra un asset por su URL (Cloudinary o archivo local). No lanza si no existe. */
