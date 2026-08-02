@@ -6,7 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
-import { state, getFormat, getContainerMeta, emit, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { state, getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
 
 /** Nombre de archivo sin su extensión (para el título de la tarjeta). */
 const stripExt = (name?: string) => (name ? name.replace(/\.[^./\\]+$/, '') : '')
@@ -111,43 +111,11 @@ type MediaCardProps = {
 }
 
 export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
-  const [dynamicSize, setDynamicSize] = useState<number | null>(null)
   
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
-  let ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
-  
-  // Extraer fecha real de la URL de Cloudinary (foolproof fallback)
-  if (cardType !== 'trash' && e.src && typeof e.src === 'string' && e.src.includes('/upload/v')) {
-    const match = e.src.match(/\/upload\/v(\d{10,})\//)
-    if (match && match[1]) {
-      const realTs = parseInt(match[1], 10) * 1000
-      // Si no hay ts, o difiere significativamente del real (ej. Date.now() erróneo de seedUsedContent)
-      if (!ts || Math.abs(ts - realTs) > 86400000) {
-        ts = realTs
-        e.ts = realTs // mutar para sincronizar
-        setTimeout(() => emit(), 0) // forzar re-render global
-      }
-    }
-  }
-  const size = dynamicSize ?? e.size ?? mm?.size
-
-  useEffect(() => {
-    // Si sigue sin tener tamaño en la UI, forzar que la tarjeta pida su propio tamaño
-    if (!size && e.src && e.src.startsWith('http')) {
-      fetch('/api/resolve-sizes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: [e.src] })
-      }).then(r => r.json()).then(data => {
-        if (data.results && data.results[e.src]) {
-          setDynamicSize(data.results[e.src])
-          e.size = data.results[e.src] // Mutar para que sumSizes lo vea
-          emit() // forzar re-render global para que se actualicen los totales
-        }
-      }).catch(() => {})
-    }
-  }, [e.src, size, e])
+  const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
+  const size = e.size ?? mm?.size
 
   if (!mm || !size || size === 0) {
     console.log('[MediaCard Debug Size]', { name: e.name, esize: e.size, mmsize: mm?.size, finalSize: size, ts: e.ts })
