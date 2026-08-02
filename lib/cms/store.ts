@@ -321,7 +321,7 @@ export function getFormat(e: { type?: string; src?: string; dataUrl?: string; na
   return e.type && e.type !== 'image' && e.type !== 'video' ? e.type : '—'
 }
 
-export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: string; url?: string }[]) => {
+export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: string; url?: string; key?: string }[]) => {
   const seen = new Set<string>()
   return arr.reduce((s, e) => {
     const id = (e as { src?: string }).src || (e as { dataUrl?: string }).dataUrl || (e as { url?: string }).url
@@ -329,7 +329,7 @@ export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: st
       if (seen.has(id)) return s
       seen.add(id)
     }
-    const size = (e as any).size ?? (id ? (state.mediaMeta[id.split('?')[0].split('#')[0]]?.size || state.mediaMeta[id]?.size) : 0) ?? 0
+    const size = (e as any).size ?? (id ? (state.mediaMeta[id.split('?')[0].split('#')[0]]?.size || state.mediaMeta[id]?.size) : null) ?? (e.key ? state.mediaMeta[e.key]?.size : 0) ?? 0
     return s + size
   }, 0)
 }
