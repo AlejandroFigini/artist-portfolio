@@ -188,13 +188,13 @@ export function flushSyncToServer() {
   const payload: CmsStatePayload = {}
   let syncOverrides = false
   for (const k of _pendingKeys) {
-    if (k === 'used_content') payload.used_content = state.usedContent
-    if (k === 'unused') payload.unused = state.unused
-    if (k === 'retired') payload.retired = state.retired
-    if (k === 'trash') payload.trash = state.trash
-    if (k === 'media_meta') payload.media_meta = state.mediaMeta
-    if (k === 'audit') payload.audit = state.audit.slice(-300)
-    if (k === 'container_names') payload.container_names = state.containerNames
+    if (k === 'used_content') { payload.used_content = state.usedContent; try { localStorage.setItem('cms_state_used_content', JSON.stringify(state.usedContent)) } catch {} }
+    if (k === 'unused') { payload.unused = state.unused; try { localStorage.setItem('cms_state_unused', JSON.stringify(state.unused)) } catch {} }
+    if (k === 'retired') { payload.retired = state.retired; try { localStorage.setItem('cms_state_retired', JSON.stringify(state.retired)) } catch {} }
+    if (k === 'trash') { payload.trash = state.trash; try { localStorage.setItem('cms_state_trash', JSON.stringify(state.trash)) } catch {} }
+    if (k === 'media_meta') { payload.media_meta = state.mediaMeta; try { localStorage.setItem('cms_state_media_meta', JSON.stringify(state.mediaMeta)) } catch {} }
+    if (k === 'audit') { payload.audit = state.audit.slice(-300); try { localStorage.setItem('cms_state_audit', JSON.stringify(payload.audit)) } catch {} }
+    if (k === 'container_names') { payload.container_names = state.containerNames; try { localStorage.setItem('cms_state_container_names', JSON.stringify(state.containerNames)) } catch {} }
     if (k === 'overrides') syncOverrides = true
   }
   _pendingKeys.clear()
@@ -223,29 +223,44 @@ export function clearDbOverrides(keys: string[]) {
    no hay datos — no que "se conserve lo local". localStorage se actualiza
    como caché para el próximo arranque rápido. */
 export function mergeServerState(server: CmsStatePayload) {
-  // Otherwise, overwrite all persisted sections with server data
-  if ('used_content' in server) {
+  // En modo mock, el server devuelve objetos vacíos. Intentar recuperar de localStorage.
+  const getLoc = (k: string, def: any) => {
+    try { const v = localStorage.getItem('cms_state_' + k); return v ? JSON.parse(v) : def } catch { return def }
+  }
+  
+  if ('used_content' in server && Object.keys(server.used_content || {}).length > 0) {
     state.usedContent = (server.used_content || {}) as typeof state.usedContent
+  } else {
+    state.usedContent = getLoc('used_content', state.usedContent)
   }
-  if ('unused' in server) {
-    state.unused = (Array.isArray(server.unused) ? server.unused : []) as typeof state.unused
+
+  if ('unused' in server && Array.isArray(server.unused) && server.unused.length > 0) {
+    state.unused = server.unused as typeof state.unused
+  } else {
+    state.unused = getLoc('unused', state.unused)
   }
+
   if (['retired', 'trash', 'media_meta', 'audit', 'container_names', 'overrides'].some(k => k in server)) {
-    if ('retired' in server) {
-      state.retired = (Array.isArray(server.retired) ? server.retired : []) as typeof state.retired
-    }
-    if ('trash' in server) {
-      state.trash = (Array.isArray(server.trash) ? server.trash : []) as typeof state.trash
-    }
-    if ('media_meta' in server) {
+    if ('retired' in server && Array.isArray(server.retired) && server.retired.length > 0) {
+      state.retired = server.retired as typeof state.retired
+    } else { state.retired = getLoc('retired', state.retired) }
+
+    if ('trash' in server && Array.isArray(server.trash) && server.trash.length > 0) {
+      state.trash = server.trash as typeof state.trash
+    } else { state.trash = getLoc('trash', state.trash) }
+
+    if ('media_meta' in server && Object.keys(server.media_meta || {}).length > 0) {
       state.mediaMeta = (server.media_meta || {}) as typeof state.mediaMeta
-    }
-    if ('audit' in server) {
-      state.audit = (Array.isArray(server.audit) ? server.audit : []) as typeof state.audit
-    }
-    if ('container_names' in server) {
+    } else { state.mediaMeta = getLoc('media_meta', state.mediaMeta) }
+
+    if ('audit' in server && Array.isArray(server.audit) && server.audit.length > 0) {
+      state.audit = server.audit as typeof state.audit
+    } else { state.audit = getLoc('audit', state.audit) }
+
+    if ('container_names' in server && Object.keys(server.container_names || {}).length > 0) {
       state.containerNames = (server.container_names || {}) as typeof state.containerNames
-    }
+    } else { state.containerNames = getLoc('container_names', state.containerNames) }
+
     if ('overrides' in server) {
       state.items = (server.overrides || {}) as Record<string, string>
     }
