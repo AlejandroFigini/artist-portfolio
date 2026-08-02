@@ -111,13 +111,33 @@ type MediaCardProps = {
 }
 
 export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
+  const [dynamicSize, setDynamicSize] = useState<number | null>(null)
+  
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
-  if (!mm) {
-    console.log('[MediaCard Debug] Missing mm for:', { name: e.name, src: e.src, key: e.key, mediaMetaKeys: Object.keys(state.mediaMeta).length })
-  }
+  
   const ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
-  const size = e.size ?? mm?.size
+  const size = dynamicSize ?? e.size ?? mm?.size
+
+  useEffect(() => {
+    // Si sigue sin tener tamaño en la UI, forzar que la tarjeta pida su propio tamaño
+    if (!size && e.src && e.src.startsWith('http')) {
+      fetch('/api/resolve-sizes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: [e.src] })
+      }).then(r => r.json()).then(data => {
+        if (data.results && data.results[e.src]) {
+          setDynamicSize(data.results[e.src])
+          e.size = data.results[e.src] // Mutar para que sumSizes lo vea
+        }
+      }).catch(() => {})
+    }
+  }, [e.src, size, e])
+
+  if (!mm || !size || size === 0) {
+    console.log('[MediaCard Debug Size]', { name: e.name, esize: e.size, mmsize: mm?.size, finalSize: size, ts: e.ts })
+  }
   // Título = nombre del archivo sin extensión; el nombre completo y el formato
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
   const title = stripExt(e.name || mm?.name) || e.label || '—'
