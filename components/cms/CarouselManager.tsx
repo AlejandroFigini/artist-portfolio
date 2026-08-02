@@ -17,15 +17,23 @@ const MAX_SLIDES = 4
 type Props = { prefix: string; show?: boolean; onClose: () => void; onPickImage: (key: string) => void }
 
 function parseSettings(prefix: string) {
-  const settings = { count: 1, duration: 7000 }
+  let count = 0
+  let duration = 7
   try {
-    const parsed = JSON.parse(state.items[`${prefix}.settings`] || '')
-    if (parsed) Object.assign(settings, parsed)
+    const s = JSON.parse(state.items[`${prefix}.settings`] || '{}')
+    if (typeof s.count === 'number' && s.count >= 0) count = s.count
+    if (typeof s.duration === 'number' && s.duration > 0) duration = Math.max(2, s.duration / 1000)
   } catch {}
-  // count puede ser 0 (carrusel recién limpiado): se respeta; arriba se clampa a [0, MAX].
-  settings.count = Number.isFinite(settings.count) ? Math.min(MAX_SLIDES, Math.max(0, settings.count)) : 1
-  settings.duration = settings.duration || 7000
-  return settings
+
+  // Si el count en settings es 0 (ej. subieron imagen directamente al placeholder vacío),
+  // inferimos el count contando cuántas slides consecutivas tienen URL en state.items
+  if (count === 0) {
+    while (state.items[`${prefix}.slide#${count}`]) {
+      count++
+    }
+  }
+
+  return { count: Math.min(MAX_SLIDES, count), duration: duration * 1000 }
 }
 
 const slideSrc = (vKey: string, prefix: string) =>
