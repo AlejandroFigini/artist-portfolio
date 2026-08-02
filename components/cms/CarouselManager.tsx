@@ -36,8 +36,7 @@ function parseSettings(prefix: string) {
   return { count: Math.min(MAX_SLIDES, count), duration: duration * 1000 }
 }
 
-const slideSrc = (vKey: string, prefix: string) =>
-  state.items[vKey] || currentSrcOf(elementsByKey[vKey] || null) || ''
+const slideSrc = (vKey: string, prefix: string) => state.items[vKey] || ''
 
 export default function CarouselManager({ prefix, show = true, onClose, onPickImage }: Props) {
   const toast = useToast()
