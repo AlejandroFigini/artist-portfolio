@@ -78,7 +78,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     setIsDuplicate(existsInUsed || existsInUnused)
   }
 
-  const [autoStartDone, setAutoStartDone] = useState(false)
+  // AutoStart state was removed
 
   if (!meta) return null
 
@@ -171,18 +171,8 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     return false
   }
 
-  useEffect(() => {
-    let mounted = true;
-    if (phase === 'form' && fields.length === 0 && !isDuplicate && !autoStartDone) {
-      setTimeout(() => {
-        if (mounted) {
-          setAutoStartDone(true)
-          doUpload()
-        }
-      }, 0)
-    }
-    return () => { mounted = false; }
-  }, [phase, fields.length, isDuplicate, autoStartDone, doUpload])
+  // El autoStart fue removido a pedido del usuario para que SIEMPRE se muestre el formulario
+  // y le permita cambiar el nombre del archivo o ver sus detalles antes de subir.
 
   const actions =
     phase === 'form'
