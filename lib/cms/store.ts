@@ -167,7 +167,7 @@ import { saveState, getState, saveContent, type CmsStatePayload, moveMedia, veri
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 const _pendingKeys = new Set<string>()
 
-function scheduleSyncToServer(...keys: string[]) {
+export function scheduleSyncToServer(...keys: string[]) {
   keys.forEach((k) => _pendingKeys.add(k))
   if (_syncTimer) clearTimeout(_syncTimer)
   _syncTimer = setTimeout(flushSyncToServer, 2000)
