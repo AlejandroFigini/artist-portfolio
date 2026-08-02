@@ -85,8 +85,15 @@ export async function resolveSizes(entries: { size?: number | null; src?: string
     if (!src) return
     if (src.startsWith('data:')) { e.size = approxDataUrlBytes(src); return }
     try {
-      const r = await fetch(src)
-      if (r.ok) e.size = (await r.blob()).size
+      const r = await fetch(src, { method: 'HEAD' })
+      if (r.ok) {
+        const cl = r.headers.get('content-length')
+        if (cl) e.size = parseInt(cl, 10)
+      } else {
+        // Fallback for CORS issues or servers blocking HEAD
+        const r2 = await fetch(src)
+        if (r2.ok) e.size = (await r2.blob()).size
+      }
     } catch {}
   }))
   emit()
