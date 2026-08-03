@@ -10,9 +10,10 @@ export async function POST(req: Request) {
   const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
 
-  let body: { url?: string; newFolder?: string }
+  let body: { url?: string; newFolder?: string; targetFolder?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
-  const { url, newFolder } = body
+  const url = body.url
+  const newFolder = body.newFolder || body.targetFolder
 
   if (auth.user.role === 'demo') {
     return NextResponse.json({ success: true, newUrl: url })
