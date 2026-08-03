@@ -21,7 +21,7 @@ export const SITE_PAGES: PageDef[] = [
       (e.key === 'loader.gallop' || e.key === 'settings.faviconUrl' || e.key === 'settings.appleIconUrl'),
   },
   {
-    id: 'feed', label: 'Main Feed', route: '/', icon: 'fa-house',
+    id: 'feed', label: 'Feed', route: '/', icon: 'fa-house',
     match: () => true // Catch-all for feed since it's the only other page
   }
 ]

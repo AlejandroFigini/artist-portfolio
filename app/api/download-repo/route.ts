@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   try {
     const url = cloudinary.utils.download_zip_url({
       prefixes: 'portfolio',
-      resource_type: 'auto',
+      resource_type: 'all',
       target_public_id: 'artist-portfolio-repo',
       use_original_filename: true,
     })
