@@ -6691,3 +6691,6 @@ select.ga-metric-select option {
 @media (max-width: 992px) { body.nav-open header { border-bottom: none !important; box-shadow: none !important; } body.nav-open .nav-progress { display: none !important; } }
 @media (min-width: 993px) { .mobile-drawer-logo, .mobile-drawer-actions { display: none !important; } }
 @media (max-width: 400px) { .logo { font-size: 0.95rem !important; } .logo span.highlight { font-size: 0.65rem !important; } .nav-actions { gap: 0.2rem !important; } .nav-actions .cv-min-btn, .nav-actions .cms-navauth-btn, .nav-actions .login-min-btn, .nav-actions .lang-btn { width: 30px !important; height: 30px !important; padding: 0 !important; } .nav-actions i { font-size: 0.85rem !important; } .mobile-drawer-logo, .mobile-drawer-logo span.inline-highlight { font-size: 0.85rem !important; } .mobile-drawer-logo { left: 3.8rem !important; } }
+
+/* Anular efectos hover en el menu movil */
+@media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(1.2rem, 5vw, 1.6rem) !important; } }

@@ -37,6 +37,7 @@ export default function Nav() {
   // red (mismo patrón que About) — el menú Portfolio nunca queda vacío.
   const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]) || n.home)
   const [navOpen, setNavOpen] = useState(false)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
   const [langOpen, setLangOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
@@ -173,6 +174,22 @@ export default function Nav() {
   const toggleDropdown = (name: 'gallery' | 'portfolio') =>
     setDropdown((d) => (d === name ? null : name))
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX === null) return
+    const currentTouchX = e.targetTouches[0].clientX
+    const diff = currentTouchX - touchStartX
+    
+    // Si se desliza hacia la derecha más de 50px y el menú está abierto
+    if (diff > 50 && navOpen) {
+      closeNav()
+      setTouchStartX(null)
+    }
+  }
+
   return (
     <>
       <header ref={headerRef}>
@@ -189,7 +206,12 @@ export default function Nav() {
           >
             <span></span><span></span><span></span>
           </button>
-          <nav className="nav-links" ref={linksRef}>
+          <nav 
+            className="nav-links" 
+            ref={linksRef}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+          >
             <div className="logo mobile-drawer-logo" onClick={closeNav}>
               Lucia Montaña <span className="separator">|</span> <span className="highlight inline-highlight">Portfolio</span>
             </div>
