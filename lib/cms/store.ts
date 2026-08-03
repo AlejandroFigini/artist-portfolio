@@ -529,11 +529,14 @@ export function syncCloudinaryFolders(): number {
 
   const normalizeUrl = (url: string | undefined) => {
     if (!url) return ''
-    let clean = url
-    if (clean.includes('cloudinary.com')) {
-      clean = clean.replace(/\/v\d+\//, '/')
+    try {
+      const pathname = new URL(url, 'http://localhost').pathname
+      const parts = pathname.split('/')
+      return parts[parts.length - 1]
+    } catch {
+      const parts = url.split('/')
+      return parts[parts.length - 1]
     }
-    try { return new URL(clean, 'http://localhost').pathname } catch { return clean }
   }
 
   const processedSrc = new Set<string>()

@@ -650,14 +650,18 @@ export function seedUsedContent() {
     }
   })
 
-  // Helper to normalize Cloudinary URLs (strip version numbers and query strings)
+  // Helper to normalize Cloudinary URLs by extracting just the filename (e.g. image_abc123.jpg)
+  // This ensures that even if an image is in a different folder or has a version tag, it matches.
   const normalizeUrl = (url: string | undefined) => {
     if (!url) return ''
-    let clean = url
-    if (clean.includes('cloudinary.com')) {
-      clean = clean.replace(/\/v\d+\//, '/')
+    try {
+      const pathname = new URL(url, 'http://localhost').pathname
+      const parts = pathname.split('/')
+      return parts[parts.length - 1]
+    } catch {
+      const parts = url.split('/')
+      return parts[parts.length - 1]
     }
-    try { return new URL(clean, 'http://localhost').pathname } catch { return clean }
   }
 
   // Prevent active content from appearing in Unused or Trash
