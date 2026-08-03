@@ -230,7 +230,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       }
 
       if (selected._state === 'sin usar') {
-        const idx = state.unused.findIndex(u => u.src === src)
+        const idx = state.unused.findIndex(u => u.src === src || u.dataUrl === src)
         if (idx !== -1) {
           state.unused.splice(idx, 1)
           persistUnused()

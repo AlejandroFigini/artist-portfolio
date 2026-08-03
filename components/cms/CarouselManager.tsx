@@ -127,6 +127,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
 
     // 4. Limpiar TODAS las keys asociadas a este carrusel
     allKnownSlideKeys.forEach((k) => {
+      if (!finalSlides.includes(k)) archiveMediaKey(k, 'deleted')
       delete state.items[k]
       delete state.usedContent[k]
     })

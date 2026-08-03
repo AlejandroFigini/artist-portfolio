@@ -164,13 +164,14 @@ export function loadState() {
 
 import { saveState, getState, saveContent, type CmsStatePayload, moveMedia, verifyMedia } from '@/lib/api'
 
-let _syncTimer: ReturnType<typeof setTimeout> | null = null
+let _syncTimer: NodeJS.Timeout | null = null
+let _flushPromise: Promise<void> | null = null
 const _pendingKeys = new Set<string>()
 
 export function scheduleSyncToServer(...keys: string[]) {
   keys.forEach((k) => _pendingKeys.add(k))
   if (_syncTimer) clearTimeout(_syncTimer)
-  _syncTimer = setTimeout(flushSyncToServer, 500)
+  _syncTimer = setTimeout(() => { flushSyncToServer().catch(() => {}) }, 500)
 }
 
 if (typeof window !== 'undefined') {
@@ -183,8 +184,11 @@ if (typeof window !== 'undefined') {
 }
 
 export function flushSyncToServer(): Promise<void> {
-  _syncTimer = null
-  if (!state.isAdmin || _pendingKeys.size === 0) return Promise.resolve()
+  if (_syncTimer) {
+    clearTimeout(_syncTimer)
+    _syncTimer = null
+  }
+  if (!state.isAdmin || _pendingKeys.size === 0) return _flushPromise || Promise.resolve()
   const payload: CmsStatePayload = {}
   let syncOverrides = false
   for (const k of _pendingKeys) {
@@ -199,9 +203,15 @@ export function flushSyncToServer(): Promise<void> {
   }
   _pendingKeys.clear()
   const promises: Promise<any>[] = []
+  if (_flushPromise) promises.push(_flushPromise.catch(() => {}))
   if (Object.keys(payload).length > 0) promises.push(saveState(payload).catch(() => {}))
   if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
-  return Promise.all(promises).then(() => {})
+  
+  _flushPromise = Promise.all(promises).then(() => {})
+  _flushPromise.finally(() => {
+    setTimeout(() => { _flushPromise = null }, 0)
+  })
+  return _flushPromise
 }
 
 export const persistAudit = () => { scheduleSyncToServer('audit') }
