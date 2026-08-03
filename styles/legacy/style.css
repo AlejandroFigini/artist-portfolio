@@ -93,7 +93,7 @@ html {
     -moz-osx-font-smoothing: grayscale;
 }
 
-html, body { overflow-x: hidden; } body {
+body { overflow-x: hidden;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.8;
@@ -2810,7 +2810,7 @@ body.nav-open .nav-backdrop {
         height: 100vh;
         height: 100dvh;
         width: min(75vw, 280px); /* Hachicar un poco el ancho del menú */
-        padding: 4.5rem 1.5rem 2rem; /* Aumentado padding top para no chocar con el logo y boton X */
+        padding: 3rem 1.5rem 2rem; /* Reducido para pantallas cortas, el logo ya no estǭ en el drawer */
         background: var(--bg-primary);
         box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
         transform: translateX(-100%);
@@ -3313,7 +3313,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     flex-direction: column;
     overflow: hidden !important;
 }
-.cms-modal--repo-picker .cms-modal-html, body { overflow-x: hidden; } body {
+.cms-modal--repo-picker .cms-modal-body {
     flex: 1 !important;
     min-height: 0 !important;
     overflow: hidden !important;
@@ -3716,7 +3716,7 @@ body.is-admin .cms-mount.cms-empty-slot {
     overflow: hidden;
     padding: 1.7rem;
 }
-.cms-modal-html, body { overflow-x: hidden; } body {
+.cms-modal-body {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
@@ -3724,7 +3724,7 @@ body.is-admin .cms-mount.cms-empty-slot {
 }
 
 /* Scrollbar del modal: fina, sin flechas y con track transparente */
-.cms-modal-html, body { overflow-x: hidden; } body { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.cms-modal-body { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .cms-modal-body::-webkit-scrollbar { width: 8px; }
 .cms-modal-body::-webkit-scrollbar-button { display: none; height: 0; }
 .cms-modal-body::-webkit-scrollbar-track { background: transparent; }
@@ -4760,7 +4760,7 @@ body.cms-modal-open { overflow: hidden; }
 .cms-mlib-restore:hover { background: var(--accent); color: #fff; }
 
 /* Aviso destacado dentro de un modal de confirmaciÃ³n */
-.cms-confirm-html, body { overflow-x: hidden; } body { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5; }
+.cms-confirm-body { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5; }
 .cms-confirm-body strong { color: var(--text-primary); }
 .cms-confirm-warn {
     display: flex;
@@ -6125,7 +6125,7 @@ body.hide-cms-controls .cms-placeholder-inner {
     flex-shrink: 0;
 }
 
-.ga-stat-html, body { overflow-x: hidden; } body {
+.ga-stat-body {
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
@@ -6544,7 +6544,7 @@ select.ga-metric-select option {
   justify-content: center;
 }
 
-.ga-realtime-card-html, body { overflow-x: hidden; } body {
+.ga-realtime-card-body {
   display: flex;
   align-items: center;
   gap: 3rem;
@@ -6671,7 +6671,7 @@ select.ga-metric-select option {
 }
 
 @media (max-width: 768px) {
-  .ga-realtime-card-html, body { overflow-x: hidden; } body {
+  .ga-realtime-card-body {
     flex-direction: column;
     align-items: flex-start;
     gap: 1.5rem;
@@ -6687,9 +6687,12 @@ select.ga-metric-select option {
 
 
 
-@media (max-width: 992px) { body.nav-open header { border-bottom: none !important; box-shadow: none !important; } body.nav-open .nav-progress { display: none !important; } }
+@media (max-width: 992px) { .mobile-drawer-logo { display: none !important; } body.nav-open header { border-bottom: none !important; box-shadow: none !important; } body.nav-open .nav-progress { display: none !important; } }
 @media (min-width: 993px) { .mobile-drawer-logo, .mobile-drawer-actions { display: none !important; } }
-@media (max-width: 450px) { .logo { font-size: clamp(0.85rem, 4vw, 0.95rem) !important; } .logo span.highlight { font-size: clamp(0.55rem, 3vw, 0.65rem) !important; } .nav-actions { gap: 0.15rem !important; } .nav-actions .cv-min-btn, .nav-actions .cms-navauth-btn, .nav-actions .login-min-btn { width: 28px !important; height: 28px !important; padding: 0 !important; } .nav-actions .lang-btn { width: auto !important; padding: 0 0.4rem !important; height: 28px !important; } .nav-actions i { font-size: 0.8rem !important; } .mobile-drawer-logo, .mobile-drawer-logo span.inline-highlight { font-size: 0.85rem !important; } .mobile-drawer-logo { left: 3.8rem !important; } }
+@media (max-width: 450px) { .logo { font-size: clamp(0.85rem, 4vw, 0.95rem) !important; } .logo span.highlight { font-size: clamp(0.55rem, 3vw, 0.65rem) !important; } .nav-actions { gap: 0.15rem !important; } .nav-actions .cv-min-btn, .nav-actions .cms-navauth-btn, .nav-actions .login-min-btn { width: 28px !important; height: 28px !important; padding: 0 !important; } .nav-actions .lang-btn { width: auto !important; padding: 0 0.4rem !important; height: 28px !important; } .nav-actions i { font-size: 0.8rem !important; } }
 
-/* Anular efectos hover en el menu movil */
-@media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(1rem, 4vw, 1.25rem) !important; } }
+/* Anular efectos hover en el menu movil y reducir tamaos para que quepa en iPhone SE */
+@media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important; padding: 0.4rem 0 !important; margin-top: 0 !important; } .nav-links .dropdown-content a { font-size: 0.85rem !important; padding: 0.25rem 0 !important; } }
+
+
+
