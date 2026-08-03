@@ -215,54 +215,56 @@ export default function Nav() {
             <div className="logo mobile-drawer-logo" onClick={closeNav}>
               Lucia Montaña <span className="separator">|</span> <span className="highlight inline-highlight">Portfolio</span>
             </div>
-            <Link href="/" data-i18n="nav_feed" onClick={closeNav}>Feed</Link>
-            <div className={`dropdown${dropdown === 'gallery' ? ' open' : ''}`}>
-              <div
-                className="dropbtn"
-                id="gallery-label"
-                onClick={(e) => { e.stopPropagation(); toggleDropdown('gallery') }}
-              >
-                <span data-i18n="nav_gallery">Gallery</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+            <div className="nav-menu-scrollable">
+              <Link href="/" data-i18n="nav_feed" onClick={closeNav}>Feed</Link>
+              <div className={`dropdown${dropdown === 'gallery' ? ' open' : ''}`}>
+                <div
+                  className="dropbtn"
+                  id="gallery-label"
+                  onClick={(e) => { e.stopPropagation(); toggleDropdown('gallery') }}
+                >
+                  <span data-i18n="nav_gallery">Gallery</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                </div>
+                <div className="dropdown-content">
+                  {GALLERY_LINKS.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className={pathname === l.href ? 'active' : undefined}
+                      onClick={closeNav}
+                    >
+                      <i className={`fa-solid ${l.icon}`}></i> <span data-i18n={l.i18n}>{l.label}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <div className="dropdown-content">
-                {GALLERY_LINKS.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className={pathname === l.href ? 'active' : undefined}
-                    onClick={closeNav}
-                  >
-                    <i className={`fa-solid ${l.icon}`}></i> <span data-i18n={l.i18n}>{l.label}</span>
-                  </Link>
-                ))}
+              <div className={`dropdown${dropdown === 'portfolio' ? ' open' : ''}`}>
+                <div
+                  className="dropbtn"
+                  onClick={(e) => { e.stopPropagation(); toggleDropdown('portfolio') }}
+                >
+                  <span data-i18n="nav_portfolio">Portfolio</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                </div>
+                <div className="dropdown-content">
+                  {portfolioNets.map((n) => (
+                    n.type === 'email' ? (
+                      <a key={n.id} href="#" onClick={(e) => { e.preventDefault(); setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}>
+                        <i className={`fa-solid ${n.icon}`}></i> {n.label}
+                      </a>
+                    ) : (
+                      <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', `social_click_${n.id}`)}>
+                        <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
+                      </a>
+                    )
+                  ))}
+                </div>
               </div>
+              <Link href="/about" data-i18n="nav_about" onClick={closeNav}>About me</Link>
+              <Link href="/#contacto" data-i18n="nav_contact" onClick={closeNav}>Contact</Link>
+              {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
+              {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
+              <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
             </div>
-            <div className={`dropdown${dropdown === 'portfolio' ? ' open' : ''}`}>
-              <div
-                className="dropbtn"
-                onClick={(e) => { e.stopPropagation(); toggleDropdown('portfolio') }}
-              >
-                <span data-i18n="nav_portfolio">Portfolio</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
-              </div>
-              <div className="dropdown-content">
-                {portfolioNets.map((n) => (
-                  n.type === 'email' ? (
-                    <a key={n.id} href="#" onClick={(e) => { e.preventDefault(); setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}>
-                      <i className={`fa-solid ${n.icon}`}></i> {n.label}
-                    </a>
-                  ) : (
-                    <a key={n.id} href={socialHref(n, links[n.id]) || n.home} target="_blank" rel="noopener noreferrer" onClick={() => sendGAEvent('event', `social_click_${n.id}`)}>
-                      <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon}`}></i> {n.label}
-                    </a>
-                  )
-                ))}
-              </div>
-            </div>
-            <Link href="/about" data-i18n="nav_about" onClick={closeNav}>About me</Link>
-            <Link href="/#contacto" data-i18n="nav_contact" onClick={closeNav}>Contact</Link>
-            {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
-            {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
-            <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
             
             {/* Acciones móviles (duplicadas de la barra superior) */}
             <div className="mobile-drawer-actions">

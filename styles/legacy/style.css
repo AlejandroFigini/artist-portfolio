@@ -1,4 +1,4 @@
-﻿/* Variables y Tema (Paleta Limpia y Moderna) */
+/* Variables y Tema (Paleta Limpia y Moderna) */
 :root, [data-theme="dark"] {
     /* Tema Claro: Blanco y Violeta */
     --bg-primary: #ffffff;
@@ -2815,7 +2815,7 @@ body.nav-open .nav-backdrop {
         box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
         transform: translateX(-100%);
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: auto;
+        overflow-y: hidden !important; /* Ahora el scroll interno lo maneja .nav-menu-scrollable */
         z-index: 1500;
     }
 
@@ -6688,6 +6688,28 @@ select.ga-metric-select option {
 
 /* Anular efectos hover en el menu movil y reducir tamaos para que quepa en iPhone SE */
 @media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important; padding: 0.4rem 0 !important; margin-top: 0 !important; } .nav-links .dropdown-content a { font-size: 0.85rem !important; padding: 0.25rem 0 !important; } }
+
+/* ============================================================================
+   NUEVO LAYOUT 3-BLOQUES PARA EL DRAWER MÓVIL
+   ============================================================================ */
+@media (max-width: 992px) {
+    .nav-menu-scrollable {
+        flex: 1 1 auto; /* Toma todo el espacio disponible entre logo y footer */
+        overflow-y: auto; /* Solo esta seccin hace scroll */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    /* Estilizar scrollbar para que sea discreta (Webkit) */
+    .nav-menu-scrollable::-webkit-scrollbar { width: 4px; }
+    .nav-menu-scrollable::-webkit-scrollbar-track { background: transparent; }
+    .nav-menu-scrollable::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+}
+@media (min-width: 993px) {
+    /* En desktop, este div es invisible al DOM flow y no rompe el navbar flex */
+    .nav-menu-scrollable { display: contents; }
+}
 
 
 
