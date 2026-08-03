@@ -414,7 +414,7 @@ export function AppleIconSettings() {
   return (
     <div className="admin-card" id="ajustes-apple-icon">
       <div className="admin-card-head">
-        <h2><i className="fa-brands fa-apple"></i> Apple Touch Icon
+        <h2><i className="fa-solid fa-magnifying-glass"></i> Search Engine Icon
           <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon for Google Search and mobile bookmarks.">
             <i className="fa-solid fa-circle-info"></i>
             <span className="cms-info-bubble" role="tooltip">Customize the icon for Google Search and mobile bookmarks.</span>
@@ -445,7 +445,7 @@ export function AppleIconSettings() {
             data-cms-key="settings.appleIconUrl"
             className="apple-icon-preview-img"
             src={currentAppleIcon || '/favicon.ico'}
-            alt="Apple Icon preview"
+            alt="Search Engine Icon preview"
             style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', background: currentAppleIcon ? 'transparent' : '#fff' }}
           />
         </div>
@@ -455,7 +455,7 @@ export function AppleIconSettings() {
               Ícono para Google Search y Móviles
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
-              Se muestra en los resultados de Google y cuando guardan tu sitio en el celular. Sube un CUADRADO sólido (sin transparencias). Si no subes ninguno, se usa el Favicon.
+              Se muestra en los resultados de búsqueda. Sube un cuadrado sólido. Si no subes ninguno, se usa el Favicon.
             </div>
           </div>
           
@@ -466,7 +466,7 @@ export function AppleIconSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar Apple Touch Icon'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar ícono'}
             </button>
           </div>
         </div>

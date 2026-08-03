@@ -176,6 +176,7 @@ type RegistryEntry = {
 const REGISTRY: RegistryEntry[] = [
   { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Loading Screen' },
   { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Page Favicon' },
+  { base: 'settings.appleIconUrl', sel: '.apple-icon-preview-img', kind: 'image', accept: 'png,ico,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Search Engine Icon' },
   { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Main)', label: (el, i) => `Main Carousel Image #${i + 1}` },
   { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Secondary)', label: (el, i) => `Secondary Carousel Image #${i + 1}` },
   { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Hero', fields: WAVE_FIELDS, label: (el, i) => `Wave Tool #${(i % 11) + 1}` },
