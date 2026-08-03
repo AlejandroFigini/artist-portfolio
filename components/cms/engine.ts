@@ -11,7 +11,8 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer,
+  persistTrash
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -648,6 +649,26 @@ export function seedUsedContent() {
       changed = true
     }
   })
+
+  // Prevent active content from appearing in Unused or Trash
+  const activeSrcs = new Set<string>()
+  Object.values(state.usedContent).forEach((u) => {
+    if (u && u.src) activeSrcs.add(u.src)
+  })
+
+  const initialUnusedCount = state.unused.length
+  state.unused = state.unused.filter(u => !activeSrcs.has(u.src!))
+  if (state.unused.length !== initialUnusedCount) {
+    persistUnused()
+    changed = true
+  }
+
+  const initialTrashCount = state.trash.length
+  state.trash = state.trash.filter(t => !activeSrcs.has(t.src!))
+  if (state.trash.length !== initialTrashCount) {
+    persistTrash()
+    changed = true
+  }
 
   if (changed) { persistUsed(); emit() }
 }
