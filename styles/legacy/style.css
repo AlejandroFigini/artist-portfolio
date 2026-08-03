@@ -2898,7 +2898,7 @@ body.nav-open .nav-backdrop {
     }
 
     /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÃ“VIL --- */
-    .mobile-drawer-logo { position: relative !important; top: auto !important; left: auto !important; height: auto !important; margin: 0 0 1rem 3rem !important;
+    .mobile-drawer-logo { position: relative !important; top: auto !important; left: auto !important; height: auto !important; margin: -2rem 0 1.5rem 3rem !important;
         display: flex;
         flex-direction: row; /* En una sola lÃ­nea */
         justify-content: flex-start;
@@ -6688,6 +6688,7 @@ select.ga-metric-select option {
 
 /* Anular efectos hover en el menu movil y reducir tamaos para que quepa en iPhone SE */
 @media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important; padding: 0.4rem 0 !important; margin-top: 0 !important; } .nav-links .dropdown-content a { font-size: 0.85rem !important; padding: 0.25rem 0 !important; } }
+
 
 
 
