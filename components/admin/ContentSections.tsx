@@ -908,6 +908,24 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
               <button type="button" className="cms-btn cms-btn--sm" onClick={() => exportCms(close)}>
                 <i className="fa-solid fa-file-export"></i> Export Management
               </button>
+              <button type="button" className="cms-btn cms-btn--sm" onClick={async () => {
+                close()
+                toast('Generating ZIP archive URL...', 'info')
+                try {
+                  const res = await fetch('/api/download-repo')
+                  const data = await res.json()
+                  if (data.url) {
+                    window.open(data.url, '_blank')
+                    toast('Download started', 'success')
+                  } else {
+                    throw new Error(data.error || 'Unknown error')
+                  }
+                } catch (e: any) {
+                  toast(`Download failed: ${e.message}`, 'error')
+                }
+              }}>
+                <i className="fa-solid fa-file-zipper"></i> Download ZIP
+              </button>
               <button type="button" className="cms-btn cms-btn--sm cms-btn--primary" onClick={() => compareSync(close)} disabled={syncing}>
                 <i className={`fa-solid ${syncing ? 'fa-spinner fa-spin' : 'fa-magnifying-glass-chart'}`}></i> {syncing ? 'Comparing...' : 'Compare Sync'}
               </button>
