@@ -650,21 +650,41 @@ export function seedUsedContent() {
     }
   })
 
+  // Helper to normalize Cloudinary URLs (strip version numbers and query strings)
+  const normalizeUrl = (url: string | undefined) => {
+    if (!url) return ''
+    let clean = url
+    if (clean.includes('cloudinary.com')) {
+      clean = clean.replace(/\/v\d+\//, '/')
+    }
+    try { return new URL(clean, 'http://localhost').pathname } catch { return clean }
+  }
+
   // Prevent active content from appearing in Unused or Trash
   const activeSrcs = new Set<string>()
   Object.values(state.usedContent).forEach((u) => {
-    if (u && u.src) activeSrcs.add(u.src)
+    if (u && u.src) activeSrcs.add(normalizeUrl(u.src))
   })
 
   const initialUnusedCount = state.unused.length
-  state.unused = state.unused.filter(u => !activeSrcs.has(u.src!))
+  state.unused = state.unused.filter(u => {
+    const normSrc = normalizeUrl(u.src)
+    const normDataUrl = normalizeUrl(u.dataUrl)
+    return !activeSrcs.has(normSrc) && !activeSrcs.has(normDataUrl)
+  })
+  
   if (state.unused.length !== initialUnusedCount) {
     persistUnused()
     changed = true
   }
 
   const initialTrashCount = state.trash.length
-  state.trash = state.trash.filter(t => !activeSrcs.has(t.src!))
+  state.trash = state.trash.filter(t => {
+    const normSrc = normalizeUrl(t.src)
+    const normDataUrl = normalizeUrl(t.dataUrl)
+    return !activeSrcs.has(normSrc) && !activeSrcs.has(normDataUrl)
+  })
+  
   if (state.trash.length !== initialTrashCount) {
     persistTrash()
     changed = true
