@@ -128,24 +128,24 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         }
 
         const finalType = isFavicon ? 'image/png' : (file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'))
+        const entry = {
+          key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+          src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
+          ts: Date.now(), type: finalType,
+        }
+        
+        state.usedContent[cmsKey] = entry
+        persistUsed()
+        
         if (cmsKey === 'loader.gallop' || cmsKey === 'settings.faviconUrl') {
-          const entry = {
-            key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-            src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
-            ts: Date.now(), type: finalType,
-          }
-          if (!state.unused.some(u => u.src === data.secure_url)) {
-            state.unused.unshift(entry)
+          // Remove from unused if it was there
+          const idx = state.unused.findIndex(u => u.src === data.secure_url)
+          if (idx !== -1) {
+            state.unused.splice(idx, 1)
             persistUnused()
           }
-        } else {
-          state.usedContent[cmsKey] = {
-            key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-            src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
-            ts: Date.now(), type: finalType,
-          }
-          persistUsed()
         }
+        
         recordMediaMeta(cmsKey, data.secure_url, { name: finalName, size: data.final_bytes, type: finalType, label: meta.label, section: meta.section })
 
         const ri = state.retired.indexOf(cmsKey)

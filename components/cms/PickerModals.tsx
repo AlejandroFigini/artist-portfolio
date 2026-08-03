@@ -212,37 +212,36 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     state.items[cmsKey] = src
     applyMedia(cmsKey, src)
 
+    if (moveFromOld && selected._key && selected._key !== cmsKey) {
+      delete state.usedContent[selected._key]
+      delete state.items[selected._key]
+      if (!state.retired.includes(selected._key)) state.retired.push(selected._key)
+      applyMedia(selected._key, '')
+    }
+
+    archiveMediaKey(cmsKey, 'replaced')
+
+    state.usedContent[cmsKey] = {
+      key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+      src, name: selected.name || 'media', size: selected.size ?? null, original: false,
+      fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
+      ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+    }
+
+    if (selected._state === 'sin usar') {
+      const idx = state.unused.findIndex(u => u.src === src || u.dataUrl === src)
+      if (idx !== -1) {
+        state.unused.splice(idx, 1)
+        persistUnused()
+      }
+    }
+
+    persistUsed()
+    cloudinaryMove(src, getCloudinaryFolder(meta.section))
+    recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
     if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
-      if (moveFromOld && selected._key && selected._key !== cmsKey) {
-        delete state.usedContent[selected._key]
-        delete state.items[selected._key]
-        if (!state.retired.includes(selected._key)) state.retired.push(selected._key)
-        applyMedia(selected._key, '')
-      }
-
-      archiveMediaKey(cmsKey, 'replaced')
-
-      state.usedContent[cmsKey] = {
-        key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
-        src, name: selected.name || 'media', size: selected.size ?? null, original: false,
-        fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
-        ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
-      }
-
-      if (selected._state === 'sin usar') {
-        const idx = state.unused.findIndex(u => u.src === src || u.dataUrl === src)
-        if (idx !== -1) {
-          state.unused.splice(idx, 1)
-          persistUnused()
-        }
-      }
-
-      persistUsed()
-      cloudinaryMove(src, getCloudinaryFolder(meta.section))
-      recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
       persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
     } else {
-      recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
       emit()
     }
 

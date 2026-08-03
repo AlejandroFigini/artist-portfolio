@@ -577,7 +577,6 @@ export function seedUsedContent() {
   const allKeys = new Set([...Object.keys(elementsByKey), ...getAllKnownContainerKeys()])
   allKeys.forEach((key) => {
     if (state.retired.includes(key)) return
-    if (key === 'loader.gallop' || key === 'settings.faviconUrl') return
     const el = elementsByKey[key] || null
     const meta = metaByKey[key] || getContainerMeta(key)
     if (!meta || (meta.kind !== 'image' && meta.kind !== 'video')) return
@@ -635,7 +634,6 @@ export function seedUsedContent() {
   // contenido en state.items NI tiene elemento DOM, la entrada es un
   // remanente de un reordenamiento o eliminación → purgarla.
   Object.keys(state.usedContent).forEach((key) => {
-    if (key === 'loader.gallop' || key === 'settings.faviconUrl') return
     if (!allKeys.has(key)) {
       // Key completamente desconocida (no está en ningún registro)
       delete state.usedContent[key]
