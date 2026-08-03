@@ -237,28 +237,16 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
     const map = new Map<string, AnyEntry>()
     for (const e of usedArr) {
       const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
-      const section = (e as any).section || 'unknown'
-      const dupKey = `${src}::${section}`
-      if (!map.has(dupKey)) {
-        map.set(dupKey, e)
+      if (!map.has(src)) {
+        map.set(src, e)
       }
     }
     return Array.from(map.values())
   }, [usedArr])
 
-  const srcToSections = useMemo(() => {
-    const map = new Map<string, Set<string>>()
-    for (const e of usedArr) {
-      const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
-      const section = (e as any).section || 'unknown'
-      if (!map.has(src)) map.set(src, new Set())
-      map.get(src)!.add(section)
-    }
-    return map
-  }, [usedArr])
+
   const count = sel.selected.length
   const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
-  const [openSecs, setOpenSecs] = useState<Set<string>>(() => new Set())
   const tree = buildPageTree(deduplicatedArr)
 
   const getItemSelKey = (it: AnyEntry) => it.src || (it as { key?: string }).key || ''
@@ -311,23 +299,19 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
       <div className="admin-tree">
         {tree.map((page) => {
           const pOpen = openPages.has(page.id)
-          const pageKeys = page.sections.flatMap((s) => s.items.map(getItemSelKey))
+          const pageKeys = page.items.map(getItemSelKey)
           const pageAllSelected = pageKeys.length > 0 && pageKeys.every((k) => sel.isSel('used', k))
-          const closePage = () => {
-            toggleInSet(setOpenPages, page.id)
-            if (pOpen) {
-              // al colapsar la página, sus secciones vuelven a quedar cerradas
-              setOpenSecs((prev) => {
-                const n = new Set(prev)
-                page.sections.forEach((s) => n.delete(`${page.id}:${s.id}`))
-                return n
-              })
+          const closePage = () => toggleInSet(setOpenPages, page.id)
+          
+          let pageReusedCount = 0
+          page.items.forEach(item => {
+            const src = item.src || item.dataUrl || (item as any).key || ''
+            // In the page context, reused is total usages - 1
+            const allOccurrences = usedArr.filter(u => (u.src || u.dataUrl || (u as any).key || '') === src)
+            if (allOccurrences.length > 1) {
+              pageReusedCount += (allOccurrences.length - 1)
             }
-          }
-          const pageAllItems = page.sections.flatMap((s) => s.items)
-          const pageUniqueSrcs = new Set(pageAllItems.map(item => item.src || item.dataUrl || (item as any).key || ''))
-          const pageUniqueCount = pageUniqueSrcs.size
-          const pageReusedCount = pageAllItems.length - pageUniqueCount
+          })
 
           return (
             <div className="admin-tree-page" key={page.id}>
@@ -343,12 +327,12 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                   <span className="admin-tree-label">{page.label}</span>
                   {page.count > 0 && (
                     <span className="admin-badge">
-                      {pageUniqueCount} {pageUniqueCount === 1 ? 'file' : 'files'}
+                      {page.count} {page.count === 1 ? 'file' : 'files'}
                       {pageReusedCount > 0 && (
                         <span className="cms-info-tip" style={{ marginLeft: '4px', verticalAlign: 'middle' }} tabIndex={0}>
                           <span style={{ opacity: 0.7, cursor: 'help' }}>(+{pageReusedCount} reused)</span>
                           <span className="cms-info-bubble" role="tooltip" style={{ fontWeight: 'normal', textTransform: 'none', whiteSpace: 'normal', minWidth: '220px' }}>
-                            This page contains {pageUniqueCount} unique files. An additional {pageReusedCount} usages come from repeating those same files within the page.
+                            This page contains {page.count} unique files. An additional {pageReusedCount} usages come from repeating those same files within the page.
                           </span>
                         </span>
                       )}
@@ -367,64 +351,11 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
               </div>
               {pOpen && (
                 <div className="admin-tree-sections">
-                  {page.sections.length === 0 && (
-                    <p className="cms-admin-sub admin-tree-empty">This page has no sections yet.</p>
-                  )}
-                  {page.sections.map((s) => {
-                    const sid = `${page.id}:${s.id}`
-                    const sOpen = openSecs.has(sid)
-                    const secKeys = s.items.map(getItemSelKey)
-                    const secAllSelected = secKeys.length > 0 && secKeys.every((k) => sel.isSel('used', k))
-                    let reusedCount = 0
-                    s.items.forEach(item => {
-                      const src = item.src || item.dataUrl || (item as any).key || ''
-                      if ((srcToSections.get(src)?.size || 0) > 1) reusedCount++
-                    })
-
-                    return (
-                      <div className="admin-tree-section" key={sid}>
-                        <div className={`admin-tree-row admin-tree-row--section${sOpen ? ' open' : ''}`}>
-                          <button
-                            type="button" className="admin-tree-rowbtn"
-                            onClick={() => toggleInSet(setOpenSecs, sid)}
-                            aria-expanded={sOpen}
-                          >
-                            <i className="fa-solid fa-chevron-right admin-tree-caret"></i>
-                            <span className="admin-tree-label">{s.label}</span>
-                            {s.count > 0 && (
-                              <span className="admin-badge">
-                                {s.count} {s.count === 1 ? 'file' : 'files'}
-                                {reusedCount > 0 && (
-                                  <span className="cms-info-tip" style={{ marginLeft: '4px', verticalAlign: 'middle' }} tabIndex={0}>
-                                    <span style={{ opacity: 0.7, cursor: 'help' }}>({reusedCount} reused)</span>
-                                    <span className="cms-info-bubble" role="tooltip" style={{ fontWeight: 'normal', textTransform: 'none', whiteSpace: 'normal', minWidth: '220px' }}>
-                                      This section has {s.count} total files, but {reusedCount} of them are also being used in other sections.
-                                    </span>
-                                  </span>
-                                )}
-                                {' · '}{fmtBytes(s.size)}
-                              </span>
-                            )}
-                          </button>
-                          {sel.multiSelect && s.count > 0 && (
-                            <input
-                              type="checkbox" title="Select entire section" className="cms-check cms-check--all"
-                              checked={secAllSelected}
-                              onChange={(ev) => secKeys.forEach((k) => sel.toggle('used', k, ev.target.checked))}
-                            />
-                          )}
-                        </div>
-                        {sOpen && (
-
-                          <div className="admin-tree-content">
-                            {s.count === 0
-                              ? <p className="cms-admin-sub admin-tree-empty">No content in this section.</p>
-                              : <div className="cms-mlib-grid">{s.items.map(renderCard)}</div>}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                  <div className="admin-tree-content" style={{ marginTop: '0.5rem' }}>
+                    {page.count === 0
+                      ? <p className="cms-admin-sub admin-tree-empty">No content in this page.</p>
+                      : <div className="cms-mlib-grid">{page.items.map(renderCard)}</div>}
+                  </div>
                 </div>
               )}
             </div>
