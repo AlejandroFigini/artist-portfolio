@@ -178,7 +178,7 @@ export default function Nav() {
       <header ref={headerRef}>
         <div className="nav-container">
           <Link href="/" className="logo" onClick={closeNav}>
-            Lucia Montaña <span className="highlight">| Portfolio</span>
+            Lucia Montaña <span className="highlight"><span className="logo-sep">|</span> Portfolio</span>
           </Link>
           <button
             className="nav-toggle"
@@ -190,6 +190,9 @@ export default function Nav() {
             <span></span><span></span><span></span>
           </button>
           <nav className="nav-links" ref={linksRef}>
+            <div className="logo mobile-drawer-logo" onClick={closeNav}>
+              Lucia Montaña <span className="separator">|</span> <span className="highlight inline-highlight">Portfolio</span>
+            </div>
             <Link href="/" data-i18n="nav_feed" onClick={closeNav}>Feed</Link>
             <div className={`dropdown${dropdown === 'gallery' ? ' open' : ''}`}>
               <div
@@ -238,6 +241,52 @@ export default function Nav() {
             {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
             {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
             <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
+            
+            {/* Acciones móviles (duplicadas de la barra superior) */}
+            <div className="mobile-drawer-actions">
+              <button
+                type="button"
+                className="cv-min-btn"
+                onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
+              >
+                <i className="fa-solid fa-envelope"></i><span>Email</span>
+              </button>
+              <a
+                className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`}
+                href={settings.cvUrl || undefined}
+                download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+                target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
+                onClick={() => sendGAEvent('event', 'cv_download')}
+              >
+                <i className="fa-solid fa-file-arrow-down"></i><span>CV</span>
+              </a>
+              <button
+                className="login-min-btn"
+                onClick={() => { closeNav(); document.querySelector<HTMLButtonElement>('#cms-auth-nav button')?.click(); }}
+              >
+                <i className="fa-solid fa-right-to-bracket"></i><span>Log in</span>
+              </button>
+              <div className="lang-selector-nav mobile-lang" style={{ display: 'flex' }}>
+                <button
+                  className="lang-btn"
+                  onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
+                >
+                  <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" />
+                  <span className="lang-code">{state.lang.toUpperCase()}</span>
+                </button>
+                <div className={`lang-dropdown${langOpen ? ' active' : ''}`}>
+                  {ALL_LANGS.map((code) => (
+                    <button
+                      key={code}
+                      className="lang-option"
+                      onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
+                    >
+                      <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </nav>
           <div className="nav-actions">
             <button
@@ -246,7 +295,6 @@ export default function Nav() {
               onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
               title="Contact me"
               aria-label="Contact me"
-              style={{ marginRight: '0.5rem' }}
             >
               <i className="fa-solid fa-envelope"></i>
               <span>Email</span>

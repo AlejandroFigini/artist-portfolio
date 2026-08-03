@@ -2677,7 +2677,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 /* ============================================================
-   CARGA SUAVE DE IMÃGENES (anti "pop-in")
+   CARGA SUAVE DE IMÃ GENES (anti "pop-in")
    Placeholder + fundido de entrada cuando la imagen termina de cargar.
    ============================================================ */
 
@@ -2701,7 +2701,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 .nav-toggle span {
     display: block;
     width: 26px;
-    height: 2px;
+    height: 1px;
     margin: 0 auto;
     background: var(--text-primary);
     border-radius: 2px;
@@ -2715,9 +2715,9 @@ body.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate
 .nav-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(10, 1, 24, 0.5);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: rgba(10, 1, 24, 0.6); /* Color más gris/translúcido según preferencia */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -2740,23 +2740,65 @@ body.nav-open .nav-backdrop {
 /* Tablet y abajo */
 
 @media (max-width: 768px) {
-    /* El selector de idioma del top bar es redundante en mÃ³vil (hay otro en
-       el panel de Ajustes). Se oculta para liberar ancho. */
-    .lang-selector-nav { display: none; }
-
-    /* Layout mÃ³vil (flujo normal, sin order ni absolute). El margin-right:auto
-       va en el LOGO (primer Ã­tem): empuja el resto a la derecha y los Ã­tems se
-       acomodan hacia el borde sin desbordar. Orden DOM: logo, hamburguesa,
-       acciones â†’ [logo] ... [â˜° CV login]. */
-    /* Barra: logo a la izquierda; orden a la derecha = CV/login, luego hamburguesa */
-    .logo { margin-right: auto; flex: 0 0 auto; order: 0; }
-
-    .nav-toggle {
-        display: flex;
-        margin-right: 0;
-        order: 3;
+    /* Oscurecer la barra superior (como el resto de la página) al abrir el menú, 
+       usando una capa que cubre el logo y el fondo pero queda debajo del drawer (1500) 
+       y del botón hamburguesa (1600) */
+    header::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(10, 1, 24, 0.6); /* mismo oscuro que nav-backdrop */
+        z-index: 1450;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    body.nav-open header::after {
+        opacity: 1;
+        visibility: visible;
     }
 
+    /* Optimización del logo */
+    .logo { 
+        font-size: 1.1rem;
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+        justify-content: center;
+        margin-right: auto; /* Pegado al icono de abrir menu */
+        flex: 0 0 auto; 
+        order: 1; 
+    }
+    .logo span.highlight {
+        display: block;
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
+        color: var(--accent);
+        font-weight: 500;
+        letter-spacing: 0.12em;
+    }
+    .logo .logo-sep {
+        display: none;
+    }
+
+    /* Barra: hamburger (0) y logo (1) */
+    .nav-toggle {
+        display: flex;
+        margin-right: 1rem;
+        order: 0;
+        z-index: 1600;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    /* El botón flotante de settings debe desaparecer al abrir el menú */
+    body.nav-open .settings-gear {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* Menú desplegable principal */
     .nav-links {
         display: flex !important;
         flex-direction: column;
@@ -2764,26 +2806,56 @@ body.nav-open .nav-backdrop {
         gap: 0.4rem;
         position: fixed;
         top: 0;
-        right: 0;
+        left: 0;
         height: 100vh;
         height: 100dvh;
-        width: min(82vw, 320px);
-        padding: 5.5rem 1.5rem 2rem;
-        background: var(--header-bg);
-        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.25);
-        transform: translateX(100%);
+        width: min(75vw, 280px); /* Hachicar un poco el ancho del menú */
+        padding: 2.5rem 1.5rem 2rem; /* Menos padding top para el logo */
+        background: var(--bg-primary);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
+        transform: translateX(-100%);
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
         z-index: 1500;
     }
 
-    /* Acciones (CV + login): a la derecha del logo, antes de la hamburguesa. */
+    /* Restaurar botones circulares (sólo iconos) en la barra superior cuando está cerrada */
+    .nav-actions .cv-min-btn span,
+    .nav-actions .cms-navauth-btn span,
+    .nav-actions .login-min-btn span {
+        display: none;
+    }
+    
+    .nav-actions .cv-min-btn,
+    .nav-actions .cms-navauth-btn,
+    .nav-actions .login-min-btn {
+        padding: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        gap: 0;
+    }
+    
+    .nav-actions .cms-navauth-btn::before,
+    .nav-actions .cms-navauth-btn::after {
+        display: none; /* quitar los corchetes HUD en móvil */
+    }
+    
+    .nav-actions .cv-min-btn i,
+    .nav-actions .cms-navauth-btn i,
+    .nav-actions .login-min-btn i {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    /* Estado cerrado: Acciones a la derecha en la barra superior */
     .nav-actions {
         flex: 0 0 auto;
         gap: 0.4rem;
-        z-index: 1600;
+        z-index: 1400; 
         order: 2;
-        margin-right: 0.5rem;
+        margin-right: 0;
+        display: flex;
     }
 
     body.nav-open .nav-links {
@@ -2818,9 +2890,43 @@ body.nav-open .nav-backdrop {
     .nav-links > a,
     .nav-links .dropbtn {
         width: 100%;
-        padding: 0.75rem 0;
+        padding: 0.65rem 0;
         font-size: 1.05rem;
-        border-bottom: 1px solid var(--border);
+        border: none; /* Eliminar líneas debajo de las opciones */
+        color: var(--accent); /* Opciones principales en color violeta */
+        font-weight: 200; /* REVERTIDO A NORMAL, SIN NEGRITA */
+    }
+
+    /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÓVIL --- */
+    .mobile-drawer-logo {
+        position: absolute !important;
+        top: 1rem !important; /* Mismo top que el nav-toggle */
+        left: 4.5rem !important; /* Deja espacio para el botón (44px) + margen (1rem) */
+        height: 44px !important; /* Misma altura exacta que el nav-toggle para centrar matemáticamente */
+        margin: 0 !important;
+        display: flex;
+        flex-direction: row; /* En una sola línea */
+        justify-content: flex-start;
+        align-items: center; /* Alineación vertical perfecta con el botón X */
+        text-align: left;
+        width: auto;
+        color: var(--text-primary);
+        font-size: 1rem;
+        white-space: nowrap;
+    }
+    
+    .mobile-drawer-logo .separator {
+        margin: 0 0.4rem;
+        opacity: 0.8;
+        font-weight: 400;
+        color: var(--accent); /* Para que resalte un poco más */
+    }
+    
+    .mobile-drawer-logo span.inline-highlight {
+        display: inline !important; /* Sobrescribir el display: block que trae por defecto en móvil */
+        margin-top: 0 !important;
+        font-size: 1rem !important;
+        font-weight: 200 !important; /* Igual que el texto Lucia Montaña */
     }
 
     .nav-links .dropbtn i {
@@ -2842,9 +2948,82 @@ body.nav-open .nav-backdrop {
     }
 
     .nav-links .dropdown-content a {
-        padding: 0.5rem 0;
+        padding: 0.4rem 0;
         font-size: 0.95rem;
         opacity: 0.85;
+        color: var(--text-primary); /* Sub-opciones mantienen su color normal */
+    }
+
+    /* Eliminar la línea blanca de la barra superior cuando el menú abre */
+    body.nav-open header {
+        border-bottom-color: transparent !important;
+    }
+
+    .mobile-drawer-actions {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap; /* Envolver si es necesario, pero intentarán estar en línea */
+        gap: 0.6rem;
+        justify-content: space-evenly; /* Centrados horizontalmente y ocupando el mismo espacio */
+        width: 100%;
+        margin-top: auto;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    
+    .mobile-drawer-actions .cv-min-btn span,
+    .mobile-drawer-actions .login-min-btn span {
+        display: none;
+    }
+    
+    .mobile-drawer-actions .lang-btn .lang-code {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.3rem;
+    }
+
+    .mobile-drawer-actions .cv-min-btn,
+    .mobile-drawer-actions .login-min-btn {
+        padding: 0 !important;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+    }
+
+    /* El botón de idioma debe ser pastilla porque tiene texto */
+    .mobile-drawer-actions .lang-btn {
+        padding: 0 0.6rem !important;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    /* QUITAR CORCHETES DEL LOGIN EN EL CAJÓN (por si los hereda) */
+    .mobile-drawer-actions .login-min-btn::before,
+    .mobile-drawer-actions .login-min-btn::after {
+        display: none !important;
+    }
+    
+    .mobile-drawer-actions .cv-min-btn i,
+    .mobile-drawer-actions .login-min-btn i {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .mobile-drawer-actions .lang-btn img {
+        margin: 0;
+        width: 16px;
+        height: 16px;
     }
 
     /* Reducir aire vertical de secciones en mÃ³vil */
@@ -6500,3 +6679,6 @@ select.ga-metric-select option {
 
 
 
+@media (max-width: 992px) { .nav-links > a:nth-child(2) { margin-top: auto; } }
+@media (max-width: 992px) { body.nav-open header { border-bottom: none !important; box-shadow: none !important; } body.nav-open .nav-progress { display: none !important; } }
+@media (min-width: 993px) { .mobile-drawer-logo, .mobile-drawer-actions { display: none !important; } }
