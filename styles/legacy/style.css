@@ -2898,7 +2898,7 @@ body.nav-open .nav-backdrop {
     }
 
     /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÃƒÆ’Ã¢â‚¬Å“VIL --- */
-    .mobile-drawer-logo { position: absolute !important; top: 1.15rem !important; left: 4rem !important; height: auto !important; margin: 0 !important; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; text-align: left; width: auto; color: var(--text-primary); font-size: 1rem; white-space: nowrap; z-index: 10; }
+    .mobile-drawer-logo { position: absolute !important; top: 1rem !important; left: 4rem !important; height: 44px !important; margin: 0 !important; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; text-align: left; width: auto; color: var(--text-primary); font-size: 1rem; white-space: nowrap; z-index: 10; }
     
     .mobile-drawer-logo .separator {
         margin: 0 0.4rem;
@@ -6721,6 +6721,7 @@ select.ga-metric-select option {
 @media (min-width: 993px) {
     .nav-menu-scrollable { touch-action: pan-y; display: contents; }
 }
+
 
 
 
