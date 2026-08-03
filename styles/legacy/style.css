@@ -264,7 +264,7 @@ header.scrolled {
     text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.4rem;
 
     font-family: 'Raleway', sans-serif;
     font-size: 0.95rem;
@@ -1946,7 +1946,7 @@ input:checked+.slider:before {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0.4rem;
 }
 
 .footer-links-list a {
@@ -2269,7 +2269,7 @@ input:checked+.slider:before {
 .info-footer {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.4rem;
     font-size: 0.8rem;
     color: #a78bfa;
     text-transform: uppercase;
@@ -2863,7 +2863,7 @@ body.nav-open .nav-backdrop {
     }
 
     /* Con el menÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âº abierto: bloquear scroll del body. */
-    body.nav-open { overflow: hidden; }
+    body.nav-open { overflow: hidden; touch-action: none; overscroll-behavior: none; }
 
     /* CV + login se mueven (por JS) al final del drawer cuando el menÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âº abre. */
     .nav-links .nav-actions {
@@ -2898,18 +2898,7 @@ body.nav-open .nav-backdrop {
     }
 
     /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÃƒÆ’Ã¢â‚¬Å“VIL --- */
-    .mobile-drawer-logo { position: relative !important; top: auto !important; left: auto !important; height: auto !important; order: -1 !important;
-        margin: -2.4rem 0 1.5rem 3.5rem !important;
-        display: flex;
-        flex-direction: row; /* En una sola lÃƒÆ’Ã‚Â­nea */
-        justify-content: flex-start;
-        align-items: center; /* AlineaciÃƒÆ’Ã‚Â³n vertical perfecta con el botÃƒÆ’Ã‚Â³n X */
-        text-align: left;
-        width: auto;
-        color: var(--text-primary);
-        font-size: 1rem;
-        white-space: nowrap;
-    }
+    .mobile-drawer-logo { position: absolute !important; top: 1.15rem !important; left: 4rem !important; height: auto !important; margin: 0 !important; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; text-align: left; width: auto; color: var(--text-primary); font-size: 1rem; white-space: nowrap; z-index: 10; }
     
     .mobile-drawer-logo .separator {
         margin: 0 0.4rem;
@@ -3260,7 +3249,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.8rem;
+    gap: 0.4rem;
     padding: 2rem 1.2rem;
     border: 2px solid var(--border);
     border-radius: 16px;
@@ -3817,7 +3806,7 @@ body.is-admin .cms-mount.cms-empty-slot {
 
 .cms-confirm-actions {
     display: flex;
-    gap: 0.8rem;
+    gap: 0.4rem;
 }
 
 /* Botones del diÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡logo de confirmaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: full-width (cancelar / acciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n).
@@ -4783,7 +4772,7 @@ body.cms-modal-open { overflow: hidden; }
 .admin-topbar-right {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.4rem;
 }
 
 .admin-shell {
@@ -6198,7 +6187,7 @@ body.hide-cms-controls .cms-placeholder-inner {
     align-items: flex-end;
     justify-content: space-around;
     height: 160px;
-    gap: 0.8rem;
+    gap: 0.4rem;
     padding-top: 1.5rem;
 }
 
@@ -6519,7 +6508,7 @@ select.ga-metric-select option {
 .ga-realtime-card-header {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.4rem;
 }
 
 .ga-realtime-card-header h3 {
@@ -6700,7 +6689,7 @@ select.ga-metric-select option {
     
     .nav-links > a, .nav-menu-scrollable > a, .nav-links .dropbtn {
         font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important;
-        padding: 0.75rem 0 !important;
+        padding: 0.5rem 0 !important;
         margin-top: 0 !important;
     }
     
@@ -6714,14 +6703,14 @@ select.ga-metric-select option {
    NUEVO LAYOUT 3-BLOQUES PARA EL DRAWER MOVIL
    ============================================================================ */
 @media (max-width: 992px) {
-    .nav-menu-scrollable {
+    .nav-menu-scrollable { touch-action: pan-y;
         flex: 1 1 auto;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: center;
-        gap: 0.8rem;
+        gap: 0.4rem;
         width: 100%;
         padding: 1rem 0;
     }
@@ -6730,6 +6719,8 @@ select.ga-metric-select option {
     .nav-menu-scrollable::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
 }
 @media (min-width: 993px) {
-    .nav-menu-scrollable { display: contents; }
+    .nav-menu-scrollable { touch-action: pan-y; display: contents; }
 }
+
+
 
