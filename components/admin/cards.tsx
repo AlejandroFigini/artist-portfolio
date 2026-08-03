@@ -124,9 +124,6 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   }
   const size = e.size ?? mm?.size
 
-  if (!mm || !size || size === 0) {
-    console.log('[MediaCard Debug Size]', { name: e.name, esize: e.size, mmsize: mm?.size, finalSize: size, ts: e.ts })
-  }
   // Título = nombre del archivo sin extensión; el nombre completo y el formato
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
   const title = stripExt(e.name || mm?.name) || e.label || '—'

@@ -79,7 +79,6 @@ export async function emptyTrash() {
 
 // Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
 export async function resolveSizes(entries: { size?: number | null; ts?: number | null; src?: string; dataUrl?: string }[]) {
-  console.log('[resolveSizes] Starting for', entries.length, 'entries')
   let changed = false
   const urlsToFetch: string[] = []
   
@@ -114,7 +113,7 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
     }
   }
 
-  console.log('[resolveSizes] URLs to fetch:', urlsToFetch.length)
+  // fetch them
 
   // Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del navegador
   if (urlsToFetch.length > 0) {
@@ -126,7 +125,6 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
       })
       if (res.ok) {
         const { results } = await res.json() as { results: Record<string, number> }
-        console.log('[resolveSizes] API returned sizes for:', Object.keys(results || {}).length, 'urls')
         if (results) {
           for (const e of entries) {
             const src = e.src || e.dataUrl || ''
@@ -138,14 +136,12 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
           }
         }
       } else {
-        console.error('[resolveSizes] API returned error status:', res.status)
       }
     } catch (err) {
-      console.warn('[resolveSizes] Backend API fetch error:', err)
+      // Ignore error
     }
   }
   
-  console.log('[resolveSizes] Finished. Changed?', changed)
   if (changed) {
     emit()
     persistUsed()
