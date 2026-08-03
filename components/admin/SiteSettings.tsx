@@ -290,9 +290,7 @@ export function FaviconSettings() {
   const [saving, setSaving] = useState(false)
 
   const currentFavicon = state.items['settings.faviconUrl'] !== undefined ? state.items['settings.faviconUrl'] : (settings.faviconUrl || '')
-  const currentAppleIcon = state.items['settings.appleIconUrl'] !== undefined ? state.items['settings.appleIconUrl'] : (settings.appleIconUrl || '')
-  
-  const isChanged = currentFavicon !== (settings.faviconUrl || '') || currentAppleIcon !== (settings.appleIconUrl || '')
+  const isChanged = currentFavicon !== (settings.faviconUrl || '')
 
   useEffect(() => {
     indexEditables()
@@ -309,37 +307,25 @@ export function FaviconSettings() {
       }
       refreshTools('settings.faviconUrl')
     }
-
-    // Apple Icon
-    if (!currentAppleIcon) {
-      showEmptySlot('settings.appleIconUrl')
-    } else {
-      const parent = elementsByKey['settings.appleIconUrl']?.parentElement
-      if (parent) {
-        parent.classList.remove('cms-empty-slot')
-        parent.querySelector('.cms-empty-overlay')?.remove()
-      }
-      refreshTools('settings.appleIconUrl')
-    }
-  }, [currentFavicon, currentAppleIcon])
+  }, [currentFavicon])
 
   const onSaveConfiguration = async () => {
     setSaving(true)
-    await save({ faviconUrl: currentFavicon, appleIconUrl: currentAppleIcon }, 'Page icons updated')
+    await save({ faviconUrl: currentFavicon }, 'Favicon updated')
     setSaving(false)
   }
 
   return (
     <div className="admin-card" id="ajustes-favicon">
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-compass"></i> Page Icon
-          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon displayed in browser tabs and bookmarks.">
+        <h2><i className="fa-solid fa-compass"></i> Favicon
+          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon displayed in browser tabs.">
             <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip">Customize the icon displayed in browser tabs and bookmarks.</span>
+            <span className="cms-info-bubble" role="tooltip">Customize the icon displayed in browser tabs.</span>
           </span>
         </h2>
       </div>
-      <p className="cms-admin-sub">Tab and bookmark icon</p>
+      <p className="cms-admin-sub">Browser tab icon</p>
       <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
         <div
           className="site-setting-media"
@@ -372,56 +358,115 @@ export function FaviconSettings() {
             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
               Favicon (Navegador)
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
               Se muestra en las pestañas. Utiliza un diseño transparente. {currentFavicon ? '' : '(Por defecto /favicon.ico)'}
             </div>
           </div>
           
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.25rem', marginTop: '0.5rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-            <div
-              className="site-setting-media"
-              style={{
-                position: 'relative',
-                width: 'clamp(140px, 20vw, 180px)',
-                aspectRatio: '1 / 1',
-                borderRadius: '14px',
-                overflow: 'hidden',
-                backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                border: currentAppleIcon ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onClick={() => triggerContentPicker('settings.appleIconUrl')}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                data-cms-key="settings.appleIconUrl"
-                className="apple-icon-preview-img"
-                src={currentAppleIcon || '/favicon.ico'}
-                alt="Apple Icon preview"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', background: currentAppleIcon ? 'transparent' : '#fff' }}
-              />
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                Ícono para Google Search y Móviles (Apple Touch Icon)
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
-                Se muestra en los resultados de Google y cuando guardan tu sitio en el celular. Sube un CUADRADO sólido (sin transparencias). Si no subes ninguno, se usa el Favicon.
-              </div>
-            </div>
-          </div>
-          
-          <div style={{ marginTop: '0.5rem' }}>
+          <div>
             <button
               type="button"
               className="cms-btn cms-btn--primary"
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar configuración de íconos'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar favicon'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function AppleIconSettings() {
+  useCmsStore()
+  const { settings } = useSiteSettings()
+  const save = useSaveSettings()
+  const [saving, setSaving] = useState(false)
+
+  const currentAppleIcon = state.items['settings.appleIconUrl'] !== undefined ? state.items['settings.appleIconUrl'] : (settings.appleIconUrl || '')
+  const isChanged = currentAppleIcon !== (settings.appleIconUrl || '')
+
+  useEffect(() => {
+    indexEditables()
+    attachEditControls()
+    
+    // Apple Icon
+    if (!currentAppleIcon) {
+      showEmptySlot('settings.appleIconUrl')
+    } else {
+      const parent = elementsByKey['settings.appleIconUrl']?.parentElement
+      if (parent) {
+        parent.classList.remove('cms-empty-slot')
+        parent.querySelector('.cms-empty-overlay')?.remove()
+      }
+      refreshTools('settings.appleIconUrl')
+    }
+  }, [currentAppleIcon])
+
+  const onSaveConfiguration = async () => {
+    setSaving(true)
+    await save({ appleIconUrl: currentAppleIcon }, 'Apple Touch Icon updated')
+    setSaving(false)
+  }
+
+  return (
+    <div className="admin-card" id="ajustes-apple-icon">
+      <div className="admin-card-head">
+        <h2><i className="fa-brands fa-apple"></i> Apple Touch Icon
+          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon for Google Search and mobile bookmarks.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip">Customize the icon for Google Search and mobile bookmarks.</span>
+          </span>
+        </h2>
+      </div>
+      <p className="cms-admin-sub">Search and mobile bookmark icon</p>
+      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+        <div
+          className="site-setting-media"
+          style={{
+            position: 'relative',
+            width: 'clamp(140px, 20vw, 180px)',
+            aspectRatio: '1 / 1',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: currentAppleIcon ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => triggerContentPicker('settings.appleIconUrl')}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            data-cms-key="settings.appleIconUrl"
+            className="apple-icon-preview-img"
+            src={currentAppleIcon || '/favicon.ico'}
+            alt="Apple Icon preview"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', background: currentAppleIcon ? 'transparent' : '#fff' }}
+          />
+        </div>
+        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              Ícono para Google Search y Móviles
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
+              Se muestra en los resultados de Google y cuando guardan tu sitio en el celular. Sube un CUADRADO sólido (sin transparencias). Si no subes ninguno, se usa el Favicon.
+            </div>
+          </div>
+          
+          <div>
+            <button
+              type="button"
+              className="cms-btn cms-btn--primary"
+              onClick={onSaveConfiguration}
+              disabled={!isChanged || saving}
+            >
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar Apple Touch Icon'}
             </button>
           </div>
         </div>
@@ -577,6 +622,7 @@ export default function SiteSettings() {
     <>
       <LoaderSettings />
       <FaviconSettings />
+      <AppleIconSettings />
       <SocialSettings />
       <CvSettings />
       <TranslationSettings />
