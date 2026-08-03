@@ -870,9 +870,41 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
                 No orphaned files. Everything in Cloudinary is tracked by the CMS.
               </p>
-            : <div className="cms-audit-table-wrap">
-                <table className="cms-audit-table">
-                  <thead><tr><th>Public ID</th><th>Type</th><th>Format</th><th>Size</th><th>Folder</th><th>Action</th></tr></thead>
+            : <div>
+                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Files that exist on Cloudinary but are not registered in the CMS. You can import them back as Unused.
+                  </span>
+                  <button
+                    type="button"
+                    className="cms-btn"
+                    style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={() => {
+                      localResult.orphaned.forEach(o => {
+                        const isVid = o.resourceType === 'video'
+                        state.unused.push({
+                          src: o.url,
+                          name: o.url.split('/').pop() || 'media',
+                          size: o.bytes,
+                          ts: Date.now(),
+                          type: isVid ? 'video/webm' : 'image/webp',
+                          label: 'Recovered Orphan',
+                          section: 'Recovery',
+                          reason: 'upload'
+                        })
+                      })
+                      persistUnused()
+                      setLocalResult(prev => ({ ...prev, orphaned: [] }))
+                      toast(`${localResult.orphaned.length} items recovered to Unused`, 'success')
+                    }}
+                  >
+                    <i className="fa-solid fa-life-ring"></i>
+                    Recover {localResult.orphaned.length} to Unused
+                  </button>
+                </div>
+                <div className="cms-audit-table-wrap">
+                  <table className="cms-audit-table">
+                    <thead><tr><th>Public ID</th><th>Type</th><th>Format</th><th>Size</th><th>Folder</th><th>Action</th></tr></thead>
                   <tbody>
                     {localResult.orphaned.map((r, i) => (
                       <tr key={i}>
@@ -906,6 +938,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                   </tbody>
                 </table>
               </div>
+            </div>
         )}
         {tab === 'broken' && (
           localResult.broken.length === 0
