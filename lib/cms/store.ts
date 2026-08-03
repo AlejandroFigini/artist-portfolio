@@ -527,6 +527,15 @@ export function syncCloudinaryFolders(): number {
   if (!state.isAdmin) return 0
   let count = 0
 
+  const normalizeUrl = (url: string | undefined) => {
+    if (!url) return ''
+    let clean = url
+    if (clean.includes('cloudinary.com')) {
+      clean = clean.replace(/\/v\d+\//, '/')
+    }
+    try { return new URL(clean, 'http://localhost').pathname } catch { return clean }
+  }
+
   const processedSrc = new Set<string>()
 
   // 1. Contenidos en uso (tienen prioridad, pueden tener multiples carpetas validas)
@@ -539,7 +548,7 @@ export function syncCloudinaryFolders(): number {
   })
 
   validFoldersBySrc.forEach((validFolders, src) => {
-    processedSrc.add(src)
+    processedSrc.add(normalizeUrl(src))
     let isInValidFolder = false
     for (const folder of validFolders) {
       if (src.includes(`/${folder}/`)) {
@@ -557,8 +566,9 @@ export function syncCloudinaryFolders(): number {
   // 2. Contenidos sin usar -> portfolio/sin-usar
   state.unused.forEach((entry) => {
     const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com') && !processedSrc.has(src)) {
-      processedSrc.add(src)
+    const norm = normalizeUrl(src)
+    if (src && src.includes('cloudinary.com') && !processedSrc.has(norm)) {
+      processedSrc.add(norm)
       if (!src.includes('/portfolio/sin-usar/')) {
         cloudinaryMove(src, 'portfolio/sin-usar')
         count++
@@ -569,8 +579,9 @@ export function syncCloudinaryFolders(): number {
   // 3. Contenidos en basurero -> portfolio/basurero
   state.trash.forEach((entry) => {
     const src = entry.src || entry.dataUrl
-    if (src && src.includes('cloudinary.com') && !processedSrc.has(src)) {
-      processedSrc.add(src)
+    const norm = normalizeUrl(src)
+    if (src && src.includes('cloudinary.com') && !processedSrc.has(norm)) {
+      processedSrc.add(norm)
       if (!src.includes('/portfolio/basurero/')) {
         cloudinaryMove(src, 'portfolio/basurero')
         count++
