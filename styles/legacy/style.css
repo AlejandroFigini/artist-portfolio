@@ -1,4 +1,4 @@
-/* Variables y Tema (Paleta Limpia y Moderna) */
+﻿/* Variables y Tema (Paleta Limpia y Moderna) */
 :root, [data-theme="dark"] {
     /* Tema Claro: Blanco y Violeta */
     --bg-primary: #ffffff;
@@ -83,10 +83,10 @@
 html {
     scroll-behavior: smooth;
     font-family: var(--font);
-    /* Root font-size fluido: escala TODO lo que estÃƒÂ¡ en rem (nav, logo,
-       tÃƒÂ­tulos, paddings) con el tamaÃƒÂ±o de pantalla. En wide queda en 16px
-       (no cambia), y en laptop 15"/mÃƒÂ³vil baja a ~14px para que el texto y
-       los contenedores guarden la proporciÃƒÂ³n correcta y no se vean enormes. */
+    /* Root font-size fluido: escala TODO lo que estÃƒÆ’Ã‚Â¡ en rem (nav, logo,
+       tÃƒÆ’Ã‚Â­tulos, paddings) con el tamaÃƒÆ’Ã‚Â±o de pantalla. En wide queda en 16px
+       (no cambia), y en laptop 15"/mÃƒÆ’Ã‚Â³vil baja a ~14px para que el texto y
+       los contenedores guarden la proporciÃƒÆ’Ã‚Â³n correcta y no se vean enormes. */
     font-size: clamp(14px, 9px + 0.36vw, 16px);
     -webkit-font-smoothing: antialiased;
     /* Adelgaza el renderizado en pantalla */
@@ -142,15 +142,15 @@ header.scrolled {
 
 .logo {
     font-family: var(--font);
-    /* Raleway es naturalmente sÃƒÂºper fina */
+    /* Raleway es naturalmente sÃƒÆ’Ã‚Âºper fina */
     font-size: 1.3rem;
     font-weight: 200;
-    /* Un toque mÃƒÂ¡s de presencia para el logo */
+    /* Un toque mÃƒÆ’Ã‚Â¡s de presencia para el logo */
     letter-spacing: 0.1em;
     color: var(--text-primary);
     text-decoration: none;
     flex: 1 1 0;
-    /* Zona izquierda: empuja el menÃƒÂº al centro */
+    /* Zona izquierda: empuja el menÃƒÆ’Ã‚Âº al centro */
     white-space: nowrap;
 }
 
@@ -242,7 +242,7 @@ header.scrolled {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     min-width: 220px;
-    /* Ajustado para texto mÃƒÂ¡s pequeÃƒÂ±o */
+    /* Ajustado para texto mÃƒÆ’Ã‚Â¡s pequeÃƒÆ’Ã‚Â±o */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     border-radius: 0;
     z-index: 1000;
@@ -257,7 +257,7 @@ header.scrolled {
     visibility: visible;
 }
 
-/* AnimaciÃƒÂ³n en cascada moderna */
+/* AnimaciÃƒÆ’Ã‚Â³n en cascada moderna */
 .dropdown-content a {
     color: var(--text-primary);
     padding: 0.8rem 1.2rem;
@@ -320,7 +320,7 @@ header.scrolled {
     content: '';
     position: absolute;
     left: 1.2rem;
-    /* Alineado al nuevo padding mÃƒÂ¡s chico */
+    /* Alineado al nuevo padding mÃƒÆ’Ã‚Â¡s chico */
     bottom: 0.3rem;
     /* Subido levemente para que pegue mas al texto */
     width: 0;
@@ -335,8 +335,8 @@ header.scrolled {
     /* Rellena el ancho considerando los 1.2rem de lado a lado */
 }
 
-/* Dropdown abierto por tap/click (tÃƒÂ¡ctil) Ã¢â‚¬â€ replica los estados de :hover
-   para que funcione en pantallas sin hover (mÃƒÂ³vil/tablet/laptop tÃƒÂ¡ctil). */
+/* Dropdown abierto por tap/click (tÃƒÆ’Ã‚Â¡ctil) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â replica los estados de :hover
+   para que funcione en pantallas sin hover (mÃƒÆ’Ã‚Â³vil/tablet/laptop tÃƒÆ’Ã‚Â¡ctil). */
 .dropdown.open .dropbtn i { transform: rotate(-180deg); }
 .dropdown.open .dropdown-content { opacity: 1; visibility: visible; }
 .dropdown.open .dropdown-content a { opacity: 1; transform: translateY(0); }
@@ -385,9 +385,9 @@ section {
     padding: 0 1rem;
 }
 
-/* CTA "ver galerÃƒÂ­a completa": discreto, en la esquina superior derecha de la secciÃƒÂ³n */
+/* CTA "ver galerÃƒÆ’Ã‚Â­a completa": discreto, en la esquina superior derecha de la secciÃƒÆ’Ã‚Â³n */
 
-/* En mÃƒÂ³vil: solo la flecha + "ver" corto para no chocar con el tÃƒÂ­tulo */
+/* En mÃƒÆ’Ã‚Â³vil: solo la flecha + "ver" corto para no chocar con el tÃƒÆ’Ã‚Â­tulo */
 
 /* Hero Slideshow Full Width */
 .hero-slideshow {
@@ -396,11 +396,11 @@ section {
     max-width: 100%;
     width: 100%;
     height: 100vh;
-    /* svh: altura estable en mÃƒÂ³vil (no salta con las barras dinÃƒÂ¡micas del
+    /* svh: altura estable en mÃƒÆ’Ã‚Â³vil (no salta con las barras dinÃƒÆ’Ã‚Â¡micas del
        navegador, que es lo que dejaba huecos / recortes al hacer scroll). */
     height: 100svh;
     /* Piso para pantallas muy bajas o en landscape: el hero deja de
-       comprimirse y la pÃƒÂ¡gina scrollea en vez de recortar el contenido. */
+       comprimirse y la pÃƒÆ’Ã‚Â¡gina scrollea en vez de recortar el contenido. */
     min-height: 560px;
     position: relative;
     overflow: hidden;
@@ -464,7 +464,7 @@ section {
     100% { transform: scale(1.08); }
 }
 
-/* AnimaciÃƒÂ³n letra por letra */
+/* AnimaciÃƒÆ’Ã‚Â³n letra por letra */
 .hero-overlay h1 .letter,
 .hero-overlay p .letter,
 .section-typewriter .letter {
@@ -473,7 +473,7 @@ section {
     display: inline-block;
 }
 
-/* Sombra en tÃƒÂ­tulos de secciÃƒÂ³n */
+/* Sombra en tÃƒÆ’Ã‚Â­tulos de secciÃƒÆ’Ã‚Â³n */
 .section-typewriter,
 .section-title h2 {
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -538,12 +538,12 @@ section {
 /* Software Bubbles Container */
 /* Icon Wave Container */
 
-/* Desfase por POSICIÃƒâ€œN real del icono dentro de cada set (10 iconos).
-   Primer valor = ola vertical (offset -0.3s, 10Ãƒâ€”0.3 = 3s -> 1 longitud de onda por set).
-   Segundo valor = banda de color (offset -0.5s, 10Ãƒâ€”0.5 = 5s -> la banda recorre 1 set).
+/* Desfase por POSICIÃƒÆ’Ã¢â‚¬Å“N real del icono dentro de cada set (10 iconos).
+   Primer valor = ola vertical (offset -0.3s, 10ÃƒÆ’Ã¢â‚¬â€0.3 = 3s -> 1 longitud de onda por set).
+   Segundo valor = banda de color (offset -0.5s, 10ÃƒÆ’Ã¢â‚¬â€0.5 = 5s -> la banda recorre 1 set).
    Ambos cierran de forma continua en la costura entre sets duplicados. */
 
-/* Hover sin efecto: la animaciÃƒÂ³n maneja el color */
+/* Hover sin efecto: la animaciÃƒÆ’Ã‚Â³n maneja el color */
 
 /* Ola vertical: cada burbuja sube/baja desfasada -> forma de ola */
 @keyframes iconWaveFloat {
@@ -584,9 +584,9 @@ section {
     /* Movemos exactamente 1 de los 4 sets para el loop perfecto */
 }
 
-/* Responsive mÃƒÂ³vil: burbujas mÃƒÂ¡s chicas, menos amplitud y separaciÃƒÂ³n */
+/* Responsive mÃƒÆ’Ã‚Â³vil: burbujas mÃƒÆ’Ã‚Â¡s chicas, menos amplitud y separaciÃƒÆ’Ã‚Â³n */
 
-/* PresentaciÃƒÂ³n Split */
+/* PresentaciÃƒÆ’Ã‚Â³n Split */
 
 @keyframes blobMorph {
     0% {
@@ -956,14 +956,14 @@ section {
 .video-title {
     font-size: 1rem;
     font-weight: 700;
-    /* MÃƒÂ¡s peso para que sea nÃƒÂ­tido */
+    /* MÃƒÆ’Ã‚Â¡s peso para que sea nÃƒÆ’Ã‚Â­tido */
     margin-bottom: 0.2rem;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    /* Sombra limpia, no un borrÃƒÂ³n */
+    /* Sombra limpia, no un borrÃƒÆ’Ã‚Â³n */
 }
 
-/* Personajes - Layout Moderno AcordeÃƒÂ³n */
+/* Personajes - Layout Moderno AcordeÃƒÆ’Ã‚Â³n */
 
 /* ============ Language Selectors (inline SVG <img> flags) ============ */
 .lang-flag-img {
@@ -983,7 +983,7 @@ section {
     height: 1.2rem;
 }
 
-/* BotÃƒÂ³n de descarga de CV (navbar + settings) */
+/* BotÃƒÆ’Ã‚Â³n de descarga de CV (navbar + settings) */
 .cv-btn {
     display: inline-flex;
     align-items: center;
@@ -1012,7 +1012,7 @@ section {
     font-size: 0.95rem;
 }
 
-/* En settings ocupa un tamaÃƒÂ±o compacto y elegante */
+/* En settings ocupa un tamaÃƒÆ’Ã‚Â±o compacto y elegante */
 .cv-btn-settings {
     padding: 0.38rem 0.6rem;
     min-width: 34px;
@@ -1047,15 +1047,15 @@ section {
     /* Zona derecha: CV + login + idioma, pegados al borde */
 }
 
-/* OpciÃƒÂ³n de nav solo para superadmin */
+/* OpciÃƒÆ’Ã‚Â³n de nav solo para superadmin */
 
-/* ÃƒÂrea de login en la navbar (botÃƒÂ³n que renderiza cms.js) */
+/* ÃƒÆ’Ã‚Ârea de login en la navbar (botÃƒÆ’Ã‚Â³n que renderiza cms.js) */
 #cms-auth-nav {
     display: flex;
     align-items: center;
 }
 
-/* --- NavegaciÃƒÂ³n: bandera del idioma actual pegada al borde derecho --- */
+/* --- NavegaciÃƒÆ’Ã‚Â³n: bandera del idioma actual pegada al borde derecho --- */
 .lang-selector-nav {
     position: relative;
     display: flex;
@@ -1097,7 +1097,7 @@ section {
     padding: 4px;
 }
 
-/* En settings el menÃƒÂº se despliega HACIA EL COSTADO DERECHO para evitar cortarse con el borde inferior. */
+/* En settings el menÃƒÆ’Ã‚Âº se despliega HACIA EL COSTADO DERECHO para evitar cortarse con el borde inferior. */
 .lang-dropdown-settings {
     top: auto;
     bottom: -10px;
@@ -1173,11 +1173,11 @@ section {
 
 /* Utilities Personajes Placeholders */
 
-/* Ilustraciones Masonry (contenedor; el layout grid se define mÃƒÂ¡s abajo) */
+/* Ilustraciones Masonry (contenedor; el layout grid se define mÃƒÆ’Ã‚Â¡s abajo) */
 
 /* Legacy Gallery Styles Removed in favor of Cosmic Floating Exhibits */
 
-/* Modal y BotÃƒÂ³n de ExpansiÃƒÂ³n de Personajes */
+/* Modal y BotÃƒÆ’Ã‚Â³n de ExpansiÃƒÆ’Ã‚Â³n de Personajes */
 
 /* (Reglas legacy de .lightbox/.lightbox-content removidas: causaban
    un translateY(-50%) que descentraba la imagen. El bloque nuevo
@@ -1242,7 +1242,7 @@ footer {
 }
 
 @media (max-width: 768px) {
-    /* La navegaciÃƒÂ³n mÃƒÂ³vil (drawer) se define en el bloque responsive
+    /* La navegaciÃƒÆ’Ã‚Â³n mÃƒÆ’Ã‚Â³vil (drawer) se define en el bloque responsive
        consolidado al final del archivo. */
     .animations-grid {
         grid-template-columns: 1fr;
@@ -1263,7 +1263,7 @@ footer {
 
 /* ============ Scroll Reveal: contenedores de imagen y texto ============
    El IntersectionObserver ya agrega .visible al entrar en viewport. */
-/* Reveal estÃƒÂ¡ndar (3D Ã¢â‚¬â€ el usuario lo aprobÃƒÂ³ tal cual) */
+/* Reveal estÃƒÆ’Ã‚Â¡ndar (3D ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â el usuario lo aprobÃƒÆ’Ã‚Â³ tal cual) */
 .section-title,
 .model-text,
 .model-visual-wrapper,
@@ -1282,8 +1282,8 @@ footer {
     transform: none;
 }
 
-/* Reveal reforzado (About, Animations, Character Design): mÃƒÂ¡s distancia y
-   duraciÃƒÂ³n para que el movimiento se note claramente al hacer scroll. */
+/* Reveal reforzado (About, Animations, Character Design): mÃƒÆ’Ã‚Â¡s distancia y
+   duraciÃƒÆ’Ã‚Â³n para que el movimiento se note claramente al hacer scroll. */
 .bio-content,
 .media-stack,
 .cd-showcase,
@@ -1302,12 +1302,12 @@ footer {
     transform: none;
 }
 
-/* Leve cascada: la imagen del About entra un poco despuÃƒÂ©s del texto */
+/* Leve cascada: la imagen del About entra un poco despuÃƒÆ’Ã‚Â©s del texto */
 .media-stack {
     transition-delay: 0.12s;
 }
 
-/* BotÃƒÂ³n ConfiguraciÃƒÂ³n (Tuerca) - Esquina inferior opuesta */
+/* BotÃƒÆ’Ã‚Â³n ConfiguraciÃƒÆ’Ã‚Â³n (Tuerca) - Esquina inferior opuesta */
 .settings-gear {
     position: fixed;
     bottom: var(--settings-bottom, 30px);
@@ -1340,13 +1340,13 @@ footer {
     transform: rotate(180deg);
 }
 
-/* Panel de ConfiguraciÃƒÂ³n */
+/* Panel de ConfiguraciÃƒÆ’Ã‚Â³n */
 .settings-panel {
     position: fixed;
     bottom: calc(var(--settings-bottom, 30px) + 55px);
-    /* Arriba del boton de configuraciÃƒÂ³n */
+    /* Arriba del boton de configuraciÃƒÆ’Ã‚Â³n */
     left: 30px;
-    /* Alineado con el boton de configuraciÃƒÂ³n izquierda */
+    /* Alineado con el boton de configuraciÃƒÆ’Ã‚Â³n izquierda */
     z-index: 1000;
     background: var(--bg-primary);
     border: 1px solid var(--border);
@@ -1364,8 +1364,8 @@ footer {
     pointer-events: none;
 }
 
-/* Tuerca + panel admin Ã¢â‚¬â€ segunda tuerca a la derecha de la general, color
-   distinto (ÃƒÂ­ndigo oscuro) para diferenciar de la violeta general. */
+/* Tuerca + panel admin ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â segunda tuerca a la derecha de la general, color
+   distinto (ÃƒÆ’Ã‚Â­ndigo oscuro) para diferenciar de la violeta general. */
 .settings-gear--admin {
     left: 85px;
     background: #2a1f4d;
@@ -1424,7 +1424,7 @@ footer {
     width: 100%;
 }
 
-/* GestiÃƒÂ³n Ã¢â€ â€™ Redes sociales: input de URL/email por red */
+/* GestiÃƒÆ’Ã‚Â³n ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Redes sociales: input de URL/email por red */
 .social-input {
     flex: 1 1 auto;
     max-width: 60%;
@@ -1441,7 +1441,7 @@ footer {
     border-color: var(--accent);
 }
 
-/* GestiÃƒÂ³n Ã¢â€ â€™ Ajustes del sitio: apartados de loader y CV */
+/* GestiÃƒÆ’Ã‚Â³n ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Ajustes del sitio: apartados de loader y CV */
 .site-setting-row {
     display: flex;
     flex-wrap: wrap;
@@ -1541,18 +1541,18 @@ input:checked+.slider:before {
     border-radius: 50%;
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-   SecciÃƒÂ³n Modelos 3D Ã¢â‚¬â€ 3ds Max Viewport Style
-   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
+   SecciÃƒÆ’Ã‚Â³n Modelos 3D ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 3ds Max Viewport Style
+   ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */
 
-/* Dark mode: mucho mÃƒÂ¡s oscuro */
+/* Dark mode: mucho mÃƒÆ’Ã‚Â¡s oscuro */
 
 [data-theme="dark"] .cube .face {
     border: 1px solid rgba(148, 163, 184, 0.25);
     background: rgba(148, 163, 184, 0.12);
 }
 
-/* 3ds MaxÃ¢â‚¬â€œstyle viewport grid with movement (GPU Composited) */
+/* 3ds MaxÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“style viewport grid with movement (GPU Composited) */
 
 @keyframes gridScroll {
     0% { transform: translate(0, 0); }
@@ -1601,9 +1601,9 @@ input:checked+.slider:before {
     }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ shared 3Ã¢â‚¬â€˜D container rules Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ shared 3ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ËœD container rules ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CUBES Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â CUBES ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */
 
 .cube {
     width: 100%;
@@ -1665,7 +1665,7 @@ input:checked+.slider:before {
     right: -3px;
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CYLINDERS (12Ã¢â‚¬â€˜panel barrel) Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â CYLINDERS (12ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Ëœpanel barrel) ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */
 
 .panel {
     position: absolute;
@@ -1737,7 +1737,7 @@ input:checked+.slider:before {
     }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Placement Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Placement ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 
 .c3 {
     top: 55%;
@@ -1838,7 +1838,7 @@ input:checked+.slider:before {
     /* Sincronizado con el contenedor */
 }
 
-/* BotÃƒÂ³n expandir video 3D */
+/* BotÃƒÆ’Ã‚Â³n expandir video 3D */
 
 @media (max-width: 992px) {
 
@@ -1847,8 +1847,8 @@ input:checked+.slider:before {
         gap: 2rem;
     }
 
-    /* En mÃƒÂ³vil queremos SIEMPRE: bloque de texto arriba y luego los videos.
-       La fila "reverse" tiene el texto al final en el DOM, asÃƒÂ­ que con
+    /* En mÃƒÆ’Ã‚Â³vil queremos SIEMPRE: bloque de texto arriba y luego los videos.
+       La fila "reverse" tiene el texto al final en el DOM, asÃƒÆ’Ã‚Â­ que con
        column-reverse el texto sube y los videos quedan debajo. */
     .model-row.reverse {
         flex-direction: column-reverse;
@@ -1864,7 +1864,7 @@ input:checked+.slider:before {
    6. MAIN FOOTER (DARK & ELEGANT)
    ============================================= */
 .main-footer {
-    background-color: #12141c; /* Obsidian Graphite Ã¢â‚¬â€ Premium material */
+    background-color: #12141c; /* Obsidian Graphite ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Premium material */
     color: #ffffff;
     padding: clamp(3.5rem, 8vw, 6rem) clamp(1.5rem, 4vw, 2rem) 3rem;
     border-top: 1px solid rgba(139, 92, 246, 0.15); /* Energy Energy Divider */
@@ -1984,12 +1984,12 @@ input:checked+.slider:before {
     text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
 }
 
-/* BotÃƒÂ³n de descargar CV en el footer Ã¢â‚¬â€ compacto con texto corto */
+/* BotÃƒÆ’Ã‚Â³n de descargar CV en el footer ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â compacto con texto corto */
 .cv-btn-footer {
     margin-top: 1rem;
     display: inline-flex;
     /* El .footer-col es flex column (align-items:stretch por defecto): sin esto
-       el botÃƒÂ³n se estiraba a TODO el ancho de la columna en desktop. */
+       el botÃƒÆ’Ã‚Â³n se estiraba a TODO el ancho de la columna en desktop. */
     align-self: flex-start;
     font-size: 0.78rem;
     padding: 0.3rem 0.8rem;
@@ -2025,7 +2025,7 @@ input:checked+.slider:before {
     .footer-col {
         align-items: center;
     }
-    /* En mÃƒÂ³vil el footer estÃƒÂ¡ centrado: el CV vuelve a centrarse. */
+    /* En mÃƒÆ’Ã‚Â³vil el footer estÃƒÆ’Ã‚Â¡ centrado: el CV vuelve a centrarse. */
     .cv-btn-footer { align-self: center; }
 
     .footer-bottom-bar {
@@ -2072,10 +2072,10 @@ input:checked+.slider:before {
     }
 }
 
-/* (Bloque duplicado de .gallery-section/aurora removido: ya estÃƒÂ¡ definido mÃƒÂ¡s
-   arriba, con .a3 + @keyframes auroraWave. AquÃƒÂ­ continÃƒÂºa el contenido ÃƒÂºnico.) */
+/* (Bloque duplicado de .gallery-section/aurora removido: ya estÃƒÆ’Ã‚Â¡ definido mÃƒÆ’Ã‚Â¡s
+   arriba, con .a3 + @keyframes auroraWave. AquÃƒÆ’Ã‚Â­ continÃƒÆ’Ã‚Âºa el contenido ÃƒÆ’Ã‚Âºnico.) */
 
-/* Nebula Rendering Engine Ã¢â‚¬â€ Full-Density Stretch */
+/* Nebula Rendering Engine ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Full-Density Stretch */
 #nebula-canvas {
     position: absolute;
     top: 0;
@@ -2089,7 +2089,7 @@ input:checked+.slider:before {
 
 /* Faster Swirling Nebula */
 
-/* Obsidian Glass UI Ã¢â‚¬â€ High-End Dark Aesthetic */
+/* Obsidian Glass UI ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â High-End Dark Aesthetic */
 
 @keyframes cosmic-drift {
     0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
@@ -2101,7 +2101,7 @@ input:checked+.slider:before {
 /* Bento Hierarchy Translated to Flex */
 
 
-/* THE FLOATING OBJECT Ã¢â‚¬â€ The actual Frame */
+/* THE FLOATING OBJECT ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â The actual Frame */
 
 /* Lightbox System Refresh */
 .lightbox {
@@ -2144,7 +2144,7 @@ input:checked+.slider:before {
 }
 
 /* Al abrir el panel de info: reservamos espacio con padding en el wrapper,
-   asÃƒÂ­ el medio se re-centra en el ÃƒÂ¡rea libre (sin taparse, a cualquier tamaÃƒÂ±o)
+   asÃƒÆ’Ã‚Â­ el medio se re-centra en el ÃƒÆ’Ã‚Â¡rea libre (sin taparse, a cualquier tamaÃƒÆ’Ã‚Â±o)
    y le sumamos un leve achicado. */
 .lightbox.info-open .lightbox-wrapper {
     padding-right: 180px;
@@ -2155,7 +2155,7 @@ input:checked+.slider:before {
 }
 
 @media (max-width: 768px) {
-    /* En mÃƒÂ³vil el panel va abajo: reservamos espacio inferior */
+    /* En mÃƒÆ’Ã‚Â³vil el panel va abajo: reservamos espacio inferior */
     .lightbox.info-open .lightbox-wrapper {
         padding-right: 0;
         padding-bottom: 240px;
@@ -2277,7 +2277,7 @@ input:checked+.slider:before {
     font-weight: 600;
 }
 
-/* Meta del panel (fecha + proyecto) y lÃƒÂ­nea de inspiraciÃƒÂ³n */
+/* Meta del panel (fecha + proyecto) y lÃƒÆ’Ã‚Â­nea de inspiraciÃƒÆ’Ã‚Â³n */
 .info-meta {
     display: flex;
     flex-wrap: wrap;
@@ -2308,7 +2308,7 @@ input:checked+.slider:before {
 [data-theme="light"] .info-inspiration i { color: #6d28d9; }
 [data-theme="light"] .info-inspiration b { color: #1e1b4b; }
 
-/* BotÃƒÂ³n de info en estado abierto Ã¢â€ â€™ violeta (al abrirse o togglear) */
+/* BotÃƒÆ’Ã‚Â³n de info en estado abierto ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ violeta (al abrirse o togglear) */
 .lightbox.info-open .info-toggle-btn {
     background: var(--accent);
     border-color: var(--accent);
@@ -2316,7 +2316,7 @@ input:checked+.slider:before {
     box-shadow: 0 0 24px rgba(139, 92, 246, 0.45);
 }
 
-/* Bloquear el scroll del fondo mientras el lightbox estÃƒÂ¡ abierto */
+/* Bloquear el scroll del fondo mientras el lightbox estÃƒÆ’Ã‚Â¡ abierto */
 body.lightbox-open { overflow: hidden; }
 
 /* El fondo del lightbox se mantiene oscuro siempre (para resaltar la obra) */
@@ -2353,7 +2353,7 @@ body.lightbox-open { overflow: hidden; }
 
 /* Mobile Adjustments */
 @media (max-width: 768px) {
-    /* Panel mÃƒÂ¡s compacto: se superpone un poco al contenido sin ocupar tanto. */
+    /* Panel mÃƒÆ’Ã‚Â¡s compacto: se superpone un poco al contenido sin ocupar tanto. */
     .lightbox-info-panel {
         width: min(74%, 300px);
         right: 4%;
@@ -2371,19 +2371,19 @@ body.lightbox-open { overflow: hidden; }
     }
 }
 
-/* Compact Violet Disc HUD Ã¢â‚¬â€ Precise Expansion */
+/* Compact Violet Disc HUD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Precise Expansion */
 
 /* ============================================================
-   PERFORMANCE Ã¢â‚¬â€ MODO LIGERO ADAPTATIVO (html.perf-lite)
-   Lo activa la detecciÃƒÂ³n de dispositivo o el monitor de FPS
+   PERFORMANCE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â MODO LIGERO ADAPTATIVO (html.perf-lite)
+   Lo activa la detecciÃƒÆ’Ã‚Â³n de dispositivo o el monitor de FPS
    (ver el <script> del <head> y script.js). Sacrifica algunos
    efectos decorativos caros para garantizar fluidez en equipos
-   modestos, mÃƒÂ³viles y con prefers-reduced-motion.
+   modestos, mÃƒÆ’Ã‚Â³viles y con prefers-reduced-motion.
    ============================================================ */
 
-/* 1. backdrop-filter (blur de cristal) es de lo mÃƒÂ¡s costoso en GPUs
-      dÃƒÂ©biles. Se elimina por completo; los paneles siguen siendo
-      translÃƒÂºcidos por su background rgba. */
+/* 1. backdrop-filter (blur de cristal) es de lo mÃƒÆ’Ã‚Â¡s costoso en GPUs
+      dÃƒÆ’Ã‚Â©biles. Se elimina por completo; los paneles siguen siendo
+      translÃƒÆ’Ã‚Âºcidos por su background rgba. */
 html.perf-lite,
 html.perf-lite *,
 html.perf-lite *::before,
@@ -2394,18 +2394,18 @@ html.perf-lite *::after {
 
 /* 2. Las nebulosas/auroras/blobs combinan filter: blur(100-160px) con
       animaciones infinitas: cada frame re-renderiza un blur enorme.
-      Al detener la animaciÃƒÂ³n, el blur se compone UNA vez (barato) y se
-      mantiene el aspecto atmosfÃƒÂ©rico de fondo. */
+      Al detener la animaciÃƒÆ’Ã‚Â³n, el blur se compone UNA vez (barato) y se
+      mantiene el aspecto atmosfÃƒÆ’Ã‚Â©rico de fondo. */
 html.perf-lite .aurora {
     animation: none !important;
 }
 
-/* 3. cosmic-drift se aplica (inline desde JS) a CADA item de la galerÃƒÂ­a.
+/* 3. cosmic-drift se aplica (inline desde JS) a CADA item de la galerÃƒÆ’Ã‚Â­a.
       En modo ligero se desactiva para no animar decenas de wrappers. */
 
 /* ============================================================
-   prefers-reduced-motion Ã¢â‚¬â€ respeto de accesibilidad
-   Reduce al mÃƒÂ­nimo cualquier animaciÃƒÂ³n/transiciÃƒÂ³n decorativa.
+   prefers-reduced-motion ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â respeto de accesibilidad
+   Reduce al mÃƒÆ’Ã‚Â­nimo cualquier animaciÃƒÆ’Ã‚Â³n/transiciÃƒÆ’Ã‚Â³n decorativa.
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -2420,9 +2420,9 @@ html.perf-lite .aurora {
 
 /* ============================================================
    PANTALLA DE CARGA (#page-loader)
-   Splash a pantalla completa con la animaciÃƒÂ³n de galope, la marca
-   y un indicador de progreso. EstÃƒÂ©tica violeta/espacio profundo
-   acorde a la secciÃƒÂ³n de galerÃƒÂ­a.
+   Splash a pantalla completa con la animaciÃƒÆ’Ã‚Â³n de galope, la marca
+   y un indicador de progreso. EstÃƒÆ’Ã‚Â©tica violeta/espacio profundo
+   acorde a la secciÃƒÆ’Ã‚Â³n de galerÃƒÆ’Ã‚Â­a.
    ============================================================ */
 
 /* Bloquear scroll mientras carga */
@@ -2430,8 +2430,8 @@ body.loading-active {
     overflow: hidden;
 }
 
-/* Saltar la pantalla de carga al volver desde la pÃƒÂ¡gina de gestiÃƒÂ³n.
-   El script del <head> marca <html class="skip-loader"> segÃƒÂºn un flag de
+/* Saltar la pantalla de carga al volver desde la pÃƒÆ’Ã‚Â¡gina de gestiÃƒÆ’Ã‚Â³n.
+   El script del <head> marca <html class="skip-loader"> segÃƒÆ’Ã‚Âºn un flag de
    sessionStorage, antes del primer paint, para que no haya parpadeo. */
 html.skip-loader .page-loader { display: none !important; }
 html.skip-loader body.loading-active { overflow: auto !important; }
@@ -2454,17 +2454,17 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     transition: opacity 0.7s ease, visibility 0.7s ease;
 }
 
-/* Estado oculto (se aplica desde JS cuando el contenido estÃƒÂ¡ listo) */
+/* Estado oculto (se aplica desde JS cuando el contenido estÃƒÆ’Ã‚Â¡ listo) */
 .page-loader.loader-hidden {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
 }
 
-/* BotÃƒÂ³n de cierre solo-admin: el loader queda visible para editar el video
-   del contenedor CMS; este botÃƒÂ³n lo descarta manualmente. */
+/* BotÃƒÆ’Ã‚Â³n de cierre solo-admin: el loader queda visible para editar el video
+   del contenedor CMS; este botÃƒÆ’Ã‚Â³n lo descarta manualmente. */
 
-/* BotÃƒÂ³n para cerrar la vista previa del loader (estilo flotante premium) */
+/* BotÃƒÆ’Ã‚Â³n para cerrar la vista previa del loader (estilo flotante premium) */
 .loader-preview-close {
     position: fixed;
     top: 2rem;
@@ -2577,7 +2577,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     margin-bottom: 1.5rem;
 }
 
-/* SÃƒÂ­mbolo de carga: punto orbitando un anillo */
+/* SÃƒÆ’Ã‚Â­mbolo de carga: punto orbitando un anillo */
 .loader-orbit {
     position: relative;
     width: 34px;
@@ -2677,12 +2677,12 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 /* ============================================================
-   CARGA SUAVE DE IMÃƒ GENES (anti "pop-in")
+   CARGA SUAVE DE IMÃƒÆ’ GENES (anti "pop-in")
    Placeholder + fundido de entrada cuando la imagen termina de cargar.
    ============================================================ */
 
 /* ============================================================
-   MENÃƒÅ¡ MÃƒâ€œVIL (hamburguesa + drawer)
+   MENÃƒÆ’Ã…Â¡ MÃƒÆ’Ã¢â‚¬Å“VIL (hamburguesa + drawer)
    ============================================================ */
 .nav-toggle {
     display: none;
@@ -2715,16 +2715,16 @@ body.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate
 .nav-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(10, 1, 24, 0.6); /* Color mÃ¡s gris/translÃºcido segÃºn preferencia */
+    background: rgba(10, 1, 24, 0.6); /* Color mÃƒÂ¡s gris/translÃƒÂºcido segÃƒÂºn preferencia */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    /* Debajo del header (z-index 1000) para que el drawer Ã¢â‚¬â€que vive dentro
-       del headerÃ¢â‚¬â€ quede POR ENCIMA y reciba los toques. Antes (1400) el
-       backdrop tapaba el drawer y al tocar un ÃƒÂ­tem se cerraba el menÃƒÂº en
-       vez de navegar (ese era el "menÃƒÂº no funciona en mÃƒÂ³vil"). */
+    /* Debajo del header (z-index 1000) para que el drawer ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âque vive dentro
+       del headerÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â quede POR ENCIMA y reciba los toques. Antes (1400) el
+       backdrop tapaba el drawer y al tocar un ÃƒÆ’Ã‚Â­tem se cerraba el menÃƒÆ’Ã‚Âº en
+       vez de navegar (ese era el "menÃƒÆ’Ã‚Âº no funciona en mÃƒÆ’Ã‚Â³vil"). */
     z-index: 999;
 }
 
@@ -2734,15 +2734,15 @@ body.nav-open .nav-backdrop {
 }
 
 /* ============================================================
-   RESPONSIVE GENERAL Ã¢â‚¬â€ consolidado para mÃƒÂ³vil/tablet
+   RESPONSIVE GENERAL ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â consolidado para mÃƒÆ’Ã‚Â³vil/tablet
    ============================================================ */
 
 /* Tablet y abajo */
 
 @media (max-width: 768px) {
-    /* Oscurecer la barra superior (como el resto de la pÃ¡gina) al abrir el menÃº, 
+    /* Oscurecer la barra superior (como el resto de la pÃƒÂ¡gina) al abrir el menÃƒÂº, 
        usando una capa que cubre el logo y el fondo pero queda debajo del drawer (1500) 
-       y del botÃ³n hamburguesa (1600) */
+       y del botÃƒÂ³n hamburguesa (1600) */
     header::after {
         content: '';
         position: absolute;
@@ -2759,7 +2759,7 @@ body.nav-open .nav-backdrop {
         visibility: visible;
     }
 
-    /* OptimizaciÃ³n del logo */
+    /* OptimizaciÃƒÂ³n del logo */
     .logo { 
         font-size: 1.1rem;
         display: flex;
@@ -2791,14 +2791,14 @@ body.nav-open .nav-backdrop {
         transition: opacity 0.3s ease, visibility 0.3s ease;
     }
     
-    /* El botÃ³n flotante de settings debe desaparecer al abrir el menÃº */
+    /* El botÃƒÂ³n flotante de settings debe desaparecer al abrir el menÃƒÂº */
     body.nav-open .settings-gear {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
     }
 
-    /* MenÃº desplegable principal */
+    /* MenÃƒÂº desplegable principal */
     .nav-links {
         display: flex !important;
         flex-direction: column;
@@ -2809,8 +2809,8 @@ body.nav-open .nav-backdrop {
         left: 0;
         height: 100vh;
         height: 100dvh;
-        width: min(75vw, 280px); /* Hachicar un poco el ancho del menÃº */
-        padding: 3rem 1.5rem 2rem; /* Reducido para pantallas cortas, el logo ya no estÇ­ en el drawer */
+        width: min(75vw, 280px); /* Hachicar un poco el ancho del menÃƒÂº */
+        padding: 3rem 1.5rem 2rem; /* Reducido para pantallas cortas, el logo ya no estÃ‡Â­ en el drawer */
         background: var(--bg-primary);
         box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
         transform: translateX(-100%);
@@ -2819,7 +2819,7 @@ body.nav-open .nav-backdrop {
         z-index: 1500;
     }
 
-    /* Restaurar botones circulares (sÃ³lo iconos) en la barra superior cuando estÃ¡ cerrada */
+    /* Restaurar botones circulares (sÃƒÂ³lo iconos) en la barra superior cuando estÃƒÂ¡ cerrada */
     .nav-actions .cv-min-btn span,
     .nav-actions .cms-navauth-btn span,
     .nav-actions .login-min-btn span {
@@ -2838,7 +2838,7 @@ body.nav-open .nav-backdrop {
     
     .nav-actions .cms-navauth-btn::before,
     .nav-actions .cms-navauth-btn::after {
-        display: none; /* quitar los corchetes HUD en mÃ³vil */
+        display: none; /* quitar los corchetes HUD en mÃƒÂ³vil */
     }
     
     .nav-actions .cv-min-btn i,
@@ -2862,10 +2862,10 @@ body.nav-open .nav-backdrop {
         transform: translateX(0);
     }
 
-    /* Con el menÃƒÂº abierto: bloquear scroll del body. */
+    /* Con el menÃƒÆ’Ã‚Âº abierto: bloquear scroll del body. */
     body.nav-open { overflow: hidden; }
 
-    /* CV + login se mueven (por JS) al final del drawer cuando el menÃƒÂº abre. */
+    /* CV + login se mueven (por JS) al final del drawer cuando el menÃƒÆ’Ã‚Âº abre. */
     .nav-links .nav-actions {
         order: 5;
         width: 100%;
@@ -2892,17 +2892,18 @@ body.nav-open .nav-backdrop {
         width: 100%;
         padding: 0.65rem 0;
         font-size: 1.05rem;
-        border: none; /* Eliminar lÃ­neas debajo de las opciones */
+        border: none; /* Eliminar lÃƒÂ­neas debajo de las opciones */
         color: var(--accent); /* Opciones principales en color violeta */
         font-weight: 200; /* REVERTIDO A NORMAL, SIN NEGRITA */
     }
 
-    /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÃ“VIL --- */
-    .mobile-drawer-logo { position: relative !important; top: auto !important; left: auto !important; height: auto !important; margin: -2rem 0 1.5rem 3rem !important;
+    /* --- ESTILOS PARA LOS NUEVOS ELEMENTOS DUPLICADOS EN MÃƒâ€œVIL --- */
+    .mobile-drawer-logo { position: relative !important; top: auto !important; left: auto !important; height: auto !important; order: -1 !important;
+        margin: -2rem 0 1.5rem 3rem !important;
         display: flex;
-        flex-direction: row; /* En una sola lÃ­nea */
+        flex-direction: row; /* En una sola lÃƒÂ­nea */
         justify-content: flex-start;
-        align-items: center; /* AlineaciÃ³n vertical perfecta con el botÃ³n X */
+        align-items: center; /* AlineaciÃƒÂ³n vertical perfecta con el botÃƒÂ³n X */
         text-align: left;
         width: auto;
         color: var(--text-primary);
@@ -2914,14 +2915,14 @@ body.nav-open .nav-backdrop {
         margin: 0 0.4rem;
         opacity: 0.8;
         font-weight: 400;
-        color: var(--accent); /* Para que resalte un poco mÃ¡s */
+        color: var(--accent); /* Para que resalte un poco mÃƒÂ¡s */
     }
     
     .mobile-drawer-logo span.inline-highlight {
-        display: inline !important; /* Sobrescribir el display: block que trae por defecto en mÃ³vil */
+        display: inline !important; /* Sobrescribir el display: block que trae por defecto en mÃƒÂ³vil */
         margin-top: 0 !important;
         font-size: 1rem !important;
-        font-weight: 200 !important; /* Igual que el texto Lucia MontaÃ±a */
+        font-weight: 200 !important; /* Igual que el texto Lucia MontaÃƒÂ±a */
     }
 
     .nav-links .dropbtn i {
@@ -2949,7 +2950,7 @@ body.nav-open .nav-backdrop {
         color: var(--text-primary); /* Sub-opciones mantienen su color normal */
     }
 
-    /* Eliminar la lÃ­nea blanca de la barra superior cuando el menÃº abre */
+    /* Eliminar la lÃƒÂ­nea blanca de la barra superior cuando el menÃƒÂº abre */
     body.nav-open header {
         border-bottom-color: transparent !important;
     }
@@ -2957,7 +2958,7 @@ body.nav-open .nav-backdrop {
     .mobile-drawer-actions {
         display: flex;
         flex-direction: row;
-        flex-wrap: wrap; /* Envolver si es necesario, pero intentarÃ¡n estar en lÃ­nea */
+        flex-wrap: wrap; /* Envolver si es necesario, pero intentarÃƒÂ¡n estar en lÃƒÂ­nea */
         gap: 0.6rem;
         justify-content: space-evenly; /* Centrados horizontalmente y ocupando el mismo espacio */
         width: 100%;
@@ -2990,7 +2991,7 @@ body.nav-open .nav-backdrop {
         gap: 0;
     }
 
-    /* El botÃ³n de idioma debe ser pastilla porque tiene texto */
+    /* El botÃƒÂ³n de idioma debe ser pastilla porque tiene texto */
     .mobile-drawer-actions .lang-btn {
         padding: 0 0.6rem !important;
         height: 34px;
@@ -3003,7 +3004,7 @@ body.nav-open .nav-backdrop {
         border: none !important;
     }
 
-    /* QUITAR CORCHETES DEL LOGIN EN EL CAJÃ“N (por si los hereda) */
+    /* QUITAR CORCHETES DEL LOGIN EN EL CAJÃƒâ€œN (por si los hereda) */
     .mobile-drawer-actions .login-min-btn::before,
     .mobile-drawer-actions .login-min-btn::after {
         display: none !important;
@@ -3021,49 +3022,49 @@ body.nav-open .nav-backdrop {
         height: 16px;
     }
 
-    /* Reducir aire vertical de secciones en mÃƒÂ³vil */
+    /* Reducir aire vertical de secciones en mÃƒÆ’Ã‚Â³vil */
 
-    /* Hero: tÃƒÂ­tulo mÃƒÂ¡s chico en mÃƒÂ³vil para que "| Portfolio" no se corte */
+    /* Hero: tÃƒÆ’Ã‚Â­tulo mÃƒÆ’Ã‚Â¡s chico en mÃƒÆ’Ã‚Â³vil para que "| Portfolio" no se corte */
     .hero-overlay h1 {
         font-size: clamp(1.9rem, 9vw, 3rem);
         line-height: 1.15;
     }
-    /* "| Portfolio" como bloque indivisible: salta entero a la lÃƒÂ­nea
+    /* "| Portfolio" como bloque indivisible: salta entero a la lÃƒÆ’Ã‚Â­nea
        siguiente en vez de partir la palabra ("Portf / olio"). */
     .hero-overlay h1 .highlight {
         white-space: nowrap;
     }
 
-    /* See-all: en mÃƒÂ³vil va en flujo (no en esquina) para no chocar con el
-       widget "Production Stack" ni el tÃƒÂ­tulo. */
+    /* See-all: en mÃƒÆ’Ã‚Â³vil va en flujo (no en esquina) para no chocar con el
+       widget "Production Stack" ni el tÃƒÆ’Ã‚Â­tulo. */
 
     .main-footer {
         padding: 4rem 1.5rem 2.5rem;
     }
 
-    /* Asistente Alessio: demasiado grande para mÃƒÂ³vil */
+    /* Asistente Alessio: demasiado grande para mÃƒÆ’Ã‚Â³vil */
 }
 
 /* ============================================================
-   CHARACTER DESIGN Ã¢â‚¬â€ Showcase rediseÃƒÂ±ado (v2)
+   CHARACTER DESIGN ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Showcase rediseÃƒÆ’Ã‚Â±ado (v2)
    Un personaje a la vez con crossfade suave + riel de miniaturas.
-   EstÃƒÂ©tica violeta/espacio acorde al resto de la pÃƒÂ¡gina.
+   EstÃƒÆ’Ã‚Â©tica violeta/espacio acorde al resto de la pÃƒÆ’Ã‚Â¡gina.
    ============================================================ */
 .cd-showcase {
     max-width: 920px;
-    /* SeparaciÃƒÂ³n superior fluida: en mÃƒÂ³vil reduce el hueco entre el tÃƒÂ­tulo
-       de la secciÃƒÂ³n y el showcase (antes 3.5rem fijo). */
+    /* SeparaciÃƒÆ’Ã‚Â³n superior fluida: en mÃƒÆ’Ã‚Â³vil reduce el hueco entre el tÃƒÆ’Ã‚Â­tulo
+       de la secciÃƒÆ’Ã‚Â³n y el showcase (antes 3.5rem fijo). */
     margin: clamp(1.5rem, 4vw, 3.5rem) auto 0;
     position: relative;
     z-index: 10;
 }
 
-/* Escenario: todos los paneles comparten la MISMA celda del grid, asÃƒÂ­
-   se superponen y la celda crece al panel mÃƒÂ¡s alto (sin saltos de alto). */
+/* Escenario: todos los paneles comparten la MISMA celda del grid, asÃƒÆ’Ã‚Â­
+   se superponen y la celda crece al panel mÃƒÆ’Ã‚Â¡s alto (sin saltos de alto). */
 
 /* --- Media (retrato + miniaturas de concept) --- */
 
-/* Ken-burns lento (paneo de posiciÃƒÂ³n con cover, sin letterboxing) */
+/* Ken-burns lento (paneo de posiciÃƒÆ’Ã‚Â³n con cover, sin letterboxing) */
 
 @keyframes cdKenBurns {
     from { background-position: center 14%; }
@@ -3099,13 +3100,13 @@ body.nav-open .nav-backdrop {
     }
 }
 
-/* FlotaciÃƒÂ³n del contenedor de media */
+/* FlotaciÃƒÆ’Ã‚Â³n del contenedor de media */
 @keyframes cdMediaFloat {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-16px); }
 }
 
-/* Parallax interno en el retrato - movimiento mÃƒÂ¡s lento */
+/* Parallax interno en el retrato - movimiento mÃƒÆ’Ã‚Â¡s lento */
 @keyframes cdPortraitParallax {
     0%, 100% { background-position: center 10%; }
     50% { background-position: center 35%; }
@@ -3133,7 +3134,7 @@ body.nav-open .nav-backdrop {
 
 /* Stagger de entrada del texto (se re-dispara al activarse el panel) */
 
-/* --- Riel de navegaciÃƒÂ³n --- */
+/* --- Riel de navegaciÃƒÆ’Ã‚Â³n --- */
 
 /* Barra de autoavance */
 
@@ -3145,10 +3146,10 @@ body.nav-open .nav-backdrop {
 /* --- Responsive --- */
 
 /* ============================================================================
-   CMS Ã¢â‚¬â€ Prototipo de ediciÃƒÂ³n (login mock + botones de editar + modales)
+   CMS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Prototipo de ediciÃƒÆ’Ã‚Â³n (login mock + botones de editar + modales)
    ============================================================================ */
 
-/* Botones de ediciÃƒÂ³n sobre cada elemento: ocultos salvo en modo admin */
+/* Botones de ediciÃƒÆ’Ã‚Â³n sobre cada elemento: ocultos salvo en modo admin */
 .cms-edit-btn { display: none; }
 
 body.is-admin .cms-edit-btn {
@@ -3196,9 +3197,9 @@ body.is-admin .cms-tools .cms-edit-btn {
     right: auto;
 }
 body.is-admin .cms-tool-replace { background: rgba(16, 185, 129, 0.95); }  /* verde: subir */
-body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* ÃƒÂ¡mbar: mover */
+body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }       /* ÃƒÆ’Ã‚Â¡mbar: mover */
 
-/* Si el slot estÃƒÂ¡ vacÃƒÂ­o, ocultar por completo las herramientas pequeÃƒÂ±as porque el propio overlay funciona de botÃƒÂ³n */
+/* Si el slot estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­o, ocultar por completo las herramientas pequeÃƒÆ’Ã‚Â±as porque el propio overlay funciona de botÃƒÆ’Ã‚Â³n */
 body.is-admin .cms-empty-slot .cms-tools {
     display: none !important;
 }
@@ -3206,14 +3207,14 @@ body.is-admin .cms-empty-slot .cms-tools {
 /* Contenido retirado (movido a "no usados"): oculto para visitantes */
 .cms-retired { display: none !important; }
 
-/* Slot vacÃƒÂ­o (admin): se conserva el contenedor con un botÃƒÂ³n para subir */
+/* Slot vacÃƒÆ’Ã‚Â­o (admin): se conserva el contenedor con un botÃƒÆ’Ã‚Â³n para subir */
 .cms-empty-slot > *:not(.cms-empty-overlay) { visibility: hidden !important; }
 
 /* ============================================================================
-   ESTILO GENÃƒâ€°RICO ÃƒÅ¡NICO DE CONTENEDOR VACÃƒÂO (canÃƒÂ³nico Ã¢â‚¬â€ no overridear por secciÃƒÂ³n)
-   Fondo violeta claro translÃƒÂºcido + borde punteado + icono nube + nombre debajo.
-   Cualquier contenedor sin contenido debe verse EXACTAMENTE asÃƒÂ­. Los efectos del
-   contenido (sombras, glow, float, gradientes) NO se aplican al contenedor vacÃƒÂ­o:
+   ESTILO GENÃƒÆ’Ã¢â‚¬Â°RICO ÃƒÆ’Ã…Â¡NICO DE CONTENEDOR VACÃƒÆ’Ã‚ÂO (canÃƒÆ’Ã‚Â³nico ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no overridear por secciÃƒÆ’Ã‚Â³n)
+   Fondo violeta claro translÃƒÆ’Ã‚Âºcido + borde punteado + icono nube + nombre debajo.
+   Cualquier contenedor sin contenido debe verse EXACTAMENTE asÃƒÆ’Ã‚Â­. Los efectos del
+   contenido (sombras, glow, float, gradientes) NO se aplican al contenedor vacÃƒÆ’Ã‚Â­o:
    solo aparecen al subir contenido. Ver `.cms-empty-slot` (neutralizador) abajo.
    ============================================================================ */
 .cms-empty-overlay {
@@ -3236,9 +3237,9 @@ body.is-admin .cms-empty-slot .cms-tools {
 .cms-empty-overlay i { font-size: 1.8rem; }
 .cms-empty-overlay span { font-size: 0.85rem; font-weight: 400; text-align: center; padding: 0 0.5rem; }
 
-/* Neutralizador: el contenedor vacÃƒÂ­o NO muestra efectos decorativos propios
-   (sombra, gradiente, glow, animaciÃƒÂ³n de flotado/respiraciÃƒÂ³n, blur). Solo es un
-   marco para el overlay genÃƒÂ©rico. Los efectos vuelven al subir contenido. */
+/* Neutralizador: el contenedor vacÃƒÆ’Ã‚Â­o NO muestra efectos decorativos propios
+   (sombra, gradiente, glow, animaciÃƒÆ’Ã‚Â³n de flotado/respiraciÃƒÆ’Ã‚Â³n, blur). Solo es un
+   marco para el overlay genÃƒÆ’Ã‚Â©rico. Los efectos vuelven al subir contenido. */
 .cms-empty-slot {
     background: transparent !important;
     box-shadow: none !important;
@@ -3467,7 +3468,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     font-family: 'Raleway', sans-serif;
 }
 
-/* ---- Repo Filter Buttons (styled like GestiÃƒÂ³n tabs) ---- */
+/* ---- Repo Filter Buttons (styled like GestiÃƒÆ’Ã‚Â³n tabs) ---- */
 .cms-repo-filter-btn {
     display: inline-flex;
     align-items: center;
@@ -3503,8 +3504,8 @@ body.is-admin .cms-empty-slot .cms-tools {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    /* Fondo sÃƒÂ³lido Ã¢â€ â€™ visible con buen contraste sobre cualquier fondo
-       (antes era violeta translÃƒÂºcido Ã¢â€ â€™ invisible sobre el contenedor vacÃƒÂ­o). */
+    /* Fondo sÃƒÆ’Ã‚Â³lido ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ visible con buen contraste sobre cualquier fondo
+       (antes era violeta translÃƒÆ’Ã‚Âºcido ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ invisible sobre el contenedor vacÃƒÆ’Ã‚Â­o). */
     background: #fff;
     color: var(--accent);
     border: 1px solid var(--accent);
@@ -3525,7 +3526,7 @@ body.is-admin .cms-hero-gear {
     transform: scale(1.1);
 }
 
-/* ---- BotÃƒÂ³n icÃƒÂ³nico sutil (gestor de carrusel minimalista) ---- */
+/* ---- BotÃƒÆ’Ã‚Â³n icÃƒÆ’Ã‚Â³nico sutil (gestor de carrusel minimalista) ---- */
 .cms-icon-btn {
     display: inline-flex;
     align-items: center;
@@ -3614,12 +3615,12 @@ body.is-admin .cms-mount {
     outline: 1px dashed rgba(124, 58, 237, 0.45);
     outline-offset: 3px;
 }
-/* Si estÃƒÂ¡ vacÃƒÂ­o, el recuadro propio del empty-overlay reemplaza a este */
+/* Si estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­o, el recuadro propio del empty-overlay reemplaza a este */
 body.is-admin .cms-mount.cms-empty-slot {
     outline: none !important;
 }
 
-/* Botones genÃƒÂ©ricos del CMS (settings, modales) */
+/* Botones genÃƒÆ’Ã‚Â©ricos del CMS (settings, modales) */
 .cms-btn {
     font-family: 'Raleway', sans-serif;
     font-size: 0.85rem;
@@ -3741,14 +3742,14 @@ body.is-admin .cms-mount.cms-empty-slot {
     gap: 0.6rem;
     margin-top: 1.2rem;
 }
-/* el botÃƒÂ³n primario (Guardar/Cerrar) queda al final de su renglÃƒÂ³n; el resto de
-   las acciones se agrupan juntas antes que ÃƒÂ©l */
+/* el botÃƒÆ’Ã‚Â³n primario (Guardar/Cerrar) queda al final de su renglÃƒÆ’Ã‚Â³n; el resto de
+   las acciones se agrupan juntas antes que ÃƒÆ’Ã‚Â©l */
 .cms-modal-actions .cms-btn--primary { margin-left: auto; }
 
-/* acciones en un ÃƒÂºnico renglÃƒÂ³n (vista previa): TODOS los botones quedan en la
+/* acciones en un ÃƒÆ’Ã‚Âºnico renglÃƒÆ’Ã‚Â³n (vista previa): TODOS los botones quedan en la
    misma fila (sin wrap); scroll horizontal sin barra visible si no entran
-   (las flechas de Windows ensuciaban la fila). Cerrar es el ÃƒÂºltimo botÃƒÂ³n del
-   array Ã¢â€ â€™ cae naturalmente al final, pegado a la derecha vÃƒÂ­a margin-left:auto. */
+   (las flechas de Windows ensuciaban la fila). Cerrar es el ÃƒÆ’Ã‚Âºltimo botÃƒÆ’Ã‚Â³n del
+   array ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ cae naturalmente al final, pegado a la derecha vÃƒÆ’Ã‚Â­a margin-left:auto. */
 .cms-modal-actions--row {
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -3819,9 +3820,9 @@ body.is-admin .cms-mount.cms-empty-slot {
     gap: 0.8rem;
 }
 
-/* Botones del diÃƒÂ¡logo de confirmaciÃƒÂ³n: full-width (cancelar / acciÃƒÂ³n).
+/* Botones del diÃƒÆ’Ã‚Â¡logo de confirmaciÃƒÆ’Ã‚Â³n: full-width (cancelar / acciÃƒÆ’Ã‚Â³n).
    Antes era una def. global `.cms-btn` sin scope que filtraba flex:1 +
-   border:none al botÃƒÂ³n genÃƒÂ©rico de todo el sitio. */
+   border:none al botÃƒÆ’Ã‚Â³n genÃƒÆ’Ã‚Â©rico de todo el sitio. */
 .cms-confirm-actions .cms-btn {
     flex: 1;
     padding: 0.7rem 1rem;
@@ -3912,9 +3913,9 @@ body.is-admin .cms-mount.cms-empty-slot {
 }
 
 /* ============================================================================
-   AHORRO DE RENDIMIENTO Ã¢â‚¬â€ pausar animaciones de secciones fuera de pantalla
-   El JS marca ".section-inactive" en las secciones que no estÃƒÂ¡n en viewport;
-   acÃƒÂ¡ se pausan TODAS sus animaciones CSS (blobs, auroras, floats, drifts,
+   AHORRO DE RENDIMIENTO ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â pausar animaciones de secciones fuera de pantalla
+   El JS marca ".section-inactive" en las secciones que no estÃƒÆ’Ã‚Â¡n en viewport;
+   acÃƒÆ’Ã‚Â¡ se pausan TODAS sus animaciones CSS (blobs, auroras, floats, drifts,
    cubos/cilindros 3D, etc.). Solo corren las de las secciones visibles.
    ============================================================================ */
 .section-inactive,
@@ -3951,10 +3952,10 @@ html.motion-off .animation-item.video-container {
     visibility: visible !important;
 }
 
-/* Las letras del hero y de los tÃƒÂ­tulos por-letra (.letter) arrancan en
-   opacity:0 y sÃƒÂ³lo se revelan con la animaciÃƒÂ³n fadeLetter; al pausar el
-   movimiento la animaciÃƒÂ³n se anula, asÃƒÂ­ que las forzamos visibles para que
-   el tÃƒÂ­tulo del hero, los nombres y los roles de personaje no desaparezcan. */
+/* Las letras del hero y de los tÃƒÆ’Ã‚Â­tulos por-letra (.letter) arrancan en
+   opacity:0 y sÃƒÆ’Ã‚Â³lo se revelan con la animaciÃƒÆ’Ã‚Â³n fadeLetter; al pausar el
+   movimiento la animaciÃƒÆ’Ã‚Â³n se anula, asÃƒÆ’Ã‚Â­ que las forzamos visibles para que
+   el tÃƒÆ’Ã‚Â­tulo del hero, los nombres y los roles de personaje no desaparezcan. */
 html.motion-off .letter {
     opacity: 1 !important;
     transform: none !important;
@@ -3967,7 +3968,7 @@ html.motion-off #animBlobCanvas {
 }
 
 /* ============================================================================
-   Enlace "Contact" destacado en la barra de navegaciÃƒÂ³n
+   Enlace "Contact" destacado en la barra de navegaciÃƒÆ’Ã‚Â³n
    ============================================================================ */
 .nav-links > a[data-i18n="nav_contact"] {
     color: var(--accent);
@@ -3978,7 +3979,7 @@ html.motion-off #animBlobCanvas {
 }
 
 /* ============================================================================
-   BotÃƒÂ³n de login en la navbar
+   BotÃƒÆ’Ã‚Â³n de login en la navbar
    ============================================================================ */
 #cms-auth-nav {
     display: inline-flex;
@@ -3986,7 +3987,7 @@ html.motion-off #animBlobCanvas {
     gap: 0.5rem;
 }
 
-/* Chip con el usuario logueado, al lado del botÃƒÂ³n de la barra. */
+/* Chip con el usuario logueado, al lado del botÃƒÆ’Ã‚Â³n de la barra. */
 .cms-user-chip {
     display: inline-flex;
     align-items: center;
@@ -4027,7 +4028,7 @@ html.motion-off #animBlobCanvas {
     box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
 }
 
-/* SesiÃƒÂ³n iniciada: estilo lleno para diferenciar */
+/* SesiÃƒÆ’Ã‚Â³n iniciada: estilo lleno para diferenciar */
 body.is-admin .cms-navauth-btn {
     background: rgba(124, 58, 237, 0.12);
 }
@@ -4119,7 +4120,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* ============================================================================
-   PÃƒÂ¡gina de gestiÃƒÂ³n / auditorÃƒÂ­a (overlay solo superadmin)
+   PÃƒÆ’Ã‚Â¡gina de gestiÃƒÆ’Ã‚Â³n / auditorÃƒÆ’Ã‚Â­a (overlay solo superadmin)
    ============================================================================ */
 .cms-admin-overlay {
     position: fixed;
@@ -4230,7 +4231,7 @@ body.cms-modal-open { overflow: hidden; }
 .info-link:hover { color: #c4b5fd; text-decoration: underline; }
 [data-theme="light"] .info-link { color: #6d28d9; }
 
-/* Slot para agregar ilustraciÃƒÂ³n (solo admin) */
+/* Slot para agregar ilustraciÃƒÆ’Ã‚Â³n (solo admin) */
 .cms-add-slot {
     display: flex;
     flex-direction: column;
@@ -4257,11 +4258,11 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* ============================================================================
-   PÃƒÂGINA DE GESTIÃƒâ€œN (admin.html)
+   PÃƒÆ’Ã‚ÂGINA DE GESTIÃƒÆ’Ã¢â‚¬Å“N (admin.html)
    ============================================================================ */
 .admin-page {
     background-color: var(--bg-secondary);
-    /* Grilla blueprint tenue Ã¢â‚¬â€ firma tÃƒÂ©cnica del sitio, sin restar legibilidad */
+    /* Grilla blueprint tenue ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â firma tÃƒÆ’Ã‚Â©cnica del sitio, sin restar legibilidad */
     background-image:
         linear-gradient(to right, rgba(139, 92, 246, 0.035) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(139, 92, 246, 0.035) 1px, transparent 1px);
@@ -4337,7 +4338,7 @@ body.cms-modal-open { overflow: hidden; }
     font-family: 'Fira Code', monospace;
 }
 
-/* Cantidad de archivos + tamaÃƒÂ±o destacados debajo del header Ã¢â‚¬â€ estÃƒÂ¡ndar
+/* Cantidad de archivos + tamaÃƒÆ’Ã‚Â±o destacados debajo del header ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â estÃƒÆ’Ã‚Â¡ndar
    compartido por las 4 subsecciones de Contenidos (uso/sin usar/basurero/repo) */
 .admin-content-stats {
     display: flex;
@@ -4349,7 +4350,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 .admin-content-stats .admin-badge { margin-left: 0.4rem; }
 
-/* Selector con chip de contexto (ej. "Borrado automÃƒÂ¡tico") Ã¢â‚¬â€ mismo lenguaje
+/* Selector con chip de contexto (ej. "Borrado automÃƒÆ’Ã‚Â¡tico") ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mismo lenguaje
    visual que .cms-btn (hover/focus con el acento del tema). */
 .admin-select-group {
     display: flex;
@@ -4384,9 +4385,9 @@ body.cms-modal-open { overflow: hidden; }
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-/* MenÃƒÂº de opciones extra del header (selecciÃƒÂ³n mÃƒÂºltiple, vaciar, filtros,
-   polÃƒÂ­tica de borrado) oculto detrÃƒÂ¡s de un ÃƒÂ­cono de hamburguesa Ã¢â‚¬â€ mismo
-   patrÃƒÂ³n en las 4 subsecciones de Contenidos. */
+/* MenÃƒÆ’Ã‚Âº de opciones extra del header (selecciÃƒÆ’Ã‚Â³n mÃƒÆ’Ã‚Âºltiple, vaciar, filtros,
+   polÃƒÆ’Ã‚Â­tica de borrado) oculto detrÃƒÆ’Ã‚Â¡s de un ÃƒÆ’Ã‚Â­cono de hamburguesa ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mismo
+   patrÃƒÆ’Ã‚Â³n en las 4 subsecciones de Contenidos. */
 .admin-options-menu { position: relative; margin-left: auto; z-index: 60; }
 .admin-options-panel {
     position: absolute;
@@ -4498,7 +4499,7 @@ body.cms-modal-open { overflow: hidden; }
 
 .admin-stat--warn .admin-stat-num { color: #dc2626; }
 
-/* peso total de la categorÃƒÂ­a, debajo del label */
+/* peso total de la categorÃƒÆ’Ã‚Â­a, debajo del label */
 .admin-stat-size {
     margin-top: 0.15rem;
     font-family: 'Fira Code', monospace;
@@ -4517,8 +4518,8 @@ body.cms-modal-open { overflow: hidden; }
 
 .cms-mlib-grid {
     display: grid;
-    /* 3 por fila en desktop; max-width evita que se agranden de mÃƒÂ¡s en
-       pantallas anchas (mantiene ~tamaÃƒÂ±o de tarjeta previo) */
+    /* 3 por fila en desktop; max-width evita que se agranden de mÃƒÆ’Ã‚Â¡s en
+       pantallas anchas (mantiene ~tamaÃƒÆ’Ã‚Â±o de tarjeta previo) */
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
     max-width: 1180px;
@@ -4600,12 +4601,12 @@ body.cms-modal-open { overflow: hidden; }
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.3rem;
-    padding-right: 40px; /* espacio para el botÃƒÂ³n de opciones, incrementado de 24px */
+    padding-right: 40px; /* espacio para el botÃƒÆ’Ã‚Â³n de opciones, incrementado de 24px */
     line-height: 1.2;
 }
 
 /* Columna de la miniatura: tag ARRIBA de la imagen (mismo ancho que ella) y
-   la imagen debajo. El check de selecciÃƒÂ³n se superpone a la esquina de la imagen. */
+   la imagen debajo. El check de selecciÃƒÆ’Ã‚Â³n se superpone a la esquina de la imagen. */
 .cms-mlib-thumb-col {
     flex: 0 0 auto;
     width: 80px;
@@ -4652,7 +4653,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* fila de meta con valor largo (ej. "Contenedor anterior"): trunca con
-   ellipsis en vez de ocupar un renglÃƒÂ³n extra; el tÃƒÂ­tulo completo va en el
+   ellipsis en vez de ocupar un renglÃƒÆ’Ã‚Â³n extra; el tÃƒÆ’Ã‚Â­tulo completo va en el
    atributo title (tooltip nativo al pasar el mouse) */
 .cms-mlib-meta-truncate { min-width: 0; }
 .cms-mlib-meta-truncate span {
@@ -4665,7 +4666,7 @@ body.cms-modal-open { overflow: hidden; }
 .cms-mlib-del { color: #dc2626; border-color: rgba(220, 38, 38, 0.5); }
 .cms-mlib-del:hover { background: #dc2626; color: #fff; }
 
-/* Sub-pestaÃƒÂ±as de Contenidos (usado / no usado) */
+/* Sub-pestaÃƒÆ’Ã‚Â±as de Contenidos (usado / no usado) */
 
 /* Acciones y botones dentro de las tarjetas de medios */
 .cms-mlib-actions { 
@@ -4715,7 +4716,7 @@ body.cms-modal-open { overflow: hidden; }
     z-index: 50;
     pointer-events: none;
 }
-/* ÃƒÂrea invisible para no perder el hover al mover el mouse */
+/* ÃƒÆ’Ã‚Ârea invisible para no perder el hover al mover el mouse */
 .cms-dropdown::after {
     content: '';
     position: absolute;
@@ -4754,7 +4755,7 @@ body.cms-modal-open { overflow: hidden; }
 .cms-mlib-restore { color: var(--accent); border-color: rgba(124, 58, 237, 0.5); }
 .cms-mlib-restore:hover { background: var(--accent); color: #fff; }
 
-/* Aviso destacado dentro de un modal de confirmaciÃƒÂ³n */
+/* Aviso destacado dentro de un modal de confirmaciÃƒÆ’Ã‚Â³n */
 .cms-confirm-body { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5; }
 .cms-confirm-body strong { color: var(--text-primary); }
 .cms-confirm-warn {
@@ -4868,14 +4869,14 @@ body.cms-modal-open { overflow: hidden; }
 .admin-nav-sub.open {
     display: flex;
 }
-/* ÃƒÂconos del menÃƒÂº monocromos (sin arcoÃƒÂ­ris) Ã¢â‚¬â€ el estado activo lleva el acento */
+/* ÃƒÆ’Ã‚Âconos del menÃƒÆ’Ã‚Âº monocromos (sin arcoÃƒÆ’Ã‚Â­ris) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â el estado activo lleva el acento */
 .admin-nav-item i.c-uso,
 .admin-nav-item i.c-nouso,
 .admin-nav-item i.c-repo,
 .admin-nav-item i.c-basurero,
 .admin-nav-item i.c-subir { color: inherit; }
 
-/* AlineaciÃƒÂ³n precisa de estadÃƒÂ­sticas en el menÃƒÂº lateral */
+/* AlineaciÃƒÆ’Ã‚Â³n precisa de estadÃƒÆ’Ã‚Â­sticas en el menÃƒÆ’Ã‚Âº lateral */
 .admin-nav-badge-label {
     display: flex;
     flex: 1;
@@ -4908,9 +4909,9 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 
-/* Vista de acceso restringido: ocultar el menÃƒÂº y el chip de usuario. */
+/* Vista de acceso restringido: ocultar el menÃƒÆ’Ã‚Âº y el chip de usuario. */
 
-/* ----- Grupos por secciÃƒÂ³n dentro de Contenidos ----- */
+/* ----- Grupos por secciÃƒÆ’Ã‚Â³n dentro de Contenidos ----- */
 /* ----- Tooltip de info (hover / focus) ----- */
 .cms-info-tip {
     position: relative;
@@ -4952,16 +4953,16 @@ body.cms-modal-open { overflow: hidden; }
     transform: translateY(0);
 }
 
-/* ----- ÃƒÂrbol PÃƒÂ¡gina Ã¢â€ â€™ SecciÃƒÂ³n Ã¢â€ â€™ Contenido (Contenido en uso) ----- */
+/* ----- ÃƒÆ’Ã‚Ârbol PÃƒÆ’Ã‚Â¡gina ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ SecciÃƒÆ’Ã‚Â³n ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Contenido (Contenido en uso) ----- */
 .admin-tree { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
 .admin-tree-page {
     border: 1px solid var(--border);
     border-radius: 12px;
     background: var(--bg-primary);
 }
-/* sin overflow:hidden en el contenedor Ã¢â‚¬â€ recortaba los menÃƒÂºs desplegables de las
-   tarjetas dentro de una secciÃƒÂ³n abierta. Las esquinas redondeadas se compensan
-   redondeando explÃƒÂ­citamente el primer/ÃƒÂºltimo elemento visible. */
+/* sin overflow:hidden en el contenedor ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â recortaba los menÃƒÆ’Ã‚Âºs desplegables de las
+   tarjetas dentro de una secciÃƒÆ’Ã‚Â³n abierta. Las esquinas redondeadas se compensan
+   redondeando explÃƒÆ’Ã‚Â­citamente el primer/ÃƒÆ’Ã‚Âºltimo elemento visible. */
 .admin-tree-page > .admin-tree-row--page { border-radius: 11px 11px 0 0; }
 .admin-tree-page > .admin-tree-row--page:only-child { border-radius: 11px; }
 .admin-tree-page > .admin-tree-sections:last-child { border-radius: 0 0 11px 11px; }
@@ -5021,8 +5022,8 @@ body.cms-modal-open { overflow: hidden; }
     font: inherit;
 }
 .admin-tree-rowbtn:hover .admin-tree-label { color: var(--accent); }
-/* en secciones, el badge va pegado al nombre Ã¢â‚¬â€ no empujado al margen como en la pÃƒÂ¡gina;
-   el botÃƒÂ³n deja de ocupar todo el ancho para que el check de selecciÃƒÂ³n quede junto al badge */
+/* en secciones, el badge va pegado al nombre ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no empujado al margen como en la pÃƒÆ’Ã‚Â¡gina;
+   el botÃƒÆ’Ã‚Â³n deja de ocupar todo el ancho para que el check de selecciÃƒÆ’Ã‚Â³n quede junto al badge */
 .admin-tree-row--section .admin-tree-rowbtn { flex: 0 1 auto; }
 .admin-tree-row--section .admin-tree-label { flex: 0 1 auto; }
 .admin-tree-row--section .admin-badge { margin-left: 0.5rem; }
@@ -5050,7 +5051,7 @@ body.cms-modal-open { overflow: hidden; }
 .cms-tag--nouso { background: #d97706; color: #ffffff; font-weight: 700; }
 .cms-tag--repo { background: #3b82f6; color: #ffffff; font-weight: 700; }
 .cms-tag--basurero { background: #dc2626; color: #ffffff; font-weight: 700; }
-/* motivo por el que un contenido quedÃƒÂ³ "sin usar" Ã¢â‚¬â€ colores distintivos */
+/* motivo por el que un contenido quedÃƒÆ’Ã‚Â³ "sin usar" ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â colores distintivos */
 .cms-tag--subido { background: #7c3aed; color: #ffffff; font-weight: 700; }
 .cms-tag--retirado { background: #d97706; color: #ffffff; font-weight: 700; }
 .cms-tag--reemplazado { background: #3b82f6; color: #ffffff; font-weight: 700; }
@@ -5111,7 +5112,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 .icon-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 
-/* Badge "PrÃƒÂ³ximamente" para secciones de sÃƒÂ³lo-distribuciÃƒÂ³n */
+/* Badge "PrÃƒÆ’Ã‚Â³ximamente" para secciones de sÃƒÆ’Ã‚Â³lo-distribuciÃƒÆ’Ã‚Â³n */
 
 @media (max-width: 820px) {
     .admin-shell { flex-direction: column; padding: 1rem; }
@@ -5129,13 +5130,13 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* ============================================================
-   RESPONSIVE Ã¢â‚¬â€ Cambios estructurales (columnas, decoraciÃƒÂ³n).
-   El espaciado y la tipografÃƒÂ­a escalan solos vÃƒÂ­a clamp() en las
-   reglas base, asÃƒÂ­ que aquÃƒÂ­ sÃƒÂ³lo quedan los cambios de layout que
+   RESPONSIVE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Cambios estructurales (columnas, decoraciÃƒÆ’Ã‚Â³n).
+   El espaciado y la tipografÃƒÆ’Ã‚Â­a escalan solos vÃƒÆ’Ã‚Â­a clamp() en las
+   reglas base, asÃƒÆ’Ã‚Â­ que aquÃƒÆ’Ã‚Â­ sÃƒÆ’Ã‚Â³lo quedan los cambios de layout que
    clamp() no puede resolver.
    ============================================================ */
 
-/* Grilla de animaciones: 2 columnas en tablet (Ã¢â€°Â¤1200px) */
+/* Grilla de animaciones: 2 columnas en tablet (ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¤1200px) */
 @media (max-width: 1200px) {
     .animations-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -5143,9 +5144,9 @@ body.cms-modal-open { overflow: hidden; }
     }
 }
 
-/* MÃƒÂ³vil general (Ã¢â€°Â¤ 768px) */
+/* MÃƒÆ’Ã‚Â³vil general (ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¤ 768px) */
 @media (max-width: 768px) {
-    /* Animaciones: una sola columna, mÃƒÂ¡s compacta y centrada (no a borde) */
+    /* Animaciones: una sola columna, mÃƒÆ’Ã‚Â¡s compacta y centrada (no a borde) */
     .animations-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -5153,58 +5154,58 @@ body.cms-modal-open { overflow: hidden; }
         padding: 2rem 0;
     }
 
-    /* En mÃƒÂ³vil el tap NO debe agrandar la tarjeta (el :hover se "pega" al
+    /* En mÃƒÆ’Ã‚Â³vil el tap NO debe agrandar la tarjeta (el :hover se "pega" al
        tocar): solo se revela la info (overlay), sin scale ni lift. */
     .animation-item.video-container:hover {
         transform: none;
     }
 
-    /* Portales decorativos: ocultar en mÃƒÂ³vil (24rem de ancho, desborda) */
+    /* Portales decorativos: ocultar en mÃƒÆ’Ã‚Â³vil (24rem de ancho, desborda) */
     .decor-motion { display: none; }
 
     /* Panel de software: reposicionar y limitar ancho del desplegable */
     .global-soft-icons { min-width: min(88vw, 260px); }
-    /* Badge "Production Stack" mÃƒÂ¡s chico en mÃƒÂ³vil */
+    /* Badge "Production Stack" mÃƒÆ’Ã‚Â¡s chico en mÃƒÆ’Ã‚Â³vil */
 
     /* --- Navbar: descongestionar para que el logo no choque con las acciones --- */
-    /* El logo muestra "Lucia MontaÃƒÂ±a | Portfolio" completo (con fuente reducida). */
+    /* El logo muestra "Lucia MontaÃƒÆ’Ã‚Â±a | Portfolio" completo (con fuente reducida). */
 
-    /* CV y login pasan a sÃƒÂ³lo-ÃƒÂ­cono en la barra (sus etiquetas se ocultan) */
+    /* CV y login pasan a sÃƒÆ’Ã‚Â³lo-ÃƒÆ’Ã‚Â­cono en la barra (sus etiquetas se ocultan) */
     .cv-btn span { display: none; }
     .cv-btn { padding: 0.5rem; }
 
-    /* El texto del botÃƒÂ³n de login es un nodo suelto: font-size:0 lo oculta
-       y se restaura el tamaÃƒÂ±o del ÃƒÂ­cono. */
+    /* El texto del botÃƒÆ’Ã‚Â³n de login es un nodo suelto: font-size:0 lo oculta
+       y se restaura el tamaÃƒÆ’Ã‚Â±o del ÃƒÆ’Ã‚Â­cono. */
     .cms-navauth-btn { font-size: 0; padding: 0.5rem; }
     .cms-navauth-btn i { font-size: 1rem; }
 
-    /* El chip "superadmin" ocupa demasiado en mÃƒÂ³vil */
+    /* El chip "superadmin" ocupa demasiado en mÃƒÆ’Ã‚Â³vil */
     #cms-auth-nav .cms-user-chip { display: none; }
 }
 
-/* GalerÃƒÂ­a de ilustraciones (feed) en mÃƒÂ³vil/tablet:
-   El patrÃƒÂ³n "bento" (big/wide/tall) deja celdas muy finas/altas en pantallas
+/* GalerÃƒÆ’Ã‚Â­a de ilustraciones (feed) en mÃƒÆ’Ã‚Â³vil/tablet:
+   El patrÃƒÆ’Ã‚Â³n "bento" (big/wide/tall) deja celdas muy finas/altas en pantallas
    chicas. Se neutralizan los spans de FILA para que ninguna imagen quede
-   estrecha y todas conserven una proporciÃƒÂ³n correcta. */
+   estrecha y todas conserven una proporciÃƒÆ’Ã‚Â³n correcta. */
 @media (max-width: 768px) {
     /* 2 columnas EXACTAS e iguales: evita la columna sobrante estrecha que
        generaban los items "big"/"wide" (span 2) y que dejaba a los vecinos
        muy finos. Los span 2 pasan a ocupar el ancho completo de la fila. */
 
     /* 3D: cada bloque muestra sus 2 videos apilados a ancho completo (el 3er
-       video del bloque 2 se reubica al bloque 1 por JS Ã¢â€ â€™ 2 y 2). */
+       video del bloque 2 se reubica al bloque 1 por JS ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ 2 y 2). */
     .model-visual-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
 }
 
-/* TelÃƒÂ©fonos pequeÃƒÂ±os (Ã¢â€°Â¤ 480px) */
+/* TelÃƒÆ’Ã‚Â©fonos pequeÃƒÆ’Ã‚Â±os (ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¤ 480px) */
 @media (max-width: 480px) {
-    /* Una sola columna: cada ilustraciÃƒÂ³n a ancho completo, sin slivers. */
+    /* Una sola columna: cada ilustraciÃƒÆ’Ã‚Â³n a ancho completo, sin slivers. */
 }
 
 /* Multi-selection */
-/* Ã¢â€â‚¬Ã¢â€â‚¬ SelecciÃƒÂ³n mÃƒÂºltiple (rediseÃƒÂ±o) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-   Check custom (appearance:none Ã¢â€ â€™ caja redondeada con tilde) reutilizado
-   por tarjetas (.cms-multi-check), filas de pÃƒÂ¡gina/secciÃƒÂ³n y grupos
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ SelecciÃƒÆ’Ã‚Â³n mÃƒÆ’Ã‚Âºltiple (rediseÃƒÆ’Ã‚Â±o) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+   Check custom (appearance:none ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ caja redondeada con tilde) reutilizado
+   por tarjetas (.cms-multi-check), filas de pÃƒÆ’Ã‚Â¡gina/secciÃƒÆ’Ã‚Â³n y grupos
    (.cms-check). Barra de lote como chip con conteo destacado. */
 .cms-check,
 .cms-multi-check {
@@ -5244,7 +5245,7 @@ body.cms-modal-open { overflow: hidden; }
 .cms-check:focus-visible,
 .cms-multi-check:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 2px; }
 
-/* check de "seleccionar todo" (pÃƒÂ¡gina / secciÃƒÂ³n / grupo) */
+/* check de "seleccionar todo" (pÃƒÆ’Ã‚Â¡gina / secciÃƒÆ’Ã‚Â³n / grupo) */
 .cms-check--all { margin-left: 0.6rem; }
 
 /* check en la esquina superior izquierda de la tarjeta */
@@ -5257,13 +5258,13 @@ body.cms-modal-open { overflow: hidden; }
     box-shadow: 0 0 0 3px var(--bg-secondary);
 }
 .cms-multi-mode .cms-multi-check { display: grid; }
-/* tarjeta seleccionada Ã¢â‚¬â€ realce sutil (borde tenue + tinte), sin anillo grueso */
+/* tarjeta seleccionada ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â realce sutil (borde tenue + tinte), sin anillo grueso */
 .cms-mlib-item:has(.cms-multi-check:checked) {
     border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
     background: color-mix(in srgb, var(--accent) 7%, var(--bg-secondary));
 }
 
-/* barra de lote: toolbar sobria Ã¢â‚¬â€ fondo tenue, borde fino, sin sombra dura */
+/* barra de lote: toolbar sobria ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fondo tenue, borde fino, sin sombra dura */
 .cms-batch-bar {
     position: sticky;
     top: 0;
@@ -5294,8 +5295,8 @@ body.cms-modal-open { overflow: hidden; }
 .cms-batch-text { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
 .cms-batch-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 .cms-btn--ghost { border-color: transparent; background: transparent; color: var(--text-secondary); }
-/* hover sobrio: un lavado neutro translÃƒÂºcido (sirve en claro y oscuro), sin que
-   aparezca borde ni un relleno sÃƒÂ³lido como en el estilo anterior */
+/* hover sobrio: un lavado neutro translÃƒÆ’Ã‚Âºcido (sirve en claro y oscuro), sin que
+   aparezca borde ni un relleno sÃƒÆ’Ã‚Â³lido como en el estilo anterior */
 .cms-btn--ghost:hover { background: rgba(120, 120, 130, 0.14); color: var(--text-primary); border-color: transparent; }
 .cms-btn--primary.cms-batch-danger { background: #ef4444; border-color: #ef4444; }
 .cms-btn--primary.cms-batch-danger:hover { background: #dc2626; border-color: #dc2626; }
@@ -5304,7 +5305,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 /* ============================================================
-   REDESIGN & LAYOUT STABILITY (CMS PORTADA & SOBRE MÃƒÂ)
+   REDESIGN & LAYOUT STABILITY (CMS PORTADA & SOBRE MÃƒÆ’Ã‚Â)
    ============================================================ */
 
 /* Layout Stability: override .cms-retired to keep containers visible when empty */
@@ -5541,7 +5542,7 @@ body.cms-modal-open { overflow: hidden; }
     width: 100vw; height: 100vh;
     z-index: -1;
     overflow: hidden;
-    background: #fff; /* sin imÃƒÂ¡genes Ã¢â€ â€™ fondo blanco (las slides lo cubren si hay) */
+    background: #fff; /* sin imÃƒÆ’Ã‚Â¡genes ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ fondo blanco (las slides lo cubren si hay) */
 }
 .carousel-slide {
     position: absolute;
@@ -5614,10 +5615,10 @@ body.cms-modal-open { overflow: hidden; }
 .float-anim-delayed { animation: float 6s ease-in-out infinite; animation-delay: -3s; }
 @keyframes float { 0% { transform: translateY(0px) rotate(0.5deg); } 50% { transform: translateY(-15px) rotate(-0.5deg); } 100% { transform: translateY(0px) rotate(0.5deg); } }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-   HERO SOFTWARE WAVE  (fresh rebuild Ã¢â‚¬â€ no legacy code below)
+/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
+   HERO SOFTWARE WAVE  (fresh rebuild ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no legacy code below)
    Infinite bubble marquee. On hover: tooltip above, toolbar below.
-   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+   ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */
 
 /* --- Container: full-width, clips the scrolling track --- */
 .hero-software-wave {
@@ -5637,8 +5638,8 @@ body.is-admin .hero-software-wave {
 }
 
 /* --- Scrolling track --- */
-/* Contenedor de carrusel vacÃƒÂ­o (sin imÃƒÂ¡genes) Ã¢â‚¬â€ borde punteado + icono +
-   nombre, igual que el resto de contenedores vacÃƒÂ­os. Clase propia para no
+/* Contenedor de carrusel vacÃƒÆ’Ã‚Â­o (sin imÃƒÆ’Ã‚Â¡genes) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â borde punteado + icono +
+   nombre, igual que el resto de contenedores vacÃƒÆ’Ã‚Â­os. Clase propia para no
    colisionar con .cms-empty-overlay (que el engine gestiona globalmente). */
 .hero-carousel-empty {
     position: absolute;
@@ -5660,7 +5661,7 @@ body.is-admin .hero-software-wave {
 .hero-carousel-empty i { font-size: 2rem; }
 .hero-carousel-empty span { font-size: 0.9rem; font-weight: 600; padding: 0 0.6rem; }
 
-/* Carrusel hero VACÃƒÂO Ã¢â€ â€™ marco genÃƒÂ©rico limpio: ocultar las decoraciones
+/* Carrusel hero VACÃƒÆ’Ã‚ÂO ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ marco genÃƒÆ’Ã‚Â©rico limpio: ocultar las decoraciones
    blueprint propias del contenedor (label data-container-id, corners, scanline,
    FIG, overlay) y neutralizar su fondo/borde, para que solo se vea el dashed. */
 .media-container:has(.hero-carousel-empty)::before { content: none; }
@@ -5684,8 +5685,8 @@ body.is-admin .hero-software-wave {
     animation-play-state: paused;
 }
 /* La cinta se mueve siempre. Para editar, el hover sobre la wave la congela
-   (regla `.hero-software-wave:hover .wave-track` arriba) Ã¢â€ â€™ se puede apretar el
-   lÃƒÂ¡piz sin que la burbuja se escape. */
+   (regla `.hero-software-wave:hover .wave-track` arriba) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ se puede apretar el
+   lÃƒÆ’Ã‚Â¡piz sin que la burbuja se escape. */
 @keyframes waveMarquee {
     to { transform: translateX(-25%); }
 }
@@ -5698,7 +5699,7 @@ body.is-admin .hero-software-wave {
     align-items: center;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Single bubble Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Single bubble ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .wave-item {
     position: relative;
     max-width: 56px;
@@ -5742,13 +5743,13 @@ body.is-admin .hero-software-wave {
     z-index: 40;
 }
 
-/* ExpansiÃ³n (al entrar el mouse): muy pausada, gradual y lenta. */
+/* ExpansiÃƒÂ³n (al entrar el mouse): muy pausada, gradual y lenta. */
 .wave-item.wave-has-content:hover,
 .wave-item:not(.wave-has-content):hover {
     transition: max-width 0.95s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, padding 0.95s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0s, border-color 0.55s ease, box-shadow 0.55s ease;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Icon slot Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Icon slot ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .wave-icon-slot {
     width: 30px;
     height: 30px;
@@ -5760,7 +5761,7 @@ body.is-admin .hero-software-wave {
     pointer-events: none;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Name text Ã¢â‚¬â€ expands horizontally inside the bubble Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Name text ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â expands horizontally inside the bubble ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .wave-text {
     color: #1a1a1a;
     font-size: 14px;
@@ -5779,11 +5780,11 @@ body.is-admin .hero-software-wave {
     max-width: 200px;
     opacity: 1;
     margin-left: 10px;
-    /* ApariciÃƒÂ³n responsiva al entrar. */
+    /* ApariciÃƒÆ’Ã‚Â³n responsiva al entrar. */
     transition: max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, opacity 0.3s ease 0s, margin-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0s;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Empty bubble Ã¢â‚¬â€ dashed purple ring Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Empty bubble ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dashed purple ring ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .wave-item:not(.wave-has-content) {
     border: 2px dashed rgba(124, 58, 237, 0.3);
     background: rgba(255, 255, 255, 0.8);
@@ -5795,7 +5796,7 @@ body.is-admin .hero-software-wave {
     display: none !important;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ CMS upload overlay (shown on empty slots by engine) Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CMS upload overlay (shown on empty slots by engine) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .wave-item .cms-empty-overlay {
     position: absolute;
     inset: 0;
@@ -5815,7 +5816,7 @@ body.is-admin .hero-software-wave {
 .wave-item .cms-empty-overlay span  { display: none; }
 .wave-item.cms-empty-slot > *:not(.cms-empty-overlay) { visibility: visible !important; }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ CMS action toolbar Ã¢â‚¬â€ floats ABOVE bubble on hover Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CMS action toolbar ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â floats ABOVE bubble on hover ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 body.is-admin .wave-item .cms-tools {
     position: absolute;
     bottom: 100%;
@@ -5887,7 +5888,7 @@ body.is-admin .wave-item .cms-tools .cms-tool-replace {
     display: none !important;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Float animation + stagger Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Float animation + stagger ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 @keyframes waveBob {
     from { transform: translateY(-8px); }
     to   { transform: translateY(8px); }
@@ -5916,7 +5917,7 @@ body.is-admin .wave-item .cms-tools .cms-tool-replace {
 .soft-badge.an { background: #FF3366; }
 
 /* ============================================================================
-   OCULTAR EDICIÃƒâ€œN (MODO ESPECTADOR)
+   OCULTAR EDICIÃƒÆ’Ã¢â‚¬Å“N (MODO ESPECTADOR)
    ============================================================================ */
 body.hide-cms-controls .cms-edit-btn,
 body.hide-cms-controls .cms-hero-gear,
@@ -5930,16 +5931,16 @@ body.hide-cms-controls .proj-showcase__manage,
 body.hide-cms-controls .ch-showcase__manage {
     display: none !important;
 }
-/* Vista "usuario normal": sin recuadros de ediciÃƒÂ³n ni slots vacÃƒÂ­os resaltados.
-   El media subyacente de un slot vacÃƒÂ­o DEBE seguir oculto (regla global 4372):
-   el contenedor vacÃƒÂ­o se ve idÃƒÂ©ntico en admin y hide-edit (marco punteado, sin
-   contenido stale). No reexponer el `> *` acÃƒÂ¡ Ã¢â‚¬â€ era el bug de contenido que
-   reaparecÃƒÂ­a al togglear "Hide Edit actions". */
+/* Vista "usuario normal": sin recuadros de ediciÃƒÆ’Ã‚Â³n ni slots vacÃƒÆ’Ã‚Â­os resaltados.
+   El media subyacente de un slot vacÃƒÆ’Ã‚Â­o DEBE seguir oculto (regla global 4372):
+   el contenedor vacÃƒÆ’Ã‚Â­o se ve idÃƒÆ’Ã‚Â©ntico en admin y hide-edit (marco punteado, sin
+   contenido stale). No reexponer el `> *` acÃƒÆ’Ã‚Â¡ ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â era el bug de contenido que
+   reaparecÃƒÆ’Ã‚Â­a al togglear "Hide Edit actions". */
 body.hide-cms-controls .cms-mount { outline: none !important; }
 
 /* ============================================================================
-   CONTENEDOR VACÃƒÂO Ã¢â‚¬â€ VISTA VISITANTE / HIDE-EDIT
-   El marco punteado + fondo violeta translÃƒÂºcido SE MANTIENEN igual que en admin.
+   CONTENEDOR VACÃƒÆ’Ã‚ÂO ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â VISTA VISITANTE / HIDE-EDIT
+   El marco punteado + fondo violeta translÃƒÆ’Ã‚Âºcido SE MANTIENEN igual que en admin.
    Solo se oculta el icono de subir + el nombre, y deja de ser interactivo.
    ============================================================================ */
 body:not(.is-admin) .cms-empty-overlay,
@@ -5982,7 +5983,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 /* ============================================================
-   GOOGLE ANALYTICS DASHBOARD â€” Estilos del Panel de TrÃ¡fico
+   GOOGLE ANALYTICS DASHBOARD Ã¢â‚¬â€ Estilos del Panel de TrÃƒÂ¡fico
    ============================================================ */
 .ga-analytics-card {
     display: flex;
@@ -6690,7 +6691,7 @@ select.ga-metric-select option {
 @media (max-width: 992px) { .nav-links > a:hover, .nav-links .dropbtn:hover, .dropdown-content a:hover, .nav-links > a:active, .dropdown-content a:active { transform: none !important; background: transparent !important; color: var(--text-primary) !important; box-shadow: none !important; } .dropdown-content a::after { display: none !important; } .nav-links > a, .nav-links .dropbtn { font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important; padding: 0.4rem 0 !important; margin-top: 0 !important; } .nav-links .dropdown-content a { font-size: 0.85rem !important; padding: 0.25rem 0 !important; } }
 
 /* ============================================================================
-   NUEVO LAYOUT 3-BLOQUES PARA EL DRAWER MÓVIL
+   NUEVO LAYOUT 3-BLOQUES PARA EL DRAWER MÃ“VIL
    ============================================================================ */
 @media (max-width: 992px) {
     .nav-menu-scrollable {
@@ -6710,6 +6711,7 @@ select.ga-metric-select option {
     /* En desktop, este div es invisible al DOM flow y no rompe el navbar flex */
     .nav-menu-scrollable { display: contents; }
 }
+
 
 
 
