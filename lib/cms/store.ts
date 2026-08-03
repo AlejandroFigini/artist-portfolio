@@ -182,9 +182,9 @@ if (typeof window !== 'undefined') {
   })
 }
 
-export function flushSyncToServer() {
+export function flushSyncToServer(): Promise<void> {
   _syncTimer = null
-  if (!state.isAdmin || _pendingKeys.size === 0) return
+  if (!state.isAdmin || _pendingKeys.size === 0) return Promise.resolve()
   const payload: CmsStatePayload = {}
   let syncOverrides = false
   for (const k of _pendingKeys) {
@@ -198,8 +198,10 @@ export function flushSyncToServer() {
     if (k === 'overrides') syncOverrides = true
   }
   _pendingKeys.clear()
-  if (Object.keys(payload).length > 0) saveState(payload).catch(() => {})
-  if (syncOverrides) saveContent(state.items).catch(() => {})
+  const promises: Promise<any>[] = []
+  if (Object.keys(payload).length > 0) promises.push(saveState(payload).catch(() => {}))
+  if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
+  return Promise.all(promises).then(() => {})
 }
 
 export const persistAudit = () => { scheduleSyncToServer('audit') }

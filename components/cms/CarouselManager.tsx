@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer, flushSyncToServer } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 0
@@ -109,34 +109,35 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
       delete state.usedContent[k]
     })
 
-    // 3. Re-mapear finalSlides a realKey (prefix.slide#0, prefix.slide#1...)
+    // 3. Preparar los nuevos datos de diapositivas
+    const newItems: Record<string, string> = {}
+    const newUsed: Record<string, any> = {}
+    
     finalSlides.forEach((vKey, i) => {
       const realKey = `${prefix}.slide#${i}`
       const src = oldData[vKey] || state.items[vKey] || ''
       if (src) {
-        state.items[realKey] = src
+        newItems[realKey] = src
         const usedEntry = oldUsed[vKey] || state.usedContent[vKey]
         if (usedEntry) {
-          state.usedContent[realKey] = { ...usedEntry, key: realKey }
+          newUsed[realKey] = { ...usedEntry, key: realKey }
         }
-      } else {
-        delete state.items[realKey]
-        delete state.usedContent[realKey]
-      }
-
-      if (vKey !== realKey) {
-        delete state.items[vKey]
-        delete state.usedContent[vKey]
       }
     })
 
-    // 4. Limpiar claves sobrantes que estén por encima de finalSlides.length
-    const maxCount = Math.max(original.length, slides.length, Object.keys(state.items).filter(k => k.startsWith(`${prefix}.slide#`)).length)
-    for (let i = finalSlides.length; i < maxCount; i++) {
-      const rk = `${prefix}.slide#${i}`
-      delete state.items[rk]
-      delete state.usedContent[rk]
-    }
+    // 4. Limpiar TODAS las keys asociadas a este carrusel
+    allKnownSlideKeys.forEach((k) => {
+      delete state.items[k]
+      delete state.usedContent[k]
+    })
+    
+    // 5. Insertar las nuevas y limpiar sobrantes
+    Object.entries(newItems).forEach(([k, v]) => {
+      state.items[k] = v
+    })
+    Object.entries(newUsed).forEach(([k, v]) => {
+      state.usedContent[k] = v
+    })
 
     persistUnused()
     persistUsed()
@@ -208,7 +209,12 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     }
     setSaving(true)
     persistSettings(slides)
-      .then(() => { toast('Carousel saved successfully'); window.location.reload() })
+      .then(async () => { 
+        toast('Carousel saved successfully')
+        // Ensure pending state updates (like removing from unused) are saved before reloading
+        try { await flushSyncToServer() } catch {}
+        window.location.reload() 
+      })
       .catch(() => { toast('Error saving settings', 'error'); setSaving(false) })
   }
 
