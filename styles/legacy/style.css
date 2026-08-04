@@ -2739,8 +2739,8 @@ body.nav-open .nav-backdrop {
 
 /* Tablet y abajo */
 
-@media (max-width: 768px) {
-    /* Oscurecer la barra superior (como el resto de la pÃƒÆ’Ã‚Â¡gina) al abrir el menÃƒÆ’Ã‚Âº, 
+@media (max-width: 992px) {
+    /* Oscurecer la barra superior (como el resto de la pÃƒÆ’Ã‚Â¡gina) al abrir el menÃƒÆ’Ã‚Âº,
        usando una capa que cubre el logo y el fondo pero queda debajo del drawer (1500) 
        y del botÃƒÆ’Ã‚Â³n hamburguesa (1600) */
     header::after {
@@ -3010,6 +3010,13 @@ body.nav-open .nav-backdrop {
         width: 16px;
         height: 16px;
     }
+}
+
+/* El bloque de nav/header de arriba corre hasta 992px: los elementos del
+   drawer (.mobile-drawer-*) y el visor solo se apagan desde 993px, y la barra
+   horizontal no entra por debajo de eso. Con el corte en 768 la franja
+   769-992 (iPad portrait) quedaba sin drawer NI links visibles. */
+@media (max-width: 768px) {
 
     /* Reducir aire vertical de secciones en mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil */
 

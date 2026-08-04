@@ -132,6 +132,28 @@ export default function HomeFx() {
     return () => io.disconnect()
   }, [])
 
+  // preload diferido: los <video> arrancan en preload="none" (12 en la portada
+  // = 12 fetches parciales de archivos de hasta 5 MB antes de que nadie los
+  // mire). Al acercarse al viewport pasan a "metadata" y pintan su 1er frame.
+  useEffect(() => {
+    const vids = document.querySelectorAll<HTMLVideoElement>('video[data-preload-defer]')
+    if (!vids.length || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (!e.isIntersecting) return
+        const v = e.target as HTMLVideoElement
+        io.unobserve(v)
+        if (v.preload === 'none') {
+          v.preload = 'metadata'
+          if (v.currentSrc || v.src || v.querySelector('source[src]')) v.load()
+        }
+      }),
+      { rootMargin: '300px 0px' },
+    )
+    vids.forEach((v) => io.observe(v))
+    return () => io.disconnect()
+  }, [])
+
   // Motor de autoplay: obs/decor/about se reproducen en viewport;
   // .anim-video (hover-play) solo se pausa al salir
   useEffect(() => {

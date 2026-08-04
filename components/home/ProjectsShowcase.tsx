@@ -8,6 +8,8 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 import Autoplay from 'embla-carousel-autoplay'
+import { useInViewRef } from '@/hooks/useInView'
+import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state } from '@/lib/cms/store'
 
 // Shared hook for carousel reinitialization
@@ -92,7 +94,10 @@ function ProjectCard({ index }: { index: number }) {
                 zIndex: activeSlide === idx ? 2 : 1,
               }}
               loading="lazy" decoding="async"
-              src={(!src || src.includes('placeholder')) ? undefined : src}
+              src={(!src || src.includes('placeholder')) ? undefined : optimizedMediaSrc(src, 828)}
+              srcSet={(!src || src.includes('placeholder')) ? undefined : mediaSrcSet(src, [384, 640, 828])}
+              // 1 card por fila en móvil, hasta 4 en desktop
+              sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 25vw"
               alt={title || `Project image ${idx}`}
             />
           )
@@ -191,6 +196,20 @@ export default function ProjectsShowcase() {
   ).join('~')
   // Reinitialize carousel when content changes using shared hook
   useCarouselSync(carouselApi, projSignature, [displayCount])
+
+  // Fuera de pantalla el autoplay sigue disparando scrolls (y repintando el
+  // track) sin que nadie lo vea: se frena hasta que la sección vuelve.
+  const inView = useInViewRef(sectionRef)
+  useEffect(() => {
+    const autoplay = carouselApi?.plugins()?.autoplay
+    if (!carouselApi || !autoplay) return
+    const apply = () => { if (inView) autoplay.play(); else autoplay.stop() }
+    apply()
+    // `useCarouselSync` hace reInit al montar y al cambiar el contenido, y el
+    // plugin arranca solo (playOnInit): hay que reaplicar el freno después.
+    carouselApi.on('reInit', apply)
+    return () => { carouselApi.off('reInit', apply) }
+  }, [carouselApi, inView])
 
   // Pausar autoplay del carrusel cuando hay un modal abierto
   useEffect(() => {
@@ -314,7 +333,7 @@ export default function ProjectsShowcase() {
                 align: 'start',
                 loop: true,
               }}
-              plugins={[
+              plugins={prefersReducedMotion() ? [] : [
                 Autoplay({
                   delay: 4000,
                   stopOnMouseEnter: true,

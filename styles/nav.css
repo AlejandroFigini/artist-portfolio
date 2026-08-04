@@ -345,6 +345,92 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   .cv-btn, .cv-btn i, .cms-navauth-btn::before, .cms-navauth-btn::after { transition: none; }
 }
 
+/* ============================================================
+   MÓVIL / TABLET (≤992) — barra superior + drawer.
+   Objetivo: misma lectura en 320px que en 430px que en iPad.
+   El ritmo vertical del drawer escala con svh (no valores fijos)
+   para que el menú entre completo en pantallas cortas.
+   ============================================================ */
+@media (max-width: 992px) {
+  /* --- Barra superior: aire real entre email / CV / login / idioma.
+     El `margin-right: auto` del logo (legacy) queda intacto: es lo que empuja
+     el grupo contra el borde derecho. --- */
+  .nav-actions { gap: clamp(0.3rem, 1.5vw, 0.7rem) !important; }
+  /* a 320px el grupo no entra con la pastilla de idioma a ancho completo */
+  @media (max-width: 360px) {
+    .nav-actions .lang-btn { padding: 0 0.25rem !important; }
+    .nav-actions .lang-btn .lang-code { margin-left: 0.2rem; }
+    .nav-toggle { margin-right: 0.5rem; }
+    header > .nav-container > .logo { font-size: 0.78rem !important; }
+    header > .nav-container > .logo span.highlight { font-size: 0.55rem !important; }
+  }
+
+  /* --- Drawer: sin hover ni feedback táctil pegajoso ---
+     En touch el :hover queda "clavado" tras el tap y arrastrar el dedo dispara
+     transforms/subrayados en cadena. Las opciones quedan estáticas: el único
+     estado visible es el color propio de cada nivel. */
+  .nav-links a, .nav-links button, .nav-links .dropbtn {
+    -webkit-tap-highlight-color: transparent;
+    transition: none !important;
+  }
+  .nav-menu-scrollable a:hover, .nav-menu-scrollable a:active, .nav-menu-scrollable a:focus,
+  .nav-menu-scrollable .dropbtn:hover, .nav-menu-scrollable .dropbtn:active,
+  .nav-menu-scrollable .dropdown:hover .dropbtn,
+  .nav-menu-scrollable .dropdown:hover .dropdown-content a {
+    transform: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  /* cada nivel conserva SU color (legacy forzaba text-primary en todos) */
+  .nav-menu-scrollable > a:hover, .nav-menu-scrollable > a:active,
+  .nav-menu-scrollable .dropbtn:hover, .nav-menu-scrollable .dropdown:hover .dropbtn {
+    color: var(--accent) !important;
+  }
+  .nav-menu-scrollable .dropdown-content a:hover,
+  .nav-menu-scrollable .dropdown-content a:active,
+  .nav-menu-scrollable .dropdown:hover .dropdown-content a {
+    color: var(--text-primary) !important;
+  }
+  .nav-menu-scrollable a::after, .nav-menu-scrollable .dropbtn::after { display: none !important; }
+
+  /* Pie del drawer: las pastillas conservan su fondo, pero no se mueven */
+  .mobile-drawer-actions a:hover, .mobile-drawer-actions a:active,
+  .mobile-drawer-actions button:hover, .mobile-drawer-actions button:active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* --- Drawer: el menú entra completo en cualquier alto ---
+     El logo es absolute: el padding-top debe despejarlo o tapa la 1ª opción.
+     `safe center` centra cuando entra y cae a flex-start cuando desborda —
+     con `center` a secas el overflow superior es inalcanzable y "Feed"
+     quedaba cortado en pantallas cortas (iPhone SE). */
+  .nav-links {
+    padding-top: calc(1rem + 44px + 0.35rem) !important;
+    padding-bottom: clamp(0.6rem, 1.6svh, 2rem) !important;
+  }
+  .nav-menu-scrollable {
+    justify-content: safe center;
+    gap: clamp(0.05rem, 0.35svh, 0.4rem) !important;
+    padding: 0 !important;
+  }
+  .nav-menu-scrollable > a,
+  .nav-links .dropbtn {
+    padding: clamp(0.2rem, 0.8svh, 0.65rem) 0 !important;
+  }
+  .nav-links .dropdown-content {
+    padding: clamp(0.05rem, 0.2svh, 0.25rem) 0 clamp(0.2rem, 0.55svh, 0.75rem) 1rem !important;
+  }
+  .nav-links .dropdown-content a {
+    padding: clamp(0.1rem, 0.4svh, 0.4rem) 0 !important;
+  }
+  .mobile-drawer-actions {
+    padding-top: clamp(0.7rem, 2svh, 1.5rem) !important;
+    gap: clamp(0.4rem, 2.5vw, 0.8rem) !important;
+  }
+}
+
 /* --- Reduced motion / pausa del sitio --- */
 @media (prefers-reduced-motion: reduce) {
   .nav-links > * { transition: none !important; transform: none !important; opacity: 1 !important; }

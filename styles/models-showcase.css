@@ -369,7 +369,9 @@
 
 /* --- Responsive --- */
 @media (max-width: 900px) {
-  .m3d-grid { grid-template-columns: 1fr; gap: clamp(2rem, 6vw, 3rem); }
+  /* minmax(0,…): sin esto el item hereda min-width:auto y la cinta de la
+     galería (width:max-content) revienta la columna fuera del viewport. */
+  .m3d-grid { grid-template-columns: minmax(0, 1fr); gap: clamp(2rem, 6vw, 3rem); }
   .m3d-texts { position: static; }
   .m3d-showcase__rail { display: none; }
   .m3d-coverflow__stage { height: clamp(200px, 52vw, 300px); }

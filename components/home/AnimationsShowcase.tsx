@@ -176,7 +176,8 @@ function AnimCard({ index }: { index: number }) {
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="none"
+            data-preload-defer=""
           />
           {!hasContent && (
             <div className="anim-card__placeholder" aria-hidden="true">

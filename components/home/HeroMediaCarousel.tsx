@@ -3,7 +3,7 @@ import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 
-import { cloudinaryOptimize } from '@/lib/utils';
+import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils';
 // Default duration if not provided by CMS
 const DEFAULT_DURATION_MS = 7000;
 
@@ -26,9 +26,13 @@ function SmoothImage({ src, className }: { src: string; className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={cloudinaryOptimize(src, { width: 1200 })}
+      src={optimizedMediaSrc(src, 1200)}
+      srcSet={mediaSrcSet(src)}
+      // el panel ocupa ~la mitad del ancho en desktop y casi todo en móvil
+      sizes="(max-width: 768px) 90vw, 50vw"
       alt=""
       className={className}
+      decoding="async"
       onLoad={() => setLoaded(true)}
       style={{
         position: 'absolute',

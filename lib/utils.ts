@@ -66,6 +66,44 @@ export function cloudinaryOptimize(src?: string | null, opts: { width?: number; 
   return src.replace('/upload/', `/upload/f_auto,q_${q}${w}/`)
 }
 
+// Anchos que acepta el optimizador de Next (deviceSizes + imageSizes por
+// defecto). Pedir uno fuera de la lista devuelve 400.
+const NEXT_IMAGE_WIDTHS = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840]
+
+/* Sirve la imagen al tamaño en que se ve, no al original.
+   Cloudinary (prod) → transformación en el CDN; rutas propias `/uploads/*`
+   (local) → optimizador de Next (AVIF/WebP + resize). Sin `width` no toca nada. */
+export function optimizedMediaSrc(src?: string | null, width?: number): string {
+  if (!src || typeof src !== 'string') return src || ''
+  if (src.includes('res.cloudinary.com')) return cloudinaryOptimize(src, { width })
+  if (!width) return src
+  // data:/blob: ya son locales; el SVG lo rechaza el optimizador de Next
+  if (/^(data|blob):/.test(src) || /\.svg(\?|#|$)/i.test(src)) return src
+
+  const path = src.startsWith('/') && !src.startsWith('//')
+    ? src
+    : (() => {
+        if (typeof window === 'undefined') return null
+        try {
+          const u = new URL(src, window.location.href)
+          return u.origin === window.location.origin ? u.pathname + u.search : null
+        } catch { return null }
+      })()
+  if (!path || path.startsWith('/_next/image')) return src
+
+  const w = NEXT_IMAGE_WIDTHS.find((x) => x >= width) ?? NEXT_IMAGE_WIDTHS[NEXT_IMAGE_WIDTHS.length - 1]
+  return `/_next/image?url=${encodeURIComponent(path)}&w=${w}&q=75`
+}
+
+/* srcSet para que el navegador elija el ancho según viewport y DPR.
+   SSR-safe: no mira `window`, a diferencia de calcular el ancho a mano. */
+export function mediaSrcSet(src?: string | null, widths: number[] = [640, 828, 1200, 1920]): string | undefined {
+  if (!src || typeof src !== 'string' || /^(data|blob):/.test(src) || /\.svg(\?|#|$)/i.test(src)) return undefined
+  const set = widths.map((w) => `${optimizedMediaSrc(src, w)} ${w}w`)
+  // Sin variantes reales (origen externo no optimizable) el srcSet no aporta
+  return set.some((s, i) => s !== `${src} ${widths[i]}w`) ? set.join(', ') : undefined
+}
+
 export function getFileExtension(filename?: string | null): string {
   if (!filename) return ''
   const lastDot = filename.lastIndexOf('.')

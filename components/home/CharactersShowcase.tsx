@@ -22,6 +22,8 @@ import {
   typewriterRevealLoop, wordRevealLoop, type LoopHandle,
 } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import { useInViewRef } from '@/hooks/useInView'
+import { optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { rescan } from '@/components/cms/engine'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
@@ -65,7 +67,8 @@ function CharMedia({
       className={`${className}${has ? ' has-media' : ''}`}
       data-cms-key={cmsKey}
       data-full={has ? src : ''}
-      style={has ? { backgroundImage: `url("${src}")` } : undefined}
+      // el panel nunca pasa de ~480px CSS → 1080 cubre DPR2 sin traer el original
+      style={has ? { backgroundImage: `url("${optimizedMediaSrc(src, 1080)}")` } : undefined}
       onClick={(e) => { e.stopPropagation(); if (has) onOpen(src) }}
     />
   )
@@ -199,6 +202,27 @@ export default function CharactersShowcase() {
   const [api, setApi] = useState<CarouselApi>()
   const [lightbox, setLightbox] = useState<Lightbox>(null)
   const [showInfo, setShowInfo] = useState(false)
+  const inView = useInViewRef(sectionRef)
+  // Espejo en ref: los handlers de abajo (pointerUp/settle/modal) viven fuera
+  // del ciclo de render y necesitan el valor actual sin re-suscribirse.
+  const inViewRef = useRef(true)
+
+  // El auto-scroll corre en rAF: fuera de pantalla se frena (nadie lo ve y
+  // seguía repintando el track en cada frame).
+  useEffect(() => {
+    inViewRef.current = inView
+    const autoScroll = api?.plugins()?.autoScroll
+    if (!api || !autoScroll) return
+    const apply = () => {
+      if (!inViewRef.current) autoScroll.stop()
+      else if (!isHoveringRef.current) autoScroll.play()
+    }
+    apply()
+    // `useCarouselSync` hace reInit al montar y al cambiar el contenido, y el
+    // plugin arranca solo (playOnInit): hay que reaplicar el freno después.
+    api.on('reInit', apply)
+    return () => { api.off('reInit', apply) }
+  }, [api, inView])
 
   const totalSlots = readCount()
   const completedIndices: number[] = []
@@ -235,7 +259,7 @@ export default function CharactersShowcase() {
     const resumeFast = () => {
       clearTimeout(timer)
       timer = setTimeout(() => {
-        if (isHoveringRef.current || isModalOpen()) return // NUNCA reanudar si el usuario está hover o hay modal abierto
+        if (isHoveringRef.current || isModalOpen() || !inViewRef.current) return // NUNCA reanudar si el usuario está hover, hay modal abierto o la sección no se ve
         autoScroll.play()
       }, 0)
     }
@@ -245,7 +269,7 @@ export default function CharactersShowcase() {
     }
     const onModalClose = () => {
       try {
-        if (!isHoveringRef.current && !isModalOpen()) {
+        if (!isHoveringRef.current && !isModalOpen() && inViewRef.current) {
           autoScroll.play()
         }
       } catch {}

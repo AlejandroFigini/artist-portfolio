@@ -108,7 +108,8 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="none"
+          data-preload-defer=""
         />
         {!hasContent && (
           <div className="m3d-slide__placeholder" aria-hidden="true">

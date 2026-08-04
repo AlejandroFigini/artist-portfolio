@@ -16,7 +16,7 @@ import {
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
-import { basename } from '@/lib/utils'
+import { basename, optimizedMediaSrc } from '@/lib/utils'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
   if (!src && !key) return ''
@@ -280,8 +280,21 @@ export function indexEditables() {
 
 // ----- Aplicar valores ---------------------------------------------------------
 
+/* Ancho real de render × DPR: la imagen se pide al tamaño en que se ve.
+   Sin layout todavía (contenedor oculto) cae al ancho del viewport. */
+function renderWidthOf(el: HTMLElement): number {
+  const w = el.clientWidth || el.getBoundingClientRect().width
+  const base = w > 0 ? w : (typeof window !== 'undefined' ? window.innerWidth : 1280)
+  const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)
+  return Math.ceil(base * dpr)
+}
+
+/* `data-cms-src` guarda SIEMPRE la URL original: lo que se pinta puede ser una
+   variante redimensionada, pero el CMS (picker, repositorio, "en uso") tiene
+   que seguir viendo el archivo real. */
 export function currentSrcOf(el: HTMLElement | null): string {
   if (!el) return ''
+  if (el.dataset.cmsSrc) return el.dataset.cmsSrc
   if (el.tagName === 'IMG') return (el as HTMLImageElement).src
   if (el.tagName === 'VIDEO') {
     const s = el.querySelector('source')
@@ -310,8 +323,13 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     el.textContent = value
     if (keep) el.appendChild(keep)
   } else if (type === 'image' && el.tagName === 'IMG') {
-    el.removeAttribute('srcset')
-    ;(el as HTMLImageElement).src = value
+    const img = el as HTMLImageElement
+    img.removeAttribute('srcset')
+    img.decoding = 'async'
+    // El hero es LCP: se carga ya. El resto entra al scrollear.
+    if (!img.hasAttribute('loading')) img.loading = el.closest('.hero') ? 'eager' : 'lazy'
+    el.dataset.cmsSrc = value
+    img.src = optimizedMediaSrc(value, renderWidthOf(el))
   } else if (type === 'bg' || type === 'image') {
     if (el.classList.contains('soft-item')) {
       // ocultar el badge y meter un <img> como ícono custom (port L329)
@@ -326,11 +344,15 @@ function applyValue(el: HTMLElement, type: string, value: string) {
         img.className = 'cms-custom-icon'
         img.style.height = '2.8rem'
         img.style.objectFit = 'contain'
+        img.decoding = 'async'
+        img.loading = 'lazy'
         el.insertBefore(img, el.firstChild)
       }
-      img.src = value
+      el.dataset.cmsSrc = value
+      img.src = optimizedMediaSrc(value, renderWidthOf(img))
     } else {
-      el.style.backgroundImage = `url("${value}")`
+      el.dataset.cmsSrc = value
+      el.style.backgroundImage = `url("${optimizedMediaSrc(value, renderWidthOf(el))}")`
     }
     if (el.hasAttribute('data-full')) el.setAttribute('data-full', value)
   } else if (type === 'video') {
@@ -440,8 +462,16 @@ export function applyMedia(key: string, value: string) {
   // las instancias (la copia clon mantiene el loop seamless con contenido).
   if (key.startsWith('model3d.gallery#')) {
     document.querySelectorAll<HTMLImageElement>(`img[data-cms-key="${key}"]`).forEach((img) => {
-      if (value) { img.removeAttribute('srcset'); img.src = value }
-      else img.removeAttribute('src')
+      if (value) {
+        img.removeAttribute('srcset')
+        img.decoding = 'async'
+        img.loading = 'lazy'
+        img.dataset.cmsSrc = value
+        img.src = optimizedMediaSrc(value, renderWidthOf(img))
+      } else {
+        delete img.dataset.cmsSrc
+        img.removeAttribute('src')
+      }
     })
     return
   }
@@ -450,7 +480,12 @@ export function applyMedia(key: string, value: string) {
   if (key.startsWith('hero.marquee#')) {
     document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`).forEach(el => {
       const slot = el.querySelector<HTMLElement>('.wave-icon-slot')
-      if (slot) slot.style.backgroundImage = value ? `url("${value}")` : ''
+      if (slot) {
+        // burbuja de ~30px: pedir el original sería tirar megapíxeles a la basura
+        slot.style.backgroundImage = value ? `url("${optimizedMediaSrc(value, renderWidthOf(slot))}")` : ''
+      }
+      if (value) el.dataset.cmsSrc = value
+      else delete el.dataset.cmsSrc
       if (value) el.classList.add('wave-has-content')
       else el.classList.remove('wave-has-content')
     })

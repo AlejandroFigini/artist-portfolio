@@ -11,9 +11,17 @@ import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
 import { useCmsStore } from '@/lib/cms/store'
 
-import { cloudinaryOptimize } from '@/lib/utils'
+import { optimizedMediaSrc } from '@/lib/utils'
 
 const DEFAULT_INTERVAL_MS = 6000
+
+/* El fondo es 100vw × 100vh: pedir 1600px fijos en un teléfono era traer ~2.5×
+   los píxeles necesarios. Las slides llegan por evento del CMS (nunca en SSR),
+   así que leer `window` acá es seguro. */
+function backdropWidth(): number {
+  if (typeof window === 'undefined') return 1600
+  return Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2))
+}
 
 type HeroDetail = { slides: string[]; duration: number }
 
@@ -75,7 +83,7 @@ export default function HeroSlideshow() {
             key={`${i}-${src}`}
             className="carousel-slide"
             style={{
-              backgroundImage: `url('${cloudinaryOptimize(src, { width: 1600 })}')`,
+              backgroundImage: `url('${optimizedMediaSrc(src, backdropWidth())}')`,
               opacity: 0,
             }}
           ></div>
