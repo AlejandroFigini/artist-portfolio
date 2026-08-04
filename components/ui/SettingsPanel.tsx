@@ -246,6 +246,8 @@ export default function SettingsPanel() {
           <span>Language</span>
           <div className="lang-selector-settings" id="lang-selector-settings">
             <button className="lang-btn-settings" id="lang-toggle-settings" aria-label="Change language" onClick={() => setLangOpen((o) => !o)}>
+              {/* Bandera SVG inline de LANG_META: next/image no optimiza SVG. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-settings" />
               <span className="lang-code" id="lang-code-settings">{state.lang.toUpperCase()}</span>
               <i className="fa-solid fa-chevron-down chev"></i>
@@ -253,6 +255,7 @@ export default function SettingsPanel() {
             <div className={`lang-dropdown-settings${langOpen ? ' active' : ''}`} id="lang-dropdown-settings">
               {ALL_LANGS.map((code) => (
                 <button key={code} className="lang-option" data-lang={code} title={LANG_META[code].label} onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
                 </button>
               ))}

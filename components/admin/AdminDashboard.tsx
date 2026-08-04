@@ -10,19 +10,18 @@ import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
-  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides, syncCloudinaryFolders, validateCloudinaryContent,
+  state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides,
 } from '@/lib/cms/store'
 import { getAccount, scaffoldCloudinaryFolders, logout } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal, SelectContainerActionModal } from './modals'
 import { seedUsedContent } from '../cms/engine'
-import SiteSettings, { LoaderSettings, FaviconSettings, CvSettings, TranslationSettings } from './SiteSettings'
+import SiteSettings from './SiteSettings'
 import RealtimeCard from './RealtimeCard'
-import SocialSettings from './SocialSettings'
 import UsersSection from './UsersSection'
 import AnalyticsSection from './AnalyticsSection'
-import MessagesSection, { useUnreadCount } from './MessagesSection'
+import MessagesSection from './MessagesSection'
 import { MediaCard, type AnyEntry } from './cards'
 
 const NAV_BOTTOM = [

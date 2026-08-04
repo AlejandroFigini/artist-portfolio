@@ -31,5 +31,8 @@ export function useCarouselSync(
       const t = setTimeout(() => rescan(), 100)
       return () => clearTimeout(t)
     }
+    /* El spread es la API del hook: cada carrusel aporta sus propias
+       dependencias extra. El linter no puede verificar un array variádico. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, signature, ...extraDeps])
 }

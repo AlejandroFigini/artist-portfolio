@@ -9,7 +9,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
 import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer, flushSyncToServer, type UsedEntry } from '@/lib/cms/store'
-import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
+import { broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 0
 const MAX_SLIDES = 4
@@ -36,7 +36,7 @@ function parseSettings(prefix: string) {
   return { count: Math.min(MAX_SLIDES, count), duration: duration * 1000 }
 }
 
-const slideSrc = (vKey: string, prefix: string) => state.items[vKey] || ''
+const slideSrc = (vKey: string) => state.items[vKey] || ''
 
 export default function CarouselManager({ prefix, show = true, onClose, onPickImage }: Props) {
   const toast = useToast()
@@ -53,7 +53,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     const map: Record<string, string> = {}
     for (let i = 0; i < initialCount; i++) {
       const k = `${prefix}.slide#${i}`
-      map[k] = slideSrc(k, prefix)
+      map[k] = slideSrc(k)
     }
     return map
   })
@@ -61,7 +61,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   const [showInfo, setShowInfo] = useState(false)
 
   const isEmptySlide = (k: string) => {
-    const src = slideSrc(k, prefix)
+    const src = slideSrc(k)
     return !src || src.trim() === '' || src === 'url("")' || src === 'url()'
   }
   const dirty = slides.length !== original.length || slides.some((s, i) => s !== original[i])
@@ -69,7 +69,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
   const filledCount = slides.filter((k) => !isEmptySlide(k)).length
 
   const durationChanged = duration !== initialDuration
-  const imageChanged = slides.some((vKey) => slideSrc(vKey, prefix) !== (initialSrcs[vKey] || ''))
+  const imageChanged = slides.some((vKey) => slideSrc(vKey) !== (initialSrcs[vKey] || ''))
   const hasChanges = dirty || durationChanged || imageChanged
 
   // Estado compacto (chip): color + icono + tooltip. El detalle vive en el tooltip,
@@ -96,7 +96,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     const oldData: Record<string, string> = {}
     const oldUsed: Record<string, UsedEntry> = {}
     allKnownSlideKeys.forEach((k) => {
-      const src = slideSrc(k, prefix)
+      const src = slideSrc(k)
       if (src) oldData[k] = src
       if (state.usedContent[k]) oldUsed[k] = state.usedContent[k]
     })
@@ -169,7 +169,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     setOriginal(fresh)
     setSlides(fresh)
     const newSrcs: Record<string, string> = {}
-    fresh.forEach((k) => { newSrcs[k] = slideSrc(k, prefix) })
+    fresh.forEach((k) => { newSrcs[k] = slideSrc(k) })
     setInitialSrcs(newSrcs)
     setInitialDuration(duration)
     emit()
@@ -296,7 +296,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
             const empty = isEmptySlide(vKey)
             return (
               <div key={vKey} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.45rem', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                <div title={empty ? 'No image' : undefined} style={{ position: 'relative', width: 84, height: 50, borderRadius: 4, flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'var(--bg-primary)', backgroundImage: `url("${slideSrc(vKey, prefix)}")`, border: empty ? '1px dashed #b45309' : '1px solid var(--border)' }}>
+                <div title={empty ? 'No image' : undefined} style={{ position: 'relative', width: 84, height: 50, borderRadius: 4, flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'var(--bg-primary)', backgroundImage: `url("${slideSrc(vKey)}")`, border: empty ? '1px dashed #b45309' : '1px solid var(--border)' }}>
                   {empty && <i className="fa-solid fa-image" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b45309', opacity: 0.55, fontSize: '1rem' }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0, fontSize: '0.85rem', fontWeight: 600 }}>

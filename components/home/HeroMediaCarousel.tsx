@@ -1,5 +1,5 @@
-import { useEffect, useReducer, useState } from 'react';
-import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP';
+import { useEffect, useState } from 'react';
+import { ensureGSAP, gsap } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 
@@ -49,20 +49,17 @@ function SmoothImage({ src, className }: { src: string; className?: string }) {
 
 type Props = {
   prefix: string;
-  defaultSlides?: string[]; // kept for backward compatibility, not used for empty state
   className?: string;
   label?: string;
 };
 
 export default function HeroMediaCarousel({
   prefix,
-  defaultSlides = [],
   className = 'cms-media',
   label = 'Carrusel de portada',
 }: Props) {
   // ensure component re‑renders when CMS store updates (hydration, admin edits, etc.)
   useCmsStore();
-  const [, force] = useReducer((x: number) => x + 1, 0);
 
   // Read slides & duration directly from CMS state
   const { slides, duration } = readCarousel(prefix);
@@ -78,7 +75,6 @@ export default function HeroMediaCarousel({
 
   // Effect to drive cross‑fade animation when slides are present
   useEffect(() => {
-    const onCarousel = () => force();
     ensureGSAP();
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
     if (els.length === 0) return;

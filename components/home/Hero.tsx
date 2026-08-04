@@ -226,14 +226,14 @@ export default function Hero() {
         <div className="hero-media-wrapper">
           <div className="media-container hero-primary float-anim">
             <div className="container-overlay" style={{ zIndex: 10 }}></div>
-            <HeroMediaCarousel prefix="hero-main" defaultSlides={[]} label="Carrusel Principal — Portada" />
+            <HeroMediaCarousel prefix="hero-main" label="Carrusel Principal — Portada" />
             <span className="bp-scanline" aria-hidden="true" style={{ zIndex: 10 }}></span>
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.01 — KEYFRAME_A</span>
           </div>
           <div className="media-container hero-secondary float-anim-delayed">
             <div className="container-overlay" style={{ zIndex: 10 }}></div>
-            <HeroMediaCarousel prefix="hero-sub" defaultSlides={[]} label="Carrusel Secundario — Portada" />
+            <HeroMediaCarousel prefix="hero-sub" label="Carrusel Secundario — Portada" />
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.02 — DETAIL</span>
           </div>

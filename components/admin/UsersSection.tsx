@@ -47,8 +47,6 @@ export default function UsersSection() {
     fn().catch((e: Error) => toast(e.message || 'Error', 'error')).finally(() => setBusy(false))
   }
 
-  const back = () => { setQr(null); setView('menu') }
-
   const saveUsername = () => run(async () => {
     const user = await updateAccount({ username: form.username })
     setAdminFlag(true, user.username)

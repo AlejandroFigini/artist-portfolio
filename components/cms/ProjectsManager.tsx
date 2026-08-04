@@ -82,6 +82,10 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
         return ids.length ? Math.max(n, Math.max(...ids) + 1) : n
       })
     }, 0)
+    /* saveGraph se recrea en cada render: incluirlo dispararía el efecto en
+       cada render y con él un guardado, en bucle. El efecto debe correr solo
+       cuando cambian el store o la lista de proyectos. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeVersion, projects])
 
   const saveGraph = async (finalProjects: string[]) => {

@@ -233,7 +233,7 @@ export default function AboutSection() {
 
             <figure className="about-portrait">
               <Corners />
-              <HeroMediaCarousel prefix="about-carousel" defaultSlides={[]} label="Carrusel About me" className="artist-photo-img cms-media" />
+              <HeroMediaCarousel prefix="about-carousel" label="Carrusel About me" className="artist-photo-img cms-media" />
               <figcaption className="about-portrait-cap">
                 <span>FIG. 02b</span>
               </figcaption>

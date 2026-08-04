@@ -13,7 +13,7 @@ import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
   loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta, getAllKnownContainerKeys,
-  moveUsedToUnused, cloudinaryMove, syncCloudinaryFolders, type UsedEntry,
+  moveUsedToUnused, cloudinaryMove, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
@@ -467,6 +467,11 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
       }) !== -1
       return inRepo || inBatch
     })
+    /* state.usedContent y state.unused se REASIGNAN en el store (no solo se
+       mutan), así que su identidad cambia y son dependencias reales: sacarlas
+       dejaría la lista de duplicados desactualizada tras un guardado. El
+       linter no puede saberlo porque viven fuera del componente. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files, fileNames, state.usedContent, state.unused])
 
   const hasAnyDuplicate = duplicates.some(d => d)

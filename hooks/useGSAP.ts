@@ -87,6 +87,10 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
   }
 
   const cycle = () => {
+    /* `killed` se asignaba en kill() pero no se consultaba en ningún lado: un
+       callback que cayera justo después de kill() reprogramaba el ciclo y el
+       loop revivía. Se comprueba acá y en el callback de animate. */
+    if (killed) return
     // pausa global o modal abierto mid-loop → dejar el texto pleno y no re-animar
     const modalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
     if (motionOffActive() || modalOpen) { wait = gsap.delayedCall(intervalSec, cycle); return }
@@ -101,6 +105,7 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
     el.innerHTML = build(text)
     const targets = el.querySelectorAll<HTMLElement>('.tw-char, .tw-word')
     tween = animate(targets, () => {
+      if (killed) return
       el.textContent = text
       if (tools) el.appendChild(tools)
       wait = gsap.delayedCall(intervalSec, cycle)

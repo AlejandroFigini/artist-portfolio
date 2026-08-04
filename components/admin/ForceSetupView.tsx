@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { updateAccount, logout } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { state, setAdminFlag } from '@/lib/cms/store'
+import { setAdminFlag } from '@/lib/cms/store'
 
 export default function ForceSetupView() {
   const toast = useToast()

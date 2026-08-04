@@ -11,7 +11,7 @@
    los contenedores quedan registrados en engine.ts para edición inline.
    Ref. visual: case-studies con scroll lateral (Awwwards / Active Theory). */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Carousel, CarouselContent, CarouselItem, type CarouselApi,
@@ -25,7 +25,6 @@ import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useInViewRef } from '@/hooks/useInView'
 import { optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state } from '@/lib/cms/store'
-import { rescan } from '@/components/cms/engine'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { sendGAEvent } from '@next/third-parties/google'
 
@@ -74,7 +73,7 @@ function CharMedia({
   )
 }
 
-function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: number; total: number; onOpen: (lb: Lightbox) => void; api?: CarouselApi; isHoveringRef?: React.MutableRefObject<boolean> }) {
+function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number; total: number; onOpen: (lb: Lightbox) => void; isHoveringRef?: React.MutableRefObject<boolean> }) {
   useCmsStore()
   const [isHovered, setIsHovered] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0) // 0 = retrato principal, 1..4 = concepts c0..c3
@@ -94,13 +93,19 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
   ]
 
   // Incluimos el índice 0 (imagen principal) y filtramos qué índices (1 al 4) tienen imagen
-  const validConceptIndices = [
+  /* La lista se recalcula en cada render (sale del store mutable), así que se
+     reduce a una clave estable y el efecto depende del array derivado de ella.
+     Antes la dependencia era la expresión `…join(',')` escrita inline, que el
+     linter no puede verificar y dejaba `validConceptIndices` fuera del array. */
+  const conceptsKey = [
     0,
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
       const src = state.items[`${key}::c${idx - 1}`]
       return !!src && !src.includes('placeholder')
     })
-  ]
+  ].join(',')
+
+  const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])
 
   useEffect(() => {
     // Si no hay hover, o si solo está la imagen principal (length <= 1), se queda en 0
@@ -120,7 +125,7 @@ function CharacterPanel({ index, total, onOpen, api, isHoveringRef }: { index: n
     }, duration)
 
     return () => clearTimeout(timer)
-  }, [isHovered, activeSlide, validConceptIndices.join(',')])
+  }, [isHovered, activeSlide, validConceptIndices])
 
   const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
 
@@ -409,7 +414,7 @@ export default function CharactersShowcase() {
               <CarouselContent className="-ml-3 md:-ml-4">
                 {renderIndices.map((index, i) => (
                   <CarouselItem key={`${index}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
-                    <CharacterPanel index={index} total={completedIndices.length} onOpen={openLightbox} api={api} isHoveringRef={isHoveringRef} />
+                    <CharacterPanel index={index} total={completedIndices.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}
               </CarouselContent>

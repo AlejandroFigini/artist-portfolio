@@ -66,6 +66,7 @@
 .fa-box-open::before { content: "\f49e"; }
 .fa-calendar::before { content: "\f133"; }
 .fa-caret-down::before { content: "\f0d7"; }
+.fa-chart-area::before { content: "\f1fe"; }
 .fa-chart-line::before { content: "\f201"; }
 .fa-check::before { content: "\f00c"; }
 .fa-check-double::before { content: "\f560"; }

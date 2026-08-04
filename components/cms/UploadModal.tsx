@@ -4,7 +4,7 @@
    con nombre + campos de info, fase de subida bloqueada, vista de éxito
    con ahorro de compresión. El archivo ya viene validado (CmsRoot). */
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'

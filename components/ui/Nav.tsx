@@ -295,6 +295,8 @@ export default function Nav() {
                   className="lang-btn"
                   onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
                 >
+                  {/* Bandera SVG inline de LANG_META: next/image no optimiza SVG. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" />
                   <span className="lang-code">{state.lang.toUpperCase()}</span>
                 </button>
@@ -305,6 +307,7 @@ export default function Nav() {
                       className="lang-option"
                       onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
                     </button>
                   ))}
@@ -347,6 +350,7 @@ export default function Nav() {
                 title="Language"
                 onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-nav" />
                 <span className="lang-code" id="lang-code-nav">{state.lang.toUpperCase()}</span>
               </button>
@@ -359,6 +363,7 @@ export default function Nav() {
                     title={LANG_META[code].label}
                     onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
                   </button>
                 ))}

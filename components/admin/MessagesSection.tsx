@@ -89,6 +89,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
        El array vacío es intencional: página y pestaña llaman a load() a mano. */
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMessages(page, activeTab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const toggleRead = async (msg: Message) => {

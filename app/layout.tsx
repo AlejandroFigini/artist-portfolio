@@ -83,6 +83,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             .cms-mlib-meta). Cormorant Garamond y Syne no se usaban en ninguna
             regla — Syne solo aparecía como fallback de var(--font-display),
             que siempre está definido, así que nunca llegaba a aplicarse. */}
+        {/* La regla apunta a pages/_document.js del Pages Router. Acá el
+            layout raíz ES el documento, así que la hoja aplica a todo el sitio
+            y la advertencia no corresponde. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Raleway:wght@300;400;500;600&family=Inter:wght@400;800&family=Fira+Code:wght@400;500&display=swap"

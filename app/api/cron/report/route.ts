@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     try {
       const auth = await requireRole(req, ['owner', 'admin']);
       if (!('deny' in auth)) isAuthorized = true;
-    } catch (e) {
+    } catch {
       // Ignorar
     }
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Carousel,
   CarouselContent,
@@ -15,7 +15,6 @@ import { useCmsStore, state } from '@/lib/cms/store'
 // Shared hook for carousel reinitialization
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 
-import { rescan } from '@/components/cms/engine'
 
 // El contenido se lee reactivamente desde el store (state.items) y se renderiza
 // como JSX. Antes se leía vía data-attrs + MutationObserver, pero embla clona los
@@ -41,13 +40,19 @@ function ProjectCard({ index }: { index: number }) {
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => `${key}::c${m}`),
   ]
 
-  const validConceptIndices = [
+  /* La lista se recalcula en cada render (sale del store mutable), así que se
+     reduce a una clave estable y el efecto depende del array derivado de ella.
+     Antes la dependencia era la expresión `…join(',')` escrita inline, que el
+     linter no puede verificar y dejaba `validConceptIndices` fuera del array. */
+  const conceptsKey = [
     0,
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
       const src = state.items[`${key}::c${idx - 1}`]
       return !!src && !src.includes('placeholder')
     })
-  ]
+  ].join(',')
+
+  const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])
 
   /* El reset a la primera lámina vive en onMouseLeave, no acá: hacerlo con un
      setState síncrono dentro del efecto encadenaba un render extra por cada
@@ -63,7 +68,7 @@ function ProjectCard({ index }: { index: number }) {
     }, duration)
 
     return () => clearTimeout(timer)
-  }, [isHovered, activeSlide, validConceptIndices.join(',')])
+  }, [isHovered, activeSlide, validConceptIndices])
 
   return (
     <div
@@ -84,6 +89,10 @@ function ProjectCard({ index }: { index: number }) {
           if (!isMain && (!src || src.includes('placeholder'))) return null
           
           return (
+            /* El engine del CMS reescribe el src de este nodo por DOM
+               (data-cms-key); next/image envuelve y controla el suyo, así que
+               rompería la edición en vivo. */
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               key={gKey}
               data-cms-key={isMain ? key : undefined}

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import RealtimeCard from './RealtimeCard'
+import UsersChart from './UsersChart'
 import WorldMap from "react-svg-worldmap"
 /* El mapa tipa `country` como unión de códigos ISO literales. */
 type CountryIsoCode = React.ComponentProps<typeof WorldMap>['data'][number]['country']
@@ -61,15 +62,23 @@ export default function AnalyticsSection() {
     }
   }
 
+  /* Marca si ya hubo una carga con datos. Antes esto se leía de `data`, que
+     obligaba a listarlo como dependencia del efecto — y al depender de `data`
+     el efecto se re-ejecutaba con cada respuesta, refetcheando en bucle. Con
+     un ref el dato sobrevive entre renders sin disparar el efecto. */
+  const hasDataRef = useRef(false)
+
   useEffect(() => {
     const fetchData = async (isBackgroundPulse = false) => {
-      if (!data) setLoading(true)
+      // Pantalla de carga completa solo la primera vez; después basta isUpdating.
+      if (!hasDataRef.current) setLoading(true)
       if (!isBackgroundPulse) setIsUpdating(true)
       try {
         const res = await fetch(`/api/admin/analytics?range=${range}`)
         const json = await res.json()
         if (res.ok && json.data) {
           setData(json.data)
+          hasDataRef.current = true
           setErrorMsg(null)
         } else {
           setErrorMsg(json.error || 'Error desconocido conectando a Google Analytics')
@@ -333,7 +342,18 @@ export default function AnalyticsSection() {
         </div>
       </div>
 
-
+      {/* Evolución de usuarios — la granularidad (hora/día/mes) la decide el
+          endpoint según el rango elegido. */}
+      <div className="ga-box" style={{ marginBottom: '1.2rem' }}>
+        <div className="ga-box-header">
+          <i className="fa-solid fa-chart-area"></i> Evolución de Usuarios
+          <span className="cms-info-tip" tabIndex={0} aria-label="Usuarios activos a lo largo del rango seleccionado. La escala se ajusta sola: por hora en rangos de un día, por día en semanas, por mes en rangos largos." style={{ marginLeft: '0.4rem' }}>
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip">Usuarios activos a lo largo del rango seleccionado. La escala se ajusta sola: por hora en rangos de un día, por día en semanas, por mes en rangos largos.</span>
+          </span>
+        </div>
+        <UsersChart data={active.chartDays || []} loading={isUpdating} />
+      </div>
 
       {/* Países Principales */}
       <div className="ga-box ga-box--countries" style={{ marginBottom: '1.2rem' }}>

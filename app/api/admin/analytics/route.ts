@@ -1,4 +1,3 @@
-import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 import { getPool, ensureDb, hasDb } from '@/lib/db';
 import { getAnalyticsClient, getAnalyticsPropertyId } from '@/lib/analytics';
