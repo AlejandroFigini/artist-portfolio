@@ -202,7 +202,7 @@ export function flushSyncToServer(): Promise<void> {
     if (k === 'overrides') syncOverrides = true
   }
   _pendingKeys.clear()
-  const promises: Promise<any>[] = []
+  const promises: Promise<unknown>[] = []
   if (_flushPromise) promises.push(_flushPromise.catch(() => {}))
   if (Object.keys(payload).length > 0) promises.push(saveState(payload).catch(() => {}))
   if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
@@ -236,8 +236,8 @@ export function clearDbOverrides(keys: string[]) {
    como caché para el próximo arranque rápido. */
 export function mergeServerState(server: CmsStatePayload) {
   // En modo mock, el server devuelve objetos vacíos. Intentar recuperar de localStorage.
-  const getLoc = (k: string, def: any) => {
-    try { const v = localStorage.getItem('cms_state_' + k); return v ? JSON.parse(v) : def } catch { return def }
+  const getLoc = <T,>(k: string, def: T): T => {
+    try { const v = localStorage.getItem('cms_state_' + k); return v ? JSON.parse(v) as T : def } catch { return def }
   }
   
   if ('used_content' in server && Object.keys(server.used_content || {}).length > 0) {
@@ -351,12 +351,12 @@ export function getFormat(e: { type?: string; src?: string; dataUrl?: string; na
 export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: string; url?: string; key?: string }[]) => {
   const seen = new Set<string>()
   return arr.reduce((s, e) => {
-    const id = (e as { src?: string }).src || (e as { dataUrl?: string }).dataUrl || (e as { url?: string }).url
+    const id = e.src || e.dataUrl || e.url
     if (id) {
       if (seen.has(id)) return s
       seen.add(id)
     }
-    const size = (e as any).size ?? (id ? (state.mediaMeta[id.split('?')[0].split('#')[0]]?.size || state.mediaMeta[id]?.size) : null) ?? (e.key ? state.mediaMeta[e.key]?.size : 0) ?? 0
+    const size = e.size ?? (id ? (state.mediaMeta[id.split('?')[0].split('#')[0]]?.size || state.mediaMeta[id]?.size) : null) ?? (e.key ? state.mediaMeta[e.key]?.size : 0) ?? 0
     return s + size
   }, 0)
 }
@@ -701,7 +701,7 @@ export function archiveMediaKey(key: string, reason: 'retired' | 'replaced' | 'd
 
 function compactList(prefix: string, deletedIndices: Set<number>, cleared: Record<string, string>) {
   if (deletedIndices.size === 0) return
-  let settingsKey = `${prefix}.settings`
+  const settingsKey = `${prefix}.settings`
   let count = 0
   try {
     const parsed = JSON.parse(state.items[settingsKey] || '{}')

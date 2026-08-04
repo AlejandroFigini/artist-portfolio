@@ -48,6 +48,7 @@ next-env.d.ts
 /.agent/
 /.agents/
 /.claude/
+/.claude-flow/
 /.gemini/
 /graphify-out/
 skills-lock.json

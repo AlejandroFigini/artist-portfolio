@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { verify } from 'otplib'
 import { getPool, ensureDb, hasDb } from '@/lib/db'
 import { verifyPassword, createSession, setSessionCookie } from '@/lib/auth'
+import { getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
     // comparar siempre (hash dummy si no existe) → no filtrar qué usuarios existen por timing
     const ok = await verifyPassword(pass, u?.password_hash || '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva')
     if (!u || !ok) {
-      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+      const ip = getClientIp(req)
       const ua = req.headers.get('user-agent') || 'unknown'
       await pool.query(
         'INSERT INTO failed_logins (username, ip_address, user_agent) VALUES ($1, $2, $3)',
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
       }
       const result = await verify({ token: String(code), secret: u.totp_secret, epochTolerance: 30 })
       if (!result.valid) {
-        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+        const ip = getClientIp(req)
         const ua = req.headers.get('user-agent') || 'unknown'
         await pool.query(
           'INSERT INTO failed_logins (username, ip_address, user_agent) VALUES ($1, $2, $3)',

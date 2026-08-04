@@ -2,7 +2,7 @@
 // All carousel components (ProjectsShowcase, CharactersShowcase, HeroMediaCarousel, Slideshow, etc.)
 // can import and use this hook to keep cloned slides in sync with the CMS store.
 
-import { useEffect } from 'react'
+import { useEffect, type DependencyList } from 'react'
 import { type CarouselApi } from '@/components/ui/carousel'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { rescan } from '@/components/cms/engine'
@@ -16,12 +16,12 @@ import { rescan } from '@/components/cms/engine'
 export function useCarouselSync(
   api: CarouselApi | undefined,
   signature: string,
-  extraDeps: any[] = []
+  extraDeps: DependencyList = []
 ) {
   // Ensure the component re‑renders when CMS store changes.
   useCmsStore()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (!api) return
     // Re‑initialize Embla to rebuild cloned slides.

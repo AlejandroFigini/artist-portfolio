@@ -305,9 +305,9 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           
           let pageReusedCount = 0
           page.items.forEach(item => {
-            const src = item.src || item.dataUrl || (item as any).key || ''
+            const src = item.src || item.dataUrl || item.key || ''
             // In the page context, reused is total usages - 1
-            const allOccurrences = usedArr.filter(u => (u.src || u.dataUrl || (u as any).key || '') === src)
+            const allOccurrences = usedArr.filter(u => (u.src || u.dataUrl || u.key || '') === src)
             if (allOccurrences.length > 1) {
               pageReusedCount += (allOccurrences.length - 1)
             }
@@ -386,7 +386,7 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
   const { uniqueCount, reusedCount } = useMemo(() => {
     const set = new Set<string>()
     for (const e of unusedArr) {
-      const src = e.src || e.dataUrl || (e as any).key || ''
+      const src = e.src || e.dataUrl || e.key || ''
       if (src) set.add(src)
     }
     return { uniqueCount: set.size, reusedCount: unusedArr.length - set.size }
@@ -450,7 +450,7 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
   const { uniqueCount, reusedCount } = useMemo(() => {
     const set = new Set<string>()
     for (const e of trashArr) {
-      const src = e.src || e.dataUrl || (e as any).key || ''
+      const src = e.src || e.dataUrl || e.key || ''
       if (src) set.add(src)
     }
     return { uniqueCount: set.size, reusedCount: trashArr.length - set.size }
@@ -803,7 +803,7 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const { uniqueCount, reusedCount } = useMemo(() => {
     const set = new Set<string>()
     for (const e of filtered) {
-      const src = e.src || e.dataUrl || (e as any).key || ''
+      const src = e.src || e.dataUrl || e.key || ''
       if (src) set.add(src)
     }
     return { uniqueCount: set.size, reusedCount: filtered.length - set.size }
@@ -851,8 +851,8 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
                   } else {
                     throw new Error(data.error || 'Unknown error')
                   }
-                } catch (e: any) {
-                  toast(`Download failed: ${e.message}`, 'error')
+                } catch (e) {
+                  toast(`Download failed: ${e instanceof Error ? e.message : 'error desconocido'}`, 'error')
                 }
               }}>
                 <i className="fa-solid fa-file-zipper"></i> Download ZIP

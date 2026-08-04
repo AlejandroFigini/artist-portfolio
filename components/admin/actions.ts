@@ -9,7 +9,7 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit, recordMediaMeta,
   persistUsed, persistUnused, persistRetired, persistTrash,
-  retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer,
+  archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
@@ -78,7 +78,18 @@ export async function emptyTrash() {
 }
 
 // Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
-export async function resolveSizes(entries: { size?: number | null; ts?: number | null; src?: string; dataUrl?: string }[]) {
+/* `key` y `name` se declaran acá porque los callers ya los mandan y el cuerpo
+   los necesita para recordMediaMeta; antes se accedían con `as any`. */
+type SizeEntry = {
+  size?: number | null
+  ts?: number | null
+  src?: string
+  dataUrl?: string
+  key?: string
+  name?: string
+}
+
+export async function resolveSizes(entries: SizeEntry[]) {
   let changed = false
   const urlsToFetch: string[] = []
   
@@ -93,7 +104,7 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
         const realTs = parseInt(match[1], 10) * 1000
         if (e.ts !== realTs) {
           e.ts = realTs
-          recordMediaMeta((e as any).key || '', src, { ts: realTs, name: (e as any).name })
+          recordMediaMeta(e.key || '', src, { ts: realTs, name: e.name })
           changed = true
         }
       }
@@ -103,7 +114,7 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
 
     if (src.startsWith('data:')) {
       e.size = approxDataUrlBytes(src)
-      recordMediaMeta((e as any).key || '', src, { size: e.size, ts: e.ts ?? undefined, name: (e as any).name })
+      recordMediaMeta(e.key || '', src, { size: e.size, ts: e.ts ?? undefined, name: e.name })
       changed = true
       continue
     }
@@ -112,8 +123,6 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
       urlsToFetch.push(src)
     }
   }
-
-  // fetch them
 
   // Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del navegador
   if (urlsToFetch.length > 0) {
@@ -130,15 +139,14 @@ export async function resolveSizes(entries: { size?: number | null; ts?: number 
             const src = e.src || e.dataUrl || ''
             if (results[src] && (!e.size || e.size === 0)) {
               e.size = results[src]
-              recordMediaMeta((e as any).key || '', src, { size: results[src], ts: e.ts ?? undefined, name: (e as any).name })
+              recordMediaMeta(e.key || '', src, { size: results[src], ts: e.ts ?? undefined, name: e.name })
               changed = true
             }
           }
         }
-      } else {
       }
-    } catch (err) {
-      // Ignore error
+    } catch {
+      // Un fallo midiendo tamaños no debe romper el panel: se quedan sin dato.
     }
   }
   

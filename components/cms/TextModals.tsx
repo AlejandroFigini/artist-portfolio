@@ -137,7 +137,12 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
     const v = inp ? inp.value : (fields.find((f) => f.key === k)?.value ?? '')
     return v.trim() !== ''
   })
-  const [fieldsComplete, setFieldsComplete] = useState(() => isComplete())
+  /* El estado inicial sale solo de `fields`: en el primer render los inputs
+     todavía no están montados, así que valuesRef está vacío y leerlo ahí
+     rompe la regla de refs sin aportar ningún dato. */
+  const [fieldsComplete, setFieldsComplete] = useState(() =>
+    requiredKeys.every((k) => (fields.find((f) => f.key === k)?.value ?? '').trim() !== ''),
+  )
   const recheckFields = () => setFieldsComplete(isComplete())
 
   const cont = meta.container && el ? el.closest<HTMLElement>(meta.container) : el

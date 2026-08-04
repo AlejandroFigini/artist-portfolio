@@ -9,6 +9,29 @@ import { CmsModal } from '@/components/ui/Modal'
 import { gsap } from '@/hooks/useGSAP'
 import '@/styles/contact-modal.css'
 
+/* El widget de Turnstile se inyecta por script, así que no hay tipos: se
+   declara acá la parte de la API que usamos, en vez de castear window a `any`
+   en cada llamada. */
+type TurnstileApi = {
+  render: (
+    container: HTMLElement,
+    opts: {
+      sitekey: string
+      callback: (token: string) => void
+      'expired-callback': () => void
+      theme?: 'auto' | 'light' | 'dark'
+    },
+  ) => string
+  reset: (widgetId: string) => void
+  remove: (widgetId: string) => void
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi
+  }
+}
+
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
   "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
@@ -83,8 +106,8 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     if (!TURNSTILE_SITE_KEY) return
 
     const renderWidget = () => {
-      if (turnstileRef.current && (window as any).turnstile && !turnstileWidgetId.current) {
-        turnstileWidgetId.current = (window as any).turnstile.render(turnstileRef.current, {
+      if (turnstileRef.current && window.turnstile && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
           sitekey: TURNSTILE_SITE_KEY,
           callback: (token: string) => {
             setTurnstileToken(token)
@@ -94,7 +117,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
             setTurnstileToken('')
             setTurnstileStatus('loading')
             if (turnstileWidgetId.current) {
-              (window as any).turnstile.reset(turnstileWidgetId.current)
+              window.turnstile?.reset(turnstileWidgetId.current)
             }
           },
           theme: 'auto',
@@ -102,7 +125,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       }
     }
 
-    if ((window as any).turnstile) {
+    if (window.turnstile) {
       renderWidget()
       return
     }
@@ -114,8 +137,8 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     document.head.appendChild(script)
 
     return () => {
-      if (turnstileWidgetId.current && (window as any).turnstile) {
-        try { (window as any).turnstile.remove(turnstileWidgetId.current) } catch {}
+      if (turnstileWidgetId.current && window.turnstile) {
+        try { window.turnstile.remove(turnstileWidgetId.current) } catch {}
         turnstileWidgetId.current = null
       }
     }
@@ -216,7 +239,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
           </div>
           <p className="contact-success-title">Message sent</p>
           <p className="contact-success-subtitle">
-            Thank you{name ? `, ${name}` : ''}. I'll get back to you shortly.
+            Thank you{name ? `, ${name}` : ''}. I&rsquo;ll get back to you shortly.
           </p>
           <button
             type="button"

@@ -1,16 +1,21 @@
 'use client'
 import React, { useEffect, useState } from 'react'
+import type { NamedCount } from '@/lib/analytics-types'
+
+type RealtimeState = {
+  realtimeUsers: number
+  realtimePages: NamedCount[]
+  realtimeCountries: NamedCount[]
+}
 
 export default function RealtimeCard() {
-  const [active, setActive] = useState<any>({
+  const [active, setActive] = useState<RealtimeState>({
     realtimeUsers: 0,
     realtimePages: [],
     realtimeCountries: []
   })
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
     const fetchRealtime = async () => {
       try {
         const res = await fetch('/api/admin/analytics?realtimeOnly=true')
@@ -29,7 +34,7 @@ export default function RealtimeCard() {
 
     fetchRealtime()
     
-    intervalId = setInterval(fetchRealtime, 30000)
+    const intervalId = setInterval(fetchRealtime, 30000)
 
     return () => clearInterval(intervalId)
   }, [])
@@ -46,7 +51,7 @@ export default function RealtimeCard() {
             Tráfico en Vivo
             <span className="cms-info-tip" tabIndex={0} aria-label="Se actualiza al instante, pero cada usuario 'vive y muere' en este contador durante una ventana móvil de 30 minutos desde su última acción." style={{ marginLeft: '0.6rem' }}>
               <i className="fa-solid fa-circle-info" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}></i>
-              <span className="cms-info-bubble" role="tooltip">Se actualiza al instante, pero cada usuario 'vive y muere' en este contador durante una ventana móvil de 30 minutos desde su última acción.</span>
+              <span className="cms-info-bubble" role="tooltip">Se actualiza al instante, pero cada usuario &lsquo;vive y muere&rsquo; en este contador durante una ventana móvil de 30 minutos desde su última acción.</span>
             </span>
           </h2>
         </div>
@@ -65,7 +70,7 @@ export default function RealtimeCard() {
             <i className="fa-solid fa-file-lines" style={{ color: 'var(--text-secondary)' }}></i> Por Página
           </h4>
           <div style={{ flexGrow: 1 }}>
-            {active.realtimePages?.length > 0 ? active.realtimePages.map((p: any, i: number) => (
+            {active.realtimePages?.length > 0 ? active.realtimePages.map((p, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', fontSize: '0.9rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
                 <span style={{ color: 'var(--text-primary)' }}>{p.name}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.count}</span>
@@ -80,7 +85,7 @@ export default function RealtimeCard() {
             <i className="fa-solid fa-earth-americas" style={{ color: 'var(--text-secondary)' }}></i> Por País
           </h4>
           <div style={{ flexGrow: 1 }}>
-            {active.realtimeCountries?.length > 0 ? active.realtimeCountries.map((c: any, i: number) => (
+            {active.realtimeCountries?.length > 0 ? active.realtimeCountries.map((c, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', fontSize: '0.9rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
                 <span style={{ color: 'var(--text-primary)' }}>{c.name}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.count}</span>

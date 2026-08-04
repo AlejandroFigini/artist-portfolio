@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
-import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer, flushSyncToServer } from '@/lib/cms/store'
+import { state, loadJSON, saveJSON, LS, persistUnused, persistUsed, archiveMediaKey, useCmsStore, emit, scheduleSyncToServer, flushSyncToServer, type UsedEntry } from '@/lib/cms/store'
 import { elementsByKey, currentSrcOf, seedUsedContent, broadcastCarousel } from './engine'
 
 const MIN_SLIDES = 0
@@ -94,7 +94,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
     ])
 
     const oldData: Record<string, string> = {}
-    const oldUsed: Record<string, any> = {}
+    const oldUsed: Record<string, UsedEntry> = {}
     allKnownSlideKeys.forEach((k) => {
       const src = slideSrc(k, prefix)
       if (src) oldData[k] = src
@@ -111,7 +111,7 @@ export default function CarouselManager({ prefix, show = true, onClose, onPickIm
 
     // 3. Preparar los nuevos datos de diapositivas
     const newItems: Record<string, string> = {}
-    const newUsed: Record<string, any> = {}
+    const newUsed: Record<string, UsedEntry> = {}
     
     finalSlides.forEach((vKey, i) => {
       const realKey = `${prefix}.slide#${i}`

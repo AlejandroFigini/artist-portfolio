@@ -84,7 +84,7 @@ export default function AdminDashboard() {
         scaffoldCloudinaryFolders()
       }
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])  
 
   const goto = (s: string) => {
     setSection(s)

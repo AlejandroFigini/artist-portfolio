@@ -20,7 +20,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
   }
   const targetUser = targetUserRes.rows[0]
 
-  let body: any
+  /* El body llega de la red: se tipa como parcial y cada rama valida lo suyo.
+     No se asume la unión de AdminUserUpdate — eso describe lo que manda
+     nuestro cliente, no lo que puede llegar realmente al endpoint. */
+  let body: Partial<{
+    action: string
+    is_blocked: boolean
+    role: string
+    session_ttl_minutes: number | null
+    newUsername: string
+    newPassword: string
+  }>
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
 
   const action = body.action
@@ -43,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         return NextResponse.json({ success: false, error: 'Cannot change role of an owner' }, { status: 400 })
       }
       const newRole = body.role
-      if (!['admin', 'demo'].includes(newRole)) {
+      if (!newRole || !['admin', 'demo'].includes(newRole)) {
         return NextResponse.json({ success: false, error: 'Invalid role' }, { status: 400 })
       }
       await pool.query('UPDATE users SET role = $1 WHERE id = $2', [newRole, targetUser.id])
@@ -86,7 +96,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       }
 
       const updates: string[] = []
-      const values: any[] = []
+      const values: (string | number | boolean | null)[] = []
       let idx = 1
 
       if (newUsername) {

@@ -9,11 +9,9 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
-import { fileToDataURL } from '@/lib/media'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, type FieldValue,
 } from '@/lib/cms/store'
-import { getCloudinaryFolder } from '@/lib/cms/pages'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
 } from './engine'
@@ -95,12 +93,11 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
     const fieldValues = fields.map((f) => ({ f, val: fieldRefs.current[f.key]?.value ?? f.value }))
     setPhase('uploading')
 
-    fileToDataURL(file)
-      .then(async (base64) => {
-        const uploadBase64 = isFavicon ? await cropToCircle(base64) : base64
-        const meta = getContainerMeta(cmsKey)
-        return uploadMedia(uploadBase64, file.size, finalName, meta.section, 'used', getCloudinaryFolder(meta.section))
-      })
+    ;(async () => {
+      const payload = isFavicon ? await cropToCircle(file) : file
+      const meta = getContainerMeta(cmsKey)
+      return uploadMedia(payload, finalName, meta.section, 'used')
+    })()
       .then((data) => {
         // versión anterior → no usados (solo si tenía contenido real)
         archiveMediaKey(cmsKey, 'replaced')
@@ -314,12 +311,16 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
   )
 }
 
-/** Recorta una imagen en base64 en un círculo perfecto de borde a borde y la exporta como PNG transparente. */
-function cropToCircle(base64DataUrl: string): Promise<string> {
+/** Recorta una imagen en un círculo perfecto de borde a borde y la devuelve como
+ *  PNG transparente. Trabaja Blob→Blob (objectURL + canvas.toBlob) para que el
+ *  archivo nunca pase por base64 camino al servidor. */
+function cropToCircle(source: Blob): Promise<Blob> {
   return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(source)
+    const done = (out: Blob) => { URL.revokeObjectURL(objectUrl); resolve(out) }
+
     const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.src = base64DataUrl
+    img.src = objectUrl
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas')
@@ -327,10 +328,7 @@ function cropToCircle(base64DataUrl: string): Promise<string> {
         canvas.width = size
         canvas.height = size
         const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          resolve(base64DataUrl)
-          return
-        }
+        if (!ctx) return done(source)
 
         ctx.clearRect(0, 0, size, size)
 
@@ -346,14 +344,12 @@ function cropToCircle(base64DataUrl: string): Promise<string> {
 
         ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size)
 
-        resolve(canvas.toDataURL('image/png'))
+        canvas.toBlob((blob) => done(blob || source), 'image/png')
       } catch (e) {
         console.error('[cropToCircle] Error al recortar circularmente:', e)
-        resolve(base64DataUrl)
+        done(source)
       }
     }
-    img.onerror = () => {
-      resolve(base64DataUrl)
-    }
+    img.onerror = () => done(source)
   })
 }

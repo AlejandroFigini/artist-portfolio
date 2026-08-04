@@ -62,7 +62,7 @@ export async function GET(req: Request) {
   }
 
   // 3. Obtener datos de Google Analytics (últimos 7 días)
-  let metricsData = {
+  const metricsData = {
     users: 0,
     newUsers: 0,
     views: 0,
@@ -120,7 +120,7 @@ export async function GET(req: Request) {
     if (pagesRes[0].rows) {
       const pageMap = new Map<string, number>();
       for (const r of pagesRes[0].rows) {
-        let name = (r.dimensionValues?.[0]?.value || '(not set)').split(' - ')[0].split(' | ')[0].trim();
+        const name = (r.dimensionValues?.[0]?.value || '(not set)').split(' - ')[0].split(' | ')[0].trim();
         const views = parseInt(r.metricValues?.[0]?.value || '0', 10);
         if (name && name !== '(not set)' && name !== '(other)') {
           pageMap.set(name, (pageMap.get(name) || 0) + views);

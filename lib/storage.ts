@@ -76,17 +76,41 @@ function sniffKind(head: Buffer): MediaKind | null {
   return null
 }
 
-/* Decodifica solo la cabecera: sniffear no necesita el archivo entero, y un
-   video de 100 MB en base64 no tiene por qué pasar dos veces por memoria. */
-function assertDeclaredKindMatchesBytes(dataUrl: string, declared: MediaKind): void {
-  const comma = dataUrl.indexOf(',')
-  if (comma < 0) throw new UnsupportedMediaError('Data URL inválida')
-  const head = Buffer.from(dataUrl.slice(comma + 1, comma + 89), 'base64') // ~64 bytes
-  const actual = sniffKind(head)
+function assertBufferMatchesKind(buffer: Buffer, declared: MediaKind): void {
+  const actual = sniffKind(buffer.subarray(0, 64))
   if (!actual) throw new UnsupportedMediaError('Formato de archivo no reconocido o no permitido (SVG y HTML no se aceptan)')
   if (actual !== declared) {
     throw new UnsupportedMediaError(`El contenido del archivo es ${actual}, pero se declaró como ${declared}`)
   }
+}
+
+/* Extensión deducida de la firma, para cuando no hay un mime confiable.
+   Se usa solo en el guardado local (Cloudinary decide la suya). */
+function extFromBuffer(buffer: Buffer): string | null {
+  const head = buffer.subarray(0, 16)
+  const ascii = (offset: number, s: string) => head.subarray(offset, offset + s.length).toString('latin1') === s
+  if (head[0] === 0xff && head[1] === 0xd8) return 'jpg'
+  if (ascii(1, 'PNG')) return 'png'
+  if (ascii(0, 'GIF8')) return 'gif'
+  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'webp'
+  if (head[0] === 0x1a && head[1] === 0x45) return 'webm'
+  if (ascii(4, 'ftyp')) return 'mp4'
+  if (ascii(0, '%PDF-')) return 'pdf'
+  return null
+}
+
+/* cloudinary.uploader.upload() espera una ruta o una data URI; para bytes
+   crudos la vía es upload_stream, así que el buffer se escribe al stream. */
+type CloudinaryUploadResult = { secure_url: string; bytes: number; format?: string; asset_id: string }
+
+function uploadStream(buffer: Buffer, options: Record<string, unknown>): Promise<CloudinaryUploadResult> {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
+      if (err || !result) return reject(err || new Error('Cloudinary no devolvió resultado'))
+      resolve(result as unknown as CloudinaryUploadResult)
+    })
+    stream.end(buffer)
+  })
 }
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
@@ -120,54 +144,57 @@ function cleanFilename(name: string): string {
   return cleanExt ? `${cleanBase}.${cleanExt}` : cleanBase
 }
 
-/** Sube una data URL (base64). Devuelve la URL servible + metadatos.
+/** Sube bytes crudos. Es el camino real de subida: multipart entrega el archivo
+    ya binario, sin el +33% ni el string gigante en memoria del base64.
     kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar.
     folder = carpeta destino en Cloudinary (por sección de la página). */
-export async function uploadDataUrl(
-  dataUrl: string,
-  kind: 'image' | 'video' | 'raw',
+export async function uploadBuffer(
+  buffer: Buffer,
+  kind: MediaKind,
   folder = 'portfolio',
   originalName?: string,
+  mime?: string,
 ): Promise<StoredMedia> {
-  // Boundary único de subida: las dos rutas que aceptan data URLs
-  // (/api/upload-test y /api/content) pasan por acá, así que la validación
-  // vive acá y no se puede olvidar en una de las dos.
-  assertDeclaredKindMatchesBytes(dataUrl, kind)
+  // Boundary único de subida: todo lo que entra al storage pasa por acá, así
+  // que la validación de contenido no se puede olvidar en una ruta.
+  assertBufferMatchesKind(buffer, kind)
 
   const filename = originalName ? cleanFilename(originalName) : undefined
 
   if (hasCloudinary) {
-    const commonOptions: Record<string, unknown> = { folder, asset_folder: folder }
+    const options: Record<string, unknown> = { folder, asset_folder: folder }
     if (filename) {
       const lastDot = filename.lastIndexOf('.')
       const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
-      commonOptions.public_id = kind === 'raw' ? filename : base
-      commonOptions.use_filename = true
-      commonOptions.unique_filename = false
-      commonOptions.overwrite = true
-      commonOptions.filename_override = filename
+      options.public_id = kind === 'raw' ? filename : base
+      options.use_filename = true
+      options.unique_filename = false
+      options.overwrite = true
+      options.filename_override = filename
     }
     if (kind === 'raw') {
-      const res = await cloudinary.uploader.upload(dataUrl, { ...commonOptions, resource_type: 'raw' })
-      return { url: res.secure_url, bytes: res.bytes, format: res.format || 'pdf', assetId: res.asset_id }
-    }
-    if (kind === 'video') {
+      options.resource_type = 'raw'
+    } else if (kind === 'video') {
       // Sin transformación entrante: transcodear sync (format/quality) hace fallar
       // videos medianos por límite de procesamiento de Cloudinary. Se guarda el
       // original; la optimización se aplica en la URL de entrega (f_auto/q_auto).
-      const res = await cloudinary.uploader.upload(dataUrl, { ...commonOptions, resource_type: 'video' })
-      return { url: res.secure_url, bytes: res.bytes, format: res.format, assetId: res.asset_id }
+      options.resource_type = 'video'
+    } else {
+      options.resource_type = 'image'
+      options.format = 'webp'
+      options.quality = 'auto'
     }
-    const res = await cloudinary.uploader.upload(dataUrl, {
-      ...commonOptions,
-      resource_type: 'image',
-      format: 'webp',
-      quality: 'auto',
-    })
-    return { url: res.secure_url, bytes: res.bytes, format: res.format, assetId: res.asset_id }
+    const res = await uploadStream(buffer, options)
+    return {
+      url: res.secure_url,
+      bytes: res.bytes,
+      format: res.format || (kind === 'raw' ? 'pdf' : ''),
+      assetId: res.asset_id,
+    }
   }
+
   // Local: escribir a public/uploads y devolver una ruta servible (/uploads/..).
-  const { buffer, ext } = decodeDataUrl(dataUrl)
+  const ext = (mime && EXT_BY_MIME[mime]) || extFromBuffer(buffer) || 'bin'
   let name = `${randomUUID()}.${ext}`
   if (filename) {
     const lastDot = filename.lastIndexOf('.')
@@ -177,6 +204,18 @@ export async function uploadDataUrl(
   await mkdir(LOCAL_DIR, { recursive: true })
   await writeFile(path.join(LOCAL_DIR, name), buffer)
   return { url: `/uploads/${name}`, bytes: buffer.length, format: ext, assetId: `local_${name}` }
+}
+
+/** Sube una data URL. Envoltorio sobre uploadBuffer: lo usa /api/content, que
+    recibe ajustes (CV, iconos) embebidos como data URL dentro del JSON. */
+export async function uploadDataUrl(
+  dataUrl: string,
+  kind: MediaKind,
+  folder = 'portfolio',
+  originalName?: string,
+): Promise<StoredMedia> {
+  const { buffer, mime } = decodeDataUrl(dataUrl)
+  return uploadBuffer(buffer, kind, folder, originalName, mime)
 }
 
 /** Extrae resource_type y public_id de una URL de Cloudinary. */
@@ -451,12 +490,17 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
     let cursor: string | undefined = undefined
     do {
       try {
+        /* El tipado del SDK no declara `type`, pero la Admin API sí lo acepta
+           y hace falta para filtrar solo los assets subidos. */
         const res = await cloudinary.api.resources({
           resource_type: type,
           max_results: 500,
           next_cursor: cursor,
-          type: 'upload'
-        } as any) as { resources?: Record<string, unknown>[]; next_cursor?: string }
+          type: 'upload',
+        } as Parameters<typeof cloudinary.api.resources>[0]) as {
+          resources?: Record<string, unknown>[]
+          next_cursor?: string
+        }
 
         if (res?.resources) {
           res.resources.forEach(r => addResource(r))

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
+import { getClientIp, checkContactRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,22 +10,6 @@ export const dynamic = 'force-dynamic'
    guarda el mensaje en DB y lo envía por email vía Resend. */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MAX_PER_HOUR = 5 // máx mensajes por IP por hora
-
-const IP_RE = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f:]{2,45})$/i
-
-/* OJO: x-forwarded-for lo puede escribir el cliente. Detrás del proxy de
-   Railway el valor real es el que agrega el proxy, pero la cadena de hops no
-   se puede deducir desde acá. Se valida el formato para no guardar basura en
-   la columna, pero un atacante que rote el header sigue esquivando el rate
-   limit — eso se cierra fijando el nº de proxies de confianza en el deploy. */
-function getClientIp(req: Request): string {
-  const candidate =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip')?.trim() ||
-    ''
-  return IP_RE.test(candidate) ? candidate.slice(0, 45) : '0.0.0.0'
-}
 
 /* El asunto va como cabecera del mail: un \r\n permite inyectar cabeceras
    propias (Bcc, Reply-To). Se colapsa cualquier salto de línea. */
@@ -48,18 +33,6 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
     console.error('[contact] Turnstile verification failed')
     return false
   }
-}
-
-/* Rate limiting basado en la tabla contact_messages (por IP, últimos 60 min). */
-async function isRateLimited(ip: string): Promise<boolean> {
-  if (!hasDb) return false
-  const pool = getPool()!
-  const { rows } = await pool.query(
-    `SELECT COUNT(*)::int AS n FROM contact_messages
-     WHERE ip_address = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
-    [ip],
-  )
-  return rows[0].n >= MAX_PER_HOUR
 }
 
 /* Obtener email(s) destino desde la configuración de redes sociales del admin
@@ -136,10 +109,14 @@ export async function POST(req: Request) {
     }
   }
 
-  // Rate limiting
+  // Rate limiting: tope por IP + techo global que no depende de la IP
   if (hasDb) {
     await ensureDb()
-    if (await isRateLimited(ip)) {
+    const verdict = await checkContactRateLimit(getPool()!, ip)
+    if (verdict.limited) {
+      if (verdict.scope === 'global') {
+        console.warn('[contact] techo global por hora alcanzado — posible flood')
+      }
       return NextResponse.json(
         { error: 'Too many messages. Please try again later.' },
         { status: 429 },

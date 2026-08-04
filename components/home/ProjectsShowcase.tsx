@@ -7,7 +7,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from '@/components/ui/carousel'
-import Autoplay from 'embla-carousel-autoplay'
+import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay'
 import { useInViewRef } from '@/hooks/useInView'
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state } from '@/lib/cms/store'
@@ -49,11 +49,11 @@ function ProjectCard({ index }: { index: number }) {
     })
   ]
 
+  /* El reset a la primera lámina vive en onMouseLeave, no acá: hacerlo con un
+     setState síncrono dentro del efecto encadenaba un render extra por cada
+     tarjeta al sacar el mouse. */
   useEffect(() => {
-    if (!isHovered || validConceptIndices.length <= 1) {
-      if (!isHovered) setActiveSlide(0)
-      return
-    }
+    if (!isHovered || validConceptIndices.length <= 1) return
 
     const duration = activeSlide === 0 ? 500 : 1300
     const timer = setTimeout(() => {
@@ -70,7 +70,7 @@ function ProjectCard({ index }: { index: number }) {
       data-content-id={key}
       className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => { setIsHovered(false); setActiveSlide(0) }}
     >
       {/* 1. Contenedor de Imagen (Formato apaisado 3:2 elegante con borde divisorio inferior) */}
       <div
@@ -216,13 +216,13 @@ export default function ProjectsShowcase() {
     if (!carouselApi) return
     const onModalOpen = () => {
       try {
-        const autoplay = carouselApi.plugins()?.autoplay as any
+        const autoplay = carouselApi.plugins()?.autoplay as AutoplayType | undefined
         if (autoplay) autoplay.stop()
       } catch {}
     }
     const onModalClose = () => {
       try {
-        const autoplay = carouselApi.plugins()?.autoplay as any
+        const autoplay = carouselApi.plugins()?.autoplay as AutoplayType | undefined
         if (autoplay && !document.body.classList.contains('contact-modal-open') && !document.body.classList.contains('cms-modal-open')) {
           autoplay.play()
         }
@@ -342,11 +342,11 @@ export default function ProjectsShowcase() {
               ]}
               className="w-full"
               onMouseEnter={() => {
-                const autoplay = carouselApi?.plugins()?.autoplay as any
+                const autoplay = carouselApi?.plugins()?.autoplay as AutoplayType | undefined
                 if (autoplay) autoplay.stop()
               }}
               onMouseLeave={() => {
-                const autoplay = carouselApi?.plugins()?.autoplay as any
+                const autoplay = carouselApi?.plugins()?.autoplay as AutoplayType | undefined
                 if (autoplay) autoplay.play()
               }}
             >

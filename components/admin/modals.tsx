@@ -9,7 +9,6 @@ import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
-import { fileToDataURL } from '@/lib/media'
 import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
@@ -491,8 +490,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
           const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
           const rawName = fileNames[i].trim() || getFileBasename(file.name)
           const finalName = ensureExtension(rawName, file.name)
-          const base64 = await fileToDataURL(file)
-          const data = await uploadMedia(base64, file.size, finalName, 'Direct uploads', 'unused')
+          const data = await uploadMedia(file, finalName, 'Direct uploads', 'unused')
           
           // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
           const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])

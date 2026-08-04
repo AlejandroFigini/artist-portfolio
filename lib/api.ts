@@ -114,7 +114,18 @@ export async function createUser(payload: { username: string; password: string; 
   if (!r.ok) throw new Error((data as { error?: string }).error || 'Error creando usuario')
 }
 
-export async function updateUserAdmin(username: string, payload: any): Promise<void> {
+/* Unión discriminada por `action`: cada acción declara exactamente los campos
+   que necesita, así el compilador impide mandar `role` en un `block` o pedir
+   un `ttl` sin minutos. El route handler valida lo mismo en runtime. */
+export type AdminUserUpdate =
+  | { action: 'block'; is_blocked: boolean }
+  | { action: 'role'; role: string }
+  | { action: 'reset' }
+  | { action: 'ttl'; session_ttl_minutes: number | null }
+  | { action: 'kill_sessions' }
+  | { action: 'credentials'; newUsername?: string; newPassword?: string }
+
+export async function updateUserAdmin(username: string, payload: AdminUserUpdate): Promise<void> {
   const r = await fetch(`/api/users/${encodeURIComponent(username)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -147,39 +158,58 @@ export async function twoFa(payload:
   return data as { secret?: string; uri?: string }
 }
 
-export async function uploadMedia(base64Data: string, originalSize: number, originalName: string, section?: string, mediaState?: 'used' | 'unused' | 'trash', cloudinaryFolder?: string): Promise<UploadResponse> {
-  // Fallback local: si el backend (Cloudinary) no está disponible, se usa el
-  // propio dataURL como fuente. Permite seleccionar/subir imágenes sin backend
-  // en desarrollo (se persisten en los overrides locales).
-  const localFallback = (): UploadResponse => ({
+/* Sube un archivo por multipart. Recibe el Blob/File tal cual: no se convierte
+   a base64, que inflaba el cuerpo un 33% y lo materializaba entero en memoria
+   de los dos lados. */
+export async function uploadMedia(
+  file: Blob,
+  originalName: string,
+  section?: string,
+  mediaState?: 'used' | 'unused' | 'trash',
+): Promise<UploadResponse> {
+  /* Fallback local: si el backend NO CORRE (error de red), se usa el propio
+     archivo como data URL para poder seguir trabajando sin servidor.
+     Ojo: solo para fallo de red. Si el servidor responde un error, ese error
+     se propaga — antes el `throw` vivía dentro del try y su propio catch lo
+     tragaba, así que un rechazo del servidor (por ejemplo un SVG bloqueado)
+     terminaba guardándose igual en local, en silencio. */
+  const localFallback = async (): Promise<UploadResponse> => ({
     success: true,
-    secure_url: base64Data,
-    final_bytes: originalSize,
+    secure_url: await blobToDataUrl(file),
+    final_bytes: file.size,
     final_format: (originalName.split('.').pop() || 'webp').toLowerCase(),
-    original_size: originalSize,
+    original_size: file.size,
     original_name: originalName,
   })
 
+  const body = new FormData()
+  // Sin Content-Type manual: el navegador arma el boundary del multipart.
+  body.append('file', file, originalName)
+  body.append('name', originalName)
+  if (section) body.append('section', section)
+  if (mediaState) body.append('mediaState', mediaState)
+
   let r: Response
   try {
-    r = await fetch('/api/upload-test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base64Data, originalSize, originalName, section, mediaState, cloudinaryFolder }),
-    })
+    r = await fetch('/api/upload-test', { method: 'POST', body })
   } catch {
-    return localFallback() // backend no corre → usar dataURL local
+    return localFallback() // backend no corre → dataURL local
   }
+
   if (!r.ok) {
-    const text = await r.text()
-    try {
-      const data = JSON.parse(text)
-      throw new Error(data.error || 'Error en la subida')
-    } catch {
-      return localFallback() // backend inalcanzable → dataURL local
-    }
+    const data = await r.json().catch(() => null)
+    throw new Error((data as { error?: string } | null)?.error || `Error en la subida (HTTP ${r.status})`)
   }
   return r.json()
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }
 
 export async function deleteMedia(url: string): Promise<void> {

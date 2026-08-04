@@ -2,16 +2,17 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 import { getPool, ensureDb, hasDb } from '@/lib/db';
 import { getAnalyticsClient, getAnalyticsPropertyId } from '@/lib/analytics';
+import type { MockAnalyticsData } from '@/lib/analytics-types';
 
 const propertyId = getAnalyticsPropertyId();
 const analyticsDataClient = getAnalyticsClient();
 
 // Datos mock para el layout de vista previa visual
 // Estos se usarán como respaldo si las credenciales de GA4 no están configuradas en el archivo .env
-const mockDataMap: any = {
+const mockDataMap: Record<string, MockAnalyticsData> = {
   today: {
     realtimeUsers: 3,
-    realtimePage: 'Portafolio 3D & Hero',
+    realtimePages: [{ name: 'Portafolio 3D & Hero', count: 2 }],
     uniqueUsers: 24,
     newUsers: 18,
     returningUsers: 6,
@@ -56,7 +57,7 @@ const mockDataMap: any = {
   },
   '7d': {
     realtimeUsers: 3,
-    realtimePage: 'Portafolio 3D & Hero',
+    realtimePages: [{ name: 'Portafolio 3D & Hero', count: 2 }],
     uniqueUsers: 512,
     newUsers: 485,
     returningUsers: 27,
@@ -104,7 +105,7 @@ const mockDataMap: any = {
   },
   '30d': {
     realtimeUsers: 4,
-    realtimePage: 'Ilustraciones Bento',
+    realtimePages: [{ name: 'Ilustraciones Bento', count: 3 }],
     uniqueUsers: 2154,
     newUsers: 1980,
     returningUsers: 174,
@@ -526,7 +527,7 @@ export async function GET(request: Request) {
     let socialClicks = 0;
     let fullscreenOpens = 0;
     let emailClicks = 0;
-    let socialListRaw: { id: string, count: number }[] = [];
+    const socialListRaw: { id: string, count: number }[] = [];
     
     eventsRes[0].rows?.forEach(r => {
       const eventName = r.dimensionValues?.[0].value || '';
@@ -614,10 +615,10 @@ export async function GET(request: Request) {
       _status: 'connected'
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('GA4 API Error:', err);
     const isDev = (process.env.NODE_ENV as string) === 'development';
-    const safeMessage = isDev ? err.message : 'Analytics service error';
+    const safeMessage = isDev && err instanceof Error ? err.message : 'Analytics service error';
     return NextResponse.json({ error: safeMessage }, { status: 500 });
   }
 }

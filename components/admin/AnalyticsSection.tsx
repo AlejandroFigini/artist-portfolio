@@ -3,26 +3,29 @@
 import { useState, useEffect } from 'react'
 import RealtimeCard from './RealtimeCard'
 import WorldMap from "react-svg-worldmap"
+/* El mapa tipa `country` como unión de códigos ISO literales. */
+type CountryIsoCode = React.ComponentProps<typeof WorldMap>['data'][number]['country']
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import type { AnalyticsData, CountryMetric, FailedLogin } from '@/lib/analytics-types'
 /* AnalyticsSection — Layout visual de gestión de tráfico y métricas de Google Analytics (GA4).
    Pestaña dedicada en AdminDashboard para visualizar la actividad del sitio en vivo,
    visitantes únicos, páginas más vistas, origen del tráfico y dispositivos. */
 export default function AnalyticsSection() {
   const [range, setRange] = useState('thisWeek')
   const [pendingRange, setPendingRange] = useState('thisWeek')
-  const [countryMetric, setCountryMetric] = useState<'activos' | 'nuevos' | 'recurrentes'>('activos')
+  const [countryMetric, setCountryMetric] = useState<CountryMetric>('activos')
   const toast = useToast()
 
   const [sendingReport, setSendingReport] = useState(false)
 
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<Partial<AnalyticsData> | null>(null)
   const [loading, setLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const [showFailedLogins, setShowFailedLogins] = useState(false)
-  const [failedLoginsList, setFailedLoginsList] = useState<any[]>([])
+  const [failedLoginsList, setFailedLoginsList] = useState<FailedLogin[]>([])
   const [loadingLogins, setLoadingLogins] = useState(false)
 
   const handleOpenFailedLogins = async () => {
@@ -51,16 +54,14 @@ export default function AnalyticsSection() {
       } else {
         toast(json.error || 'Fallo al enviar el reporte', 'error')
       }
-    } catch (err: any) {
-      toast(err.message || 'Fallo de red al enviar el reporte', 'error')
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Fallo de red al enviar el reporte', 'error')
     } finally {
       setSendingReport(false)
     }
   }
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
     const fetchData = async (isBackgroundPulse = false) => {
       if (!data) setLoading(true)
       if (!isBackgroundPulse) setIsUpdating(true)
@@ -73,9 +74,9 @@ export default function AnalyticsSection() {
         } else {
           setErrorMsg(json.error || 'Error desconocido conectando a Google Analytics')
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch analytics data:', err)
-        setErrorMsg(err.message || 'Fallo en la red')
+        setErrorMsg(err instanceof Error ? err.message : 'Fallo en la red')
       } finally {
         setLoading(false)
         setIsUpdating(false)
@@ -85,7 +86,7 @@ export default function AnalyticsSection() {
     fetchData(false)
     
     // Refresh realtime data every 30 seconds (background pulse)
-    intervalId = setInterval(() => fetchData(true), 30000)
+    const intervalId = setInterval(() => fetchData(true), 30000)
 
     return () => clearInterval(intervalId)
   }, [range])
@@ -122,8 +123,7 @@ export default function AnalyticsSection() {
     )
   }
 
-  const active = data || {}
-  const maxChartVal = active.chartDays ? Math.max(...active.chartDays.map((d: any) => d.val)) : 1
+  const active: Partial<AnalyticsData> = data || {}
 
   return (
     <div className="admin-card ga-analytics-card" id="seccion-analitica">
@@ -310,16 +310,16 @@ export default function AnalyticsSection() {
         <div 
           className="ga-stat-card" 
           style={{
-            ...(active.failedLogins > 0 ? { borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)' } : {}),
-            cursor: active.failedLogins > 0 ? 'pointer' : 'default'
+            ...((active.failedLogins ?? 0) > 0 ? { borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)' } : {}),
+            cursor: (active.failedLogins ?? 0) > 0 ? 'pointer' : 'default'
           }}
-          onClick={() => active.failedLogins > 0 && handleOpenFailedLogins()}
+          onClick={() => (active.failedLogins ?? 0) > 0 && handleOpenFailedLogins()}
         >
           <div className="ga-stat-icon" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
             <i className="fa-solid fa-shield-cat"></i>
           </div>
           <div className="ga-stat-body">
-            <span className="ga-stat-value" style={{ color: active.failedLogins > 0 ? '#ef4444' : undefined }}>
+            <span className="ga-stat-value" style={{ color: (active.failedLogins ?? 0) > 0 ? '#ef4444' : undefined }}>
               {active.failedLogins}
             </span>
             <span className="ga-stat-title">
@@ -350,7 +350,11 @@ export default function AnalyticsSection() {
               title=""
               value-suffix="visitantes"
               size="responsive"
-              data={(active.countries || []).map((c: any) => ({ country: c.code.toLowerCase(), value: c.count }))}
+              /* GA manda 'XX' cuando no puede resolver el país: no es un ISO
+                 válido, así que se descarta antes de llegar al mapa. */
+              data={(active.countries || [])
+                .filter((c) => /^[a-z]{2}$/i.test(c.code) && c.code.toUpperCase() !== 'XX')
+                .map((c) => ({ country: c.code.toLowerCase() as CountryIsoCode, value: c.count }))}
               backgroundColor="transparent"
             />
           </div>
@@ -361,7 +365,7 @@ export default function AnalyticsSection() {
                 <select 
                   className="ga-header-col ga-metric-select" 
                   value={countryMetric} 
-                  onChange={(e) => setCountryMetric(e.target.value as any)}
+                  onChange={(e) => setCountryMetric(e.target.value as CountryMetric)}
                   title="Cambiar métrica a visualizar"
                 >
                   <option value="activos">USUARIOS ACTIVOS</option>
@@ -371,15 +375,15 @@ export default function AnalyticsSection() {
                 <i className="fa-solid fa-caret-down ga-metric-caret"></i>
               </div>
             </div>
-            {(active.countries || []).map((c: any, idx: number) => {
+            {(active.countries || []).map((c, idx) => {
               let displayCount = c.count;
               let displayPct = c.pct;
               if (countryMetric === 'nuevos') {
                 displayCount = c.newUsers || 0;
-                displayPct = Math.round((displayCount / Math.max(1, active.newUsers)) * 100);
+                displayPct = Math.round((displayCount / Math.max(1, active.newUsers ?? 0)) * 100);
               } else if (countryMetric === 'recurrentes') {
                 displayCount = c.returningUsers || 0;
-                displayPct = Math.round((displayCount / Math.max(1, active.returningUsers)) * 100);
+                displayPct = Math.round((displayCount / Math.max(1, active.returningUsers ?? 0)) * 100);
               }
               return (
                 <div key={idx} className="ga-list-item">
@@ -408,7 +412,7 @@ export default function AnalyticsSection() {
               </span>
           </div>
           <div className="ga-list">
-            {(active.sources || []).map((src: any, idx: number) => (
+            {(active.sources || []).map((src, idx) => (
               <div key={idx} className="ga-list-item">
                 <div className="ga-list-info">
                   <span className="ga-list-name">{src.name}</span>
@@ -432,7 +436,7 @@ export default function AnalyticsSection() {
               </span>
           </div>
           <div className="ga-list">
-            {(active.socialList || []).map((soc: any, idx: number) => (
+            {(active.socialList || []).map((soc, idx) => (
               <div key={idx} className="ga-list-item">
                 <div className="ga-list-info">
                   <span className="ga-list-name">
@@ -468,13 +472,13 @@ export default function AnalyticsSection() {
           <div className="ga-devices-wrap">
             <div className="ga-device-item">
               <i className="fa-solid fa-desktop" style={{ fontSize: '1.8rem', color: 'var(--accent)' }}></i>
-              <span className="ga-device-pct">{active.devices.desktop}%</span>
+              <span className="ga-device-pct">{active.devices?.desktop ?? 0}%</span>
               <span className="ga-device-label">Computadora</span>
             </div>
             <div className="ga-device-divider"></div>
             <div className="ga-device-item">
               <i className="fa-solid fa-mobile-screen-button" style={{ fontSize: '1.8rem', color: '#3b82f6' }}></i>
-              <span className="ga-device-pct">{active.devices.mobile}%</span>
+              <span className="ga-device-pct">{active.devices?.mobile ?? 0}%</span>
               <span className="ga-device-label">Celular / Tablet</span>
             </div>
           </div>
@@ -513,7 +517,7 @@ export default function AnalyticsSection() {
                       <td style={{ padding: '0.8rem', whiteSpace: 'nowrap' }}>{new Date(l.created_at).toLocaleString()}</td>
                       <td style={{ padding: '0.8rem', fontFamily: 'monospace' }}>{l.ip_address}</td>
                       <td style={{ padding: '0.8rem', fontWeight: 'bold' }}>{l.username}</td>
-                      <td style={{ padding: '0.8rem', fontSize: '0.85rem', opacity: 0.8, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={l.user_agent}>
+                      <td style={{ padding: '0.8rem', fontSize: '0.85rem', opacity: 0.8, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={l.user_agent ?? undefined}>
                         {(() => {
                           const ua = (l.user_agent || '').toLowerCase();
                           if (ua.includes('edg/')) return 'Edge';
@@ -521,7 +525,7 @@ export default function AnalyticsSection() {
                           if (ua.includes('safari/') && !ua.includes('chrome/')) return 'Safari';
                           if (ua.includes('firefox/')) return 'Firefox';
                           if (ua.includes('curl') || ua.includes('bot') || ua.includes('postman')) return 'Script / Bot';
-                          return l.user_agent.split(' ')[0] || 'Desconocido';
+                          return l.user_agent?.split(' ')[0] || 'Desconocido';
                         })()}
                       </td>
                     </tr>

@@ -47,8 +47,10 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   const { confirm } = useModal()
   const toast = useToast()
 
-  const load = useCallback(async (p = page, tab = activeTab) => {
-    setLoading(true)
+  /* La búsqueda va separada del `setLoading(true)` para que el efecto de montaje
+     pueda llamarla sin disparar un setState síncrono dentro del efecto (que
+     encadena renders). En el montaje `loading` ya arranca en true. */
+  const fetchMessages = useCallback(async (p: number, tab: typeof activeTab) => {
     try {
       const params = new URLSearchParams({ page: String(p), limit: '20' })
       if (tab === 'starred') params.set('starred', 'true')
@@ -59,7 +61,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
         setData(d)
         if (onUnreadChange && tab !== 'trash') onUnreadChange(d.unread)
       }
-      
+
       // Load auto-delete setting
       const c = await fetch('/api/content')
       if (c.ok) {
@@ -73,9 +75,21 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     } finally {
       setLoading(false)
     }
-  }, [page, activeTab, onUnreadChange, toast])
+  }, [onUnreadChange, toast])
 
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const load = useCallback((p = page, tab = activeTab) => {
+    setLoading(true)
+    return fetchMessages(p, tab)
+  }, [page, activeTab, fetchMessages])
+
+  useEffect(() => {
+    /* fetchMessages no toca el estado antes de su primer `await`, así que no
+       encadena renders; la regla no distingue eso y marca cualquier llamada a
+       una función que contenga setState. Se silencia solo esa línea.
+       El array vacío es intencional: página y pestaña llaman a load() a mano. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMessages(page, activeTab)
+  }, [])
 
   const toggleRead = async (msg: Message) => {
     try {
