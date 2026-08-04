@@ -2760,7 +2760,13 @@ body.nav-open .nav-backdrop {
     header::after {
         content: '';
         position: absolute;
-        inset: 0;
+        /* El bottom negativo es lo que mata la línea blanca bajo la barra.
+           En un absolute el `inset` se mide contra el PADDING box, así que con
+           `inset: 0` el velo oscurecía el header pero dejaba fuera su
+           border-bottom: ese 1px seguía claro contra todo lo demás atenuado y
+           se leía como una línea blanca. Estirándolo 1px hacia abajo, el borde
+           se atenúa y se recupera junto con el resto, en una sola transición. */
+        inset: 0 0 -1px;
         background: rgba(10, 1, 24, 0.6); /* mismo oscuro que nav-backdrop */
         z-index: 1450;
         pointer-events: none;
@@ -2953,10 +2959,9 @@ body.nav-open .nav-backdrop {
         color: var(--text-primary); /* Sub-opciones mantienen su color normal */
     }
 
-    /* Eliminar la lÃƒÆ’Ã‚Â­nea blanca de la barra superior cuando el menÃƒÆ’Ã‚Âº abre */
-    body.nav-open header {
-        border-bottom-color: transparent !important;
-    }
+    /* (La línea blanca bajo la barra la resuelve el velo `header::after`,
+       que se extiende 1px para cubrir el border-bottom. Volver el borde
+       transparente acá era contraproducente: dejaba ver el fondo blanco.) */
 
     .mobile-drawer-actions {
         display: flex;
@@ -6760,18 +6765,16 @@ select.ga-metric-select option {
 
 
 
-/* Con el drawer abierto la línea inferior del header se apaga por COLOR, no
-   quitando el borde. Con `border-bottom: none` el ancho saltaba de 1px a 0 y
-   al cerrar volvía de golpe: como el borde es casi blanco y el drawer todavía
-   está deslizándose, ese salto se leía como un destello blanco bajo la barra.
-   Manteniendo el ancho, solo se funde el color (transición en `header`). */
+/* El header NO toca su borde al abrir el drawer: de eso se encarga el velo
+   `header::after`, que ahora también lo cubre. Tocar además el color acá
+   dejaba dos mecanismos peleando — y como el fondo del header es blanco,
+   volverlo transparente hacía que se viera el blanco por debajo, que era
+   justo la línea que se quería eliminar.
+   La regla de progreso sí se apaga: vive en `bottom: -1px`, fuera del velo. */
 @media (max-width: 992px) {
-  body.nav-open header {
-    border-bottom-color: transparent !important;
-    box-shadow: none !important;
-  }
+  body.nav-open header { box-shadow: none !important; }
   body.nav-open .nav-progress { opacity: 0; }
-  .nav-progress { transition: opacity 0.35s ease; }
+  .nav-progress { transition: opacity 0.3s ease; }
 }
 @media (min-width: 993px) { .mobile-drawer-logo, .mobile-drawer-actions { display: none !important; } }
 @media (max-width: 450px) { .logo { font-size: clamp(0.85rem, 4vw, 0.95rem) !important; } .logo span.highlight { font-size: clamp(0.55rem, 3vw, 0.65rem) !important; } .nav-actions { gap: 0.15rem !important; } .nav-actions .cv-min-btn, .nav-actions .cms-navauth-btn, .nav-actions .login-min-btn { width: 28px !important; height: 28px !important; padding: 0 !important; } .nav-actions .lang-btn { width: auto !important; padding: 0 0.4rem !important; height: 28px !important; } .nav-actions i { font-size: 0.8rem !important; } }
