@@ -356,16 +356,25 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     }
     if (el.hasAttribute('data-full')) el.setAttribute('data-full', value)
   } else if (type === 'video') {
+    const v = el as HTMLVideoElement
     const s = el.querySelector('source')
+    const target = value || null
+    const actual = s ? s.getAttribute('src') : v.getAttribute('src')
+
+    /* Salir si la fuente ya es la que corresponde. `load()` reinicia el video
+       desde cero, así que llamarlo cuando no cambió nada lo hace parpadear:
+       applyValue corre en cada rescan/emit del store, y durante el arranque
+       hay varios seguidos. */
+    if (actual === target) return
+
     if (s) {
       if (value) s.src = value
       else s.removeAttribute('src')
     } else {
-      if (value) (el as HTMLVideoElement).src = value
-      else el.removeAttribute('src')
+      if (value) v.src = value
+      else v.removeAttribute('src')
     }
     try {
-      const v = el as HTMLVideoElement
       v.load()
       if (value && v.autoplay) v.play().catch(() => {})
     } catch {}

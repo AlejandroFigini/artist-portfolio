@@ -26,6 +26,22 @@ export default function PageLoader() {
   const minDisplay = loaderDurationMs(settings.loaderDuration) // duración configurable
   const failsafe = minDisplay + 6000
 
+  /* Fuente del video, resuelta UNA vez.
+     Los ajustes llegan async (EMPTY_SETTINGS → overrides locales → /api/site) y
+     el store CMS se hidrata aparte, así que este valor cambiaba varias veces
+     durante el arranque. Cada cambio de `src` en un <video> es una recarga, y
+     eso era el parpadeo: la pantalla de carga dura pocos segundos y el video
+     se reiniciaba en cada paso.
+     Se engancha el primer valor no vacío y se mantiene; cambiarlo a mitad de
+     la animación no aporta nada. La vista previa del admin sí lo reengancha,
+     que es donde se quiere ver el archivo recién subido. */
+  const resolvedSrc = (state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : settings.loaderVideo) || ''
+  const [videoSrc, setVideoSrc] = useState(resolvedSrc)
+  if (resolvedSrc && resolvedSrc !== videoSrc && (!videoSrc || isPreview)) {
+    // setState en render: patrón de estado derivado de React, no un efecto.
+    setVideoSrc(resolvedSrc)
+  }
+
   // 1. Escuchar cuando se solicita vista previa de la pantalla de carga desde gestión
   useEffect(() => {
     const onPreviewLoader = () => {
@@ -119,7 +135,7 @@ export default function PageLoader() {
             <video
               data-cms-key="loader.gallop"
               className="loader-gallop"
-              src={(state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : settings.loaderVideo) || undefined}
+              src={videoSrc || undefined}
               autoPlay loop muted playsInline preload="auto"
             ></video>
             <div className="loader-media-glow"></div>
