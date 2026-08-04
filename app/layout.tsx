@@ -75,18 +75,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
-        <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+        {/* Font Awesome ya no viene de CDN: styles/icons.css sirve un subset
+            propio con los ~128 iconos que usamos (278 KB → 14 KB). */}
+        {/* Solo las familias y pesos que el sitio realmente pinta:
+            Plus Jakarta Sans (--font/--font-display), Raleway 300/400/500/600,
+            Fira Code 400/500 (cotas blueprint) e Inter 400/800 (.soft-badge y
+            .cms-mlib-meta). Cormorant Garamond y Syne no se usaban en ninguna
+            regla — Syne solo aparecía como fallback de var(--font-display),
+            que siempre está definido, así que nunca llegaba a aplicarse. */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@200..800&family=Syne:wght@400..800&family=Inter:wght@100;200;300;400;700;800&family=Raleway:wght@100;200;300;400;500;600&family=Fira+Code:wght@400;500&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Raleway:wght@300;400;500;600&family=Inter:wght@400;800&family=Fira+Code:wght@400;500&display=swap"
         />
       </head>
       <body suppressHydrationWarning>

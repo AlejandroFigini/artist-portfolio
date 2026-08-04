@@ -50,7 +50,7 @@ function useSelection() {
 function MultiToggleBtn({ multiSelect, onClick }: { multiSelect: boolean; onClick: () => void }) {
   return (
     <button type="button" className="cms-btn cms-btn--sm" onClick={onClick}>
-      <i className="fa-solid fa-check-square"></i> {multiSelect ? 'Disable selection' : 'Multi-select'}
+      <i className="fa-solid fa-square-check"></i> {multiSelect ? 'Disable selection' : 'Multi-select'}
     </button>
   )
 }

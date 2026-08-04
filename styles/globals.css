@@ -6,6 +6,10 @@
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
+/* Subset de Font Awesome (generado, ver scripts/build-icon-subset.mjs).
+   Va antes que el legacy: hay reglas ahí que usan la familia directamente. */
+@import "./icons.css";
+
 /* CSS legacy portado verbatim (Sesión 1). Cada archivo de página está
    scoped por prefijo de clase (.anim-, .char-, .illu-, .m3d-, .mm-). */
 @import "./legacy/style.css";
