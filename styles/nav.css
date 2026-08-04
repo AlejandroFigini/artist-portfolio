@@ -352,6 +352,28 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
    para que el menú entre completo en pantallas cortas.
    ============================================================ */
 @media (max-width: 992px) {
+  /* Alto de la barra en una sola variable: la usan el padding del contenedor,
+     el logo del drawer y el padding superior del menú. El logo del drawer está
+     posicionado en absolute sobre el viewport, así que si el padding de la
+     barra se toca sin actualizarlo, deja de alinear con el botón X. */
+  :root { --nav-pad-y: clamp(1.05rem, 2.4svh, 1.4rem); }
+
+  header > .nav-container { padding: var(--nav-pad-y) 0 !important; }
+
+  /* El logo del drawer se posiciona contra el viewport, no dentro de la barra:
+     tiene que arrancar en el mismo offset que el contenido del header o deja
+     de alinear con el botón X. */
+  .mobile-drawer-logo { top: var(--nav-pad-y) !important; }
+
+  /* Logo de la barra: un punto más de presencia sin comerse el espacio del
+     grupo de acciones (que ya escala aparte). */
+  header > .nav-container > .logo {
+    font-size: clamp(0.98rem, 4.6vw, 1.2rem) !important;
+  }
+  header > .nav-container > .logo span.highlight {
+    font-size: clamp(0.64rem, 3.4vw, 0.8rem) !important;
+  }
+
   /* --- Barra superior: aire real entre email / CV / login / idioma.
      El `margin-right: auto` del logo (legacy) queda intacto: es lo que empuja
      el grupo contra el borde derecho. --- */
@@ -361,8 +383,8 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     .nav-actions .lang-btn { padding: 0 0.25rem !important; }
     .nav-actions .lang-btn .lang-code { margin-left: 0.2rem; }
     .nav-toggle { margin-right: 0.5rem; }
-    header > .nav-container > .logo { font-size: 0.78rem !important; }
-    header > .nav-container > .logo span.highlight { font-size: 0.55rem !important; }
+    header > .nav-container > .logo { font-size: 0.86rem !important; }
+    header > .nav-container > .logo span.highlight { font-size: 0.6rem !important; }
   }
 
   /* --- Drawer: sin hover ni feedback táctil pegajoso ---
@@ -407,7 +429,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      con `center` a secas el overflow superior es inalcanzable y "Feed"
      quedaba cortado en pantallas cortas (iPhone SE). */
   .nav-links {
-    padding-top: calc(1rem + 44px + 0.35rem) !important;
+    padding-top: calc(var(--nav-pad-y) + 44px + 0.35rem) !important;
     padding-bottom: clamp(0.6rem, 1.6svh, 2rem) !important;
   }
   .nav-menu-scrollable {
@@ -415,15 +437,40 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     gap: clamp(0.05rem, 0.35svh, 0.4rem) !important;
     padding: 0 !important;
   }
+
+  /* Tipografía del drawer. Todo en clamp con vw/svh: crece en pantallas
+     grandes y se repliega en las cortas, donde igual queda el scroll interno
+     de .nav-menu-scrollable como red. */
+  .nav-links > a,
   .nav-menu-scrollable > a,
   .nav-links .dropbtn {
-    padding: clamp(0.2rem, 0.8svh, 0.65rem) 0 !important;
+    font-size: clamp(1.02rem, 4.4vw, 1.32rem) !important;
+    padding: clamp(0.26rem, 0.95svh, 0.75rem) 0 !important;
   }
   .nav-links .dropdown-content {
-    padding: clamp(0.05rem, 0.2svh, 0.25rem) 0 clamp(0.2rem, 0.55svh, 0.75rem) 1rem !important;
+    padding: clamp(0.05rem, 0.25svh, 0.3rem) 0 clamp(0.25rem, 0.7svh, 0.9rem) 1rem !important;
   }
   .nav-links .dropdown-content a {
-    padding: clamp(0.1rem, 0.4svh, 0.4rem) 0 !important;
+    font-size: clamp(0.9rem, 3.7vw, 1.12rem) !important;
+    /* Más aire entre sub-opciones: el padding las separa sin recortar el área
+       táctil, que es lo que se toca al elegir. */
+    padding: clamp(0.3rem, 1svh, 0.7rem) 0 !important;
+  }
+
+  /* Las sub-opciones NO se mueven al arrastrar el dedo.
+     Vienen con `transform: translateY(-10px)` de la animación de entrada del
+     dropdown de escritorio, y solo vuelven a 0 con :hover/.open. En táctil el
+     :hover se dispara al pasar el dedo por encima, así que cada sub-opción
+     pegaba un salto de 10px mientras se arrastraba. Dentro del drawer el
+     desplegable ya se muestra plano, así que esa animación no aplica: quedan
+     fijas en su posición final. */
+  .nav-links .dropdown-content a,
+  .nav-links .dropdown:hover .dropdown-content a,
+  .nav-links .dropdown.open .dropdown-content a {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    transition-delay: 0s !important;
   }
   .mobile-drawer-actions {
     padding-top: clamp(0.7rem, 2svh, 1.5rem) !important;

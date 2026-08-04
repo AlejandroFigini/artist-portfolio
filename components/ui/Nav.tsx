@@ -37,7 +37,10 @@ export default function Nav() {
   // red (mismo patrón que About) — el menú Portfolio nunca queda vacío.
   const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]) || n.home)
   const [navOpen, setNavOpen] = useState(false)
-  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  /* Origen del gesto en un ref y no en estado: se lee de forma síncrona dentro
+     del propio handler y guardarlo en estado provocaba un render por cada
+     touchstart sin que nada de la UI dependiera del valor. */
+  const swipeOrigin = useRef<{ x: number; y: number } | null>(null)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
   const [langOpen, setLangOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
@@ -174,21 +177,36 @@ export default function Nav() {
   const toggleDropdown = (name: 'gallery' | 'portfolio') =>
     setDropdown((d) => (d === name ? null : name))
 
+  /* Cerrar el drawer deslizando el dedo.
+     El panel entra desde el borde izquierdo, así que el gesto de descarte es
+     empujarlo de vuelta hacia la izquierda. Antes se cerraba al deslizar a la
+     DERECHA, que es la dirección en la que el panel entra: por eso el gesto
+     natural no hacía nada.
+     Se compara contra el desplazamiento vertical para no confundir el scroll
+     del menú con un swipe. */
+  const SWIPE_CLOSE_PX = 55
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.targetTouches[0].clientX)
+    const t = e.targetTouches[0]
+    swipeOrigin.current = { x: t.clientX, y: t.clientY }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX === null) return
-    const currentTouchX = e.targetTouches[0].clientX
-    const diff = currentTouchX - touchStartX
-    
-    // Si se desliza hacia la derecha más de 50px y el menú está abierto
-    if (diff > 50 && navOpen) {
+    const origin = swipeOrigin.current
+    if (!origin || !navOpen) return
+    const t = e.targetTouches[0]
+    const dx = t.clientX - origin.x
+    const dy = t.clientY - origin.y
+
+    // Intención horizontal: el eje X tiene que dominar sobre el Y.
+    if (Math.abs(dx) <= Math.abs(dy)) return
+    if (dx < -SWIPE_CLOSE_PX) {
       closeNav()
-      setTouchStartX(null)
+      swipeOrigin.current = null
     }
   }
+
+  const handleTouchEnd = () => { swipeOrigin.current = null }
 
   return (
     <>
@@ -211,6 +229,8 @@ export default function Nav() {
             ref={linksRef}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <div className="logo mobile-drawer-logo" onClick={closeNav}>
               Lucia Montaña <span className="separator">|</span> <span className="highlight inline-highlight">Portfolio</span>

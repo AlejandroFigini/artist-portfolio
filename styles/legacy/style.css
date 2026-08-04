@@ -93,7 +93,19 @@ html {
     -moz-osx-font-smoothing: grayscale;
 }
 
-body { overflow-x: hidden;
+/* Nada de scroll horizontal: la página es solo lo que entra a lo ancho.
+   `clip` y no `hidden`: `hidden` crea un contenedor de scroll, así que el eje
+   sigue siendo desplazable por gesto (en iOS se panea igual, que era el
+   síntoma) y por script. `clip` directamente no genera ese contenedor.
+   Va en html Y en body: con overflow solo en body, el valor se propaga al
+   viewport de forma inconsistente entre navegadores. */
+html,
+body {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
+body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.8;
@@ -103,7 +115,6 @@ body { overflow-x: hidden;
     letter-spacing: var(--letter-spacing-elegant);
 
     transition: background-color 0.3s ease, color 0.3s ease;
-    overflow-x: hidden;
 }
 
 a {
@@ -120,7 +131,10 @@ header {
     z-index: 1000;
     background-color: #ffffff;
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-    transition: padding 0.3s ease, box-shadow 0.3s ease;
+    /* border-color entra en la transición para que al cerrar el drawer la
+       línea inferior aparezca fundida y no de golpe (ver nota en la regla
+       de body.nav-open). */
+    transition: padding 0.3s ease, box-shadow 0.3s ease, border-color 0.35s ease;
 }
 
 header.scrolled {
@@ -6746,7 +6760,19 @@ select.ga-metric-select option {
 
 
 
-@media (max-width: 992px) { body.nav-open header { border-bottom: none !important; box-shadow: none !important; } body.nav-open .nav-progress { display: none !important; } }
+/* Con el drawer abierto la línea inferior del header se apaga por COLOR, no
+   quitando el borde. Con `border-bottom: none` el ancho saltaba de 1px a 0 y
+   al cerrar volvía de golpe: como el borde es casi blanco y el drawer todavía
+   está deslizándose, ese salto se leía como un destello blanco bajo la barra.
+   Manteniendo el ancho, solo se funde el color (transición en `header`). */
+@media (max-width: 992px) {
+  body.nav-open header {
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+  body.nav-open .nav-progress { opacity: 0; }
+  .nav-progress { transition: opacity 0.35s ease; }
+}
 @media (min-width: 993px) { .mobile-drawer-logo, .mobile-drawer-actions { display: none !important; } }
 @media (max-width: 450px) { .logo { font-size: clamp(0.85rem, 4vw, 0.95rem) !important; } .logo span.highlight { font-size: clamp(0.55rem, 3vw, 0.65rem) !important; } .nav-actions { gap: 0.15rem !important; } .nav-actions .cv-min-btn, .nav-actions .cms-navauth-btn, .nav-actions .login-min-btn { width: 28px !important; height: 28px !important; padding: 0 !important; } .nav-actions .lang-btn { width: auto !important; padding: 0 0.4rem !important; height: 28px !important; } .nav-actions i { font-size: 0.8rem !important; } }
 
