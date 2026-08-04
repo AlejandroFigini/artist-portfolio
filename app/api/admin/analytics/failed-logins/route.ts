@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getPool, hasDb, ensureDb } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+/* Devuelve intentos de login fallidos: usuarios probados, IPs y user-agents.
+   Antes solo comprobaba que la cookie `sid` EXISTIERA, sin validarla: cualquiera
+   con `Cookie: sid=loquesea` se llevaba la lista. Ahora se valida la sesión
+   contra la tabla y se exige rol; el rol demo no ve datos reales. */
 export async function GET(request: Request) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('sid');
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireRole(request, ['owner', 'admin', 'demo']);
+  if ('deny' in auth) return auth.deny;
+  if (auth.user.role === 'demo') return NextResponse.json({ data: [] });
 
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '30daysAgo';
@@ -111,8 +113,16 @@ export async function GET(request: Request) {
       return dt.toISOString().split('T')[0];
     };
 
+    /* Rango sobre el timestamp crudo, no `created_at::date`: el cast
+       impide usar el índice y fuerza seq scan. El `< fin + 1 día` cubre
+       el día final completo, igual que hacía el `<=` sobre la fecha. */
     const { rows } = await pool.query(
-      'SELECT id, username, ip_address, user_agent, created_at FROM failed_logins WHERE created_at::date >= $1::date AND created_at::date <= $2::date ORDER BY created_at DESC LIMIT 50',
+      `SELECT id, username, ip_address, user_agent, created_at
+         FROM failed_logins
+        WHERE created_at >= $1::date
+          AND created_at < ($2::date + INTERVAL '1 day')
+        ORDER BY created_at DESC
+        LIMIT 50`,
       [resolveDbDate(startDateStr), resolveDbDate(endDateStr)]
     );
 

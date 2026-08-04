@@ -151,6 +151,24 @@ const mockDataMap: any = {
 
 import { requireRole } from '@/lib/auth';
 
+/* Cache en memoria de los reportes históricos de GA, por rango de fechas.
+   Vive en el proceso: alcanza para absorber el polling del panel y no
+   introduce infraestructura. Al reiniciar arranca vacío, que es correcto. */
+const REPORTS_TTL_MS = 5 * 60 * 1000;
+const reportsCache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+function cachedReports<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const hit = reportsCache.get(key);
+  if (hit && Date.now() - hit.at < REPORTS_TTL_MS) return hit.value as Promise<T>;
+  const value = run();
+  // Se guarda la promesa, no el resultado: dos requests simultáneos comparten
+  // una sola llamada a GA en vez de disparar dos.
+  reportsCache.set(key, { at: Date.now(), value });
+  // Un fallo no se cachea: el próximo request reintenta contra GA.
+  value.catch(() => reportsCache.delete(key));
+  return value;
+}
+
 export async function GET(request: Request) {
   const auth = await requireRole(request, ['owner', 'admin', 'demo']);
   if ('deny' in auth) return auth.deny;
@@ -409,6 +427,11 @@ export async function GET(request: Request) {
       metrics: [{ name: 'eventCount' }]
     });
 
+    /* Los 6 reportes históricos se cachean por rango: el panel poolea cada
+       30 s y estos datos llegan hasta 'yesterday', o sea que cambian una vez
+       por día. Sin cache eran 12 llamadas por minuto a la Data API de GA
+       (que tiene cuota diaria) para devolver siempre lo mismo.
+       El bloque realtime de arriba queda fuera del cache a propósito. */
     const [
       overviewRes,
       devicesRes,
@@ -416,14 +439,14 @@ export async function GET(request: Request) {
       sourcesRes,
       timeRes,
       eventsRes
-    ] = await Promise.all([
+    ] = await cachedReports(`${range}:${startDate}:${endDate}`, () => Promise.all([
       overviewReq,
       devicesReq,
       countriesReq,
       sourcesReq,
       timeReq,
       eventsReq
-    ]);
+    ]));
 
     // Process Overview
     const row = overviewRes[0].rows?.[0];

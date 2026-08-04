@@ -11,12 +11,25 @@ export const dynamic = 'force-dynamic'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_PER_HOUR = 5 // máx mensajes por IP por hora
 
+const IP_RE = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f:]{2,45})$/i
+
+/* OJO: x-forwarded-for lo puede escribir el cliente. Detrás del proxy de
+   Railway el valor real es el que agrega el proxy, pero la cadena de hops no
+   se puede deducir desde acá. Se valida el formato para no guardar basura en
+   la columna, pero un atacante que rote el header sigue esquivando el rate
+   limit — eso se cierra fijando el nº de proxies de confianza en el deploy. */
 function getClientIp(req: Request): string {
-  return (
+  const candidate =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    '0.0.0.0'
-  )
+    req.headers.get('x-real-ip')?.trim() ||
+    ''
+  return IP_RE.test(candidate) ? candidate.slice(0, 45) : '0.0.0.0'
+}
+
+/* El asunto va como cabecera del mail: un \r\n permite inyectar cabeceras
+   propias (Bcc, Reply-To). Se colapsa cualquier salto de línea. */
+function sanitizeHeader(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim()
 }
 
 /* Verificar token de Cloudflare Turnstile contra su API. */
@@ -159,9 +172,7 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: `luciamontana.art <${fromEmail}>`,
         to: destEmails,
-        subject: subject
-          ? subject
-          : `New message from ${name}`,
+        subject: sanitizeHeader(subject || `New message from ${name}`),
         replyTo: email,
         html: `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">

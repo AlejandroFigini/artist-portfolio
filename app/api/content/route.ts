@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
-import { uploadDataUrl } from '@/lib/storage'
+import { uploadDataUrl, UnsupportedMediaError } from '@/lib/storage'
 import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -45,28 +45,56 @@ export async function POST(req: Request) {
   if (!hasDb) return NextResponse.json({ success: true, message: 'Content saved (mock, no DB)' })
 
   await ensureDb()
+
+  const entries = Object.entries(items)
+  const deleteKeys = entries
+    .filter(([, v]) => v === '' || v === null || v === undefined)
+    .map(([k]) => k)
+  const setEntries = entries.filter(([, v]) => !(v === '' || v === null || v === undefined))
+
+  /* Las subidas van ANTES de abrir la transacción. Estaban adentro: una tanda
+     de imágenes mantenía una conexión del pool (max 5) y una transacción
+     abierta durante todo el ida y vuelta con Cloudinary. */
+  const KIND_BY_PREFIX = [
+    ['data:image', 'image'],
+    ['data:video', 'video'],
+    ['data:application/pdf', 'raw'],
+  ] as const
+
+  let resolved: [string, string][]
+  try {
+    resolved = await Promise.all(
+      setEntries.map(async ([key, value]): Promise<[string, string]> => {
+        if (typeof value !== 'string') return [key, String(value)]
+        const match = KIND_BY_PREFIX.find(([prefix]) => value.startsWith(prefix))
+        if (!match) return [key, value]
+        return [key, (await uploadDataUrl(value, match[1], 'portfolio', key)).url]
+      }),
+    )
+  } catch (err) {
+    if (err instanceof UnsupportedMediaError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
+    }
+    console.error('[content POST] upload error:', err)
+    return NextResponse.json({ error: 'Error uploading media' }, { status: 500 })
+  }
+
   const pool = getPool()!
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    for (const [key, value] of Object.entries(items)) {
-      if (value === '' || value === null || value === undefined) {
-        await client.query('DELETE FROM cms_data WHERE key = $1', [key])
-      } else {
-        let finalValue = value as string
-        if (typeof value === 'string' && value.startsWith('data:image')) {
-          finalValue = (await uploadDataUrl(value, 'image', 'portfolio', key)).url
-        } else if (typeof value === 'string' && value.startsWith('data:video')) {
-          finalValue = (await uploadDataUrl(value, 'video', 'portfolio', key)).url
-        } else if (typeof value === 'string' && value.startsWith('data:application/pdf')) {
-          finalValue = (await uploadDataUrl(value, 'raw', 'portfolio', key)).url
-        }
-        await client.query(
-          `INSERT INTO cms_data (key, value) VALUES ($1, $2)
-           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
-          [key, finalValue],
-        )
-      }
+    /* Dos sentencias en lote en vez de una por clave: guardar la portada
+       entera eran decenas de round-trips secuenciales. */
+    if (deleteKeys.length) {
+      await client.query('DELETE FROM cms_data WHERE key = ANY($1::varchar[])', [deleteKeys])
+    }
+    if (resolved.length) {
+      await client.query(
+        `INSERT INTO cms_data (key, value)
+         SELECT * FROM UNNEST($1::varchar[], $2::text[])
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
+        [resolved.map(([k]) => k), resolved.map(([, v]) => v)],
+      )
     }
     await client.query('COMMIT')
     return NextResponse.json({ success: true, message: 'Content saved successfully' })

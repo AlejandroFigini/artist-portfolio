@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { uploadDataUrl, folderSlug } from '@/lib/storage'
+import { uploadDataUrl, folderSlug, UnsupportedMediaError } from '@/lib/storage'
 import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -60,6 +60,9 @@ export async function POST(req: Request) {
       asset_id: media.assetId,
     })
   } catch (err) {
+    if (err instanceof UnsupportedMediaError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
+    }
     console.error('[upload-test] error:', err)
     return NextResponse.json({ error: 'Error uploading file' }, { status: 500 })
   }

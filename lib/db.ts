@@ -118,10 +118,26 @@ const MIGRATIONS: { id: string; sql: string }[] = [
   {
     id: '2026_07_contact_messages_additions',
     sql: `
-      ALTER TABLE contact_messages 
+      ALTER TABLE contact_messages
       ADD COLUMN IF NOT EXISTS is_starred BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS is_trashed BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+    `,
+  },
+  {
+    /* No había ni un índice secundario en toda la base: solo las PK. Estas tres
+       consultas hacían seq scan sobre tablas que crecen sin techo.
+       - contact_messages: el rate limit del formulario, en CADA envío
+       - failed_logins: el panel de analítica
+       - sessions: revocación al cambiar contraseña + el ON DELETE CASCADE */
+    id: '2026_08_indices_consultas_calientes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_contact_messages_ip_created
+        ON contact_messages (ip_address, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_failed_logins_created
+        ON failed_logins (created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_sessions_user
+        ON sessions (user_id);
     `,
   },
 ]

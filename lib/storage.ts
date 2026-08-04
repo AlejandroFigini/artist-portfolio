@@ -30,9 +30,10 @@ export type StoredMedia = {
   assetId: string
 }
 
+/* Sin svg: lo rechaza sniffKind() y dejarlo acá sugeriría que está soportado. */
 const EXT_BY_MIME: Record<string, string> = {
   'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
-  'image/gif': 'gif', 'image/svg+xml': 'svg', 'video/webm': 'webm', 'video/mp4': 'mp4',
+  'image/gif': 'gif', 'video/webm': 'webm', 'video/mp4': 'mp4',
   'video/quicktime': 'mov', 'application/pdf': 'pdf',
 }
 
@@ -42,6 +43,50 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: st
   const mime = m[1]
   const ext = EXT_BY_MIME[mime] || (mime.split('/')[1] || 'bin')
   return { buffer: Buffer.from(m[2], 'base64'), ext, mime }
+}
+
+/* Firma real del archivo (magic bytes). El `data:image/png` de la data URL lo
+   escribe el cliente y no prueba nada: hay que mirar el contenido. SVG queda
+   deliberadamente fuera — es XML ejecutable y servido desde nuestro propio
+   origen es un vector de XSS almacenado. */
+type MediaKind = 'image' | 'video' | 'raw'
+
+/** Archivo rechazado por su contenido → 400 con motivo, no 500 genérico. */
+export class UnsupportedMediaError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UnsupportedMediaError'
+  }
+}
+
+function sniffKind(head: Buffer): MediaKind | null {
+  const startsWith = (...bytes: number[]) => bytes.every((b, i) => head[i] === b)
+  const ascii = (offset: number, s: string) => head.subarray(offset, offset + s.length).toString('latin1') === s
+
+  if (startsWith(0xff, 0xd8, 0xff)) return 'image'                       // JPEG
+  if (startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return 'image' // PNG
+  if (ascii(0, 'GIF87a') || ascii(0, 'GIF89a')) return 'image'           // GIF
+  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image'               // WEBP
+  if (ascii(0, 'BM')) return 'image'                                     // BMP
+  if (startsWith(0x00, 0x00, 0x01, 0x00)) return 'image'                 // ICO
+  if (startsWith(0x1a, 0x45, 0xdf, 0xa3)) return 'video'                 // WEBM / Matroska
+  if (ascii(4, 'ftyp')) return 'video'                                   // MP4 / MOV / M4V
+  if (ascii(0, 'OggS')) return 'video'                                   // OGG
+  if (ascii(0, '%PDF-')) return 'raw'                                    // PDF
+  return null
+}
+
+/* Decodifica solo la cabecera: sniffear no necesita el archivo entero, y un
+   video de 100 MB en base64 no tiene por qué pasar dos veces por memoria. */
+function assertDeclaredKindMatchesBytes(dataUrl: string, declared: MediaKind): void {
+  const comma = dataUrl.indexOf(',')
+  if (comma < 0) throw new UnsupportedMediaError('Data URL inválida')
+  const head = Buffer.from(dataUrl.slice(comma + 1, comma + 89), 'base64') // ~64 bytes
+  const actual = sniffKind(head)
+  if (!actual) throw new UnsupportedMediaError('Formato de archivo no reconocido o no permitido (SVG y HTML no se aceptan)')
+  if (actual !== declared) {
+    throw new UnsupportedMediaError(`El contenido del archivo es ${actual}, pero se declaró como ${declared}`)
+  }
 }
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
@@ -84,6 +129,11 @@ export async function uploadDataUrl(
   folder = 'portfolio',
   originalName?: string,
 ): Promise<StoredMedia> {
+  // Boundary único de subida: las dos rutas que aceptan data URLs
+  // (/api/upload-test y /api/content) pasan por acá, así que la validación
+  // vive acá y no se puede olvidar en una de las dos.
+  assertDeclaredKindMatchesBytes(dataUrl, kind)
+
   const filename = originalName ? cleanFilename(originalName) : undefined
 
   if (hasCloudinary) {
