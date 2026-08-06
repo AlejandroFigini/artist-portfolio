@@ -184,7 +184,23 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
    Por eso NO se replanifica: se memoiza el `payload`/`renames` que produjo
    la primera corrida exitosa y, si `state.items` volvió a verse legacy, se
    reaplica ESE MISMO payload sobre el estado en memoria — sin tocar el
-   servidor (ya lo tiene) y con los mismos uids de siempre. */
+   servidor (ya lo tiene) y con los mismos uids de siempre.
+
+   Hay todavía una TERCERA variante de la misma carrera, más frecuente que el
+   picker: `app/admin/page.tsx` monta `<CmsRoot />` y `<AdminDashboard />`
+   juntos, y cada uno dispara su propio `loadServerState()` en su efecto de
+   montaje (`components/cms/CmsRoot.tsx` y `components/admin/AdminDashboard.tsx`)
+   — o sea, cada carga de `/admin` sale con DOS GET casi simultáneos, ambos
+   con la misma foto legacy. Si el pisado del segundo GET llega MIENTRAS el
+   primero todavía tiene su `saveContent` en vuelo (`migrationResult` sigue
+   `null`), el chequeo de arriba (`if (migrationResult && revertedToLegacy(...))`)
+   no aplica porque no hay nada memoizado todavía, y la llamada cae en
+   `if (migrationPromise) return migrationPromise` sin reparar nada. Cuando
+   `runMigration()` por fin resuelve, con solo setear `migrationResult` y
+   hacer `emit()` NO alcanza: `state.items` pudo haber quedado pisado por ese
+   segundo GET durante el `await`. Por eso `runMigration()` repite el mismo
+   chequeo (`revertedToLegacy` + `applyMigrationPlan`) inmediatamente después
+   de memoizar el resultado — ver el bloque al final de esa función. */
 let migrationPromise: Promise<void> | null = null
 let migrationResult: MigrationPlan | null = null
 
@@ -242,6 +258,20 @@ async function runMigration(): Promise<void> {
   // ya tiene confirmado, el único que es seguro reaplicar sin volver a tocar
   // el servidor.
   migrationResult = { payload, renames }
+
+  // Reconciliación post-await (ventana que quedaba abierta, ver comentario
+  // de arriba del guard de módulo): mientras este `await saveContent` estaba
+  // en vuelo, `migrationResult` todavía era `null`, así que un
+  // `mergeServerState` concurrente que haya pisado `state.items` con la foto
+  // legacy no pudo repararse en el momento — una segunda llamada a
+  // `migrateCollections()` durante esa ventana cae en
+  // `if (migrationPromise) return migrationPromise` y no mira el estado.
+  // Ahora que el payload ya está memoizado, repetimos el mismo chequeo que
+  // ya existe para el caso post-éxito: si `state.items` volvió a verse
+  // legacy, reaplicamos ESTE MISMO payload (mismos uids, sin volver a tocar
+  // el servidor, que ya lo tiene). Si no hubo pisado, `revertedToLegacy` da
+  // `false` y esto es un no-op.
+  if (revertedToLegacy(renames)) applyMigrationPlan({ payload, renames })
   emit()
 }
 
