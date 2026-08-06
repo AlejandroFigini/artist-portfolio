@@ -7,6 +7,7 @@
    Todo respeta prefers-reduced-motion. */
 
 import { useEffect } from 'react'
+import { markLoaderGate } from '@/lib/loader-ready'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -73,6 +74,19 @@ export function revealAllNow() {
 const motionOff = () => document.documentElement.classList.contains('motion-off')
 
 export default function HomeFx() {
+  /* Precalentado de las secciones code-split (next/dynamic en page.tsx):
+     mientras la pantalla de carga está arriba se bajan sus chunks, así hidratan
+     junto con el resto en vez de montar tarde sobre el sitio ya visible. */
+  useEffect(() => {
+    let alive = true
+    Promise.all([
+      import('@/components/home/CharactersShowcase'),
+      import('@/components/home/ModelsShowcase'),
+      import('@/components/home/IllustrationsShowcase'),
+    ]).catch(() => {}).finally(() => { if (alive) markLoaderGate('sections') })
+    return () => { alive = false }
+  }, [])
+
   // Reveals (.visible) + typewriter de section-typewriter
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches

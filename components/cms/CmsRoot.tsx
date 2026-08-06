@@ -14,6 +14,7 @@ import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadLang, loadServerState, cleanOrphanOverrides } from '@/lib/cms/store'
 import { COLLECTIONS } from '@/lib/cms/collections'
+import { markLoaderGate } from '@/lib/loader-ready'
 import * as engine from './engine'
 import dynamic from 'next/dynamic'
 
@@ -138,6 +139,9 @@ export default function CmsRoot() {
             engine.setLanguage(lang)
           })
           .catch(() => {})
+          // Gate del loader: sin esto el sitio aparece en inglés y salta al
+          // idioma guardado un instante después.
+          .finally(() => markLoaderGate('i18n'))
       })
 
     const t = setTimeout(() => engine.rescan(), 300)

@@ -2646,7 +2646,8 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     50% { opacity: 1; }
 }
 
-/* Barra de progreso indeterminada (shimmer) */
+/* Barra de progreso REAL: el ancho lo maneja el JS con los gates de
+   lib/loader-ready (solo transform → sin reflow). */
 .loader-bar {
     position: relative;
     width: min(280px, 70%);
@@ -2661,8 +2662,20 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     top: 0;
     left: 0;
     height: 100%;
-    width: 40%;
+    width: 100%;
     border-radius: 3px;
+    background: linear-gradient(90deg, #7c3aed, #22d3ee);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+}
+
+/* Vista previa del admin: no hay carga real que medir → shimmer del original */
+.loader-bar--indeterminate .loader-bar-fill {
+    width: 40%;
+    transform: none;
+    transition: none;
     background: linear-gradient(90deg, transparent, #7c3aed, #22d3ee, transparent);
     animation: loaderBar 1.4s ease-in-out infinite;
 }
@@ -2670,6 +2683,12 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 @keyframes loaderBar {
     0%   { left: -40%; }
     100% { left: 100%; }
+}
+
+.loader-pct {
+    margin-left: 0.7rem;
+    color: #a78bfa;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Loader responsive: apilar en vertical en pantallas chicas */

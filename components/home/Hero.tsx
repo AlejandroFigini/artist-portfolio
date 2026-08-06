@@ -226,7 +226,7 @@ export default function Hero() {
         <div className="hero-media-wrapper">
           <div className="media-container hero-primary float-anim">
             <div className="container-overlay" style={{ zIndex: 10 }}></div>
-            <HeroMediaCarousel prefix="hero-main" label="Main Carousel — Home" />
+            <HeroMediaCarousel prefix="hero-main" label="Main Carousel — Home" readyGate="heroPanel" />
             <span className="bp-scanline" aria-hidden="true" style={{ zIndex: 10 }}></span>
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.01 — KEYFRAME_A</span>

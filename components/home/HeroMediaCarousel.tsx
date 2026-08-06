@@ -5,10 +5,11 @@ import { useCarouselSync } from '@/components/ui/useCarouselSync';
 import { COLLECTIONS } from '@/lib/cms/collections';
 import { itemKey } from '@/lib/cms/collection';
 import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection';
+import { markLoaderGate, type LoaderGate } from '@/lib/loader-ready';
 
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils';
 
-function SmoothImage({ src, className }: { src: string; className?: string }) {
+function SmoothImage({ src, className, onSettled }: { src: string; className?: string; onSettled?: () => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -20,7 +21,8 @@ function SmoothImage({ src, className }: { src: string; className?: string }) {
       alt=""
       className={className}
       decoding="async"
-      onLoad={() => setLoaded(true)}
+      onLoad={() => { setLoaded(true); onSettled?.(); }}
+      onError={() => onSettled?.()}
       style={{
         position: 'absolute',
         inset: 0,
@@ -38,14 +40,19 @@ type Props = {
   prefix: string;
   className?: string;
   label?: string;
+  /* Gate de la pantalla de carga que reporta este carrusel. Solo lo pasa el
+     carrusel principal del hero: es la única imagen crítica above the fold. */
+  readyGate?: LoaderGate;
 };
 
 export default function HeroMediaCarousel({
   prefix,
   className = 'cms-media',
   label = 'Home carousel',
+  readyGate,
 }: Props) {
   useCmsStore();
+  const serverReady = state.serverReady;
 
   const spec = COLLECTIONS[prefix];
   const slides = readCollectionIds(prefix).map((id) => state.items[itemKey(spec, id)] || '');
@@ -57,6 +64,13 @@ export default function HeroMediaCarousel({
 
   // Sync with admin changes via shared hook (reInit & optional rescan)
   useCarouselSync(undefined, slidesKey);
+
+  // Slot vacío → no hay imagen que esperar, pero recién se sabe con el
+  // contenido del servidor ya mergeado.
+  const firstSrc = (finalPanels[0] || '').trim();
+  useEffect(() => {
+    if (readyGate && serverReady && !firstSrc) markLoaderGate(readyGate);
+  }, [readyGate, serverReady, firstSrc]);
 
   // Effect to drive cross‑fade animation when slides are present
   useEffect(() => {
@@ -103,7 +117,11 @@ export default function HeroMediaCarousel({
               style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: i === 0 ? 1 : 0 }}
             >
               {isFilled ? (
-                <SmoothImage src={src} className={className} />
+                <SmoothImage
+                  src={src}
+                  className={className}
+                  onSettled={readyGate && i === 0 ? () => markLoaderGate(readyGate) : undefined}
+                />
               ) : (
                 <div className="hero-carousel-empty" aria-hidden="true">
                   <i className="fa-solid fa-cloud-arrow-up" />

@@ -14,6 +14,7 @@ import { state, useCmsStore } from '@/lib/cms/store'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { itemKey } from '@/lib/cms/collection'
 import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection'
+import { markLoaderGate } from '@/lib/loader-ready'
 import { optimizedMediaSrc } from '@/lib/utils'
 
 /* El fondo es 100vw × 100vh: pedir 1600px fijos en un teléfono era traer ~2.5×
@@ -26,6 +27,7 @@ function backdropWidth(): number {
 
 export default function HeroSlideshow() {
   useCmsStore()
+  const serverReady = state.serverReady
   // Solo las slides con imagen real. Vacío → [] → fondo blanco.
   const slides = readCollectionIds('hero')
     .map((id) => state.items[itemKey(COLLECTIONS['hero'], id)] || '')
@@ -34,6 +36,23 @@ export default function HeroSlideshow() {
   // Firma primitiva y estable: dos renders con el mismo contenido dan el mismo
   // string, aunque `slides` sea un array nuevo por el .map().filter() de arriba.
   const slidesKey = slides.join('|')
+
+  /* Gate del loader: el fondo no debe descubrirse pintándose. Se precarga y
+     decodifica la primera slide con la MISMA URL que usa el div, así ya está
+     en caché cuando el loader se va. Antes de serverReady las slides todavía
+     no llegaron: marcar ahí daría el gate por cumplido de más. */
+  useEffect(() => {
+    if (!serverReady) return
+    const first = slides[0]
+    if (!first) { markLoaderGate('heroBackdrop'); return }
+    let alive = true
+    const done = () => { if (alive) markLoaderGate('heroBackdrop') }
+    const img = new Image()
+    img.src = optimizedMediaSrc(first, backdropWidth())
+    img.decode().then(done, done)
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- slidesKey es la firma estable de `slides`
+  }, [slidesKey, serverReady])
 
   useEffect(() => {
     if (prefersReducedMotion()) return

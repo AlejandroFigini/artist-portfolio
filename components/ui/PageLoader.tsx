@@ -1,31 +1,49 @@
 'use client'
 
 /* Pantalla de carga del index — portada de script.js initPageLoader().
-   Visitante: se muestra una vez por sesión (sessionStorage), mínimo 3s,
-   failsafe 6s. El video de galope (.loader-gallop) es un contenedor CMS.
-   Admin: queda visible y editable (no auto-oculta ni respeta el skip),
+   Visitante: se muestra una vez por sesión (sessionStorage). El cierre lo
+   decide `lib/loader-ready`: el loader se va cuando el contenido crítico está
+   realmente pintado (datos + fuentes + hero + chunks), no cuando vence un
+   temporizador. La duración configurable pasa a ser el PISO estético y el
+   failsafe el techo duro. El video de galope (.loader-gallop) es un contenedor
+   CMS. Admin: queda visible y editable (no auto-oculta ni respeta el skip),
    se cierra con el botón ✕ — única vía para subir/reemplazar ese video. */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { state, useCmsStore, useUiText } from '@/lib/cms/store'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { loaderDurationMs } from '@/lib/settings'
+import {
+  loaderProgress,
+  loaderProgressServer,
+  markLoaderGate,
+  startLoaderGateTimers,
+  subscribeLoaderGates,
+} from '@/lib/loader-ready'
 
 const FADE_MS = 800
+// Techo duro sobre el piso configurable: por encima del gate más lento (8s).
+const FAILSAFE_MS = 9000
 
 export default function PageLoader() {
   const ui = useUiText()
   const pathname = usePathname()
   const [gone, setGone] = useState(pathname !== '/')
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+  const [forced, setForced] = useState(false)
   const [isPreview, setIsPreview] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
   const { settings } = useSiteSettings()
   const serverReady = state.serverReady
-  const minDisplay = loaderDurationMs(settings.loaderDuration) // duración configurable
-  const failsafe = minDisplay + 6000
+  const minDisplay = loaderDurationMs(settings.loaderDuration) // piso configurable
+  const failsafe = minDisplay + FAILSAFE_MS
+
+  const progress = useSyncExternalStore(subscribeLoaderGates, loaderProgress, loaderProgressServer)
+  const gatesReady = progress >= 1
+  // Al cerrarse la barra se completa aunque el failsafe haya cortado antes.
+  const shownProgress = forced || gatesReady ? 1 : progress
 
   /* Fuente del video, resuelta UNA vez.
      Los ajustes llegan async (EMPTY_SETTINGS → overrides locales → /api/site) y
@@ -57,7 +75,8 @@ export default function PageLoader() {
     return () => window.removeEventListener('cms:previewLoader', onPreviewLoader)
   }, [])
 
-  // 2. Control del temporizador mínimo de visualización
+  // 2. Piso estético (minDisplay) + techo duro (failsafe). El failsafe fuerza
+  //    el cierre aunque queden gates abiertos: el sitio nunca queda tapado.
   useEffect(() => {
     if (gone || isPreview) return
     const timer = window.setTimeout(() => {
@@ -65,12 +84,33 @@ export default function PageLoader() {
     }, minDisplay)
     const failsafeTimer = window.setTimeout(() => {
       setMinTimeElapsed(true)
+      setForced(true)
     }, failsafe)
     return () => {
       clearTimeout(timer)
       clearTimeout(failsafeTimer)
     }
   }, [gone, minDisplay, failsafe, isPreview])
+
+  // 2b. Gates propios del loader. Los del contenido los marcan sus dueños
+  //     (Slideshow, HeroMediaCarousel, HomeFx, CmsRoot).
+  useEffect(() => {
+    if (gone) return
+    startLoaderGateTimers()
+  }, [gone])
+
+  useEffect(() => {
+    if (serverReady) markLoaderGate('serverState')
+  }, [serverReady])
+
+  useEffect(() => {
+    // Sin fuentes listas los títulos reflowean apenas se va el loader.
+    if (!document.fonts) { markLoaderGate('fonts'); return }
+    let alive = true
+    const done = () => { if (alive) markLoaderGate('fonts') }
+    document.fonts.ready.then(done, done)
+    return () => { alive = false }
+  }, [])
 
   // 3. Decidir cuándo ocultar el preloader (debe cumplirse tiempo mínimo + servidor listo)
   useEffect(() => {
@@ -97,17 +137,18 @@ export default function PageLoader() {
       return
     }
 
-    // Si no se ha visto (o si se reactivó por nuevo contenido), esperar a que se cumpla minTimeElapsed Y serverReady
+    // Primera vez en la sesión: esperar el piso de tiempo Y que todos los
+    // gates de contenido hayan cerrado (o que el failsafe fuerce el cierre).
     document.body.classList.add('loading-active')
 
-    if (minTimeElapsed && serverReady) {
+    if (forced || (minTimeElapsed && gatesReady)) {
       loader.classList.add('loader-hidden')
       document.body.classList.remove('loading-active')
       try { sessionStorage.setItem('lm_seen_loader', '1') } catch {}
       const t = window.setTimeout(() => setGone(true), FADE_MS)
       return () => clearTimeout(t)
     }
-  }, [gone, minTimeElapsed, serverReady, isPreview])
+  }, [gone, minTimeElapsed, serverReady, gatesReady, forced, isPreview])
 
   if (gone) return null
 
@@ -149,9 +190,24 @@ export default function PageLoader() {
                 <span className="orbit-ring"></span>
                 <span className="orbit-dot"></span>
               </span>
-              <span className="loader-text">{ui('loading')}<span className="loader-dots"><i>.</i><i>.</i><i>.</i></span></span>
+              <span className="loader-text">
+                {ui('loading')}<span className="loader-dots"><i>.</i><i>.</i><i>.</i></span>
+                {!isPreview && <span className="loader-pct">{Math.round(shownProgress * 100)}%</span>}
+              </span>
             </div>
-            <div className="loader-bar"><span className="loader-bar-fill"></span></div>
+            {/* Vista previa del admin: no hay carga real que medir → shimmer */}
+            <div
+              className={`loader-bar${isPreview ? ' loader-bar--indeterminate' : ''}`}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={isPreview ? undefined : Math.round(shownProgress * 100)}
+            >
+              <span
+                className="loader-bar-fill"
+                style={isPreview ? undefined : { transform: `scaleX(${shownProgress})` }}
+              ></span>
+            </div>
           </div>
         </div>
       </div>
