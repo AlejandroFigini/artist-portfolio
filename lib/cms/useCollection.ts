@@ -129,11 +129,23 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
   return { ids, duration, dirty, add, remove, move, setDuration, commit, reset }
 }
 
-/* Migración one-shot de índice posicional a uid. Idempotente: si todas las
-   colecciones ya tienen `ids`, no escribe nada. Los datos de producción son
-   descartables por decisión de producto → no hay rollback. */
-export async function migrateCollections(): Promise<void> {
-  if (!state.isAdmin) return
+/* Guard a nivel de módulo contra la migración concurrente. `mergeServerState`
+   (lib/cms/store.ts) llama a `migrateCollections()` de forma fire-and-forget
+   cada vez que pisa `state.items` con datos del server, y uno de sus tres
+   call-sites es `components/cms/PickerModals.tsx:149`, dentro del picker.
+   Si el picker se abre mientras la migración disparada al cargar la página
+   todavía tiene su `saveContent` en vuelo, ese segundo `mergeServerState`
+   trae del server las claves legacy (el primer POST no aterrizó todavía) y
+   las vuelve a pisar sobre `state.items`. Sin este guard, una segunda
+   corrida de `planMigration` ve datos legacy y genera un set de uids
+   distinto del primero (son aleatorios) — el segundo `saveContent` gana la
+   carrera y dos migraciones divergentes escriben cosas distintas en la DB.
+   Memoizamos la promesa en curso para que la segunda llamada la reutilice
+   en vez de replanificar, y solo la liberamos si la corrida falla, para
+   que un reintento posterior no quede trabado para siempre. */
+let migrationPromise: Promise<void> | null = null
+
+async function runMigration(): Promise<void> {
   const payload: Record<string, string> = {}
   const renames: Record<string, string> = {}
 
@@ -167,4 +179,22 @@ export async function migrateCollections(): Promise<void> {
   persistUsed()
   await saveContent(payload)
   emit()
+}
+
+/* Migración one-shot de índice posicional a uid. Idempotente: si todas las
+   colecciones ya tienen `ids`, no escribe nada. Los datos de producción son
+   descartables por decisión de producto → no hay rollback. */
+export function migrateCollections(): Promise<void> {
+  if (!state.isAdmin) return Promise.resolve()
+  if (migrationPromise) return migrationPromise
+
+  migrationPromise = runMigration().catch((err) => {
+    // Se libera el guard solo ante un fallo: un éxito deja la promesa
+    // memoizada para siempre (no hace falta remigrar), pero un fallo
+    // transitorio (ej. saveContent caído por red) no puede dejar el guard
+    // trabado — el próximo llamado tiene que poder reintentar.
+    migrationPromise = null
+    throw err
+  })
+  return migrationPromise
 }
