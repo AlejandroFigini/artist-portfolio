@@ -17,6 +17,7 @@ import {
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc } from '@/lib/utils'
+import { collectionOf } from '@/lib/cms/collections'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
   if (!src && !key) return ''
@@ -381,69 +382,22 @@ function applyValue(el: HTMLElement, type: string, value: string) {
   }
 }
 
-// Las slides del carrusel (hero.slide#i) no tienen elemento DOM propio
-// (el slideshow se hidrata por evento), así que no se indexan vía REGISTRY.
-// Crea una meta sintética para que los pickers (que hacen `if(!meta) return null`)
-// puedan asignarles imagen.
-export function ensureSlideMeta(key: string) {
+/* Los items de colección no tienen elemento DOM propio indexado por el REGISTRY
+   (React los pinta y el picker escribe la clave directo). Se crea una meta
+   sintética para que los pickers, que hacen `if (!meta) return null`, puedan
+   asignarles contenido. */
+export function ensureCollectionMeta(key: string) {
   if (metaByKey[key]) return
-  const m = key.match(/^(.+)\.slide#(\d+)$/)
-  if (!m) return
+  const spec = collectionOf(key)
+  if (!spec) return
+  const conceptMatch = key.match(/::c(\d+)$/)
   metaByKey[key] = {
-    label: state.containerNames[key] || `Carousel Image #${Number(m[2]) + 1}`,
-    section: 'Home',
+    label: state.containerNames[key]
+      || (conceptMatch ? `Concept image #${Number(conceptMatch[1]) + 1}` : spec.label),
+    section: spec.section,
     kind: 'image',
-    accept: 'webp',
+    accept: spec.accept,
     mount: 'none',
-  }
-  typeByKey[key] = 'media'
-}
-
-export function ensureProjectMeta(key: string) {
-  if (metaByKey[key]) return
-  const concept = key.match(/^proj#(?:new_)?\w+::c(\d+)$/)
-  if (concept) {
-    metaByKey[key] = {
-      label: state.containerNames[key] || `Project Image #${Number(concept[1]) + 1}`,
-      section: 'Projects', kind: 'image', accept: 'webp', mount: 'none',
-    }
-    typeByKey[key] = 'media'
-    return
-  }
-  const m = key.match(/^proj#(\d+)$/)
-  if (!m && !key.startsWith('proj#new')) return
-  const n = m ? Number(m[1]) + 1 : 'New'
-  metaByKey[key] = {
-    label: state.containerNames[key] || `Project #${n}`,
-    section: 'Projects',
-    kind: 'image',
-    accept: 'webp',
-    mount: 'none',
-    fields: PROJECT_FIELDS,
-  }
-  typeByKey[key] = 'media'
-}
-
-// Meta sintética para los contenedores dinámicos de Characters: el retrato
-// (char#i / char#new_*) lleva los campos de ficha; los concepts (…::cM) son
-// media simple. El CharactersManager los crea on-demand antes de abrir el picker.
-export function ensureCharacterMeta(key: string) {
-  if (metaByKey[key]) return
-  const concept = key.match(/^char#(?:new_)?\w+::c(\d+)$/)
-  if (concept) {
-    metaByKey[key] = {
-      label: state.containerNames[key] || `Concept #${Number(concept[1]) + 1}`,
-      section: 'Characters', kind: 'image', accept: 'webp', mount: 'none',
-    }
-    typeByKey[key] = 'media'
-    return
-  }
-  if (!/^char#(?:new_)?\w+$/.test(key)) return
-  const m = key.match(/^char#(\d+)$/)
-  const n = m ? Number(m[1]) + 1 : 'New'
-  metaByKey[key] = {
-    label: state.containerNames[key] || `Character #${n}`,
-    section: 'Characters', kind: 'image', accept: 'webp', mount: 'none', fields: CHARACTER_FIELDS,
   }
   typeByKey[key] = 'media'
 }

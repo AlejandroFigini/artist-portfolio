@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadLang, loadServerState, cleanOrphanOverrides } from '@/lib/cms/store'
+import { COLLECTIONS } from '@/lib/cms/collections'
 import * as engine from './engine'
 import dynamic from 'next/dynamic'
 
@@ -20,9 +21,7 @@ import dynamic from 'next/dynamic'
    abrirse (cmd), no viajan en el bundle inicial del home del visitante. */
 const LoginModal = dynamic(() => import('./LoginModal'), { ssr: false })
 const UploadModal = dynamic(() => import('./UploadModal'), { ssr: false })
-const CarouselManager = dynamic(() => import('./CarouselManager'), { ssr: false })
-const ProjectsManager = dynamic(() => import('./ProjectsManager'), { ssr: false })
-const CharactersManager = dynamic(() => import('./CharactersManager'), { ssr: false })
+const CollectionManager = dynamic(() => import('./CollectionManager'), { ssr: false })
 const AuditOverlay = dynamic(() => import('./AuditOverlay'), { ssr: false })
 const ContentPickerModal = dynamic(() => import('./PickerModals').then((m) => m.ContentPickerModal), { ssr: false })
 const RepoPickerModal = dynamic(() => import('./PickerModals').then((m) => m.RepoPickerModal), { ssr: false })
@@ -56,7 +55,7 @@ export default function CmsRoot() {
       fileInputRef.current.click()
       return
     }
-    if (c.type === 'projectsManager' || c.type === 'charactersManager' || c.type === 'carouselManager') {
+    if (c.type === 'collectionManager') {
       setManagerCmd(c)
     } else {
       setCmd(c)
@@ -162,10 +161,10 @@ export default function CmsRoot() {
 
     const onCarouselCmd = (e: Event) => {
       const prefix = (e as CustomEvent).detail?.prefix || 'hero'
-      dispatch({ type: 'carouselManager', key: prefix })
+      dispatch({ type: 'collectionManager', key: prefix })
     }
-    const onProjectsCmd = () => { dispatch({ type: 'projectsManager' }) }
-    const onCharactersCmd = () => { dispatch({ type: 'charactersManager' }) }
+    const onProjectsCmd = () => { dispatch({ type: 'collectionManager', key: 'proj' }) }
+    const onCharactersCmd = () => { dispatch({ type: 'collectionManager', key: 'char' }) }
     window.addEventListener('cms:carouselManager', onCarouselCmd)
     window.addEventListener('cms:projectsManager', onProjectsCmd)
     window.addEventListener('cms:charactersManager', onCharactersCmd)
@@ -244,28 +243,13 @@ export default function CmsRoot() {
             }}
           />
 
-          {managerCmd?.type === 'carouselManager' && (
-            <CarouselManager
+          {managerCmd?.type === 'collectionManager' && COLLECTIONS[managerCmd.key || 'hero'] && (
+            <CollectionManager
               show={true}
-              prefix={managerCmd.key || 'hero'}
+              spec={COLLECTIONS[managerCmd.key || 'hero']}
               onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
-            />
-          )}
-          {managerCmd?.type === 'projectsManager' && (
-            <ProjectsManager
-              show={true}
-              onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'contentPicker', key }) }}
-              onEditInfo={(key) => { engine.ensureProjectMeta(key); dispatch({ type: 'editInfo', key }) }}
-            />
-          )}
-          {managerCmd?.type === 'charactersManager' && (
-            <CharactersManager
-              show={true}
-              onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'contentPicker', key }) }}
-              onEditInfo={(key) => { engine.ensureCharacterMeta(key); dispatch({ type: 'editInfo', key }) }}
+              onPickImage={(key) => { engine.ensureCollectionMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureCollectionMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
 

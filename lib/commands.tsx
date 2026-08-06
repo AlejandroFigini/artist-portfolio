@@ -14,9 +14,7 @@ export type Command =
   | { type: 'contentPicker'; key: string }
   | { type: 'repoPicker'; key: string }
   | { type: 'confirmMove'; key: string }
-  | { type: 'carouselManager'; key?: string }
-  | { type: 'projectsManager' }
-  | { type: 'charactersManager' }
+  | { type: 'collectionManager'; key: string }
   | { type: 'auditPage' }
   | { type: 'export' }
 
