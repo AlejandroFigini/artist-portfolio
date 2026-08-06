@@ -946,7 +946,10 @@ export function moveToUnusedSite(key: string) {
     const el = elementsByKey[key]
     const meta = metaByKey[key]
     if (!meta) return
-    const s = currentSrcOf(el)
+    // Para items de colección (proj#/char#) applyMedia corta antes de escribir
+    // data-cms-src, así que el fallback a currentSrcOf leería la variante
+    // redimensionada del DOM en vez del original: preferir state.items primero.
+    const s = state.items[key] || currentSrcOf(el)
     const mm = state.mediaMeta[key] || (s ? state.mediaMeta[s] : undefined)
     entry = {
       key, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',

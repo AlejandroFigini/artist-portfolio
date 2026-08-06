@@ -31,6 +31,9 @@ export default function HeroSlideshow() {
     .map((id) => state.items[itemKey(COLLECTIONS['hero'], id)] || '')
     .filter((s) => s.trim() !== '')
   const intervalMs = readCollectionDuration('hero')
+  // Firma primitiva y estable: dos renders con el mismo contenido dan el mismo
+  // string, aunque `slides` sea un array nuevo por el .map().filter() de arriba.
+  const slidesKey = slides.join('|')
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -58,10 +61,9 @@ export default function HeroSlideshow() {
       clearInterval(timer)
       gsap.killTweensOf(els)
     }
-  }, [slides, intervalMs])
+  }, [slidesKey, intervalMs])
 
   // Sync with CMS admin changes using shared hook
-  const slidesKey = slides.join('|')
   useCarouselSync(undefined, slidesKey)
 
 
