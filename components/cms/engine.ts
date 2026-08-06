@@ -17,7 +17,8 @@ import {
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc } from '@/lib/utils'
-import { collectionOf } from '@/lib/cms/collections'
+import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
+import { readSettings, writeSettings, allKeysOf, planCommit } from '@/lib/cms/collection'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
   if (!src && !key) return ''
@@ -173,14 +174,16 @@ type RegistryEntry = {
   container?: string
   fields?: FieldDef[]
   label: string | ((el: Element, i: number) => string)
+  /* `attr`: la clave la emite React vía data-cms-key. Sin ese atributo el
+     elemento se saltea, en vez de recibir una clave posicional que con uids
+     sería fantasma. */
+  identity?: 'positional' | 'attr'
 }
 
 const REGISTRY: RegistryEntry[] = [
   { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Loading Screen' },
   { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Page Favicon' },
   { base: 'settings.appleIconUrl', sel: '.apple-icon-preview-img', kind: 'image', accept: 'png,ico,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Search Engine Icon' },
-  { base: 'hero-main.slide', sel: '.hero-main-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Main)', label: (el, i) => `Main Carousel Image #${i + 1}` },
-  { base: 'hero-sub.slide', sel: '.hero-sub-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'Hero (Secondary)', label: (el, i) => `Secondary Carousel Image #${i + 1}` },
   { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Hero', fields: WAVE_FIELDS, label: (el, i) => `Wave Tool #${(i % 11) + 1}` },
   { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Hero', label: 'Subtitle (below title) — Hero' },
   { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animations', label: (el, i) => `Animation Stack Logo #${i + 1}` },
@@ -190,7 +193,6 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'about.desc', sel: '.bio-content', kind: 'text', mount: 'self', section: 'About me', label: 'Biography — About me' },
   { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — About me` },
   { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
-  { base: 'about-carousel.slide', sel: '.about-carousel-carousel-slide', kind: 'image', accept: 'webp', mount: 'none', section: 'About me', label: (el, i) => `About Carousel Image #${i + 1}` },
   { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')
@@ -201,7 +203,7 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'char.sectiondesc', sel: '.ch-showcase__desc', kind: 'text', mount: 'self', section: 'Characters', label: 'Description — Characters' },
   { base: 'char.soft', sel: '.char-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Characters', label: (el, i) => `Software Logo #${i + 1}` },
   { base: 'char.softname', sel: '.char-soft-name', kind: 'text', mount: 'self', section: 'Characters', label: (el, i) => `Software Name #${i + 1}` },
-  { base: 'char', sel: '.ch-panel .ch-portrait', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', container: '.ch-panel', fields: CHARACTER_FIELDS, label: (el, i) => `Character #${i + 1}` },
+  { base: 'char', sel: '.ch-panel .ch-portrait', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', container: '.ch-panel', fields: CHARACTER_FIELDS, label: (el, i) => `Character #${i + 1}`, identity: 'attr' },
   { base: 'char.concept', sel: '.ch-panel .ch-concept', kind: 'image', accept: 'webp', mount: 'parent', section: 'Characters', label: () => 'Concept' },
   { base: 'illustration', sel: '.illu-masonry .illu-cell__img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Illustrations', container: '.illu-cell', fields: ILLU_FIELDS, label: (el, i) => `Illustration #${i + 1}` },
   { base: 'anim.title', sel: '.anim-showcase__title', kind: 'text', mount: 'self', section: 'Animations', label: 'Section Title — Animations' },
@@ -213,7 +215,7 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'proj.desc', sel: '.proj-showcase__desc', kind: 'text', mount: 'self', section: 'Projects', label: 'Description — Projects' },
   { base: 'proj.soft', sel: '.proj-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Projects', label: (el, i) => `Software Logo #${i + 1}` },
   { base: 'proj.softname', sel: '.proj-soft-name', kind: 'text', mount: 'self', section: 'Projects', label: (el, i) => `Software Name #${i + 1}` },
-  { base: 'proj', sel: '.proj-showcase .proj-card-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Projects', container: '.project-item', fields: PROJECT_FIELDS, label: (el, i) => `Project #${i + 1}` },
+  { base: 'proj', sel: '.proj-showcase .proj-card-img', kind: 'image', accept: 'webp', mount: 'parent', section: 'Projects', container: '.project-item', fields: PROJECT_FIELDS, label: (el, i) => `Project #${i + 1}`, identity: 'attr' },
   { base: 'model3d.soft', sel: '.model3d-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: '3D Models', label: (el, i) => `Software Logo #${i + 1}` },
   { base: 'model3d.softname', sel: '.model3d-soft-name', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Software Name #${i + 1}` },
   { base: 'model3d.heading', sel: '.m3d-showcase__title', kind: 'text', mount: 'self', section: '3D Models', label: 'Section Name — 3D' },
@@ -253,6 +255,7 @@ export function indexEditables() {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el, i) => {
       let key = el.getAttribute('data-cms-key')
       if (!key) {
+        if (entry.identity === 'attr') return
         key = entry.base + '#' + i
         el.setAttribute('data-cms-key', key)
       }
@@ -980,69 +983,28 @@ export function moveToUnusedSite(key: string) {
   flushSyncToServer()
 }
 
-// Elimina una tarjeta de proyecto del carrusel: archiva su imagen a "no usados"
-// (el contenido se conserva, recuperable), reindexa los proyectos siguientes
-// (proj#i+1 → proj#i), decrementa proj.settings.count y persiste. A diferencia de
-// moveToUnusedSite (que solo vacía el slot dejando la tarjeta), esto QUITA la tarjeta.
+/* Quita la tarjeta del sitio (no solo su contenido): archiva el media a
+   "no usados" y saca el id del orden. Ya no hay reindexado: los otros items
+   conservan su uid. */
 export async function deleteProjectSite(key: string) {
   if (!state.isAdmin) return
-  const m = key.match(/^proj#(\d+)$/)
-  if (!m) return
-  const delIdx = Number(m[1])
+  const spec = collectionOf(key)
+  if (!spec) return
+  const id = key.slice(spec.prefix.length + 1)
+  const { ids, duration } = readSettings(state.items, spec.prefix)
+  if (!ids.includes(id)) return
 
-  let count = 4
-  try {
-    const p = JSON.parse(state.items['proj.settings'] || '')
-    if (p && typeof p.count === 'number' && p.count > 0) {
-      if (p.count !== 6 || state.items['proj#4'] || state.items['proj#5']) count = p.count
-    }
-  } catch {}
-  if (!count) return
-
-  // Archiva la imagen del proyecto borrado y sus conceptos a "no usados".
-  archiveMediaKey(key, 'deleted')
-  for (let m = 0; m < 6; m++) {
-    archiveMediaKey(`${key}::c${m}`, 'deleted')
+  const plan = planCommit(spec, ids, ids.filter((x) => x !== id), state.items, duration)
+  for (const k of plan.archiveKeys) archiveMediaKey(k, 'deleted')
+  for (const k of plan.deleteKeys) { delete state.items[k]; delete state.usedContent[k] }
+  for (const [k, v] of Object.entries(plan.payload)) {
+    if (v === '') delete state.items[k]
+    else state.items[k] = v
   }
-
-  // Backup de todas las claves proj#N (+ campos) y limpieza del estado actual.
-  const oldData: Record<string, string> = {}
-  Object.keys(state.items).forEach((k) => { if (/^proj#\d+(::|$)/.test(k)) oldData[k] = state.items[k] })
-  Object.keys(oldData).forEach((k) => { delete state.items[k] })
-
-  // Reconstruye saltando delIdx: los siguientes bajan una posición.
-  const payload: Record<string, string> = {}
-  Object.keys(oldData).forEach((k) => { payload[k] = '' }) // limpia en DB todo lo viejo (upsert no borra)
-  let newIdx = 0
-  for (let i = 0; i < count; i++) {
-    if (i === delIdx) continue
-    const ov = oldData[`proj#${i}`] ?? ''
-    state.items[`proj#${newIdx}`] = ov
-    payload[`proj#${newIdx}`] = ov
-    const pre = `proj#${i}::`
-    Object.keys(oldData).forEach((ok) => {
-      if (ok.startsWith(pre)) {
-        const dst = `proj#${newIdx}::${ok.slice(pre.length)}`
-        state.items[dst] = oldData[ok]
-        payload[dst] = oldData[ok]
-      }
-    })
-    newIdx++
-  }
-
-  const newCount = newIdx
-  state.items['proj.settings'] = JSON.stringify({ count: newCount })
-  payload['proj.settings'] = state.items['proj.settings']
-
-  // Los índices proj# se reusan al reindexar → no dejar entradas retired stale
-  // (marcarían slots vacíos por error).
-  state.retired = state.retired.filter((k) => !/^proj#\d+/.test(k))
-
   persistOverridesLocal()
   persistUnused(); persistUsed(); persistRetired()
+  await saveContent(plan.payload)
   emit()
-  setTimeout(() => rescan(), 100)
-  await saveContent(payload).catch(() => {})
 }
 
 
@@ -1051,21 +1013,21 @@ export async function deleteProjectSite(key: string) {
 // compartido por "Clear All" y "Clear current section". El texto NO se toca.
 // Claves borradas → se envían a la DB como '' (POST /api/content es upsert, no
 // borra) para que el contenido no reaparezca al recargar / en otro navegador.
-function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
+function clearKeys(keys: Iterable<string>, forceCollections: string[] = []) {
   const cleared: Record<string, string> = {}
-  const carouselPrefixes = new Set<string>(forceCarousels)
+  const collectionPrefixes = new Set<string>(forceCollections)
 
   for (const key of keys) {
     if (key.includes('::')) continue          // campos de texto compuestos
     if (typeByKey[key] === 'text') continue   // texto: no va a "no usados"
     if (key.endsWith('.settings')) continue   // settings de carrusel: conservar
 
-    const slideMatch = key.match(/^(.+)\.slide#\d+$/)
-    if (slideMatch) {
+    const spec = collectionOf(key)
+    if (spec) {
       archiveMediaKey(key)
       delete state.items[key]
       cleared[key] = ''
-      carouselPrefixes.add(slideMatch[1])
+      collectionPrefixes.add(spec.prefix)
       continue
     }
 
@@ -1085,31 +1047,17 @@ function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
     refreshTools(key)
   }
 
-  // Reset de cada carrusel a su estado "cero": borra contenidos Y diapositivas
-  // (count:0). Único momento sin imágenes. Display resultante: principal/secundario
+  // Reset de cada colección a su estado "cero": borra contenidos Y sus ids
+  // (ids: []). Único momento sin imágenes. Display resultante: principal/secundario
   // → 1 contenedor vacío (HeroMediaCarousel colapsa a [''] ); fondo → blanco.
-  carouselPrefixes.forEach((p) => {
-    let duration = 7000
-    try { duration = JSON.parse(state.items[`${p}.settings`] || '').duration || 7000 } catch {}
-    const slideRe = new RegExp(`^${p}\\.slide#\\d+$`)
-    Object.keys(state.items).forEach((k) => {
-      if (slideRe.test(k)) { delete state.items[k]; cleared[k] = '' }
-    })
-    state.items[`${p}.settings`] = JSON.stringify({ count: 0, duration })
-    cleared[`${p}.settings`] = state.items[`${p}.settings`]
-  })
-
-  // Limpiar también las tarjetas dinámicas si se borran sus contenidos (count:0)
-  const managerPrefixes = ['proj', 'char', 'illu', 'mod', 'mm']
-  const affectedManagers = new Set<string>()
-  for (const key of keys) {
-    managerPrefixes.forEach(m => {
-      if (key.startsWith(`${m}#`)) affectedManagers.add(m)
-    })
-  }
-  affectedManagers.forEach(p => {
-    state.items[`${p}.settings`] = JSON.stringify({ count: 0 })
-    cleared[`${p}.settings`] = state.items[`${p}.settings`]
+  collectionPrefixes.forEach((prefix) => {
+    const spec = COLLECTIONS[prefix]
+    const { ids, duration } = readSettings(state.items, prefix)
+    for (const id of ids) {
+      for (const k of allKeysOf(spec, id)) { delete state.items[k]; cleared[k] = '' }
+    }
+    state.items[`${prefix}.settings`] = writeSettings(spec.duration ? { ids: [], duration } : { ids: [] })
+    cleared[`${prefix}.settings`] = state.items[`${prefix}.settings`]
   })
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   emit()
@@ -1131,7 +1079,7 @@ export function clearAllSite() {
   if (!state.isAdmin) return
   // Fuerza el reset de los carruseles de portada aunque no tengan contenido CMS
   // (ej. el fondo mostrando los DEFAULT_SLIDES) → "limpiar todo" siempre los vacía.
-  clearKeys(allMediaKeys(), ['hero', 'hero-main', 'hero-sub', 'about-carousel'])
+  clearKeys(allMediaKeys(), Object.keys(COLLECTIONS))
 }
 
 // ----- Limpieza por sección (sección en viewport) --------------------------------
@@ -1151,14 +1099,12 @@ export function currentSectionEl(): HTMLElement | null {
 // ¿La key (su host DOM) vive dentro de sectionEl? Los slides de carrusel no
 // tienen elemento propio → se ubican por el contenedor `.{prefix}-carousel`.
 function keyInSection(key: string, sectionEl: HTMLElement): boolean {
-  const slide = key.match(/^(.+)\.slide#\d+$/)
-  if (slide) {
-    const prefix = slide[1]
+  const spec = collectionOf(key)
+  if (spec) {
     // El fondo (prefix 'hero') vive fuera de <section> → pertenece a la portada.
-    if (prefix === 'hero') return sectionEl.classList.contains('hero')
-    // Principal/secundario: sus slides (.{prefix}-carousel-slide) viven dentro
-    // del <section> de la portada.
-    const host = document.querySelector<HTMLElement>(`.${prefix}-carousel-slide`)
+    if (spec.prefix === 'hero') return sectionEl.classList.contains('hero')
+    const host = document.querySelector<HTMLElement>(`.${spec.prefix}-carousel-slide`)
+      || document.querySelector<HTMLElement>(`[data-cms-key^="${spec.prefix}#"]`)
     return !!host && sectionEl.contains(host)
   }
   const el = elementsByKey[key]
@@ -1217,7 +1163,7 @@ function makeTools(key: string) {
     return tools
   }
   const hasContent = !!state.items[key]
-  const isProject = /^proj#\d+$/.test(key)
+  const isProject = collectionOf(key)?.prefix === 'proj'
   tools.setAttribute('data-cms-content', hasContent ? '1' : '0')
   if (hasContent && meta.fields) tools.appendChild(toolBtn('fa-pen', 'Edit info: ' + meta.label, 'cms-tool-edit', () => dispatch({ type: 'editInfo', key })))
   tools.appendChild(toolBtn('fa-arrow-up-from-bracket', hasContent ? 'Replace: ' + meta.label : 'Upload content: ' + meta.label, 'cms-tool-replace', () => dispatch({ type: 'contentPicker', key })))

@@ -8,6 +8,8 @@
 import { useSyncExternalStore } from 'react'
 import { isVideo } from '@/lib/utils'
 import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
+import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
+import { readSettings, allKeysOf } from '@/lib/cms/collection'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -429,10 +431,6 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' }> = {
   'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
   'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
-  'hero-main.slide': { section: 'Hero', label: (n) => `Main Carousel Image #${n}`, kind: 'image' },
-  'hero-sub.slide': { section: 'Hero', label: (n) => `Secondary Carousel Image #${n}`, kind: 'image' },
-  'hero.slide': { section: 'Hero', label: (n) => `Carousel Image #${n}`, kind: 'image' },
-  'about-carousel.slide': { section: 'About me', label: (n) => `About me Carousel Image #${n}`, kind: 'image' },
   'hero.wave': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'hero.marquee': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'soft.hero': { section: 'Hero', label: (n) => `Hero Stack Logo #${n}`, kind: 'image' },
@@ -468,6 +466,24 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' } {
   const customLabel = state.containerNames[key]
+
+  // Colecciones con uid (proj#/char#): el índice no es numérico, así que el
+  // parseInt de más abajo daría "#NaN". La posición real se busca en el orden
+  // vivo de la colección (mismo criterio que ensureCollectionMeta en engine.ts).
+  const spec = collectionOf(key)
+  if (spec) {
+    const id = key.slice(spec.prefix.length + 1).split('::')[0]
+    const conceptMatch = key.match(/::c(\d+)$/)
+    const idx = readSettings(state.items, spec.prefix).ids.indexOf(id)
+    const itemName = spec.itemNoun.charAt(0).toUpperCase() + spec.itemNoun.slice(1)
+    const itemLabel = idx >= 0 ? `${itemName} #${idx + 1}` : spec.label
+    return {
+      label: customLabel || (conceptMatch ? `${itemLabel} — Concept #${Number(conceptMatch[1]) + 1}` : itemLabel),
+      section: spec.section,
+      kind: 'image',
+    }
+  }
+
   const conceptMatch = key.match(/^([^#]+)#(\d+)::c(\d+)$/)
   if (conceptMatch) {
     const [, base, itemIdxStr, conceptIdxStr] = conceptMatch
@@ -490,15 +506,6 @@ export function getContainerMeta(key: string): { label: string; section: string;
   return { label: customLabel || def.label(n), section: def.section, kind: def.kind }
 }
 
-function tryParseCount(jsonStr: string | undefined, fallback = 6): number {
-  if (!jsonStr) return fallback
-  try {
-    const p = JSON.parse(jsonStr)
-    if (p && typeof p.count === 'number' && p.count > 0) return p.count
-  } catch {}
-  return fallback
-}
-
 export function getAllKnownContainerKeys(): string[] {
   const keys = new Set<string>()
   // 1) Claves estándar del sitio
@@ -507,23 +514,18 @@ export function getAllKnownContainerKeys(): string[] {
     'settings.faviconUrl',
     'anim.bg',
     'about.video',
-    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero-main.settings'], 5)) }, (_, i) => `hero-main.slide#${i}`),
-    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero-sub.settings'], 5)) }, (_, i) => `hero-sub.slide#${i}`),
-    ...Array.from({ length: Math.max(5, tryParseCount(state.items['hero.settings'], 5)) }, (_, i) => `hero.slide#${i}`),
-    ...Array.from({ length: Math.max(5, tryParseCount(state.items['about-carousel.settings'], 5)) }, (_, i) => `about-carousel.slide#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
-    ...Array.from({ length: Math.max(6, tryParseCount(state.items['char.settings'])) }, (_, i) => `char#${i}`),
     ...Array.from({ length: 3 }, (_, i) => `char.soft#${i}`),
     ...Array.from({ length: 15 }, (_, i) => `illustration#${i}`),
-    ...Array.from({ length: Math.max(6, tryParseCount(state.items['anim.settings'])) }, (_, i) => `anim#${i}`),
     ...Array.from({ length: 4 }, (_, i) => `anim.soft#${i}`),
-    ...Array.from({ length: Math.max(4, tryParseCount(state.items['proj.settings'], 4)) }, (_, i) => `proj#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `proj.soft#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `model3d#${i}`),
     ...Array.from({ length: 12 }, (_, i) => `model3d.gallery#${i}`),
     ...Array.from({ length: 4 }, (_, i) => `model3d.soft#${i}`),
+    ...Object.values(COLLECTIONS).flatMap((spec) =>
+      readSettings(state.items, spec.prefix).ids.flatMap((id) => allKeysOf(spec, id))),
   ]
   standard.forEach(k => keys.add(k))
   // 2) Claves en uso, retiradas, sin usar o en papelera
@@ -534,7 +536,7 @@ export function getAllKnownContainerKeys(): string[] {
   Object.keys(state.containerNames).forEach(k => keys.add(k))
   // 3) Claves en items que correspondan a contenedores de media conocidos
   Object.keys(state.items).forEach(k => {
-    if (/^(?:char|proj|anim|illustration|model3d|hero\.slide|hero-main\.slide|hero-sub\.slide|about-carousel\.slide|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#\d+)?$/.test(k)) {
+    if (/^(?:anim|illustration|model3d|soft|model3d\.gallery|char\.soft|anim\.soft|proj\.soft|model3d\.soft|hero\.wave|hero\.marquee)(?:#[a-z0-9]+)?$/.test(k)) {
       keys.add(k)
     }
   })
@@ -639,85 +641,11 @@ export function archiveMediaKey(key: string, reason: 'retired' | 'replaced' | 'd
   if (!state.retired.includes(key)) state.retired.push(key)
 }
 
-function compactList(prefix: string, deletedIndices: Set<number>, cleared: Record<string, string>) {
-  if (deletedIndices.size === 0) return
-  const settingsKey = `${prefix}.settings`
-  let count = 0
-  try {
-    const parsed = JSON.parse(state.items[settingsKey] || '{}')
-    if (typeof parsed.count === 'number') count = parsed.count
-  } catch {}
-  if (count === 0) return
-
-  const remainingIndices: number[] = []
-  for (let i = 0; i < count; i++) {
-    if (!deletedIndices.has(i)) remainingIndices.push(i)
-  }
-
-  if (remainingIndices.length === count) return
-
-  const updates: Record<string, string> = {}
-  
-  // Shift remaining items down
-  for (let newIdx = 0; newIdx < remainingIndices.length; newIdx++) {
-    const oldIdx = remainingIndices[newIdx]
-    if (newIdx !== oldIdx) {
-      const oldKey = `${prefix}#${oldIdx}`
-      const newKey = `${prefix}#${newIdx}`
-      
-      // Move main key
-      if (state.items[oldKey] !== undefined) {
-        state.items[newKey] = state.items[oldKey]
-        updates[newKey] = state.items[newKey]
-      }
-      
-      // Move sub keys
-      const oldPrefix = `${oldKey}::`
-      Object.keys(state.items).forEach(k => {
-        if (k.startsWith(oldPrefix)) {
-          const suffix = k.slice(oldPrefix.length)
-          state.items[`${newKey}::${suffix}`] = state.items[k]
-          updates[`${newKey}::${suffix}`] = state.items[k]
-        }
-      })
-    }
-  }
-
-  // Clear out the trailing indices that are now empty
-  for (let i = remainingIndices.length; i < count; i++) {
-    const oldKey = `${prefix}#${i}`
-    delete state.items[oldKey]
-    cleared[oldKey] = ''
-    Object.keys(state.items).forEach(k => {
-      if (k.startsWith(`${oldKey}::`)) {
-        delete state.items[k]
-        cleared[k] = ''
-      }
-    })
-  }
-
-  // Update settings count
-  const newCount = remainingIndices.length
-  const newSettings = JSON.stringify({ count: newCount })
-  state.items[settingsKey] = newSettings
-  updates[settingsKey] = newSettings
-
-  // Merge updates into the cleared object (which acts as the DB payload)
-  Object.assign(cleared, updates)
-}
-
 export function clearItemOverrides(keys: string[]) {
   if (!keys.length) return
   const cleared: Record<string, string> = {}
-  const charDeleted = new Set<number>()
-  const projDeleted = new Set<number>()
 
   keys.forEach((key) => {
-    const charMatch = key.match(/^char#(\d+)$/)
-    if (charMatch) charDeleted.add(parseInt(charMatch[1], 10))
-    const projMatch = key.match(/^proj#(\d+)$/)
-    if (projMatch) projDeleted.add(parseInt(projMatch[1], 10))
-
     delete state.items[key]
     cleared[key] = ''
     Object.keys(state.items).forEach((k) => {
@@ -727,9 +655,6 @@ export function clearItemOverrides(keys: string[]) {
       }
     })
   })
-
-  compactList('char', charDeleted, cleared)
-  compactList('proj', projDeleted, cleared)
 
   persistOverridesLocal()
   // Persist removal to DB (DB first strategy)
@@ -837,18 +762,6 @@ export function cleanOrphanOverrides() {
     persistRetired()
     emit()
   }
-
-  // Normalizar conteo por defecto de proyectos (de 6 a 4) si el usuario tiene guardado 6 de versiones anteriores pero no hay proyectos reales en slots #4 y #5.
-  try {
-    const s = JSON.parse(state.items['proj.settings'] || '')
-    if (s && s.count === 6 && !state.items['proj#4'] && !state.items['proj#5']) {
-      s.count = 4
-      state.items['proj.settings'] = JSON.stringify(s)
-      clearItemOverrides(['proj#4', 'proj#5', 'proj#4::title', 'proj#4::summary', 'proj#4::start_date', 'proj#5::title', 'proj#5::summary', 'proj#5::start_date'])
-      saveContent({ 'proj.settings': state.items['proj.settings'], 'proj#4': '', 'proj#5': '' }).catch(() => {})
-      emit()
-    }
-  } catch {}
 }
 
 export function moveUsedToUnused(key: string) {

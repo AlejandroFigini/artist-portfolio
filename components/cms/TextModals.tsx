@@ -9,6 +9,7 @@ import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { state, recordAudit, persistUsed, performRenameContainer, type FieldValue, emit } from '@/lib/cms/store'
+import { collectionOf } from '@/lib/cms/collections'
 import {
   elementsByKey, metaByKey, applyStored, persistOverrides, moveToUnusedSite, deleteProjectSite, computeFields,
 } from './engine'
@@ -227,7 +228,7 @@ export function ConfirmMoveModal({ cmsKey, onClose }: KeyProps) {
   const fileName = state.usedContent[cmsKey]?.name || meta.label
   // Proyectos: la papelera ELIMINA la tarjeta (reindexa el carrusel) pero archiva
   // la imagen a no usados. Resto: solo vacía el slot conservando el contenedor.
-  const isProject = /^proj#\d+$/.test(cmsKey)
+  const isProject = collectionOf(cmsKey)?.prefix === 'proj'
 
   if (isProject) {
     return (
