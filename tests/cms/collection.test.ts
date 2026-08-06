@@ -350,4 +350,25 @@ describe('planMigration', () => {
     }
     expect(planMigration(proj, items, makeIds())).toBeNull()
   })
+
+  it('no confunde indices que comparten prefijo numerico', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":11}',
+      'proj#1': 'https://cdn/uno.webp',
+      'proj#1::title': 'Uno',
+      'proj#10': 'https://cdn/diez.webp',
+      'proj#10::title': 'Diez',
+    }, makeIds())!
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0","id1"]}')
+    expect(plan.payload['proj#id0']).toBe('https://cdn/uno.webp')
+    expect(plan.payload['proj#id0::title']).toBe('Uno')
+    expect(plan.payload['proj#id1']).toBe('https://cdn/diez.webp')
+    expect(plan.payload['proj#id1::title']).toBe('Diez')
+    expect(plan.renames).toEqual({
+      'proj#1': 'proj#id0',
+      'proj#1::title': 'proj#id0::title',
+      'proj#10': 'proj#id1',
+      'proj#10::title': 'proj#id1::title',
+    })
+  })
 })

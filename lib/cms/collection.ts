@@ -130,15 +130,6 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function legacyDuration(items: Record<string, string>, prefix: string): number | undefined {
-  try {
-    const parsed = JSON.parse(items[`${prefix}.settings`] || '')
-    return typeof parsed?.duration === 'number' && parsed.duration > 0 ? parsed.duration : undefined
-  } catch {
-    return undefined
-  }
-}
-
 export function planMigration(
   spec: CollectionSpec,
   items: Record<string, string>,
@@ -172,7 +163,7 @@ export function planMigration(
   }
 
   payload[`${spec.prefix}.settings`] = writeSettings(
-    spec.duration ? { ids, duration: legacyDuration(items, spec.prefix) } : { ids },
+    spec.duration ? { ids, duration: readSettings(items, spec.prefix).duration } : { ids },
   )
 
   return { payload, renames }
