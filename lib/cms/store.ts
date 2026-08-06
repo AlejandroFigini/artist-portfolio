@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from 'react'
 import { isVideo } from '@/lib/utils'
 import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
-import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
+import { COLLECTIONS, collectionOf, fixedSlotKeys } from '@/lib/cms/collections'
 import { readSettings, allKeysOf } from '@/lib/cms/collection'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
@@ -514,18 +514,7 @@ export function getAllKnownContainerKeys(): string[] {
     'settings.faviconUrl',
     'anim.bg',
     'about.video',
-    // 6 videos fijos de Animations (AnimationsShowcase.tsx → CARD_COUNT).
-    ...Array.from({ length: 6 }, (_, i) => `anim#${i}`),
-    ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
-    ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),
-    ...Array.from({ length: 3 }, (_, i) => `char.soft#${i}`),
-    ...Array.from({ length: 15 }, (_, i) => `illustration#${i}`),
-    ...Array.from({ length: 4 }, (_, i) => `anim.soft#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `proj.soft#${i}`),
-    ...Array.from({ length: 6 }, (_, i) => `model3d#${i}`),
-    ...Array.from({ length: 12 }, (_, i) => `model3d.gallery#${i}`),
-    ...Array.from({ length: 4 }, (_, i) => `model3d.soft#${i}`),
+    ...fixedSlotKeys(),
     ...Object.values(COLLECTIONS).flatMap((spec) =>
       readSettings(state.items, spec.prefix).ids.flatMap((id) => allKeysOf(spec, id))),
   ]

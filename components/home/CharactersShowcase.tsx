@@ -53,7 +53,7 @@ function CharMedia({
 }: { cmsKey: string; className: string; onOpen: (src: string) => void }) {
   useCmsStore()
   const src = state.items[cmsKey] || ''
-  const has = !!src && !src.includes('placeholder')
+  const has = !isEmptyMedia(src)
   return (
     <div
       className={`${className}${has ? ' has-media' : ''}`}
@@ -95,10 +95,8 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
      linter no puede verificar y dejaba `validConceptIndices` fuera del array. */
   const conceptsKey = [
     0,
-    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
-      const src = state.items[`${key}::c${idx - 1}`]
-      return !!src && !src.includes('placeholder')
-    })
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) =>
+      !isEmptyMedia(state.items[`${key}::c${idx - 1}`])),
   ].join(',')
 
   const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])

@@ -84,3 +84,28 @@ export function collectionOf(key: string): CollectionSpec | null {
   }
   return null
 }
+
+/* Contenedores de tamaño fijo. A diferencia de las colecciones, su identidad ES
+   la posición en el markup estático: `illustration#7` es la celda 7 del bento.
+   No se reordenan ni se agregan desde el CMS, así que conservan la clave
+   posicional. Se declaran acá para que exista una sola lista. */
+export type FixedSlotSpec = { base: string; length: number }
+
+export const FIXED_SLOTS: FixedSlotSpec[] = [
+  { base: 'anim', length: 6 },
+  { base: 'hero.wave', length: 11 },
+  { base: 'hero.marquee', length: 11 },
+  { base: 'soft.global', length: 6 },
+  { base: 'char.soft', length: 3 },
+  { base: 'illustration', length: 15 },
+  { base: 'anim.soft', length: 4 },
+  { base: 'proj.soft', length: 6 },
+  { base: 'model3d', length: 6 },
+  { base: 'model3d.gallery', length: 12 },
+  { base: 'model3d.soft', length: 4 },
+]
+
+export function fixedSlotKeys(): string[] {
+  return FIXED_SLOTS.flatMap(({ base, length }) =>
+    Array.from({ length }, (_, i) => `${base}#${i}`))
+}

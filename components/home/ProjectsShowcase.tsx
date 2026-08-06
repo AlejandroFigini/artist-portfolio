@@ -34,7 +34,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
   const title = t(`${key}::title`)
   const startDate = t(`${key}::start_date`)
   const summary = t(`${key}::summary`)
-  const hasImage = !!imgSrc && !imgSrc.includes('placeholder')
+  const hasImage = !isEmptyMedia(imgSrc)
 
   const [isHovered, setIsHovered] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
@@ -51,10 +51,8 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
      linter no puede verificar y dejaba `validConceptIndices` fuera del array. */
   const conceptsKey = [
     0,
-    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) => {
-      const src = state.items[`${key}::c${idx - 1}`]
-      return !!src && !src.includes('placeholder')
-    })
+    ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) =>
+      !isEmptyMedia(state.items[`${key}::c${idx - 1}`])),
   ].join(',')
 
   const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])
@@ -91,7 +89,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
           const isMain = idx === 0
           
           // Si no es la principal y no tiene imagen, no la renderizamos
-          if (!isMain && (!src || src.includes('placeholder'))) return null
+          if (!isMain && isEmptyMedia(src)) return null
           
           return (
             /* El engine del CMS reescribe el src de este nodo por DOM
@@ -108,8 +106,8 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
                 zIndex: activeSlide === idx ? 2 : 1,
               }}
               loading="lazy" decoding="async"
-              src={(!src || src.includes('placeholder')) ? undefined : optimizedMediaSrc(src, 828)}
-              srcSet={(!src || src.includes('placeholder')) ? undefined : mediaSrcSet(src, [384, 640, 828])}
+              src={isEmptyMedia(src) ? undefined : optimizedMediaSrc(src, 828)}
+              srcSet={isEmptyMedia(src) ? undefined : mediaSrcSet(src, [384, 640, 828])}
               // 1 card por fila en móvil, hasta 4 en desktop
               sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 25vw"
               alt={title || `Project image ${idx}`}

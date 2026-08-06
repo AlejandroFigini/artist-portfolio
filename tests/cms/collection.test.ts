@@ -372,3 +372,31 @@ describe('planMigration', () => {
     })
   })
 })
+
+import { FIXED_SLOTS, fixedSlotKeys } from '@/lib/cms/collections'
+
+describe('FIXED_SLOTS', () => {
+  it('declara los slots de tamaño fijo con su longitud', () => {
+    const byBase = Object.fromEntries(FIXED_SLOTS.map((s) => [s.base, s.length]))
+    expect(byBase['illustration']).toBe(15)
+    expect(byBase['model3d']).toBe(6)
+    expect(byBase['model3d.gallery']).toBe(12)
+    expect(byBase['hero.marquee']).toBe(11)
+    expect(byBase['anim']).toBe(6)
+  })
+
+  it('no declara ninguna colección dinámica', () => {
+    const bases = FIXED_SLOTS.map((s) => s.base)
+    for (const prefix of Object.keys(COLLECTIONS)) {
+      expect(bases).not.toContain(prefix)
+    }
+  })
+
+  it('fixedSlotKeys expande cada base a sus claves posicionales', () => {
+    const keys = fixedSlotKeys()
+    expect(keys).toContain('illustration#0')
+    expect(keys).toContain('illustration#14')
+    expect(keys).not.toContain('illustration#15')
+    expect(keys).not.toContain('proj#0')
+  })
+})
