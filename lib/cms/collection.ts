@@ -69,3 +69,41 @@ export function isEmptyMedia(src: string | undefined | null): boolean {
   if (EMPTY_BACKGROUNDS.has(v)) return true
   return v.includes(PLACEHOLDER_MARKER)
 }
+
+export type CommitPlan = {
+  payload: Record<string, string>
+  archiveKeys: string[]
+  deleteKeys: string[]
+}
+
+/* Diferencia el orden anterior contra el nuevo y devuelve exactamente lo que hay
+   que escribir. Un reordenamiento no produce bajas → payload de una sola clave.
+   Los items que siguen vivos NUNCA se tocan: su uid no cambió. */
+export function planCommit(
+  spec: CollectionSpec,
+  prevIds: string[],
+  nextIds: string[],
+  items: Record<string, string>,
+  duration?: number,
+): CommitPlan {
+  const surviving = new Set(nextIds)
+  const removed = prevIds.filter((id) => !surviving.has(id))
+
+  const archiveKeys: string[] = []
+  const deleteKeys: string[] = []
+  for (const id of removed) {
+    for (const k of mediaKeysOf(spec, id)) {
+      if (!isEmptyMedia(items[k])) archiveKeys.push(k)
+    }
+    deleteKeys.push(...allKeysOf(spec, id))
+  }
+
+  const payload: Record<string, string> = {
+    [`${spec.prefix}.settings`]: writeSettings(
+      spec.duration ? { ids: nextIds, duration } : { ids: nextIds },
+    ),
+  }
+  for (const k of deleteKeys) payload[k] = ''
+
+  return { payload, archiveKeys, deleteKeys }
+}

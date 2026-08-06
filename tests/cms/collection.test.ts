@@ -147,3 +147,83 @@ describe('isEmptyMedia', () => {
     expect(isEmptyMedia('https://res.cloudinary.com/x/a.webp')).toBe(false)
   })
 })
+
+import { planCommit } from '@/lib/cms/collection'
+
+describe('planCommit', () => {
+  const proj = COLLECTIONS['proj']
+  const hero = COLLECTIONS['hero']
+
+  const items = {
+    'proj.settings': '{"ids":["a","b","c"]}',
+    'proj#a': 'https://cdn/a.webp',
+    'proj#a::title': 'Alpha',
+    'proj#a::c0': 'https://cdn/a-c0.webp',
+    'proj#b': 'https://cdn/b.webp',
+    'proj#b::title': 'Beta',
+    'proj#c': 'https://cdn/c.webp',
+    'proj#c::title': 'Gamma',
+  }
+
+  it('un reordenamiento puro escribe SOLO la clave de settings', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['b', 'a', 'c'], items)
+    expect(Object.keys(plan.payload)).toEqual(['proj.settings'])
+    expect(plan.payload['proj.settings']).toBe('{"ids":["b","a","c"]}')
+  })
+
+  it('un reordenamiento puro no archiva ni borra nada', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['c', 'b', 'a'], items)
+    expect(plan.archiveKeys).toEqual([])
+    expect(plan.deleteKeys).toEqual([])
+  })
+
+  it('borrar el item del medio solo toca sus propias claves', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['a', 'c'], items)
+    expect(plan.payload['proj.settings']).toBe('{"ids":["a","c"]}')
+    expect(plan.payload['proj#b']).toBe('')
+    expect(plan.payload['proj#b::title']).toBe('')
+    expect(plan.payload['proj#a']).toBeUndefined()
+    expect(plan.payload['proj#c']).toBeUndefined()
+    expect(plan.payload['proj#a::title']).toBeUndefined()
+  })
+
+  it('borrar archiva las claves de media con contenido, una sola vez', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['b', 'c'], items)
+    expect(plan.archiveKeys).toEqual(['proj#a', 'proj#a::c0'])
+  })
+
+  it('borrar no archiva slots de media vacíos', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['a', 'c'], items)
+    expect(plan.archiveKeys).toEqual(['proj#b'])
+  })
+
+  it('deleteKeys cubre media, conceptos y campos del item borrado', () => {
+    const plan = planCommit(proj, ['a', 'b'], ['b'], items)
+    expect(plan.deleteKeys).toEqual([
+      'proj#a', 'proj#a::c0', 'proj#a::c1', 'proj#a::c2',
+      'proj#a::title', 'proj#a::start_date', 'proj#a::summary',
+    ])
+  })
+
+  it('agregar un item escribe solo settings: el media lo escribe el picker', () => {
+    const plan = planCommit(proj, ['a'], ['a', 'nuevo'], items)
+    expect(Object.keys(plan.payload)).toEqual(['proj.settings'])
+    expect(plan.payload['proj.settings']).toBe('{"ids":["a","nuevo"]}')
+  })
+
+  it('vaciar la colección borra todos los items', () => {
+    const plan = planCommit(proj, ['a', 'b', 'c'], [], items)
+    expect(plan.payload['proj.settings']).toBe('{"ids":[]}')
+    expect(plan.archiveKeys).toEqual(['proj#a', 'proj#a::c0', 'proj#b', 'proj#c'])
+  })
+
+  it('persiste la duración en las colecciones que rotan', () => {
+    const plan = planCommit(hero, ['x'], ['x'], { 'hero#x': 'https://cdn/x.webp' }, 9000)
+    expect(plan.payload['hero.settings']).toBe('{"ids":["x"],"duration":9000}')
+  })
+
+  it('ignora la duración en las colecciones que no rotan', () => {
+    const plan = planCommit(proj, ['a'], ['a'], items, 9000)
+    expect(plan.payload['proj.settings']).toBe('{"ids":["a"]}')
+  })
+})
