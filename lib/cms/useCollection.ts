@@ -6,14 +6,14 @@
    un efecto y se realimentaban en bucle. */
 
 import { useCallback, useMemo, useState } from 'react'
-import { saveContent } from '@/lib/api'
+import { saveContent, renameTranslations } from '@/lib/api'
 import {
   archiveMediaKey, emit, loadJSON, LS, persistRetired, persistUnused, persistUsed,
   saveJSON, scheduleSyncToServer, state, useCmsStore,
 } from '@/lib/cms/store'
 import { COLLECTIONS, type CollectionSpec } from './collections'
 import {
-  newId, planCommit, planMigration, readSettings, type MigrationPlan,
+  migrationIdGenerator, newId, planCommit, planMigration, readSettings, type MigrationPlan,
 } from './collection'
 
 export const DEFAULT_DURATION_MS = 7000
@@ -78,8 +78,31 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
   }, [draft, edit, spec.prefix])
 
   const remove = useCallback((id: string) => {
+    // D5: un id agregado y descartado en la MISMA sesión de edición nunca
+    // estuvo en `persistedIds` y nunca va a estar en `nextIds` — `commit()`
+    // compara ambos (`planCommit`), así que jamás lo ve como "removido". Si
+    // el picker ya subió contenido para ese id (se persiste al instante
+    // contra su propia clave, independiente del draft), esa media quedaría
+    // huérfana para siempre: sin ids que la referencien, ninguna UI vuelve a
+    // mostrarla. Se archiva/borra acá mismo, en el momento en que se saca del
+    // draft, en vez de dejarlo en manos de un commit que nunca la va a ver.
+    if (!persistedIds.includes(id)) {
+      const plan = planCommit(spec, [id], [], state.items)
+      for (const k of plan.archiveKeys) archiveMediaKey(k, 'deleted')
+      if (plan.deleteKeys.length) {
+        const cleared: Record<string, string> = {}
+        for (const k of plan.deleteKeys) {
+          delete state.items[k]
+          delete state.usedContent[k]
+          cleared[k] = ''
+        }
+        persistUnused(); persistUsed(); persistRetired()
+        emit()
+        saveContent(cleared).catch(() => {})
+      }
+    }
     edit((prev) => ({ ...prev, ids: prev.ids.filter((x) => x !== id) }))
-  }, [edit])
+  }, [edit, persistedIds, spec])
 
   const move = useCallback((id: string, dir: -1 | 1) => {
     edit((prev) => {
@@ -161,47 +184,35 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
    Si el picker se abre mientras la migración disparada al cargar la página
    todavía tiene su `saveContent` en vuelo, ese segundo `mergeServerState`
    trae del server las claves legacy (el primer POST no aterrizó todavía) y
-   las vuelve a pisar sobre `state.items`. Sin este guard, una segunda
-   corrida de `planMigration` ve datos legacy y genera un set de uids
-   distinto del primero (son aleatorios) — el segundo `saveContent` gana la
-   carrera y dos migraciones divergentes escriben cosas distintas en la DB.
-   Memoizamos la promesa en curso para que la segunda llamada la reutilice
-   en vez de replanificar, y solo la liberamos si la corrida falla, para
-   que un reintento posterior no quede trabado para siempre.
+   las vuelve a pisar sobre `state.items`.
 
-   Eso cierra la carrera MIENTRAS la migración está en vuelo. Pero queda una
-   segunda carrera, posterior al éxito: si el `mergeServerState` del picker
-   (mismo call-site de arriba, `PickerModals.tsx:149`) arranca su fetch ANTES
-   de que el `saveContent` de la migración aterrice en la DB, ese fetch trae
-   los datos todavía legacy y los pisa sobre `state.items` DESPUÉS de que la
-   migración ya resolvió en éxito. Como `migrationPromise` queda memoizada
-   para siempre, un `migrateCollections()` posterior la devuelve tal cual sin
-   volver a mirar `state.items` — la sesión queda con claves legacy y las
-   colecciones se ven vacías el resto del tab, aunque la DB esté bien.
+   Antes esto era grave: los ids salían de `crypto.getRandomValues` (`newId`),
+   así que una segunda corrida de `planMigration` sobre la misma foto legacy
+   generaba un set de uids DISTINTO del primero, y el segundo `saveContent`
+   dejaba filas huérfanas en la DB (D2). Con `migrationIdGenerator` (ver
+   `lib/cms/collection.ts`) los ids son deterministas: misma foto de datos →
+   mismo mapeo índice→uid, sin importar cuántas pestañas o corridas los
+   generen. Dos migraciones "divergentes" ahora escriben exactamente lo
+   mismo — ya no hay riesgo de huérfanas por esta carrera.
 
-   El arreglo obvio —liberar el guard tras el éxito para poder remigrar— es
-   una trampa: un segundo `planMigration` sobre datos legacy generaría uids
-   nuevos y distintos (son aleatorios), dejando filas huérfanas en la DB.
-   Por eso NO se replanifica: se memoiza el `payload`/`renames` que produjo
-   la primera corrida exitosa y, si `state.items` volvió a verse legacy, se
-   reaplica ESE MISMO payload sobre el estado en memoria — sin tocar el
-   servidor (ya lo tiene) y con los mismos uids de siempre.
+   El guard se mantiene igual por eficiencia, no por corrección: sin él, cada
+   `mergeServerState` concurrente dispara su propio `saveContent` redundante
+   (mismo payload, mismo resultado, solo trabajo de más). Memoizamos la
+   promesa en curso para que la segunda llamada la reutilice en vez de
+   replanificar, y solo la liberamos si la corrida falla, para que un
+   reintento posterior no quede trabado para siempre.
 
-   Hay todavía una TERCERA variante de la misma carrera, más frecuente que el
-   picker: `app/admin/page.tsx` monta `<CmsRoot />` y `<AdminDashboard />`
-   juntos, y cada uno dispara su propio `loadServerState()` en su efecto de
-   montaje (`components/cms/CmsRoot.tsx` y `components/admin/AdminDashboard.tsx`)
-   — o sea, cada carga de `/admin` sale con DOS GET casi simultáneos, ambos
-   con la misma foto legacy. Si el pisado del segundo GET llega MIENTRAS el
-   primero todavía tiene su `saveContent` en vuelo (`migrationResult` sigue
-   `null`), el chequeo de arriba (`if (migrationResult && revertedToLegacy(...))`)
-   no aplica porque no hay nada memoizado todavía, y la llamada cae en
-   `if (migrationPromise) return migrationPromise` sin reparar nada. Cuando
-   `runMigration()` por fin resuelve, con solo setear `migrationResult` y
-   hacer `emit()` NO alcanza: `state.items` pudo haber quedado pisado por ese
-   segundo GET durante el `await`. Por eso `runMigration()` repite el mismo
-   chequeo (`revertedToLegacy` + `applyMigrationPlan`) inmediatamente después
-   de memoizar el resultado — ver el bloque al final de esa función. */
+   Sigue existiendo la variante posterior al éxito: si un `mergeServerState`
+   concurrente pisa `state.items` con la foto legacy DESPUÉS de que la
+   migración ya resolvió (`migrationResult` memoizado), la sesión se queda
+   viendo claves legacy hasta que algo la repare — `revertedToLegacy` +
+   `applyMigrationPlan` reaplican el MISMO plan memoizado (mismos uids,
+   deterministas, sin volver a tocar el servidor) en ese caso. Y la variante
+   mientras el primer `saveContent` sigue en vuelo (`migrationResult` todavía
+   `null`, dos GET casi simultáneos como en `app/admin/page.tsx`, que monta
+   `<CmsRoot />` y `<AdminDashboard />` juntos): `runMigration()` repite el
+   mismo chequeo inmediatamente después de memoizar el resultado — ver el
+   bloque al final de esa función. */
 let migrationPromise: Promise<void> | null = null
 let migrationResult: MigrationPlan | null = null
 
@@ -241,24 +252,48 @@ function revertedToLegacy(renames: Record<string, string>): boolean {
   return Object.keys(renames).some((oldKey) => oldKey in state.items)
 }
 
-async function runMigration(): Promise<void> {
+/* Arma el plan de migración de TODAS las colecciones sobre una foto de
+   `items`. Ids deterministas (`migrationIdGenerator`, ver D2): la misma foto
+   produce siempre el mismo mapeo índice→uid, así que esta función se puede
+   llamar tantas veces como haga falta —incluso desde una pestaña sin sesión
+   de admin— sin arriesgar uids divergentes entre corridas. */
+function computeMigrationPlan(items: Record<string, string>): MigrationPlan | null {
   const payload: Record<string, string> = {}
   const renames: Record<string, string> = {}
-
   for (const spec of Object.values(COLLECTIONS)) {
-    const plan = planMigration(spec, state.items, (taken) => newId(taken))
+    const plan = planMigration(spec, items, migrationIdGenerator(spec.prefix))
     if (!plan) continue
     Object.assign(payload, plan.payload)
     Object.assign(renames, plan.renames)
   }
-  if (Object.keys(payload).length === 0) return
+  return Object.keys(payload).length > 0 ? { payload, renames } : null
+}
 
-  applyMigrationPlan({ payload, renames })
-  await saveContent(payload)
+async function runMigration(): Promise<void> {
+  const plan = computeMigrationPlan(state.items)
+  if (!plan) return
+
+  applyMigrationPlan(plan)
+  await saveContent(plan.payload)
   // Recién se memoiza tras el éxito del `saveContent`: es el plan que la DB
   // ya tiene confirmado, el único que es seguro reaplicar sin volver a tocar
   // el servidor.
-  migrationResult = { payload, renames }
+  migrationResult = plan
+
+  // D3: `cms_translations` está keyeada por la MISMA clave que `cms_data`.
+  // Sin este paso, cada fila traducida sigue apuntando a la clave legacy
+  // (`proj#0::title`) que la migración ya vació — el contenido traducido de
+  // proyectos/personajes queda huérfano e irrecuperable en un sitio de
+  // cuatro idiomas. Best-effort: si falla, el contenido ya quedó migrado
+  // (no hay rollback, ver comentario de `migrateCollections`) — se loguea
+  // para poder reintentar a mano en vez de bloquear la migración entera.
+  if (Object.keys(plan.renames).length > 0) {
+    try {
+      await renameTranslations(plan.renames)
+    } catch (err) {
+      console.error('[cms] no se pudieron renombrar las traducciones tras la migración:', err)
+    }
+  }
 
   // Reconciliación post-await (ventana que quedaba abierta, ver comentario
   // de arriba del guard de módulo): mientras este `await saveContent` estaba
@@ -272,15 +307,29 @@ async function runMigration(): Promise<void> {
   // legacy, reaplicamos ESTE MISMO payload (mismos uids, sin volver a tocar
   // el servidor, que ya lo tiene). Si no hubo pisado, `revertedToLegacy` da
   // `false` y esto es un no-op.
-  if (revertedToLegacy(renames)) applyMigrationPlan({ payload, renames })
+  if (revertedToLegacy(plan.renames)) applyMigrationPlan(plan)
   emit()
 }
 
 /* Migración one-shot de índice posicional a uid. Idempotente: si todas las
    colecciones ya tienen `ids`, no escribe nada. Los datos de producción son
-   descartables por decisión de producto → no hay rollback. */
+   descartables por decisión de producto → no hay rollback.
+
+   D1: sin sesión de admin (el caso normal de un visitante recién desplegado,
+   antes de que el dueño entre al panel) NO se toca el servidor — se calcula
+   el mismo plan determinista y se aplica solo en memoria, para esa sesión de
+   lectura. Como el id es determinista, el mapeo que ve el visitante coincide
+   exactamente con el que persistirá el admin cuando entre; hasta entonces,
+   el sitio deja de mostrarse vacío en vez de depender de que alguien haga
+   login primero. Se recalcula en cada llamada (barato: `planMigration`
+   devuelve `null` para lo que ya esté migrado en `state.items`), así que no
+   hace falta memoizar nada para este camino. */
 export function migrateCollections(): Promise<void> {
-  if (!state.isAdmin) return Promise.resolve()
+  if (!state.isAdmin) {
+    const plan = computeMigrationPlan(state.items)
+    if (plan) { applyMigrationPlan(plan); emit() }
+    return Promise.resolve()
+  }
 
   if (migrationResult && revertedToLegacy(migrationResult.renames)) {
     applyMigrationPlan(migrationResult)

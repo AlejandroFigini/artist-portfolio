@@ -241,6 +241,20 @@ describe('planCommit', () => {
     const plan = planCommit(proj, ['a'], ['a'], items, 9000)
     expect(plan.payload['proj.settings']).toBe('{"ids":["a"]}')
   })
+
+  it('borra y archiva un concepto no declarado (::c4) presente en items (D6)', () => {
+    const withExtraConcept = { ...items, 'proj#a::c4': 'https://cdn/a-c4.webp' }
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['b', 'c'], withExtraConcept)
+    expect(plan.deleteKeys).toContain('proj#a::c4')
+    expect(plan.archiveKeys).toContain('proj#a::c4')
+  })
+
+  it('borra un campo no declarado en la spec pero SIN archivarlo (es texto, D6)', () => {
+    const withExtraField = { ...items, 'proj#a::theme': 'Cyberpunk' }
+    const plan = planCommit(proj, ['a', 'b', 'c'], ['b', 'c'], withExtraField)
+    expect(plan.deleteKeys).toContain('proj#a::theme')
+    expect(plan.archiveKeys).not.toContain('proj#a::theme')
+  })
 })
 
 import { planMigration } from '@/lib/cms/collection'
@@ -351,6 +365,39 @@ describe('planMigration', () => {
     expect(planMigration(proj, items, makeIds())).toBeNull()
   })
 
+  it('migra un slot legacy sin media pero con campos cargados (D4)', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":1}',
+      'proj#0': '',
+      'proj#0::title': 'Ficha sin imagen todavía',
+    }, makeIds())!
+    expect(plan).not.toBeNull()
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0"]}')
+    expect(plan.payload['proj#id0::title']).toBe('Ficha sin imagen todavía')
+    expect(plan.payload['proj#0::title']).toBe('')
+  })
+
+  it('descarta un slot legacy sin media y sin ningún campo (D4)', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":2}',
+      'proj#0': '',
+      'proj#1': 'https://cdn/b.webp',
+    }, makeIds())!
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0"]}')
+    expect(plan.payload['proj#id0']).toBe('https://cdn/b.webp')
+    expect(plan.payload['proj#0']).toBeUndefined()
+  })
+
+  it('un carrusel (sin fields) sigue descartando slots vacíos sin excepción (D4)', () => {
+    const plan = planMigration(hero, {
+      'hero.settings': '{"count":2}',
+      'hero.slide#0': '',
+      'hero.slide#1': 'https://cdn/s1.webp',
+    }, makeIds())!
+    expect(plan.payload['hero.settings']).toBe('{"ids":["id0"]}')
+    expect(plan.payload['hero#id0']).toBe('https://cdn/s1.webp')
+  })
+
   it('no confunde indices que comparten prefijo numerico', () => {
     const plan = planMigration(proj, {
       'proj.settings': '{"count":11}',
@@ -370,6 +417,37 @@ describe('planMigration', () => {
       'proj#10': 'proj#id1',
       'proj#10::title': 'proj#id1::title',
     })
+  })
+})
+
+import { migrationId, migrationIdGenerator } from '@/lib/cms/collection'
+
+describe('migrationId / migrationIdGenerator (D2)', () => {
+  it('es determinista: el mismo seed produce siempre el mismo id', () => {
+    expect(migrationId('proj#0')).toBe(migrationId('proj#0'))
+    expect(migrationId('char#3')).toBe(migrationId('char#3'))
+  })
+
+  it('dos corridas independientes del generador producen exactamente los mismos ids', () => {
+    const genA = migrationIdGenerator('proj')
+    const idsA = [genA([]), genA([]), genA([])]
+    const genB = migrationIdGenerator('proj')
+    const idsB = [genB([]), genB([]), genB([])]
+    expect(idsA).toEqual(idsB)
+  })
+
+  it('siempre contiene al menos una letra, para cualquier seed', () => {
+    for (let i = 0; i < 200; i++) {
+      const id = migrationId(`proj#${i}`)
+      expect(id).toMatch(/[a-z]/)
+    }
+  })
+
+  it('resuelve colisiones dentro de la misma corrida de forma también determinista', () => {
+    const id1 = migrationId('seed-x')
+    const id2 = migrationId('seed-x', [id1])
+    expect(id2).not.toBe(id1)
+    expect(migrationId('seed-x', [id1])).toBe(id2)
   })
 })
 

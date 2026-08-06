@@ -291,6 +291,22 @@ export async function importTranslations(items: LangMaps): Promise<{ imported: n
   return { imported: d.imported || 0, skipped: d.skipped || 0 }
 }
 
+/* Renombra claves de `cms_translations` (clave vieja → clave nueva), sin
+   tocar sus valores. Lo usa la migración de colecciones (índice → uid): sin
+   esto, cada fila traducida sigue apuntando a la clave legacy que la
+   migración ya vació en `cms_data` y el contenido traducido queda huérfano. */
+export async function renameTranslations(renames: Record<string, string>): Promise<void> {
+  const r = await fetch('/api/translations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ renames }),
+  })
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error || 'Error renaming translations')
+  }
+}
+
 // ----- Estado compartido CMS (sync entre dispositivos) -----------------------
 
 export type CmsStatePayload = {

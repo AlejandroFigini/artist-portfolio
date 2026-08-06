@@ -327,12 +327,13 @@ export function mergeServerState(server: CmsStatePayload) {
   emit()
 
   // Migración one-shot índice→uid. Se importa dinámicamente para no crear un
-  // ciclo store ⇄ useCollection.
-  if (state.isAdmin) {
-    import('./useCollection')
-      .then((m) => m.migrateCollections())
-      .catch((err) => console.error('[cms] migración de colecciones falló:', err))
-  }
+  // ciclo store ⇄ useCollection. Corre para CUALQUIER sesión, no solo admin:
+  // sin admin logueado aplica el mismo mapeo determinista solo en memoria
+  // (sin tocar el servidor), para que el sitio no se muestre vacío mientras
+  // nadie migró la DB todavía (ver D1 / migrateCollections).
+  import('./useCollection')
+    .then((m) => m.migrateCollections())
+    .catch((err) => console.error('[cms] migración de colecciones falló:', err))
 }
 
 /* Carga el estado completo desde el server y lo aplica. La DB es la fuente
