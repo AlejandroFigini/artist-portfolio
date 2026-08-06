@@ -323,6 +323,14 @@ export function mergeServerState(server: CmsStatePayload) {
 
   state.serverReady = true
   emit()
+
+  // Migración one-shot índice→uid. Se importa dinámicamente para no crear un
+  // ciclo store ⇄ useCollection.
+  if (state.isAdmin) {
+    import('./useCollection')
+      .then((m) => m.migrateCollections())
+      .catch((err) => console.error('[cms] migración de colecciones falló:', err))
+  }
 }
 
 /* Carga el estado completo desde el server y lo aplica. La DB es la fuente
