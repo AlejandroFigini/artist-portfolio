@@ -107,3 +107,73 @@ export function planCommit(
 
   return { payload, archiveKeys, deleteKeys }
 }
+
+export type MigrationPlan = {
+  payload: Record<string, string>
+  renames: Record<string, string>
+}
+
+/* Índices legacy presentes en `items` para esta colección, ordenados.
+   Se leen del propio estado en vez de confiar en `count`: un count desfasado
+   (bug conocido del formato viejo) no debe inventar ni perder items. */
+function legacyIndices(spec: CollectionSpec, items: Record<string, string>): number[] {
+  const re = new RegExp(`^${escapeRe(spec.legacyBase)}#(\\d+)(?:::|$)`)
+  const found = new Set<number>()
+  for (const k of Object.keys(items)) {
+    const m = k.match(re)
+    if (m) found.add(Number(m[1]))
+  }
+  return [...found].sort((a, b) => a - b)
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function legacyDuration(items: Record<string, string>, prefix: string): number | undefined {
+  try {
+    const parsed = JSON.parse(items[`${prefix}.settings`] || '')
+    return typeof parsed?.duration === 'number' && parsed.duration > 0 ? parsed.duration : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function planMigration(
+  spec: CollectionSpec,
+  items: Record<string, string>,
+  makeId: (taken: Iterable<string>) => string,
+): MigrationPlan | null {
+  if (readSettings(items, spec.prefix).ids.length > 0) return null
+
+  const indices = legacyIndices(spec, items)
+  if (indices.length === 0) return null
+
+  const payload: Record<string, string> = {}
+  const renames: Record<string, string> = {}
+  const ids: string[] = []
+
+  for (const i of indices) {
+    const oldBase = `${spec.legacyBase}#${i}`
+    // Un slot legacy sin media es un hueco del formato viejo, no un item.
+    if (isEmptyMedia(items[oldBase])) continue
+
+    const id = makeId(ids)
+    ids.push(id)
+    const newBase = itemKey(spec, id)
+
+    for (const oldKey of Object.keys(items)) {
+      if (oldKey !== oldBase && !oldKey.startsWith(`${oldBase}::`)) continue
+      const newKey = oldKey === oldBase ? newBase : `${newBase}::${oldKey.slice(oldBase.length + 2)}`
+      payload[newKey] = items[oldKey]
+      payload[oldKey] = ''
+      renames[oldKey] = newKey
+    }
+  }
+
+  payload[`${spec.prefix}.settings`] = writeSettings(
+    spec.duration ? { ids, duration: legacyDuration(items, spec.prefix) } : { ids },
+  )
+
+  return { payload, renames }
+}

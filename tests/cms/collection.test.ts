@@ -242,3 +242,112 @@ describe('planCommit', () => {
     expect(plan.payload['proj.settings']).toBe('{"ids":["a"]}')
   })
 })
+
+import { planMigration } from '@/lib/cms/collection'
+
+describe('planMigration', () => {
+  const proj = COLLECTIONS['proj']
+  const hero = COLLECTIONS['hero']
+
+  /* Generador determinista: id0, id1, id2… */
+  const makeIds = () => {
+    let n = 0
+    return () => `id${n++}`
+  }
+
+  it('devuelve null si la colección ya tiene ids', () => {
+    expect(planMigration(proj, { 'proj.settings': '{"ids":["a"]}' }, makeIds())).toBeNull()
+  })
+
+  it('devuelve null si no hay settings ni claves legacy', () => {
+    expect(planMigration(proj, {}, makeIds())).toBeNull()
+  })
+
+  it('convierte count legacy en ids', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":2}',
+      'proj#0': 'https://cdn/a.webp',
+      'proj#1': 'https://cdn/b.webp',
+    }, makeIds())!
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0","id1"]}')
+    expect(plan.payload['proj#id0']).toBe('https://cdn/a.webp')
+    expect(plan.payload['proj#id1']).toBe('https://cdn/b.webp')
+  })
+
+  it('vacía las claves legacy que quedaron libres', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":1}',
+      'proj#0': 'https://cdn/a.webp',
+    }, makeIds())!
+    expect(plan.payload['proj#0']).toBe('')
+  })
+
+  it('arrastra campos y conceptos del item', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":1}',
+      'proj#0': 'https://cdn/a.webp',
+      'proj#0::title': 'Alpha',
+      'proj#0::c1': 'https://cdn/a-c1.webp',
+    }, makeIds())!
+    expect(plan.payload['proj#id0::title']).toBe('Alpha')
+    expect(plan.payload['proj#id0::c1']).toBe('https://cdn/a-c1.webp')
+    expect(plan.payload['proj#0::title']).toBe('')
+    expect(plan.payload['proj#0::c1']).toBe('')
+  })
+
+  it('renames mapea cada clave vieja a la nueva', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":1}',
+      'proj#0': 'https://cdn/a.webp',
+      'proj#0::title': 'Alpha',
+    }, makeIds())!
+    expect(plan.renames).toEqual({
+      'proj#0': 'proj#id0',
+      'proj#0::title': 'proj#id0::title',
+    })
+  })
+
+  it('migra el infijo .slide de los carruseles y conserva la duración', () => {
+    const plan = planMigration(hero, {
+      'hero.settings': '{"count":2,"duration":9000}',
+      'hero.slide#0': 'https://cdn/s0.webp',
+      'hero.slide#1': 'https://cdn/s1.webp',
+    }, makeIds())!
+    expect(plan.payload['hero.settings']).toBe('{"ids":["id0","id1"],"duration":9000}')
+    expect(plan.payload['hero#id0']).toBe('https://cdn/s0.webp')
+    expect(plan.payload['hero.slide#0']).toBe('')
+  })
+
+  it('descarta los slots legacy vacíos en vez de crear items fantasma', () => {
+    const plan = planMigration(proj, {
+      'proj.settings': '{"count":3}',
+      'proj#0': 'https://cdn/a.webp',
+      'proj#1': '',
+      'proj#2': 'https://cdn/c.webp',
+    }, makeIds())!
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0","id1"]}')
+    expect(plan.payload['proj#id0']).toBe('https://cdn/a.webp')
+    expect(plan.payload['proj#id1']).toBe('https://cdn/c.webp')
+  })
+
+  it('migra claves legacy huérfanas aunque no haya settings', () => {
+    const plan = planMigration(proj, {
+      'proj#0': 'https://cdn/a.webp',
+    }, makeIds())!
+    expect(plan.payload['proj.settings']).toBe('{"ids":["id0"]}')
+    expect(plan.payload['proj#id0']).toBe('https://cdn/a.webp')
+  })
+
+  it('es idempotente: aplicar el plan y replanificar devuelve null', () => {
+    const items: Record<string, string> = {
+      'proj.settings': '{"count":1}',
+      'proj#0': 'https://cdn/a.webp',
+    }
+    const plan = planMigration(proj, items, makeIds())!
+    for (const [k, v] of Object.entries(plan.payload)) {
+      if (v === '') delete items[k]
+      else items[k] = v
+    }
+    expect(planMigration(proj, items, makeIds())).toBeNull()
+  })
+})
