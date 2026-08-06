@@ -96,6 +96,11 @@ export default function CmsRoot() {
     if (state.isAdmin && !state.needsSetup) {
       engine.attachEditControls()
     }
+
+    // La ruta nueva trae contenedores que el idioma activo todavía no tocó:
+    // memorizar su texto base y reaplicar el idioma sobre el DOM recién montado.
+    engine.captureTextDefaults()
+    engine.setLanguage(state.lang)
   }, [pathname])
 
   // ----- Init (port de cms.js init()) ----------------------------------------
@@ -187,11 +192,11 @@ export default function CmsRoot() {
           {authHost && createPortal(
             state.isAdmin ? (
               <div className="admin-dropdown-wrapper">
-                <span className="cms-user-chip" title={`Sesión iniciada como ${state.username || 'Administrador'}`}>
-                  <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+                <span className="cms-user-chip" title={`Signed in as ${state.username || 'Administrator'}`}>
+                  <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrator'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
                 </span>
                 <div className="admin-dropdown-menu">
-                  <div className="admin-menu-header">Sesión actual: {state.username || 'Administrador'}</div>
+                  <div className="admin-menu-header">Current session: {state.username || 'Administrator'}</div>
                   <a 
                     href="/admin" 
                     className="cms-navauth-btn" 

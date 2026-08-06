@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
 
 const CARD_COUNT = 6
@@ -22,6 +23,7 @@ function Corners() {
 type CardFields = { title: string; project: string; date: string; inspiration: string; desc: string }
 
 function AnimCard({ index }: { index: number }) {
+  const ui = useUiText()
   const videoRef = useRef<HTMLVideoElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -209,7 +211,7 @@ function AnimCard({ index }: { index: number }) {
                 type="button"
                 className="anim-card__btn"
                 onClick={openExpand}
-                aria-label="Ver en pantalla completa"
+                aria-label={ui('view_fullscreen')}
               >
                 <i className="fa-solid fa-expand" />
               </button>
@@ -238,7 +240,7 @@ function AnimCard({ index }: { index: number }) {
               type="button"
               className="info-toggle-btn"
               onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
-              aria-label="Información"
+              aria-label={ui('information')}
             >
               <i className="fa-solid fa-info" />
             </button>
@@ -251,7 +253,7 @@ function AnimCard({ index }: { index: number }) {
                 {fields.project && <span className="info-project"><i className="fa-solid fa-folder-open"></i> <span className="val">{fields.project}</span></span>}
               </div>
               {fields.desc && <p className="info-desc">{fields.desc}</p>}
-              {fields.inspiration && <p className="info-inspiration"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span className="val">{fields.inspiration}</span></p>}
+              {fields.inspiration && <p className="info-inspiration"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>{ui('inspiration')}:</b> <span className="val">{fields.inspiration}</span></p>}
               <div className="info-footer">
                 <span><i className="fa-solid fa-palette"></i> LUCIA MONTAÑA</span>
               </div>

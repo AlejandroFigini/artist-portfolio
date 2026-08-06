@@ -20,6 +20,10 @@ type Message = {
   is_read: boolean
   is_starred: boolean
   is_trashed: boolean
+  /* null = mensaje anterior al registro de entregas; false = la notificación
+     por mail no salió y `email_error` dice por qué. */
+  email_sent: boolean | null
+  email_error: string | null
   created_at: string
 }
 
@@ -43,6 +47,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   const [activeTab, setActiveTab] = useState<'inbox' | 'starred' | 'trash'>('inbox')
   const [expanded, setExpanded] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [resending, setResending] = useState<number | null>(null)
   const [autoDeleteDays, setAutoDeleteDays] = useState('0')
   const { confirm } = useModal()
   const toast = useToast()
@@ -65,10 +70,12 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
       // Load auto-delete setting
       const c = await fetch('/api/content')
       if (c.ok) {
+        /* GET /api/content devuelve { version, items }: leer la clave en la
+           raíz daba siempre undefined y el selector se quedaba en "Never"
+           aunque hubiera un valor guardado. */
         const cData = await c.json()
-        if (cData['messages.trashAutoDeleteDays']) {
-          setAutoDeleteDays(cData['messages.trashAutoDeleteDays'])
-        }
+        const days = cData.items?.['messages.trashAutoDeleteDays']
+        if (days) setAutoDeleteDays(days)
       }
     } catch {
       toast('Failed to load messages', 'error')
@@ -138,8 +145,8 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     }
     
     confirm(
-      'Eliminar mensaje',
-      <>¿Eliminar permanentemente el mensaje de <strong>{msg.sender_name}</strong>? Esta acción no se puede deshacer.</>,
+      'Delete message',
+      <>Permanently delete the message from <strong>{msg.sender_name}</strong>? This action cannot be undone.</>,
       async () => {
         try {
           const r = await fetch('/api/messages', {
@@ -156,6 +163,28 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
         }
       }
     )
+  }
+
+  const resendNotification = async (msg: Message) => {
+    setResending(msg.id)
+    try {
+      const r = await fetch('/api/messages/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: msg.id }),
+      })
+      const d = await r.json()
+      if (r.ok) {
+        toast('Notification sent')
+        load()
+      } else {
+        toast(d.error || 'Failed to send the notification', 'error')
+      }
+    } catch {
+      toast('Failed to send the notification', 'error')
+    } finally {
+      setResending(null)
+    }
   }
 
   const markAllRead = async () => {
@@ -180,17 +209,17 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
 
   const emptyTrash = () => {
     confirm(
-      'Vaciar papelera',
-      '¿Estás seguro de que quieres eliminar permanentemente todos los mensajes de la papelera? Esta acción no se puede deshacer.',
+      'Empty trash',
+      'Are you sure you want to permanently delete every message in the trash? This action cannot be undone.',
       async () => {
         try {
           const r = await fetch('/api/messages?empty_trash=true', { method: 'DELETE' })
           if (r.ok) {
-            toast('Papelera vaciada')
+            toast('Trash emptied')
             load()
           }
         } catch {
-          toast('Error al vaciar papelera', 'error')
+          toast('Failed to empty trash', 'error')
         }
       }
     )
@@ -204,9 +233,9 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 'messages.trashAutoDeleteDays': days }),
       })
-      toast('Configuración guardada')
+      toast('Settings saved')
     } catch {
-      toast('Error al guardar configuración', 'error')
+      toast('Failed to save settings', 'error')
     }
   }
 
@@ -353,23 +382,23 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Borrado automático:
+              Auto-delete:
             </label>
             <select
               value={autoDeleteDays}
               onChange={(e) => saveAutoDeleteDays(e.target.value)}
               className="trash-select"
             >
-              <option value="0">Nunca</option>
-              <option value="7">Tras 7 días</option>
-              <option value="15">Tras 15 días</option>
-              <option value="30">Tras 30 días</option>
-              <option value="90">Tras 90 días</option>
+              <option value="0">Never</option>
+              <option value="7">After 7 days</option>
+              <option value="15">After 15 days</option>
+              <option value="30">After 30 days</option>
+              <option value="90">After 90 days</option>
             </select>
           </div>
           {data && data.counts.trash > 0 && (
             <button type="button" className="cms-btn cms-btn--sm" onClick={emptyTrash} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
-              <i className="fa-solid fa-eraser"></i> Vaciar basurero
+              <i className="fa-solid fa-eraser"></i> Empty trash
             </button>
           )}
         </div>
@@ -384,7 +413,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
       {data && data.messages.length === 0 && (
         <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)' }}>
           <i className={`fa-solid ${activeTab === 'trash' ? 'fa-trash' : 'fa-inbox'} fa-2x`} style={{ opacity: 0.4, marginBottom: '0.8rem', display: 'block' }}></i>
-          <p>{activeTab === 'starred' ? 'No hay mensajes favoritos.' : activeTab === 'trash' ? 'La papelera está vacía.' : 'No messages yet.'}</p>
+          <p>{activeTab === 'starred' ? 'No starred messages.' : activeTab === 'trash' ? 'The trash is empty.' : 'No messages yet.'}</p>
         </div>
       )}
 
@@ -440,6 +469,25 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
                     <i className="fa-solid fa-earth-americas"></i> {msg.country}
                   </span>
                 )}
+                {msg.email_sent === false && (
+                  <span
+                    title={msg.email_error || 'The email notification could not be sent.'}
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      color: '#ef4444',
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <i className="fa-solid fa-triangle-exclamation"></i> Not delivered
+                  </span>
+                )}
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
                   {fmtDate(new Date(msg.created_at).getTime())}
                 </span>
@@ -479,14 +527,14 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
                             onClick={(e) => { e.stopPropagation(); toggleStar(msg); setMenuOpen(null) }}
                           >
                             <i className={`fa-${msg.is_starred ? 'solid' : 'regular'} fa-star`} style={{ color: msg.is_starred ? '#fbbf24' : 'var(--text-secondary)', width: 16 }}></i>
-                            {msg.is_starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                            {msg.is_starred ? 'Remove from starred' : 'Add to starred'}
                           </button>
                           <button
                             type="button"
                             className="msg-dropdown-btn danger"
                             onClick={(e) => { e.stopPropagation(); deleteMessage(msg); setMenuOpen(null) }}
                           >
-                            <i className="fa-solid fa-trash" style={{ width: 16 }}></i> Eliminar
+                            <i className="fa-solid fa-trash" style={{ width: 16 }}></i> Delete
                           </button>
                         </>
                       ) : (
@@ -496,14 +544,14 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
                             className="msg-dropdown-btn"
                             onClick={(e) => { e.stopPropagation(); toggleTrash(msg, false); setMenuOpen(null) }}
                           >
-                            <i className="fa-solid fa-trash-arrow-up" style={{ width: 16 }}></i> Restaurar
+                            <i className="fa-solid fa-trash-arrow-up" style={{ width: 16 }}></i> Restore
                           </button>
                           <button
                             type="button"
                             className="msg-dropdown-btn danger"
                             onClick={(e) => { e.stopPropagation(); deleteMessage(msg); setMenuOpen(null) }}
                           >
-                            <i className="fa-solid fa-eraser" style={{ width: 16 }}></i> Eliminar definitivamente
+                            <i className="fa-solid fa-eraser" style={{ width: 16 }}></i> Delete permanently
                           </button>
                         </>
                       )}
@@ -534,6 +582,37 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
                   }}>
                     {msg.message}
                   </div>
+                  {msg.email_sent === false && (
+                    <div style={{
+                      marginTop: '0.7rem',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: 8,
+                      padding: '0.7rem 0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.8rem',
+                      flexWrap: 'wrap',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 220 }}>
+                        <strong style={{ fontSize: '0.82rem', color: '#ef4444' }}>
+                          <i className="fa-solid fa-triangle-exclamation"></i> Email notification not delivered
+                        </strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                          {msg.email_error || 'Unknown error.'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="cms-btn cms-btn--sm"
+                        disabled={resending === msg.id}
+                        onClick={(e) => { e.stopPropagation(); resendNotification(msg) }}
+                      >
+                        <i className={`fa-solid ${resending === msg.id ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
+                        {resending === msg.id ? ' Sending…' : ' Resend'}
+                      </button>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
                     <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>
                       IP: {msg.ip_address}

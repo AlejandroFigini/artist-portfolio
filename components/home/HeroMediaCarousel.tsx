@@ -56,7 +56,7 @@ type Props = {
 export default function HeroMediaCarousel({
   prefix,
   className = 'cms-media',
-  label = 'Carrusel de portada',
+  label = 'Home carousel',
 }: Props) {
   // ensure component re‑renders when CMS store updates (hydration, admin edits, etc.)
   useCmsStore();

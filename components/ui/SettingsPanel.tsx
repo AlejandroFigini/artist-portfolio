@@ -5,13 +5,13 @@
    controles de edición (cms.js hide-cms) funcionales. */
 
 import { useEffect, useRef, useState } from 'react'
-import { state, useCmsStore } from '@/lib/cms/store'
-import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage, getAllTranslatableItems } from '@/components/cms/engine'
+import { state, useCmsStore, useUiText } from '@/lib/cms/store'
+import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from '@/components/cms/engine'
 import { revealAllNow } from '@/components/home/HomeFx'
-import { ALL_LANGS, LANG_META, type Lang, BASE_LANG } from '@/lib/i18n'
+import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL } from '@/lib/media'
-import { getTranslations, importTranslations } from '@/lib/api'
+import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { useToast } from '@/components/ui/Toast'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -81,6 +81,7 @@ export default function SettingsPanel() {
     try { return localStorage.getItem(LS_HIDE_CMS) === '1' } catch { return false }
   })
   useCmsStore() // re-render cuando cambia el estado CMS
+  const ui = useUiText()
   const panelRef = useRef<HTMLDivElement>(null)
   const gearRef = useRef<HTMLButtonElement>(null)
   const adminPanelRef = useRef<HTMLDivElement>(null)
@@ -102,43 +103,23 @@ export default function SettingsPanel() {
   }
 
   const onExportTranslations = async () => {
-    const server = await getTranslations()
-    const baseItems = getAllTranslatableItems(server[BASE_LANG] || {})
-    if (Object.keys(baseItems).length === 0) {
+    const res = await exportTranslationPrompt()
+    if (!res) {
       toast('No text available for translation yet. Add English content first.', 'error')
       return
     }
-    const prompt = [
-      'Translate the following artist portfolio content (animation, illustration, and 3D) from English (en) to Spanish (es), Portuguese (pt), and French (fr).',
-      'Maintain a professional and artistic tone. Do not translate proper names or software brands.',
-      '',
-      'Respond ONLY with valid JSON, without extra text or markdown formatting, with this exact structure (same keys as the original for each language):',
-      '{ "items": { "es": { ... }, "pt": { ... }, "fr": { ... } } }',
-      '',
-      'Save your response as a .json file and import it in the panel using "Import translations".',
-      '',
-      '--- CONTENT (English) ---',
-      JSON.stringify({ items: { [BASE_LANG]: baseItems } }, null, 2),
-    ].join('\n')
-    const blob = new Blob([prompt], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'translations-prompt.txt'
-    a.click()
-    URL.revokeObjectURL(url)
-    toast(`Prompt exported with ${Object.keys(baseItems).length} texts. Paste it entirely into Claude.`)
+    toast(
+      res.incompleteScan
+        ? `Prompt exported with ${res.count} texts. Browse the site once so every container is scanned.`
+        : `Prompt exported with ${res.count} texts. Paste it entirely into Claude.`,
+      res.incompleteScan ? 'error' : undefined,
+    )
   }
 
   const onImportTranslations = async (file: File) => {
-    let parsed: { items?: Record<string, Record<string, string>> }
-    try { parsed = JSON.parse(await file.text()) } catch { toast('Invalid JSON file', 'error'); return }
-    const items = parsed.items || (parsed as Record<string, Record<string, string>>)
     try {
-      const { imported } = await importTranslations(items)
-      state.translations = await getTranslations()
-      setLanguage(state.lang)
-      toast(`${imported} translations imported`)
+      const { imported, skipped } = await importTranslationsFile(file)
+      toast(`${imported} translations imported${skipped ? ` · ${skipped} skipped` : ''}`)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error importing translations', 'error')
     }
@@ -204,20 +185,20 @@ export default function SettingsPanel() {
   return (
     <>
       {/* Tuerca general — visible para todos los usuarios */}
-      <button ref={gearRef} id="settings-toggle" className="settings-gear" aria-label="Settings" onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
+      <button ref={gearRef} id="settings-toggle" className="settings-gear" aria-label={ui('settings')} onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
         <i className="fa-solid fa-gear"></i>
       </button>
       <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}`}>
-        <h3>Settings</h3>
+        <h3>{ui('settings')}</h3>
         <div className="setting-item">
-          <span>Dark Mode</span>
+          <span>{ui('dark_mode')}</span>
           <label className="switch">
             <input type="checkbox" id="dark-mode-switch" checked={dark} onChange={(e) => toggleDark(e.target.checked)} suppressHydrationWarning />
             <span className="slider round"></span>
           </label>
         </div>
         <div className="setting-item">
-          <span>Pause animations</span>
+          <span>{ui('pause_animations')}</span>
           <label className="switch">
             <input
               type="checkbox" id="motion-switch" checked={motionOff} suppressHydrationWarning
@@ -228,24 +209,24 @@ export default function SettingsPanel() {
         </div>
         <hr className="settings-divider" />
         <div className="setting-item">
-          <span>Curriculum Vitae</span>
+          <span>{ui('curriculum_vitae')}</span>
           <a
             className={`cv-btn cv-btn-settings${settings.cvUrl ? '' : ' is-disabled'}`}
             id="cv-download-settings" href={settings.cvUrl || undefined}
             download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
             target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-            title={settings.cvUrl ? 'Download Curriculum Vitae (PDF)' : 'CV not available yet'}
+            title={settings.cvUrl ? ui('download_cv_pdf') : ui('cv_unavailable')}
             aria-disabled={!settings.cvUrl || undefined}
             onClick={() => sendGAEvent('event', 'cv_download')}
           >
             <i className="fa-solid fa-file-arrow-down"></i>
-            <span>CV</span>
+            <span>{ui('cv')}</span>
           </a>
         </div>
         <div className="setting-item">
-          <span>Language</span>
+          <span>{ui('language')}</span>
           <div className="lang-selector-settings" id="lang-selector-settings">
-            <button className="lang-btn-settings" id="lang-toggle-settings" aria-label="Change language" onClick={() => setLangOpen((o) => !o)}>
+            <button className="lang-btn-settings" id="lang-toggle-settings" aria-label={ui('change_language')} onClick={() => setLangOpen((o) => !o)}>
               {/* Bandera SVG inline de LANG_META: next/image no optimiza SVG. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-settings" />

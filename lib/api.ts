@@ -91,7 +91,7 @@ export async function updateAccount(payload: {
     body: JSON.stringify(payload),
   })
   const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error actualizando la cuenta')
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error updating the account')
   return (data as { user: AccountUser }).user
 }
 
@@ -111,7 +111,7 @@ export async function createUser(payload: { username: string; password: string; 
     body: JSON.stringify(payload),
   })
   const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error creando usuario')
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error creating user')
 }
 
 /* Unión discriminada por `action`: cada acción declara exactamente los campos
@@ -154,7 +154,7 @@ export async function twoFa(payload:
     body: JSON.stringify(payload),
   })
   const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error de 2FA')
+  if (!r.ok) throw new Error((data as { error?: string }).error || '2FA error')
   return data as { secret?: string; uri?: string }
 }
 
@@ -198,7 +198,7 @@ export async function uploadMedia(
 
   if (!r.ok) {
     const data = await r.json().catch(() => null)
-    throw new Error((data as { error?: string } | null)?.error || `Error en la subida (HTTP ${r.status})`)
+    throw new Error((data as { error?: string } | null)?.error || `Upload failed (HTTP ${r.status})`)
   }
   return r.json()
 }
@@ -279,15 +279,16 @@ export async function getTranslations(): Promise<LangMaps> {
 }
 
 /* Importa el JSON traducido (en/pt/fr) que devolvió Claude → persiste en BD. */
-export async function importTranslations(items: LangMaps): Promise<{ imported: number }> {
+export async function importTranslations(items: LangMaps): Promise<{ imported: number; skipped: number }> {
   const r = await fetch('/api/translations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
   })
   const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error importando traducciones')
-  return { imported: (data as { imported?: number }).imported || 0 }
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error importing translations')
+  const d = data as { imported?: number; skipped?: number }
+  return { imported: d.imported || 0, skipped: d.skipped || 0 }
 }
 
 // ----- Estado compartido CMS (sync entre dispositivos) -----------------------

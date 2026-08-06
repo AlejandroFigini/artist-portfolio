@@ -5,6 +5,7 @@
 import Link from 'next/link'
 import FooterSocial from './FooterSocial'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
 
 const EXPLORE_LINKS = [
@@ -18,28 +19,29 @@ const EXPLORE_LINKS = [
 
 export default function Footer() {
   const { settings } = useSiteSettings()
+  const ui = useUiText()
   return (
     <footer className="main-footer" id="contacto">
       <div className="footer-grid">
         <div className="footer-col branding-col">
           <h2 className="footer-name">Lucia <span>Montaña</span></h2>
-          <p className="footer-role" data-i18n="footer_role">Bachelor&apos;s Degree in Animation &amp; Video Games</p>
+          <p className="footer-role">{ui('footer_role')}</p>
           <FooterSocial />
         </div>
         <div className="footer-col links-col">
-          <h3 className="footer-label" data-i18n="footer_exploration">Exploration</h3>
+          <h3 className="footer-label">{ui('footer_exploration')}</h3>
           <ul className="footer-links-list">
             {EXPLORE_LINKS.map((l) => (
               <li key={l.href}>
                 {l.href.startsWith('/#')
-                  ? <a href={l.href} data-i18n={l.i18n}>{l.label}</a>
-                  : <Link href={l.href} data-i18n={l.i18n}>{l.label}</Link>}
+                  ? <a href={l.href}>{ui(l.i18n, l.label)}</a>
+                  : <Link href={l.href}>{ui(l.i18n, l.label)}</Link>}
               </li>
             ))}
           </ul>
         </div>
         <div className="footer-col contact-col">
-          <h3 className="footer-label" data-i18n="footer_connect">Connect</h3>
+          <h3 className="footer-label">{ui('footer_connect')}</h3>
           <p className="contact-item"><i className="fa-solid fa-location-dot"></i> Montevideo, Uruguay</p>
           <a 
             href="mailto:lumontana23@gmail.com" 
@@ -57,18 +59,17 @@ export default function Footer() {
             href={settings.cvUrl || undefined}
             download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
             target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-            title={settings.cvUrl ? 'Download CV' : 'CV not available yet'}
-            aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
-            data-i18n-title="download_cv" data-i18n-aria="download_cv"
+            title={settings.cvUrl ? ui('download_cv') : ui('cv_unavailable')}
+            aria-label={ui('download_cv')} aria-disabled={!settings.cvUrl || undefined}
             onClick={() => sendGAEvent('event', 'cv_download')}
           >
-            <i className="fa-solid fa-file-arrow-down"></i><span data-i18n="cv">CV</span>
+            <i className="fa-solid fa-file-arrow-down"></i><span>{ui('cv')}</span>
           </a>
         </div>
       </div>
       <div className="footer-bottom-bar">
-        <p className="footer-copyright">&copy; <span id="year">{new Date().getFullYear()}</span> Lucia Montaña | <span data-i18n="footer_rights">All rights reserved</span></p>
-        <div className="legal-dots" data-i18n="footer_no_repost">Please do not repost my work without authorization</div>
+        <p className="footer-copyright">&copy; <span id="year">{new Date().getFullYear()}</span> Lucia Montaña | <span>{ui('footer_rights')}</span></p>
+        <div className="legal-dots">{ui('footer_no_repost')}</div>
       </div>
     </footer>
   )

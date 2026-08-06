@@ -33,13 +33,23 @@ export function isMediaValue(v: string): boolean {
   return /^(https?:\/\/|\/|data:)/.test(v.trim())
 }
 
+/* Campos de ficha que nunca son prosa: enlaces (aunque el admin escriba el
+   dominio sin esquema y isMediaValue no lo detecte) y fechas ISO puras. */
+const LINK_FIELDS = ['::url', '::link']
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
 /** Una entrada de cms_data es texto traducible si su valor es prosa
-    (no media/URL), no es configuración JSON (claves *.settings del carrusel)
-    ni un ajuste global del sitio (claves settings.* — loader, cv, etc.). */
+    (no media/URL), no es configuración JSON (claves *.settings del carrusel),
+    ni un ajuste global del sitio (claves settings.* — loader, cv, etc.),
+    ni un enlace de red social (social.* — URLs y emails, nunca prosa: un
+    `mailto` sin esquema no lo detecta isMediaValue). */
 export function isTranslatableEntry(key: string, value: string): boolean {
   if (!value || !value.trim()) return false
   if (key.endsWith('.settings')) return false
   if (key.startsWith('settings.')) return false
+  if (key.startsWith('social.')) return false
+  if (LINK_FIELDS.some((suffix) => key.endsWith(suffix))) return false
+  if (ISO_DATE.test(value.trim())) return false
   return !isMediaValue(value)
 }
 
@@ -107,6 +117,80 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   tl_2019_desc: { en: 'Early illustration and 3D modeling commissions combining traditional techniques and digital pipeline.', es: 'Primeros encargos de ilustración y modelado 3D combinando técnicas tradicionales y pipeline digital.', pt: 'Primeiras encomendas de ilustração e modelagem 3D combinando técnicas tradicionais e pipeline digital.', fr: "Premières commandes d'illustration et de modélisation 3D combinant techniques traditionnelles et pipeline numérique." },
   tl_2017_role: { en: 'B.A. in Animation', es: 'Lic. en Animación', pt: 'Lic. em Animação', fr: 'Licence en Animation' },
   tl_2017_desc: { en: 'Foundation in animation, visual storytelling, and cinematic language.', es: 'Formación en animación, narrativa visual y lenguaje cinematográfico.', pt: 'Formação em animação, narrativa visual e linguagem cinematográfica.', fr: 'Formation en animation, narration visuelle et langage cinématographique.' },
+
+  ab_hero_lede: { en: 'I design and animate characters and worlds. Working at the intersection of 3D, illustration, and visual storytelling.', es: 'Diseño y animo personajes y mundos. Trabajo en la intersección del 3D, la ilustración y la narrativa visual.', pt: 'Desenho e animo personagens e mundos. Trabalho na intersecção do 3D, da ilustração e da narrativa visual.', fr: "Je conçois et anime des personnages et des mondes. Je travaille à l'intersection de la 3D, de l'illustration et de la narration visuelle." },
+  ab_contact_lede: { en: "Have an animation, character, or 3D project in mind? Drop me a message and let's talk.", es: '¿Tenés un proyecto de animación, personajes o 3D en mente? Escribime y lo hablamos.', pt: 'Tem um projeto de animação, personagens ou 3D em mente? Escreva-me e vamos conversar.', fr: "Un projet d'animation, de personnages ou de 3D en tête ? Écrivez-moi et parlons-en." },
+
+  // Nav & global chrome
+  open_menu: { en: 'Open menu', es: 'Abrir menú', pt: 'Abrir menu', fr: 'Ouvrir le menu' },
+  contact_me: { en: 'Contact me', es: 'Contactame', pt: 'Fale comigo', fr: 'Me contacter' },
+  email: { en: 'Email', es: 'Email', pt: 'Email', fr: 'Email' },
+  language: { en: 'Language', es: 'Idioma', pt: 'Idioma', fr: 'Langue' },
+  change_language: { en: 'Change language', es: 'Cambiar idioma', pt: 'Mudar idioma', fr: 'Changer de langue' },
+  log_in: { en: 'Log in', es: 'Iniciar sesión', pt: 'Entrar', fr: 'Se connecter' },
+  cv_unavailable: { en: 'CV not available yet', es: 'CV no disponible aún', pt: 'CV ainda não disponível', fr: 'CV pas encore disponible' },
+  download_cv_pdf: { en: 'Download Curriculum Vitae (PDF)', es: 'Descargar Curriculum Vitae (PDF)', pt: 'Baixar Curriculum Vitae (PDF)', fr: 'Télécharger le Curriculum Vitae (PDF)' },
+
+  // Settings panel (visitor)
+  settings: { en: 'Settings', es: 'Ajustes', pt: 'Configurações', fr: 'Paramètres' },
+  dark_mode: { en: 'Dark Mode', es: 'Modo oscuro', pt: 'Modo escuro', fr: 'Mode sombre' },
+  pause_animations: { en: 'Pause animations', es: 'Pausar animaciones', pt: 'Pausar animações', fr: 'Mettre en pause les animations' },
+  curriculum_vitae: { en: 'Curriculum Vitae', es: 'Curriculum Vitae', pt: 'Curriculum Vitae', fr: 'Curriculum Vitae' },
+
+  // Showcase chrome
+  view_fullscreen: { en: 'View fullscreen', es: 'Ver en pantalla completa', pt: 'Ver em tela cheia', fr: 'Voir en plein écran' },
+  information: { en: 'Information', es: 'Información', pt: 'Informação', fr: 'Informations' },
+  inspiration: { en: 'Inspiration', es: 'Inspiración', pt: 'Inspiração', fr: 'Inspiration' },
+  no_characters: { en: 'No characters configured yet', es: 'Todavía no hay personajes configurados', pt: 'Ainda não há personagens configurados', fr: "Aucun personnage configuré pour l'instant" },
+  no_projects: { en: 'No featured projects yet', es: 'Todavía no hay proyectos destacados', pt: 'Ainda não há projetos em destaque', fr: "Aucun projet en vedette pour l'instant" },
+  character_role: { en: 'Character Role', es: 'Rol del personaje', pt: 'Papel do personagem', fr: 'Rôle du personnage' },
+
+  // Page loader
+  loading: { en: 'Loading', es: 'Cargando', pt: 'Carregando', fr: 'Chargement' },
+  loader_subtitle: { en: 'Animation · Illustration · 3D Art', es: 'Animación · Ilustración · Arte 3D', pt: 'Animação · Ilustração · Arte 3D', fr: 'Animation · Illustration · Art 3D' },
+  close_preview: { en: 'Close preview', es: 'Cerrar vista previa', pt: 'Fechar pré-visualização', fr: "Fermer l'aperçu" },
+
+  // Contact modal
+  contact_intro: { en: 'For professional inquiries or collaborations, please leave a message below.', es: 'Para consultas profesionales o colaboraciones, dejá tu mensaje abajo.', pt: 'Para consultas profissionais ou colaborações, deixe sua mensagem abaixo.', fr: 'Pour toute demande professionnelle ou collaboration, laissez-moi un message ci-dessous.' },
+  field_name: { en: 'Name', es: 'Nombre', pt: 'Nome', fr: 'Nom' },
+  field_country: { en: 'Country', es: 'País', pt: 'País', fr: 'Pays' },
+  field_email: { en: 'Email', es: 'Email', pt: 'Email', fr: 'Email' },
+  field_subject: { en: 'Subject', es: 'Asunto', pt: 'Assunto', fr: 'Objet' },
+  field_message: { en: 'Message', es: 'Mensaje', pt: 'Mensagem', fr: 'Message' },
+  field_optional: { en: '(optional)', es: '(opcional)', pt: '(opcional)', fr: '(facultatif)' },
+  send_message: { en: 'Send message', es: 'Enviar mensaje', pt: 'Enviar mensagem', fr: 'Envoyer le message' },
+  sending: { en: 'Sending...', es: 'Enviando...', pt: 'Enviando...', fr: 'Envoi...' },
+  message_sent: { en: 'Message sent', es: 'Mensaje enviado', pt: 'Mensagem enviada', fr: 'Message envoyé' },
+  message_sent_sub: { en: "I'll get back to you shortly.", es: 'Te respondo a la brevedad.', pt: 'Retorno em breve.', fr: 'Je vous réponds sous peu.' },
+  thank_you: { en: 'Thank you', es: 'Gracias', pt: 'Obrigada', fr: 'Merci' },
+  okay: { en: 'Okay', es: 'Aceptar', pt: 'Ok', fr: 'D’accord' },
+  securing_with: { en: 'Securing with', es: 'Asegurando con', pt: 'Protegendo com', fr: 'Sécurisation avec' },
+  protected_by: { en: 'Protected by', es: 'Protegido por', pt: 'Protegido por', fr: 'Protégé par' },
+  err_name_required: { en: 'Name is required', es: 'El nombre es obligatorio', pt: 'O nome é obrigatório', fr: 'Le nom est obligatoire' },
+  err_email_required: { en: 'Email is required', es: 'El email es obligatorio', pt: 'O email é obrigatório', fr: "L'email est obligatoire" },
+  err_email_invalid: { en: 'Invalid email address', es: 'Dirección de email inválida', pt: 'Endereço de email inválido', fr: 'Adresse email invalide' },
+  err_country_required: { en: 'Country is required', es: 'El país es obligatorio', pt: 'O país é obrigatório', fr: 'Le pays est obligatoire' },
+  err_message_required: { en: 'Message is required', es: 'El mensaje es obligatorio', pt: 'A mensagem é obrigatória', fr: 'Le message est obligatoire' },
+  err_max_chars: { en: 'Max {n} characters', es: 'Máximo {n} caracteres', pt: 'Máximo de {n} caracteres', fr: 'Maximum {n} caractères' },
+  err_network: { en: 'Network error. Please check your connection.', es: 'Error de red. Revisá tu conexión.', pt: 'Erro de rede. Verifique sua conexão.', fr: 'Erreur réseau. Vérifiez votre connexion.' },
+  err_generic: { en: 'Something went wrong. Please try again.', es: 'Algo salió mal. Intentá de nuevo.', pt: 'Algo deu errado. Tente novamente.', fr: 'Une erreur est survenue. Réessayez.' },
+  err_captcha_load: { en: 'The security check could not load. Disable your ad blocker or reload the page.', es: 'No se pudo cargar la verificación de seguridad. Desactivá tu bloqueador de anuncios o recargá la página.', pt: 'Não foi possível carregar a verificação de segurança. Desative o bloqueador de anúncios ou recarregue a página.', fr: 'La vérification de sécurité n’a pas pu se charger. Désactivez votre bloqueur de publicités ou rechargez la page.' },
+
+  // Multimedia page
+  mm_offline: { en: '// FILE 07 · SYSTEM OFFLINE', es: '// ARCHIVO 07 · SISTEMA FUERA DE LÍNEA', pt: '// ARQUIVO 07 · SISTEMA OFFLINE', fr: '// FICHIER 07 · SYSTÈME HORS LIGNE' },
+  mm_title: { en: 'Multimedia & Mixed Media', es: 'Multimedia y técnicas mixtas', pt: 'Multimídia e técnicas mistas', fr: 'Multimédia et techniques mixtes' },
+  mm_body: { en: "Everything that doesn't fit a single box: interactive web shaders, experimental video loops, and generative design feeds. Currently undergoing synchronization.", es: 'Todo lo que no entra en una sola casilla: shaders web interactivos, loops de video experimentales y feeds de diseño generativo. En proceso de sincronización.', pt: 'Tudo o que não cabe em uma única caixa: shaders web interativos, loops de vídeo experimentais e feeds de design generativo. Em processo de sincronização.', fr: "Tout ce qui n'entre pas dans une seule case : shaders web interactifs, boucles vidéo expérimentales et flux de design génératif. Synchronisation en cours." },
+  mm_status: { en: 'STATUS: CONSTRUCTING VIEWPORT', es: 'ESTADO: CONSTRUYENDO VISTA', pt: 'ESTADO: CONSTRUINDO VISUALIZAÇÃO', fr: 'STATUT : CONSTRUCTION DE LA VUE' },
+}
+
+/** Traducción de una clave estática. Cae al inglés si falta el idioma.
+    `vars` reemplaza marcadores `{nombre}` (ej. err_max_chars → "Max {n}"). */
+export function ui(key: string, lang: Lang, vars?: Record<string, string | number>): string {
+  const entry = UI_TRANSLATIONS[key]
+  if (!entry) return ''
+  const text = entry[lang] || entry[BASE_LANG] || ''
+  if (!vars) return text
+  return text.replace(/\{(\w+)\}/g, (m, name) => (name in vars ? String(vars[name]) : m))
 }
 
 /** Aplica traducciones automáticas en código a los elementos estáticos (no editables) de la página. */

@@ -7,7 +7,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { isVideo } from '@/lib/utils'
-import { BASE_LANG, type Lang } from '@/lib/i18n'
+import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -26,6 +26,7 @@ export const LS = {
   REPO_FILTER: 'cms_repo_filter_v1',
   CONTAINER_NAMES: 'cms_container_names_v1',
   LANG: 'cms_lang_v1',
+  TEXT_DEFAULTS: 'cms_text_defaults_v1',
 } as const
 
 export const MAX_BYTES = 25 * 1024 * 1024
@@ -111,7 +112,7 @@ export const state = {
   translations: {} as Record<string, Record<string, string>>, // lang -> key -> valor traducido
 }
 
-/** Idioma guardado (localStorage). Default = base (es). */
+/** Idioma guardado (localStorage). Default = base (en). */
 export function loadLang(): Lang {
   try {
     const v = localStorage.getItem(LS.LANG) as Lang | null
@@ -122,6 +123,48 @@ export function loadLang(): Lang {
 
 export function persistLang() {
   try { localStorage.setItem(LS.LANG, state.lang) } catch {}
+}
+
+/* Resolutor de texto CMS consciente del idioma. Los componentes React que
+   pintan contenido editable (Projects, Characters) DEBEN leer por acá y no
+   por state.items: el engine aplica el idioma mutando el DOM, y cualquier
+   re-render posterior lo pisaría con el texto base. `fallback` cubre el texto
+   de muestra que el componente usa cuando la clave todavía no tiene valor. */
+export function t(key: string, fallback = ''): string {
+  if (state.lang !== BASE_LANG) {
+    const tr = state.translations[state.lang]?.[key]
+    if (tr) return tr
+  }
+  return state.items[key] || fallback
+}
+
+/* Textos estáticos (nav, ajustes, modales, chrome de las secciones) para
+   componentes React. `applyStaticTranslations` cubre el markup que el motor
+   muta por data-i18n, pero un componente que se re-renderiza —o que arma el
+   texto en JS (títulos condicionales, aria-labels, placeholders)— tiene que
+   resolver la traducción en el propio render. Suscribe al store para repintar
+   al cambiar de idioma. */
+export function useUiText(): (key: string, fallback?: string, vars?: Record<string, string | number>) => string {
+  useCmsStore()
+  return (key: string, fallback = '', vars?: Record<string, string | number>) =>
+    ui(key, state.lang, vars) || fallback
+}
+
+/* Texto por defecto de cada contenedor editable, descubierto al indexar el
+   DOM. Se acumula en localStorage porque el índice solo ve la ruta montada:
+   sin este caché, exportar desde /animations perdería el texto por defecto de
+   las secciones que solo viven en la home. */
+export function loadTextDefaults(): Record<string, string> {
+  return loadJSON<Record<string, string>>(LS.TEXT_DEFAULTS, {})
+}
+
+export function recordTextDefaults(found: Record<string, string>) {
+  const current = loadTextDefaults()
+  let changed = false
+  for (const [k, v] of Object.entries(found)) {
+    if (v && current[k] !== v) { current[k] = v; changed = true }
+  }
+  if (changed) saveJSON(LS.TEXT_DEFAULTS, current)
 }
 
 let version = 0
@@ -310,10 +353,10 @@ export function recordMediaMeta(key: string, src: string | undefined, meta: { na
 export function recordAudit(entry: Partial<AuditEntry> & { user?: string }) {
   state.audit.push({
     ts: Date.now(),
-    user: entry.user || 'Administrador',
+    user: entry.user || 'Administrator',
     section: entry.section || '',
     label: entry.label || '',
-    kind: entry.kind || 'gestión',
+    kind: entry.kind || 'management',
     summary: entry.summary || '',
     file: entry.file || null,
   })
@@ -805,7 +848,7 @@ export function moveUsedToUnused(key: string) {
   clearItemOverrides([key])
   persistUsed(); persistUnused(); persistRetired()
   const meta = getContainerMeta(key)
-  recordAudit({ section: meta.section, label: meta.label, summary: 'Contenido movido a no usados' })
+  recordAudit({ section: meta.section, label: meta.label, summary: 'Content moved to unused' })
 }
 
 export function moveUnusedToTrash(idx: number) {
@@ -847,7 +890,7 @@ export function performRestore(idx: number) {
   const ri = state.retired.indexOf(key)
   if (ri >= 0) state.retired.splice(ri, 1)
   persistUnused(); persistUsed(); persistRetired(); persistOverridesLocal()
-  recordAudit({ section: entry.section, label: entry.label, summary: 'Contenido restaurado a su ubicación' })
+  recordAudit({ section: entry.section, label: entry.label, summary: 'Content restored to its location' })
   // Mover en Cloudinary: sin-usar → en-uso/pagina/seccion
   cloudinaryMove(entry.src, getCloudinaryFolder(entry.section))
 }
@@ -869,7 +912,7 @@ export function performRenameContainer(key: string, newLabel: string) {
   recordAudit({
     section: (state.usedContent[key] && state.usedContent[key].section) || 'Contenedores',
     label: newLabel,
-    summary: `Contenedor renombrado (anterior: ${oldLabel || key})`,
+    summary: `Container renamed (previously: ${oldLabel || key})`,
   })
 }
 
@@ -915,7 +958,7 @@ export function associateUsedToContainer(oldKey: string, targetKey: string) {
   }
   state.items[targetKey] = entry.src
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
-  recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: `Contenido movido de contenedor ${oldKey} a ${targetKey}` })
+  recordAudit({ section: targetMeta.section, label: targetMeta.label, summary: `Content moved from container ${oldKey} to ${targetKey}` })
   // Mover en Cloudinary: en-uso/paginaA/seccionA → en-uso/paginaB/seccionB
   if (entry.section !== targetMeta.section) {
     cloudinaryMove(entry.src, getCloudinaryFolder(targetMeta.section))

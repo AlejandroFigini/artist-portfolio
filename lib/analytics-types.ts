@@ -64,4 +64,4 @@ export type FailedLogin = {
   created_at: string
 }
 
-export type CountryMetric = 'activos' | 'nuevos' | 'recurrentes'
+export type CountryMetric = 'active' | 'new' | 'returning'

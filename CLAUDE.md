@@ -133,63 +133,76 @@ Backend **dentro de Next** (`app/api/*` route handlers). 1 solo servicio, sin Ex
 
 **Login admin:** user+pass → si no manda código, pide 2FA → verifica TOTP (`otplib`, `epochTolerance` ±30s). Secreto en `ADMIN_2FA_SECRET` (base32, mismo que la app autenticadora).
 
-### Sistema de Traducción Automática (Admin-Driven)
+### Idioma base del sitio: INGLÉS
 
-**Objetivo**: Traducir todo el contenido editable a múltiples idiomas sin presupuesto API. Admin controla el flujo completamente en la UI.
+> Regla dura, aplica a TODO código nuevo. El idioma de la página es el inglés.
 
-**Idiomas soportados**: ES (base), EN, PT, FR
+- **Todo texto visible por el usuario se escribe en inglés.** Labels, botones, títulos, `title`, `aria-label`, `placeholder`, `alt`, mensajes de toast, errores de validación, opciones de `<select>`, textos de estado vacío, copys de email transaccional. Sin excepciones.
+- **Los comentarios de código siguen en español** — son internos, no viajan al usuario. No traducirlos.
+- **No se traducen**: nombres propios (Lucía Montaña), marcas de software, identificadores internos (slugs de ruta `ajustes-*` / `contenidos-*`, clases CSS `cms-tag--basurero`, carpetas de Cloudinary `portfolio/en-uso|sin-usar|basurero`). Renombrarlos rompe datos de producción.
+- `lib/cms/pages.ts` conserva a propósito etiquetas de sección en español dentro de su lista de `match`: son valores heredados que siguen vivos en la BD. Se agregan variantes en inglés, no se borran las viejas.
+- Formateo de números y fechas: `toLocaleString('en')`, nunca `'es'`.
 
-**Flujo**:
-1. **Admin edita contenido** en el CMS (en español) → Guarda en BD
-2. **Admin presiona "Export for Translation"** en Admin Settings → Descarga `translations-export.json`
-   ```json
-   {
-     "es": {
-       "about_title": "Sobre mí",
-       "about_lede": "Artista basada...",
-       "hero_subtitle": "Animation, illustration & 3D art"
-     }
-   }
-   ```
-3. **Admin copia el JSON → lo pega en Claude**
-   ```
-   Prompt: "Traduce el siguiente contenido a inglés, portugués y francés.
-   Mantén el contexto profesional y artístico.
-   Retorna el mismo JSON con las traducciones."
-   ```
-4. **Claude retorna `translations-translated.json`** con ES, EN, PT, FR completados
-5. **Admin presiona "Import Translations"** → Adjunta el archivo descargado
-6. **Sistema valida estructura** → Guarda TODO en BD
-   - Nueva tabla `translations`: `{ key, lang, value }`
-   - Cada contenedor tiene sus 4 variantes de idioma
+### Sistema de Traducción (Admin-Driven)
 
-**Frontend lee según idioma seleccionado**:
-- Usuario selecciona idioma en Nav o Settings
-- Componentes leen el valor correcto de la BD según `localStorage['preferredLang']`
+**Objetivo**: llevar el sitio a varios idiomas sin presupuesto de API. El texto se divide en dos mundos con mecanismos distintos.
 
-**¿Nuevos contenedores se incluyen automáticamente?**
+**Idiomas**: `en` (base) · `es` · `pt` · `fr` — definidos en `lib/i18n.ts` (`BASE_LANG`, `TARGET_LANGS`, `LANG_META`).
 
-✅ **SÍ**. El export lee TODO el texto de `cms_data` filtrando media/URLs vía `isTranslatableEntry` (`lib/i18n.ts`): incluye prosa, excluye valores que son URL/ruta/data-url y las claves `*.settings`. No hay lista fija de claves.
+#### 1) Texto estático (layout, chrome, ajustes) → traducido en código
 
-Cuando el admin agrega un nuevo contenedor de texto (ej. `new.section.title#0`), apenas tenga contenido en español la próxima exportación lo incluye solo. El admin solo repite el flujo (export → Claude → import).
+Todo lo que el admin NO puede editar (nav, footer, panel de ajustes, modal de contacto, loader, textos de las páginas fijas, chrome de las secciones) vive en `UI_TRANSLATIONS` (`lib/i18n.ts`) con **los cuatro idiomas ya escritos**. No pasa por export/import: no cambia nunca.
+
+Dos formas de consumirlo, y hay que elegir bien:
+
+- **Componentes React → `useUiText()`** (`lib/cms/store.ts`). Resuelve en el render y se suscribe al store, así que repinta al cambiar de idioma.
+  ```tsx
+  const ui = useUiText()
+  <button aria-label={ui('contact_me')}>{ui('email')}</button>
+  ```
+  Obligatorio cuando el texto se arma en JS (condicionales, `title`, `aria-label`, `placeholder`) o cuando el componente se re-renderiza. Un `data-i18n` en un nodo que React vuelve a pintar se pierde.
+- **Markup que el motor muta → `data-i18n` / `data-i18n-title` / `data-i18n-aria`**. Reservado para Server Components y markup estático (ej. `app/(site)/multimedia/page.tsx`, `components/about/AboutPage.tsx`). Lo aplica `applyStaticTranslations(lang)`.
+
+Interpolación: `ui('err_max_chars', '', { n: 100 })` reemplaza `{n}` en la plantilla.
+
+**Al agregar cualquier string visible nuevo**: crear la clave en `UI_TRANSLATIONS` con en/es/pt/fr completos. No dejar texto suelto en el JSX.
+
+#### 2) Texto editable (contenedores del CMS) → export → Claude → import
+
+1. Admin edita el contenido en inglés → se guarda en `cms_data`.
+2. **Export** (Gestión → Traducciones, o la tuerca de admin del sitio) → descarga `translations-prompt.txt` con instrucciones + todo el texto base.
+3. Se pega entero en Claude → devuelve `{ "items": { "es": {...}, "pt": {...}, "fr": {...} } }`.
+4. **Import** del `.json` → `POST /api/translations` → upsert en `cms_translations`.
+5. Se reaplica el idioma en vivo, sin recargar.
+
+**Completitud del export** (`components/cms/engine.ts`). Une cuatro fuentes para que no dependa de en qué ruta esté el admin:
+- `cms_data` del servidor,
+- `state.items` (overrides locales),
+- escaneo del DOM montado (`scanDomTextKeys`),
+- **caché de textos por defecto** (`cms_text_defaults_v1`): `captureTextDefaults()` corre en cada `rescan()` y en cada cambio de ruta, y va memorizando el texto original de cada contenedor. Sin él, exportar desde `/animations` perdería los defaults de las secciones que solo viven en la home.
+
+Reglas que hay que respetar al tocar esto:
+- `captureTextDefaults()` y el escaneo del DOM **solo corren con el idioma base**. Con `es/pt/fr` montado el DOM tiene la traducción aplicada y guardarla contaminaría el export.
+- Un contenedor **con campos** (`fields` en el REGISTRY: `about.spec`, `char`, `proj`, …) no se captura ni se aplica a nivel contenedor — su contenido son los `key::campo`. Escribirle el `textContent` entero le borra el markup interno.
+- `cleanTextOf()` quita `.cms-tools` y `.cms-empty-overlay` antes de leer: si no, el nombre del contenedor se exportaría como si fuera contenido.
+- `isTranslatableEntry()` (`lib/i18n.ts`) es el filtro único. Excluye `*.settings`, `settings.*`, `social.*`, campos `::url` / `::link`, fechas ISO y valores URL/ruta/data-url.
+
+#### 3) Aplicación del idioma
+
+`engine.setLanguage(lang)` pinta el DOM y persiste en `localStorage[cms_lang_v1]`; los selectores de banderas de Nav y del panel de Ajustes comparten `state.lang`.
+
+- **Volver al idioma base** usa el caché de defaults como fallback. Un contenedor nunca editado no tiene entrada en `state.items`, así que sin ese fallback se quedaría con la última traducción aplicada.
+- **Un componente React que pinta contenido del CMS DEBE leer con `t(key, fallback)`** (`lib/cms/store.ts`), no con `state.items[key]`. El motor aplica el idioma mutando el DOM; el siguiente render lo pisaría con el texto base. Es exactamente el bug que tenían `ProjectsShowcase` y `CharactersShowcase`.
+- `rescan()` y el efecto de cambio de ruta de `CmsRoot` reaplican el idioma: las secciones con `next/dynamic` montan tarde y si no se quedarían en inglés.
+
+**Alcance**: funciona en todo el sitio (`CmsRoot` está montado en `app/(site)/layout.tsx`), incluidas las páginas de galería, `/about` y `/multimedia`.
+
+**Panel de admin (`/admin`)**: es herramienta interna, se mantiene solo en inglés — no se le agrega i18n.
 
 **Arquitectura**:
-- **Tabla `cms_translations`** (`lib/db.ts → createBaseTables`): `(key, lang, value)`, PK `(key, lang)`. Solo idiomas destino (en/pt/fr); el base (es) vive en `cms_data`.
-- **`lib/i18n.ts`**: `BASE_LANG='es'`, `TARGET_LANGS=['en','pt','fr']`, `LANG_META`, `isTranslatableEntry`.
-- **Endpoint único `app/api/translations/route.ts`**:
-  - `GET` → `{ base, langs, items: { es, en, pt, fr } }`. `es` = texto base vivo (filtrado); en/pt/fr = `cms_translations`. Lo usa el cliente (aplicar idioma) y el botón Export (descargar para Claude).
-  - `POST` → recibe `{ items: { en, pt, fr } }`, upsertea en `cms_translations`.
-- **Aplicación en el front**: `engine.setLanguage(lang)` reaplica el texto del DOM (base o traducción, con fallback al base si falta la clave); persiste en `localStorage[cms_lang_v1]`. `CmsRoot` trae las traducciones al iniciar y aplica el idioma guardado. Los selectores de Nav y Settings comparten `state.lang` vía el store.
-- **UI admin**: botones "Export for Translation" / "Import Translations" en el panel de Admin Settings (`SettingsPanel.tsx`).
-
-**Alcance actual**: la aplicación de idioma corre donde está montado `CmsRoot` (la portada `/`). Extender a las páginas de galería requiere inicializar el engine en esas rutas — pendiente para una iteración futura.
-
-**Ventajas**:
-- ✅ Cero presupuesto (usa Claude API desde Claude Code)
-- ✅ Totalmente dinámico (sin Git commits)
-- ✅ Admin auto-suficiente (sin intervención de dev)
-- ✅ Escalable (nuevos contenedores automáticamente incluidos)
-- ✅ Revisable (Claude produce traducciones de calidad)
+- Tabla `cms_translations` (`lib/db.ts → createBaseTables`): `(key, lang, value)`, PK `(key, lang)`. Solo idiomas destino; el base (`en`) vive en `cms_data`.
+- `app/api/translations/route.ts`: `GET` → `{ base, langs, items: { en, es, pt, fr } }`. `POST` → valida (idiomas conocidos, forma de la clave, largos máximos) y upsertea; responde `{ imported, skipped }`.
+- `lib/translations-io.ts`: implementación **única** de export/import, compartida por `components/admin/SiteSettings.tsx` y `components/ui/SettingsPanel.tsx`. No duplicar el prompt ni el parseo en un componente.
 
 ### Enlaces a redes sociales (global)
 

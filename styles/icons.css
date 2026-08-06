@@ -62,6 +62,7 @@
 .fa-arrow-up-right-from-square::before { content: "\f08e"; }
 .fa-ban::before { content: "\f05e"; }
 .fa-bars::before { content: "\f0c9"; }
+.fa-bell::before { content: "\f0f3"; }
 .fa-box-archive::before { content: "\f187"; }
 .fa-box-open::before { content: "\f49e"; }
 .fa-calendar::before { content: "\f133"; }

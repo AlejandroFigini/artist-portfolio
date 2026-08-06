@@ -167,7 +167,7 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
           label: 'Save',
           primary: true,
           disabled: !fieldsComplete,
-          title: !fieldsComplete ? `Por favor completa los campos requeridos (${requiredLabels}) antes de guardar` : undefined,
+          title: !fieldsComplete ? `Please complete the required fields (${requiredLabels}) before saving` : undefined,
           onClick: () => {
             commitRename()
             let changed = false

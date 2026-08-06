@@ -155,7 +155,7 @@ export default function AboutPage() {
           <span className="ab-line-mask"><span className="ab-line">Lucía</span></span>
           <span className="ab-line-mask"><span className="ab-line ab-line--accent">Montaña</span></span>
         </h1>
-        <p className="ab-hero-lede">
+        <p className="ab-hero-lede" data-i18n="ab_hero_lede">
           I design and animate characters and worlds. Working at the intersection of
           3D, illustration, and visual storytelling.
         </p>
@@ -246,7 +246,7 @@ export default function AboutPage() {
       <section className="ab-section ab-contact ab-wrap" aria-label="Contact">
         <span className="ab-eyebrow" data-i18n="ab_contact_title">{"// Contact"}</span>
         <h2 className="ab-contact-title" data-i18n="ab_contact_h2">Let&apos;s work <em>together</em>.</h2>
-        <p className="ab-contact-lede">
+        <p className="ab-contact-lede" data-i18n="ab_contact_lede">
           Have an animation, character, or 3D project in mind? Drop me a message and let&apos;s talk.
         </p>
         <div className="ab-contact-actions">

@@ -10,7 +10,7 @@ import {
 import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay'
 import { useInViewRef } from '@/hooks/useInView'
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
-import { useCmsStore, state } from '@/lib/cms/store'
+import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 
 // Shared hook for carousel reinitialization
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
@@ -26,9 +26,11 @@ function ProjectCard({ index }: { index: number }) {
   useCmsStore()
   const key = `proj#${index}`
   const imgSrc = state.items[key] || ''
-  const title = state.items[`${key}::title`] || ''
-  const startDate = state.items[`${key}::start_date`] || ''
-  const summary = state.items[`${key}::summary`] || ''
+  // Texto vía t(): esta tarjeta se re-renderiza desde el store, así que leer
+  // state.items directo pisaría la traducción que aplicó setLanguage.
+  const title = t(`${key}::title`)
+  const startDate = t(`${key}::start_date`)
+  const summary = t(`${key}::summary`)
   const hasImage = !!imgSrc && !imgSrc.includes('placeholder')
 
   const [isHovered, setIsHovered] = useState(false)
@@ -164,6 +166,7 @@ import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterReveal
 
 export default function ProjectsShowcase() {
   useCmsStore();
+  const ui = useUiText()
   const isAdmin = state.isAdmin;
   const sectionRef = useRef<HTMLElement>(null)
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
@@ -315,8 +318,8 @@ export default function ProjectsShowcase() {
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('cms:projectsManager'))}
-                title="Gestionar proyectos"
-                aria-label="Gestionar proyectos"
+                title="Manage projects"
+                aria-label="Manage projects"
                 className="proj-showcase__manage"
               >
                 <i className="fa-solid fa-gear" /> Gestionar
@@ -332,7 +335,7 @@ export default function ProjectsShowcase() {
               <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
                 <i className="fa-solid fa-layer-group text-xl opacity-80" />
               </div>
-              <h3 className="text-lg font-bold text-gray-800">No hay proyectos destacados</h3>
+              <h3 className="text-lg font-bold text-gray-800">{ui('no_projects')}</h3>
             </div>
           ) : (
             <Carousel

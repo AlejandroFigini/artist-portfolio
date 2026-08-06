@@ -39,14 +39,14 @@ export default function MultimediaPage() {
 
       <div className="relative p-12 max-w-xl mx-auto border border-dashed border-[var(--accent)] rounded-2xl bg-[rgba(124,58,237,0.03)] backdrop-blur-md text-center">
         <Corners />
-        <div className="text-[0.7rem] font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4 opacity-80">{"// FILE 07 · SYSTEM OFFLINE"}</div>
-        <h1 className="text-3xl font-bold tracking-wide mb-3 text-white" style={{ fontFamily: 'var(--font-syne), sans-serif' }}>Multimedia & Mixed Media</h1>
-        <p className="text-sm font-mono text-gray-400 leading-relaxed mb-6">
+        <div className="text-[0.7rem] font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4 opacity-80" data-i18n="mm_offline">{"// FILE 07 · SYSTEM OFFLINE"}</div>
+        <h1 className="text-3xl font-bold tracking-wide mb-3 text-white" style={{ fontFamily: 'var(--font-syne), sans-serif' }} data-i18n="mm_title">Multimedia & Mixed Media</h1>
+        <p className="text-sm font-mono text-gray-400 leading-relaxed mb-6" data-i18n="mm_body">
           Everything that doesn&apos;t fit a single box: interactive web shaders, experimental video loops, and generative design feeds. Currently undergoing synchronization.
         </p>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-cyan-500/30 rounded-md font-mono text-[0.75rem] text-cyan-400 bg-cyan-950/20">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          <span>STATUS: CONSTRUCTING VIEWPORT</span>
+          <span data-i18n="mm_status">STATUS: CONSTRUCTING VIEWPORT</span>
         </div>
       </div>
     </main>

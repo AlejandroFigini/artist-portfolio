@@ -6,8 +6,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
+import { useUiText } from '@/lib/cms/store'
 import { gsap } from '@/hooks/useGSAP'
 import '@/styles/contact-modal.css'
+
+type ContactField = 'name' | 'email' | 'country' | 'subject' | 'message'
+const REQUIRED_FIELDS: ContactField[] = ['name', 'email', 'country', 'message']
+const FIELD_MAX: Record<ContactField, number> = {
+  name: 100, email: 255, country: 100, subject: 255, message: 5000,
+}
 
 /* El widget de Turnstile se inyecta por script, así que no hay tipos: se
    declara acá la parte de la API que usamos, en vez de castear window a `any`
@@ -64,6 +71,7 @@ type Status = 'idle' | 'sending' | 'success' | 'error'
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
 
 export default function ContactModal({ onClose }: { onClose: () => void }) {
+  const ui = useUiText()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState('')
@@ -73,6 +81,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
   const [errorMsg, setErrorMsg] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileStatus, setTurnstileStatus] = useState<'loading' | 'success'>('loading')
+  const [turnstileStalled, setTurnstileStalled] = useState(false)
   const turnstileRef = useRef<HTMLDivElement>(null)
   const turnstileWidgetId = useRef<string | null>(null)
   const [charCount, setCharCount] = useState(0)
@@ -101,6 +110,28 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
+  /* El token de Turnstile es de un solo uso: siteverify lo consume. Después de
+     CUALQUIER respuesta del servidor (429, error de validación, fallo de red)
+     el token que quedó en el state ya está quemado, así que reintentar con él
+     devolvía siempre "Captcha verification failed". Pedir uno nuevo. */
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('')
+    setTurnstileStatus('loading')
+    setTurnstileStalled(false)
+    if (turnstileWidgetId.current) {
+      try { window.turnstile?.reset(turnstileWidgetId.current) } catch {}
+    }
+  }, [])
+
+  /* Sin token no se puede enviar (el servidor lo exige), así que un widget que
+     nunca resuelve —adblock, red que filtra Cloudflare— dejaría un spinner
+     eterno sin explicación. Pasado el margen se dice qué hacer. */
+  useEffect(() => {
+    if (turnstileStatus === 'success') return
+    const t = setTimeout(() => setTurnstileStalled(true), 8000)
+    return () => clearTimeout(t)
+  }, [turnstileStatus])
+
   // Load Turnstile script + render widget
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY) return
@@ -113,13 +144,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
             setTurnstileToken(token)
             setTurnstileStatus('success')
           },
-          'expired-callback': () => {
-            setTurnstileToken('')
-            setTurnstileStatus('loading')
-            if (turnstileWidgetId.current) {
-              window.turnstile?.reset(turnstileWidgetId.current)
-            }
-          },
+          'expired-callback': () => resetTurnstile(),
           theme: 'auto',
         })
       }
@@ -142,32 +167,31 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         turnstileWidgetId.current = null
       }
     }
-  }, [])
+  }, [resetTurnstile])
 
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; country?: string; subject?: string; message?: string }>({})
+  /* El error se guarda como descriptor (clave i18n + variables), no como texto:
+     así cambiar de idioma con el formulario ya validado repinta el mensaje en
+     el idioma nuevo. `text` cubre los errores que devuelve el servidor. */
+  type FieldError = { key?: string; vars?: Record<string, number>; text?: string }
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ContactField, FieldError>>>({})
 
-  const validateField = useCallback((field: 'name' | 'email' | 'country' | 'subject' | 'message', val: string) => {
-    let err: string | undefined = undefined
+  const validateField = useCallback((field: ContactField, val: string) => {
     const trimmed = val.trim()
-    if (field === 'name') {
-      if (!trimmed) err = 'Name is required'
-      else if (trimmed.length > 100) err = 'Max 100 characters'
-    } else if (field === 'email') {
-      if (!trimmed) err = 'Email is required'
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) err = 'Invalid email address'
-      else if (trimmed.length > 255) err = 'Max 255 characters'
-    } else if (field === 'country') {
-      if (!trimmed) err = 'Country is required'
-      else if (trimmed.length > 100) err = 'Max 100 characters'
-    } else if (field === 'subject') {
-      if (trimmed.length > 255) err = 'Max 255 characters'
-    } else if (field === 'message') {
-      if (!trimmed) err = 'Message is required'
-      else if (trimmed.length > 5000) err = 'Max 5000 characters'
+    const max = FIELD_MAX[field]
+    let err: FieldError | undefined
+    if (!trimmed) {
+      if (REQUIRED_FIELDS.includes(field)) err = { key: `err_${field}_required` }
+    } else if (trimmed.length > max) {
+      err = { key: 'err_max_chars', vars: { n: max } }
+    } else if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      err = { key: 'err_email_invalid' }
     }
     setFieldErrors((prev) => ({ ...prev, [field]: err }))
     return !err
   }, [])
+
+  const errorText = (e?: FieldError) =>
+    !e ? '' : e.key ? ui(e.key, e.text || '', e.vars) : (e.text || '')
 
   const validateAll = useCallback(() => {
     const nOk = validateField('name', name)
@@ -178,7 +202,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
     return nOk && eOk && cOk && sOk && mOk
   }, [name, email, country, subject, message, validateField])
 
-  const canSend = status !== 'sending'
+  /* Con el captcha activo hay que esperar el token: tras un reset el widget
+     tarda en resolver el challenge nuevo, y enviar en ese hueco solo produce
+     un "Please complete the captcha." El disclaimer de abajo ya muestra el
+     spinner que explica la espera. */
+  const canSend = status !== 'sending' && (!TURNSTILE_SITE_KEY || turnstileStatus === 'success')
 
   const handleSubmit = useCallback(async () => {
     if (!validateAll()) return
@@ -203,19 +231,22 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
 
       if (res.ok && data.success) {
         setStatus('success')
+        return
+      }
+
+      setStatus('error')
+      resetTurnstile()
+      if (data.field && (REQUIRED_FIELDS as string[]).concat('subject').includes(data.field)) {
+        setFieldErrors((prev) => ({ ...prev, [data.field]: { text: data.error } }))
       } else {
-        setStatus('error')
-        if (data.field && ['name', 'email', 'country', 'subject', 'message'].includes(data.field)) {
-          setFieldErrors((prev) => ({ ...prev, [data.field]: data.error }))
-        } else {
-          setErrorMsg(data.error || 'Something went wrong. Please try again.')
-        }
+        setErrorMsg(data.error || ui('err_generic'))
       }
     } catch {
       setStatus('error')
-      setErrorMsg('Network error. Please check your connection.')
+      setErrorMsg(ui('err_network'))
+      resetTurnstile()
     }
-  }, [name, email, country, subject, message, turnstileToken, validateAll])
+  }, [name, email, country, subject, message, turnstileToken, validateAll, ui, resetTurnstile])
 
   const handleMessageChange = (val: string) => {
     if (val.length <= 5000) {
@@ -237,16 +268,16 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
           <div className="contact-success-icon-minimal">
             <i className="fa-regular fa-paper-plane"></i>
           </div>
-          <p className="contact-success-title">Message sent</p>
+          <p className="contact-success-title">{ui('message_sent')}</p>
           <p className="contact-success-subtitle">
-            Thank you{name ? `, ${name}` : ''}. I&rsquo;ll get back to you shortly.
+            {ui('thank_you')}{name ? `, ${name}` : ''}. {ui('message_sent_sub')}
           </p>
           <button
             type="button"
             className="contact-success-btn-minimal"
             onClick={onClose}
           >
-            Okay
+            {ui('okay')}
           </button>
         </div>
       </CmsModal>
@@ -255,7 +286,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
 
   return (
     <CmsModal
-      title={<><i className="fa-solid fa-paper-plane" style={{ color: 'var(--accent)', marginRight: 8 }}></i> Contact me</>}
+      title={<><i className="fa-solid fa-paper-plane" style={{ color: 'var(--accent)', marginRight: 8 }}></i> {ui('contact_me')}</>}
       onClose={onClose}
       className="contact-modal"
       overlayClassName="contact-modal-overlay-custom"
@@ -266,18 +297,18 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         noValidate
       >
         <p className="contact-form-intro">
-          For professional inquiries or collaborations, please leave a message below.
+          {ui('contact_intro')}
         </p>
 
         {/* Name */}
         <div className="contact-field">
           <div className="contact-label-row">
             <label htmlFor="contact-name" className="contact-label">
-              <i className="fa-solid fa-user"></i> Name <span className="contact-required">*</span>
+              <i className="fa-solid fa-user"></i> {ui('field_name')} <span className="contact-required">*</span>
             </label>
             {fieldErrors.name && (
               <span className="contact-field-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.name}
+                <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors.name)}
               </span>
             )}
           </div>
@@ -300,11 +331,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         <div className="contact-field">
           <div className="contact-label-row">
             <label htmlFor="contact-country" className="contact-label">
-              <i className="fa-solid fa-globe"></i> Country <span className="contact-required">*</span>
+              <i className="fa-solid fa-globe"></i> {ui('field_country')} <span className="contact-required">*</span>
             </label>
             {fieldErrors.country && (
               <span className="contact-field-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.country}
+                <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors.country)}
               </span>
             )}
           </div>
@@ -336,11 +367,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         <div className="contact-field">
           <div className="contact-label-row">
             <label htmlFor="contact-email" className="contact-label">
-              <i className="fa-solid fa-envelope"></i> Email <span className="contact-required">*</span>
+              <i className="fa-solid fa-envelope"></i> {ui('field_email')} <span className="contact-required">*</span>
             </label>
             {fieldErrors.email && (
               <span className="contact-field-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.email}
+                <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors.email)}
               </span>
             )}
           </div>
@@ -362,11 +393,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         <div className="contact-field">
           <div className="contact-label-row">
             <label htmlFor="contact-subject" className="contact-label">
-              <i className="fa-solid fa-tag"></i> Subject <span className="contact-optional">(optional)</span>
+              <i className="fa-solid fa-tag"></i> {ui('field_subject')} <span className="contact-optional">{ui('field_optional')}</span>
             </label>
             {fieldErrors.subject && (
               <span className="contact-field-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.subject}
+                <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors.subject)}
               </span>
             )}
           </div>
@@ -387,11 +418,11 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
         <div className="contact-field">
           <div className="contact-label-row">
             <label htmlFor="contact-message" className="contact-label">
-              <i className="fa-solid fa-message"></i> Message <span className="contact-required">*</span>
+              <i className="fa-solid fa-message"></i> {ui('field_message')} <span className="contact-required">*</span>
             </label>
             {fieldErrors.message && (
               <span className="contact-field-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation"></i> {fieldErrors.message}
+                <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors.message)}
               </span>
             )}
           </div>
@@ -418,7 +449,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
                 <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center' }}>
                   <i className="fa-solid fa-circle-notch fa-spin"></i> 
                 </span>
-                Securing with 
+                {ui('securing_with')}&nbsp;
                 <span style={{ width: '22px', display: 'inline-flex', justifyContent: 'center', margin: '0 2px' }}>
                   <i className="fa-brands fa-cloudflare" style={{ color: '#f38020', fontSize: '1.1rem' }}></i>
                 </span>
@@ -429,7 +460,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
                 <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center' }}>
                   <i className="fa-solid fa-lock" style={{ color: '#10b981' }}></i> 
                 </span>
-                Protected by 
+                {ui('protected_by')}&nbsp;
                 <span style={{ width: '22px', display: 'inline-flex', justifyContent: 'center', margin: '0 2px' }}>
                   <i className="fa-brands fa-cloudflare" style={{ color: '#f38020', fontSize: '1.1rem' }}></i>
                 </span>
@@ -446,6 +477,12 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
+        {TURNSTILE_SITE_KEY && turnstileStalled && turnstileStatus !== 'success' && (
+          <div className="contact-error">
+            <i className="fa-solid fa-circle-exclamation"></i> {ui('err_captcha_load')}
+          </div>
+        )}
+
         {/* Submit */}
         <button
           type="submit"
@@ -453,9 +490,9 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
           disabled={!canSend}
         >
           {status === 'sending' ? (
-            <><i className="fa-solid fa-spinner fa-spin"></i> Sending...</>
+            <><i className="fa-solid fa-spinner fa-spin"></i> {ui('sending')}</>
           ) : (
-            <><i className="fa-solid fa-paper-plane"></i> Send message</>
+            <><i className="fa-solid fa-paper-plane"></i> {ui('send_message')}</>
           )}
         </button>
       </form>

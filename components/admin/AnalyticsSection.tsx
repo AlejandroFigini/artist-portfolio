@@ -15,7 +15,7 @@ import type { AnalyticsData, CountryMetric, FailedLogin } from '@/lib/analytics-
 export default function AnalyticsSection() {
   const [range, setRange] = useState('thisWeek')
   const [pendingRange, setPendingRange] = useState('thisWeek')
-  const [countryMetric, setCountryMetric] = useState<CountryMetric>('activos')
+  const [countryMetric, setCountryMetric] = useState<CountryMetric>('active')
   const toast = useToast()
 
   const [sendingReport, setSendingReport] = useState(false)
@@ -51,12 +51,12 @@ export default function AnalyticsSection() {
       const res = await fetch('/api/cron/report')
       const json = await res.json()
       if (res.ok) {
-        toast('Reporte enviado con éxito por email', 'success')
+        toast('Report sent successfully by email', 'success')
       } else {
-        toast(json.error || 'Fallo al enviar el reporte', 'error')
+        toast(json.error || 'Failed to send the report', 'error')
       }
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Fallo de red al enviar el reporte', 'error')
+      toast(err instanceof Error ? err.message : 'Network error while sending the report', 'error')
     } finally {
       setSendingReport(false)
     }
@@ -81,11 +81,11 @@ export default function AnalyticsSection() {
           hasDataRef.current = true
           setErrorMsg(null)
         } else {
-          setErrorMsg(json.error || 'Error desconocido conectando a Google Analytics')
+          setErrorMsg(json.error || 'Unknown error connecting to Google Analytics')
         }
       } catch (err) {
         console.error('Failed to fetch analytics data:', err)
-        setErrorMsg(err instanceof Error ? err.message : 'Fallo en la red')
+        setErrorMsg(err instanceof Error ? err.message : 'Network error')
       } finally {
         setLoading(false)
         setIsUpdating(false)
@@ -105,12 +105,12 @@ export default function AnalyticsSection() {
       <div className="admin-card ga-analytics-card" id="seccion-analitica">
         <div className="ga-header">
           <div>
-            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Tráfico & Analítica</h2>
+            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Traffic &amp; Analytics</h2>
           </div>
         </div>
         <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', margin: '1rem' }}>
           <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
-          <p><strong>Error conectando a GA4:</strong></p>
+          <p><strong>Error connecting to GA4:</strong></p>
           <p style={{ marginTop: '0.5rem', opacity: 0.9 }}>{errorMsg}</p>
         </div>
       </div>
@@ -122,11 +122,11 @@ export default function AnalyticsSection() {
       <div className="admin-card ga-analytics-card" id="seccion-analitica">
         <div className="ga-header">
           <div>
-            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Tráfico & Analítica</h2>
+            <h2><i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>Traffic &amp; Analytics</h2>
           </div>
         </div>
         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-primary)', opacity: 0.6 }}>
-          Cargando datos de Google Analytics...
+          Loading Google Analytics data...
         </div>
       </div>
     )
@@ -141,10 +141,10 @@ export default function AnalyticsSection() {
         <div>
           <h2>
             <i className="fa-solid fa-chart-line" style={{ color: 'var(--accent)', marginRight: '0.6rem' }}></i>
-            Tráfico & Analítica
+            Traffic &amp; Analytics
           </h2>
           <p className="admin-info-text">
-            Métricas de audiencia y rendimiento conectadas con Google Analytics 4 (<code>G-SPJEZ45JR0</code>).
+            Audience and performance metrics connected to Google Analytics 4 (<code>G-SPJEZ45JR0</code>).
           </p>
         </div>
         <button 
@@ -154,9 +154,9 @@ export default function AnalyticsSection() {
           disabled={sendingReport}
         >
           {sendingReport ? (
-            <><i className="fa-solid fa-spinner fa-spin"></i> Enviando...</>
+            <><i className="fa-solid fa-spinner fa-spin"></i> Sending...</>
           ) : (
-            <><i className="fa-solid fa-paper-plane"></i> Enviar Reporte Semanal</>
+            <><i className="fa-solid fa-paper-plane"></i> Send Weekly Report</>
           )}
         </button>
       </div>
@@ -172,19 +172,19 @@ export default function AnalyticsSection() {
           className="ga-custom-select"
           style={{ flexGrow: 1, maxWidth: '300px' }}
         >
-          <option value="today">Hoy</option>
-          <option value="yesterday">Ayer</option>
-          <option value="thisWeek">Esta semana (De dom. a hoy)</option>
-          <option value="7daysAgo">los últimos 7 días</option>
-          <option value="lastWeek">La semana pasada (De dom. a sáb.)</option>
-          <option value="28daysAgo">los últimos 28 días</option>
-          <option value="30daysAgo">los últimos 30 días</option>
-          <option value="thisMonth">Este mes</option>
-          <option value="lastMonth">El mes pasado</option>
-          <option value="90daysAgo">los últimos 90 días</option>
-          <option value="thisQuarter">Trimestre hasta la fecha</option>
-          <option value="thisYear">Este año (de enero a hoy)</option>
-          <option value="lastYear">Último año natural</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="thisWeek">This week (Sun to today)</option>
+          <option value="7daysAgo">Last 7 days</option>
+          <option value="lastWeek">Last week (Sun to Sat)</option>
+          <option value="28daysAgo">Last 28 days</option>
+          <option value="30daysAgo">Last 30 days</option>
+          <option value="thisMonth">This month</option>
+          <option value="lastMonth">Last month</option>
+          <option value="90daysAgo">Last 90 days</option>
+          <option value="thisQuarter">Quarter to date</option>
+          <option value="thisYear">This year (Jan to today)</option>
+          <option value="lastYear">Last calendar year</option>
         </select>
         <button
           type="button"
@@ -193,9 +193,9 @@ export default function AnalyticsSection() {
           disabled={isUpdating || pendingRange === range}
         >
           {isUpdating && pendingRange === range ? (
-            <><i className="fa-solid fa-spinner fa-spin"></i> Cargando</>
+            <><i className="fa-solid fa-spinner fa-spin"></i> Loading</>
           ) : (
-            <><i className="fa-solid fa-check"></i> Aplicar</>
+            <><i className="fa-solid fa-check"></i> Apply</>
           )}
         </button>
       </div>
@@ -209,13 +209,13 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.uniqueUsers}</span>
             <span className="ga-stat-title">
-              Usuarios Activos <span className="cms-info-tip" tabIndex={0} aria-label="Personas distintas que interactuaron con el sitio en este período. Se desglosa abajo entre Usuarios Nuevos (primera visita) y Recurrentes (ya conocían la web)." style={{ marginLeft: '0.4rem' }}>
+              Active Users <span className="cms-info-tip" tabIndex={0} aria-label="Distinct people who interacted with the site in this period. Broken down below into New Users (first visit) and Returning (already knew the site)." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Personas distintas que interactuaron con el sitio en este período. Se desglosa abajo entre Usuarios Nuevos (primera visita) y Recurrentes (ya conocían la web).</span>
+                <span className="cms-info-bubble" role="tooltip">Distinct people who interacted with the site in this period. Broken down below into New Users (first visit) and Returning (already knew the site).</span>
               </span>
             </span>
             <span className="ga-stat-desc">
-              <strong>{active.newUsers}</strong> nuevos · <strong>{active.returningUsers}</strong> recurrentes
+              <strong>{active.newUsers}</strong> new · <strong>{active.returningUsers}</strong> returning
             </span>
           </div>
         </div>
@@ -227,12 +227,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.totalViews}</span>
             <span className="ga-stat-title">
-              Vistas de Página <span className="cms-info-tip" tabIndex={0} aria-label="Cantidad total de cargas o recargas completas de la página web consumidas por los visitantes." style={{ marginLeft: '0.4rem' }}>
+              Page Views <span className="cms-info-tip" tabIndex={0} aria-label="Total number of full page loads or reloads consumed by visitors." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Cantidad total de cargas o recargas completas de la página web consumidas por los visitantes.</span>
+                <span className="cms-info-bubble" role="tooltip">Total number of full page loads or reloads consumed by visitors.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Total de cargas</span>
+            <span className="ga-stat-desc">Total loads</span>
           </div>
         </div>
 
@@ -243,12 +243,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.avgTime}</span>
             <span className="ga-stat-title">
-              Tiempo Promedio <span className="cms-info-tip" tabIndex={0} aria-label="Tiempo promedio de permanencia por sesión navegando y explorando el portafolio." style={{ marginLeft: '0.4rem' }}>
+              Average Time <span className="cms-info-tip" tabIndex={0} aria-label="Average time spent per session browsing and exploring the portfolio." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Tiempo promedio de permanencia por sesión navegando y explorando el portafolio.</span>
+                <span className="cms-info-bubble" role="tooltip">Average time spent per session browsing and exploring the portfolio.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Permanencia por sesión</span>
+            <span className="ga-stat-desc">Time on site per session</span>
           </div>
         </div>
 
@@ -259,12 +259,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.cvDownloads}</span>
             <span className="ga-stat-title">
-              Descargas CV <span className="cms-info-tip" tabIndex={0} aria-label="Cantidad de veces que los visitantes hicieron clic para abrir o descargar tu Currículum Vitae (CV)." style={{ marginLeft: '0.4rem' }}>
+              CV Downloads <span className="cms-info-tip" tabIndex={0} aria-label="Number of times visitors clicked to open or download your Curriculum Vitae (CV)." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Cantidad de veces que los visitantes hicieron clic para abrir o descargar tu Currículum Vitae (CV).</span>
+                <span className="cms-info-bubble" role="tooltip">Number of times visitors clicked to open or download your Curriculum Vitae (CV).</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Interés profesional</span>
+            <span className="ga-stat-desc">Professional interest</span>
           </div>
         </div>
 
@@ -275,12 +275,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.fullscreenOpens}</span>
             <span className="ga-stat-title">
-              Pantalla Completa <span className="cms-info-tip" tabIndex={0} aria-label="Obras ampliadas a pantalla completa (Lightbox) para ser vistas en detalle en galerías 3D, Animaciones, Personajes o Ilustraciones." style={{ marginLeft: '0.4rem' }}>
+              Fullscreen Views <span className="cms-info-tip" tabIndex={0} aria-label="Works expanded to fullscreen (Lightbox) to be viewed in detail in the 3D, Animations, Characters or Illustrations galleries." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Obras ampliadas a pantalla completa (Lightbox) para ser vistas en detalle en galerías 3D, Animaciones, Personajes o Ilustraciones.</span>
+                <span className="cms-info-bubble" role="tooltip">Works expanded to fullscreen (Lightbox) to be viewed in detail in the 3D, Animations, Characters or Illustrations galleries.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Obras ampliadas</span>
+            <span className="ga-stat-desc">Expanded works</span>
           </div>
         </div>
 
@@ -291,12 +291,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.socialClicks}</span>
             <span className="ga-stat-title">
-              Clics en Redes <span className="cms-info-tip" tabIndex={0} aria-label="Interacciones de usuarios que hicieron clic en tus botones sociales para salir a tus perfiles externos (Instagram, LinkedIn, ArtStation, YouTube)." style={{ marginLeft: '0.4rem' }}>
+              Social Clicks <span className="cms-info-tip" tabIndex={0} aria-label="Interactions from users who clicked your social buttons to reach your external profiles (Instagram, LinkedIn, ArtStation, YouTube)." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Interacciones de usuarios que hicieron clic en tus botones sociales para salir a tus perfiles externos (Instagram, LinkedIn, ArtStation, YouTube).</span>
+                <span className="cms-info-bubble" role="tooltip">Interactions from users who clicked your social buttons to reach your external profiles (Instagram, LinkedIn, ArtStation, YouTube).</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Salidas a perfiles</span>
+            <span className="ga-stat-desc">Exits to profiles</span>
           </div>
         </div>
 
@@ -307,12 +307,12 @@ export default function AnalyticsSection() {
           <div className="ga-stat-body">
             <span className="ga-stat-value">{active.emailClicks}</span>
             <span className="ga-stat-title">
-              Clics en Email <span className="cms-info-tip" tabIndex={0} aria-label="Veces que un visitante hizo clic en tu dirección de correo electrónico en el footer para iniciar un contacto directo." style={{ marginLeft: '0.4rem' }}>
+              Email Clicks <span className="cms-info-tip" tabIndex={0} aria-label="Times a visitor clicked your email address in the footer to start a direct contact." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Veces que un visitante hizo clic en tu dirección de correo electrónico en el footer para iniciar un contacto directo.</span>
+                <span className="cms-info-bubble" role="tooltip">Times a visitor clicked your email address in the footer to start a direct contact.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Contacto desde footer</span>
+            <span className="ga-stat-desc">Contact from footer</span>
           </div>
         </div>
 
@@ -332,12 +332,12 @@ export default function AnalyticsSection() {
               {active.failedLogins}
             </span>
             <span className="ga-stat-title">
-              Logins Fallidos <span className="cms-info-tip" tabIndex={0} aria-label="Alertas de seguridad por intentos fallidos de inicio de sesión con usuario o contraseña incorrectos en el panel de administración." style={{ marginLeft: '0.4rem' }}>
+              Failed Logins <span className="cms-info-tip" tabIndex={0} aria-label="Security alerts for failed sign-in attempts with an incorrect username or password in the admin panel." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Alertas de seguridad por intentos fallidos de inicio de sesión con usuario o contraseña incorrectos en el panel de administración.</span>
+                <span className="cms-info-bubble" role="tooltip">Security alerts for failed sign-in attempts with an incorrect username or password in the admin panel.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Alertas de seguridad</span>
+            <span className="ga-stat-desc">Security alerts</span>
           </div>
         </div>
       </div>
@@ -346,10 +346,10 @@ export default function AnalyticsSection() {
           endpoint según el rango elegido. */}
       <div className="ga-box" style={{ marginBottom: '1.2rem' }}>
         <div className="ga-box-header">
-          <i className="fa-solid fa-chart-area"></i> Evolución de Usuarios
-          <span className="cms-info-tip" tabIndex={0} aria-label="Usuarios activos a lo largo del rango seleccionado. La escala se ajusta sola: por hora en rangos de un día, por día en semanas, por mes en rangos largos." style={{ marginLeft: '0.4rem' }}>
+          <i className="fa-solid fa-chart-area"></i> Users Over Time
+          <span className="cms-info-tip" tabIndex={0} aria-label="Active users across the selected range. The scale adjusts itself: hourly for single-day ranges, daily for weeks, monthly for long ranges." style={{ marginLeft: '0.4rem' }}>
             <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip">Usuarios activos a lo largo del rango seleccionado. La escala se ajusta sola: por hora en rangos de un día, por día en semanas, por mes en rangos largos.</span>
+            <span className="cms-info-bubble" role="tooltip">Active users across the selected range. The scale adjusts itself: hourly for single-day ranges, daily for weeks, monthly for long ranges.</span>
           </span>
         </div>
         <UsersChart data={active.chartDays || []} loading={isUpdating} />
@@ -358,9 +358,9 @@ export default function AnalyticsSection() {
       {/* Países Principales */}
       <div className="ga-box ga-box--countries" style={{ marginBottom: '1.2rem' }}>
         <div className="ga-box-header">
-          <i className="fa-solid fa-earth-americas"></i> Países Principales <span className="cms-info-tip" tabIndex={0} aria-label="Ubicación geográfica dinámica de tus visitantes ordenados de mayor a menor según su país de origen." style={{ marginLeft: '0.4rem' }}>
+          <i className="fa-solid fa-earth-americas"></i> Top Countries <span className="cms-info-tip" tabIndex={0} aria-label="Dynamic geographic location of your visitors, ordered from highest to lowest by country of origin." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Ubicación geográfica dinámica de tus visitantes ordenados de mayor a menor según su país de origen.</span>
+                <span className="cms-info-bubble" role="tooltip">Dynamic geographic location of your visitors, ordered from highest to lowest by country of origin.</span>
               </span>
         </div>
         <div className="ga-countries-layout">
@@ -368,7 +368,7 @@ export default function AnalyticsSection() {
             <WorldMap
               color="#3b82f6"
               title=""
-              value-suffix="visitantes"
+              value-suffix="visitors"
               size="responsive"
               /* GA manda 'XX' cuando no puede resolver el país: no es un ISO
                  válido, así que se descarta antes de llegar al mapa. */
@@ -380,17 +380,17 @@ export default function AnalyticsSection() {
           </div>
           <div className="ga-list ga-list--countries">
             <div className="ga-list-header">
-              <span className="ga-header-col">PAÍS</span>
+              <span className="ga-header-col">COUNTRY</span>
               <div className="ga-metric-select-wrapper">
                 <select 
                   className="ga-header-col ga-metric-select" 
                   value={countryMetric} 
                   onChange={(e) => setCountryMetric(e.target.value as CountryMetric)}
-                  title="Cambiar métrica a visualizar"
+                  title="Change the metric to display"
                 >
-                  <option value="activos">USUARIOS ACTIVOS</option>
-                  <option value="nuevos">USUARIOS NUEVOS</option>
-                  <option value="recurrentes">USUARIOS RECURRENTES</option>
+                  <option value="active">ACTIVE USERS</option>
+                  <option value="new">NEW USERS</option>
+                  <option value="returning">RETURNING USERS</option>
                 </select>
                 <i className="fa-solid fa-caret-down ga-metric-caret"></i>
               </div>
@@ -398,10 +398,10 @@ export default function AnalyticsSection() {
             {(active.countries || []).map((c, idx) => {
               let displayCount = c.count;
               let displayPct = c.pct;
-              if (countryMetric === 'nuevos') {
+              if (countryMetric === 'new') {
                 displayCount = c.newUsers || 0;
                 displayPct = Math.round((displayCount / Math.max(1, active.newUsers ?? 0)) * 100);
-              } else if (countryMetric === 'recurrentes') {
+              } else if (countryMetric === 'returning') {
                 displayCount = c.returningUsers || 0;
                 displayPct = Math.round((displayCount / Math.max(1, active.returningUsers ?? 0)) * 100);
               }
@@ -426,9 +426,9 @@ export default function AnalyticsSection() {
         {/* Fuentes de Tráfico */}
         <div className="ga-box">
           <div className="ga-box-header">
-            <i className="fa-solid fa-arrow-trend-up"></i> Origen del Tráfico <span className="cms-info-tip" tabIndex={0} aria-label="Canales o sitios web de procedencia desde los que llegaron tus visitantes (Directo, Instagram, LinkedIn, Google Search)." style={{ marginLeft: '0.4rem' }}>
+            <i className="fa-solid fa-arrow-trend-up"></i> Traffic Sources <span className="cms-info-tip" tabIndex={0} aria-label="Channels or referring websites your visitors arrived from (Direct, Instagram, LinkedIn, Google Search)." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Canales o sitios web de procedencia desde los que llegaron tus visitantes (Directo, Instagram, LinkedIn, Google Search).</span>
+                <span className="cms-info-bubble" role="tooltip">Channels or referring websites your visitors arrived from (Direct, Instagram, LinkedIn, Google Search).</span>
               </span>
           </div>
           <div className="ga-list">
@@ -436,7 +436,7 @@ export default function AnalyticsSection() {
               <div key={idx} className="ga-list-item">
                 <div className="ga-list-info">
                   <span className="ga-list-name">{src.name}</span>
-                  <span className="ga-list-sub">{src.count} visitantes</span>
+                  <span className="ga-list-sub">{src.count} visitors</span>
                 </div>
                 <div className="ga-progress-wrap">
                   <div className="ga-progress-bar ga-progress-bar--blue" style={{ width: `${src.pct}%` }}></div>
@@ -450,9 +450,9 @@ export default function AnalyticsSection() {
         {/* Clics en Redes Sociales */}
         <div className="ga-box">
           <div className="ga-box-header">
-            <i className="fa-solid fa-share-nodes"></i> Clics por Red Social <span className="cms-info-tip" tabIndex={0} aria-label="Desglose individual y específico del número de clics en cada una de tus redes sociales." style={{ marginLeft: '0.4rem' }}>
+            <i className="fa-solid fa-share-nodes"></i> Clicks per Social Network <span className="cms-info-tip" tabIndex={0} aria-label="Individual, per-network breakdown of the number of clicks on each of your social links." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Desglose individual y específico del número de clics en cada una de tus redes sociales.</span>
+                <span className="cms-info-bubble" role="tooltip">Individual, per-network breakdown of the number of clicks on each of your social links.</span>
               </span>
           </div>
           <div className="ga-list">
@@ -463,7 +463,7 @@ export default function AnalyticsSection() {
                     <i className={`fa-brands ${soc.icon}`} style={{ marginRight: '0.4rem', color: 'var(--accent)' }}></i>
                     {soc.name}
                   </span>
-                  <span className="ga-list-sub">{soc.count} clics</span>
+                  <span className="ga-list-sub">{soc.count} clicks</span>
                 </div>
                 <div className="ga-progress-wrap">
                   <div className="ga-progress-bar" style={{ width: `${soc.pct}%`, background: '#06b6d4' }}></div>
@@ -474,7 +474,7 @@ export default function AnalyticsSection() {
             {(!active.socialList || active.socialList.length === 0) && (
               <div style={{ padding: '1.5rem', textAlign: 'center', opacity: 0.6, fontSize: '0.85rem' }}>
                 <i className="fa-solid fa-clock" style={{ fontSize: '1.2rem', marginBottom: '0.5rem', display: 'block' }}></i>
-                Aún no hay clics en redes registrados en este período.
+                No social clicks recorded in this period yet.
               </div>
             )}
           </div>
@@ -484,22 +484,22 @@ export default function AnalyticsSection() {
         {/* Dispositivos */}
         <div className="ga-box">
           <div className="ga-box-header">
-            <i className="fa-solid fa-laptop-mobile"></i> Dispositivos <span className="cms-info-tip" tabIndex={0} aria-label="Porcentaje de visitantes navegando desde computadoras (Desktop) vs celulares o tablets (Mobile)." style={{ marginLeft: '0.4rem' }}>
+            <i className="fa-solid fa-laptop-mobile"></i> Devices <span className="cms-info-tip" tabIndex={0} aria-label="Percentage of visitors browsing from computers (Desktop) vs phones or tablets (Mobile)." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Porcentaje de visitantes navegando desde computadoras (Desktop) vs celulares o tablets (Mobile).</span>
+                <span className="cms-info-bubble" role="tooltip">Percentage of visitors browsing from computers (Desktop) vs phones or tablets (Mobile).</span>
               </span>
           </div>
           <div className="ga-devices-wrap">
             <div className="ga-device-item">
               <i className="fa-solid fa-desktop" style={{ fontSize: '1.8rem', color: 'var(--accent)' }}></i>
               <span className="ga-device-pct">{active.devices?.desktop ?? 0}%</span>
-              <span className="ga-device-label">Computadora</span>
+              <span className="ga-device-label">Desktop</span>
             </div>
             <div className="ga-device-divider"></div>
             <div className="ga-device-item">
               <i className="fa-solid fa-mobile-screen-button" style={{ fontSize: '1.8rem', color: '#3b82f6' }}></i>
               <span className="ga-device-pct">{active.devices?.mobile ?? 0}%</span>
-              <span className="ga-device-label">Celular / Tablet</span>
+              <span className="ga-device-label">Phone / Tablet</span>
             </div>
           </div>
         </div>
@@ -511,24 +511,24 @@ export default function AnalyticsSection() {
           title={
             <>
               <i className="fa-solid fa-shield-cat" style={{ color: '#ef4444', marginRight: '0.6rem' }}></i>
-              Registro de Intrusiones
+              Intrusion Log
             </>
           }
           onClose={() => setShowFailedLogins(false)}
           wide
-          actions={[{ label: 'Cerrar', primary: true, onClick: () => {} }]}
+          actions={[{ label: 'Close', primary: true, onClick: () => {} }]}
         >
           {loadingLogins ? (
-            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>Cargando datos...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>Loading data...</div>
           ) : (
             <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}>
               <table className="cms-table" style={{ minWidth: '600px', width: '100%' }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Fecha</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Date</th>
                     <th style={{ textAlign: 'left', padding: '0.8rem' }}>IP</th>
-                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Usuario Intentado</th>
-                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Navegador/Sistema</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Attempted User</th>
+                    <th style={{ textAlign: 'left', padding: '0.8rem' }}>Browser/System</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -545,14 +545,14 @@ export default function AnalyticsSection() {
                           if (ua.includes('safari/') && !ua.includes('chrome/')) return 'Safari';
                           if (ua.includes('firefox/')) return 'Firefox';
                           if (ua.includes('curl') || ua.includes('bot') || ua.includes('postman')) return 'Script / Bot';
-                          return l.user_agent?.split(' ')[0] || 'Desconocido';
+                          return l.user_agent?.split(' ')[0] || 'Unknown';
                         })()}
                       </td>
                     </tr>
                   ))}
                   {failedLoginsList.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>No hay registros de intrusiones en este periodo.</td>
+                      <td colSpan={4} style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>No intrusion records in this period.</td>
                     </tr>
                   )}
                 </tbody>

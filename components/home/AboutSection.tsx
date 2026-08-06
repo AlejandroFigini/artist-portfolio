@@ -233,15 +233,15 @@ export default function AboutSection() {
 
             <figure className="about-portrait">
               <Corners />
-              <HeroMediaCarousel prefix="about-carousel" label="Carrusel About me" className="artist-photo-img cms-media" />
+              <HeroMediaCarousel prefix="about-carousel" label="About me Carousel" className="artist-photo-img cms-media" />
               <figcaption className="about-portrait-cap">
                 <span>FIG. 02b</span>
               </figcaption>
               {isAdmin && (
                 <button
                   className="cms-hero-gear"
-                  title="Configurar Carrusel About me"
-                  aria-label="Configurar Carrusel About me"
+                  title="Configure the About me Carousel"
+                  aria-label="Configure the About me Carousel"
                   style={{ top: '10px', right: '10px', zIndex: 1100 }}
                   onClick={(e) => { e.preventDefault(); openCarousel('about-carousel') }}
                 >

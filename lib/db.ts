@@ -140,6 +140,20 @@ const MIGRATIONS: { id: string; sql: string }[] = [
         ON sessions (user_id);
     `,
   },
+  {
+    /* Estado de entrega de la notificación por mail de cada mensaje. Antes un
+       fallo de Resend solo dejaba un console.error: el mensaje quedaba en la
+       tabla y nadie se enteraba de que nunca salió.
+       NULL = desconocido (filas anteriores a esta migración), TRUE = entregado,
+       FALSE = falló y `email_error` dice por qué. Por eso la columna NO lleva
+       DEFAULT: un default marcaría el histórico como fallido. */
+    id: '2026_08_contact_messages_delivery',
+    sql: `
+      ALTER TABLE contact_messages
+      ADD COLUMN IF NOT EXISTS email_sent BOOLEAN,
+      ADD COLUMN IF NOT EXISTS email_error TEXT;
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

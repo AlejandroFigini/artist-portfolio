@@ -188,8 +188,8 @@ export default function Hero() {
       {isAdmin && (
         <button
           className="cms-hero-gear"
-          title="Configurar Carrusel General (Fondo de Portada)"
-          aria-label="Configurar Carrusel General (Fondo de Portada)"
+          title="Configure the General Carousel (Home Background)"
+          aria-label="Configure the General Carousel (Home Background)"
           style={{ top: '100px', right: '30px', position: 'absolute', zIndex: 1100 }}
           onClick={(e) => { e.preventDefault(); openCarousel('hero') }}
         >
@@ -226,14 +226,14 @@ export default function Hero() {
         <div className="hero-media-wrapper">
           <div className="media-container hero-primary float-anim">
             <div className="container-overlay" style={{ zIndex: 10 }}></div>
-            <HeroMediaCarousel prefix="hero-main" label="Carrusel Principal — Portada" />
+            <HeroMediaCarousel prefix="hero-main" label="Main Carousel — Home" />
             <span className="bp-scanline" aria-hidden="true" style={{ zIndex: 10 }}></span>
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.01 — KEYFRAME_A</span>
           </div>
           <div className="media-container hero-secondary float-anim-delayed">
             <div className="container-overlay" style={{ zIndex: 10 }}></div>
-            <HeroMediaCarousel prefix="hero-sub" label="Carrusel Secundario — Portada" />
+            <HeroMediaCarousel prefix="hero-sub" label="Secondary Carousel — Home" />
             <Corners />
             <span className="bp-fig" style={{ zIndex: 10 }}>FIG.02 — DETAIL</span>
           </div>
@@ -243,8 +243,8 @@ export default function Hero() {
             <>
               <button
                 className="cms-hero-gear"
-                title="Configurar Carrusel Principal — Portada"
-                aria-label="Configurar Carrusel Principal"
+                title="Configurar Main Carousel — Home"
+                aria-label="Configure the Main Carousel"
                 style={{ top: 'calc(68% - 58px)', bottom: 'auto', right: '14px' }}
                 onClick={(e) => { e.preventDefault(); openCarousel('hero-main') }}
               >
@@ -252,8 +252,8 @@ export default function Hero() {
               </button>
               <button
                 className="cms-hero-gear"
-                title="Configurar Carrusel Secundario — Portada"
-                aria-label="Configurar Carrusel Secundario"
+                title="Configurar Secondary Carousel — Home"
+                aria-label="Configure the Secondary Carousel"
                 style={{ top: 'auto', bottom: 'calc(15% + 14px)', right: 'calc(50% + 14px)' }}
                 onClick={(e) => { e.preventDefault(); openCarousel('hero-sub') }}
               >

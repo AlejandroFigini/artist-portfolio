@@ -48,10 +48,10 @@ export default function RealtimeCard() {
             <span className="ga-pulse-dot" style={{ background: 'var(--text-primary)' }}></span>
           </div>
           <h2 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
-            Tráfico en Vivo
-            <span className="cms-info-tip" tabIndex={0} aria-label="Se actualiza al instante, pero cada usuario 'vive y muere' en este contador durante una ventana móvil de 30 minutos desde su última acción." style={{ marginLeft: '0.6rem' }}>
+            Live Traffic
+            <span className="cms-info-tip" tabIndex={0} aria-label="Updates instantly, but each user 'lives and dies' in this counter within a rolling 30-minute window from their last action." style={{ marginLeft: '0.6rem' }}>
               <i className="fa-solid fa-circle-info" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}></i>
-              <span className="cms-info-bubble" role="tooltip">Se actualiza al instante, pero cada usuario &lsquo;vive y muere&rsquo; en este contador durante una ventana móvil de 30 minutos desde su última acción.</span>
+              <span className="cms-info-bubble" role="tooltip">Updates instantly, but each user &lsquo;lives and dies&rsquo; in this counter within a rolling 30-minute window from their last action.</span>
             </span>
           </h2>
         </div>
@@ -61,13 +61,13 @@ export default function RealtimeCard() {
         {/* Total */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-primary)', borderRadius: '12px', padding: '1.5rem', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{active.realtimeUsers}</div>
-          <div style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.75rem', marginTop: '0.8rem', letterSpacing: '0.05em', fontWeight: 600 }}>Usuarios Activos</div>
+          <div style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.75rem', marginTop: '0.8rem', letterSpacing: '0.05em', fontWeight: 600 }}>Active Users</div>
         </div>
         
         {/* Por Página */}
         <div style={{ background: 'var(--bg-primary)', borderRadius: '12px', padding: '1.2rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <i className="fa-solid fa-file-lines" style={{ color: 'var(--text-secondary)' }}></i> Por Página
+            <i className="fa-solid fa-file-lines" style={{ color: 'var(--text-secondary)' }}></i> By Page
           </h4>
           <div style={{ flexGrow: 1 }}>
             {active.realtimePages?.length > 0 ? active.realtimePages.map((p, i) => (
@@ -75,14 +75,14 @@ export default function RealtimeCard() {
                 <span style={{ color: 'var(--text-primary)' }}>{p.name}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.count}</span>
               </div>
-            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)' }}>Sin datos de página</div>}
+            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)' }}>No page data</div>}
           </div>
         </div>
 
         {/* Por País */}
         <div style={{ background: 'var(--bg-primary)', borderRadius: '12px', padding: '1.2rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <i className="fa-solid fa-earth-americas" style={{ color: 'var(--text-secondary)' }}></i> Por País
+            <i className="fa-solid fa-earth-americas" style={{ color: 'var(--text-secondary)' }}></i> By Country
           </h4>
           <div style={{ flexGrow: 1 }}>
             {active.realtimeCountries?.length > 0 ? active.realtimeCountries.map((c, i) => (
@@ -90,7 +90,7 @@ export default function RealtimeCard() {
                 <span style={{ color: 'var(--text-primary)' }}>{c.name}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.count}</span>
               </div>
-            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)' }}>Sin datos de país</div>}
+            )) : <div style={{ opacity: 0.5, fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)' }}>No country data</div>}
           </div>
         </div>
       </div>

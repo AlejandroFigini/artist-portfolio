@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
   const [{ rows: messages }, { rows: countRows }, { rows: unreadRows }, { rows: inboxRows }, { rows: starredRows }, { rows: trashRows }] = await Promise.all([
     pool.query(
-      `SELECT id, sender_name, sender_email, country, subject, message, ip_address, is_read, is_starred, is_trashed, created_at
+      `SELECT id, sender_name, sender_email, country, subject, message, ip_address, is_read, is_starred, is_trashed, email_sent, email_error, created_at
        FROM contact_messages ${where}
        ORDER BY created_at DESC
        LIMIT $1 OFFSET $2`,

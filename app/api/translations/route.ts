@@ -47,6 +47,14 @@ export async function GET() {
   }
 }
 
+/* Límites del import — el JSON viene de pegar la respuesta de un modelo, así
+   que se valida como cualquier otro input no confiable. */
+const MAX_KEY_LEN = 200
+const MAX_VALUE_LEN = 20_000
+const MAX_ROWS = 20_000
+/* Las claves CMS son `seccion.parte#0::campo`; nada más entra a la tabla. */
+const KEY_RE = /^[A-Za-z0-9_.#:-]+$/
+
 /* POST /api/translations → importar traducciones.
    Body: { items: { es: {key:val}, pt: {...}, fr: {...} } } (en se ignora: es base).
    Valida y upsertea cada (key, lang, value) en cms_translations. */
@@ -59,24 +67,35 @@ export async function POST(req: Request) {
 
   const incoming = body.items
   if (!incoming || typeof incoming !== 'object') {
-    return NextResponse.json({ error: 'Invalid format. Expected { items: { es, pt, fr } }.' }, { status: 400 })
+    return NextResponse.json(
+      { error: `Invalid format. Expected { items: { ${TARGET_LANGS.join(', ')} } }.` },
+      { status: 400 },
+    )
   }
 
-  // Recolectar filas válidas solo para los idiomas destino (es/pt/fr).
+  // Recolectar filas válidas solo para los idiomas destino; todo lo demás
+  // (idiomas desconocidos, claves raras, valores no-string) se descarta y se
+  // reporta como `skipped` en vez de romper la importación entera.
   const rows: { key: string; lang: string; value: string }[] = []
+  let skipped = 0
   for (const lang of TARGET_LANGS) {
     const map = incoming[lang]
     if (!map || typeof map !== 'object') continue
     for (const [key, value] of Object.entries(map)) {
-      if (typeof value !== 'string' || !value.trim()) continue
+      if (rows.length >= MAX_ROWS) { skipped++; continue }
+      if (!key || key.length > MAX_KEY_LEN || !KEY_RE.test(key)) { skipped++; continue }
+      if (typeof value !== 'string' || !value.trim() || value.length > MAX_VALUE_LEN) { skipped++; continue }
       rows.push({ key, lang, value })
     }
   }
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'No valid translations found for es/pt/fr.' }, { status: 400 })
+    return NextResponse.json(
+      { error: `No valid translations found for ${TARGET_LANGS.join(', ')}.`, skipped },
+      { status: 400 },
+    )
   }
 
-  if (!hasDb) return NextResponse.json({ success: true, imported: rows.length, message: 'Translations received (mock, no DB)' })
+  if (!hasDb) return NextResponse.json({ success: true, imported: rows.length, skipped, message: 'Translations received (mock, no DB)' })
 
   await ensureDb()
   const pool = getPool()!
@@ -91,7 +110,7 @@ export async function POST(req: Request) {
       )
     }
     await client.query('COMMIT')
-    return NextResponse.json({ success: true, imported: rows.length })
+    return NextResponse.json({ success: true, imported: rows.length, skipped })
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('[translations POST] error:', err)

@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
-import { state, useCmsStore } from '@/lib/cms/store'
+import { state, useUiText } from '@/lib/cms/store'
 import { setLanguage } from '@/components/cms/engine'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
@@ -30,7 +30,7 @@ const GALLERY_LINKS = [
 
 export default function Nav() {
   const pathname = usePathname()
-  useCmsStore() // re-render al cambiar el idioma global
+  const ui = useUiText() // re-render al cambiar el idioma global
   const { links } = useSocial()
   const { settings } = useSiteSettings()
   // Con URL configurada se usa esa; sin configurar cae al home genérico de la
@@ -218,7 +218,7 @@ export default function Nav() {
           <button
             className="nav-toggle"
             id="nav-toggle"
-            aria-label="Open menu"
+            aria-label={ui('open_menu')}
             aria-expanded={navOpen}
             onClick={() => setNavOpen((o) => !o)}
           >
@@ -236,14 +236,14 @@ export default function Nav() {
               Lucia Montaña <span className="separator">|</span> <span className="highlight inline-highlight">Portfolio</span>
             </div>
             <div className="nav-menu-scrollable">
-              <Link href="/" data-i18n="nav_feed" onClick={closeNav}>Feed</Link>
+              <Link href="/" onClick={closeNav}>{ui('nav_feed')}</Link>
               <div className={`dropdown${dropdown === 'gallery' ? ' open' : ''}`}>
                 <div
                   className="dropbtn"
                   id="gallery-label"
                   onClick={(e) => { e.stopPropagation(); toggleDropdown('gallery') }}
                 >
-                  <span data-i18n="nav_gallery">Gallery</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                  <span>{ui('nav_gallery')}</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
                 </div>
                 <div className="dropdown-content">
                   {GALLERY_LINKS.map((l) => (
@@ -253,7 +253,7 @@ export default function Nav() {
                       className={pathname === l.href ? 'active' : undefined}
                       onClick={closeNav}
                     >
-                      <i className={`fa-solid ${l.icon}`}></i> <span data-i18n={l.i18n}>{l.label}</span>
+                      <i className={`fa-solid ${l.icon}`}></i> <span>{ui(l.i18n, l.label)}</span>
                     </Link>
                   ))}
                 </div>
@@ -263,7 +263,7 @@ export default function Nav() {
                   className="dropbtn"
                   onClick={(e) => { e.stopPropagation(); toggleDropdown('portfolio') }}
                 >
-                  <span data-i18n="nav_portfolio">Portfolio</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
+                  <span>{ui('nav_portfolio')}</span> <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em' }}></i>
                 </div>
                 <div className="dropdown-content">
                   {portfolioNets.map((n) => (
@@ -279,8 +279,8 @@ export default function Nav() {
                   ))}
                 </div>
               </div>
-              <Link href="/about" data-i18n="nav_about" onClick={closeNav}>About me</Link>
-              <Link href="/#contacto" data-i18n="nav_contact" onClick={closeNav}>Contact</Link>
+              <Link href="/about" onClick={closeNav}>{ui('nav_about')}</Link>
+              <Link href="/#contacto" onClick={closeNav}>{ui('nav_contact')}</Link>
               {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
               {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
               <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>
@@ -293,7 +293,7 @@ export default function Nav() {
                 className="cv-min-btn"
                 onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
               >
-                <i className="fa-solid fa-envelope"></i><span>Email</span>
+                <i className="fa-solid fa-envelope"></i><span>{ui('email')}</span>
               </button>
               <a
                 className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`}
@@ -308,7 +308,7 @@ export default function Nav() {
                 className="login-min-btn"
                 onClick={() => { closeNav(); document.querySelector<HTMLButtonElement>('#cms-auth-nav button')?.click(); }}
               >
-                <i className="fa-solid fa-right-to-bracket"></i><span>Log in</span>
+                <i className="fa-solid fa-right-to-bracket"></i><span>{ui('log_in')}</span>
               </button>
               <div className="lang-selector-nav mobile-lang" style={{ display: 'flex' }}>
                 <button
@@ -340,11 +340,11 @@ export default function Nav() {
               type="button"
               className="cv-min-btn"
               onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
-              title="Contact me"
-              aria-label="Contact me"
+              title={ui('contact_me')}
+              aria-label={ui('contact_me')}
             >
               <i className="fa-solid fa-envelope"></i>
-              <span>Email</span>
+              <span>{ui('email')}</span>
             </button>
             {/* Siempre presente; sin CV subido queda deshabilitado (sin href). */}
             <a
@@ -352,13 +352,12 @@ export default function Nav() {
               href={settings.cvUrl || undefined}
               download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
               target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-              title={settings.cvUrl ? 'Download CV' : 'CV not available yet'}
-              aria-label="Download CV" aria-disabled={!settings.cvUrl || undefined}
-              data-i18n-title="download_cv" data-i18n-aria="download_cv"
+              title={settings.cvUrl ? ui('download_cv') : ui('cv_unavailable')}
+              aria-label={ui('download_cv')} aria-disabled={!settings.cvUrl || undefined}
               onClick={() => sendGAEvent('event', 'cv_download')}
             >
               <i className="fa-solid fa-file-arrow-down"></i>
-              <span data-i18n="cv">CV</span>
+              <span>{ui('cv')}</span>
             </a>
             {/* cms.js renderiza aquí el botón de login / menú de sesión (Sesión 3) */}
             <div id="cms-auth-nav"></div>
@@ -366,8 +365,8 @@ export default function Nav() {
               <button
                 className="lang-btn"
                 id="lang-toggle-nav"
-                aria-label="Change language"
-                title="Language"
+                aria-label={ui('change_language')}
+                title={ui('language')}
                 onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -39,7 +39,7 @@ const EXT_BY_MIME: Record<string, string> = {
 
 function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string; mime: string } {
   const m = dataUrl.match(/^data:([^;]+);base64,([\s\S]*)$/)
-  if (!m) throw new Error('Data URL inválida')
+  if (!m) throw new Error('Invalid data URL')
   const mime = m[1]
   const ext = EXT_BY_MIME[mime] || (mime.split('/')[1] || 'bin')
   return { buffer: Buffer.from(m[2], 'base64'), ext, mime }
@@ -80,7 +80,7 @@ function assertBufferMatchesKind(buffer: Buffer, declared: MediaKind): void {
   const actual = sniffKind(buffer.subarray(0, 64))
   if (!actual) throw new UnsupportedMediaError('Formato de archivo no reconocido o no permitido (SVG y HTML no se aceptan)')
   if (actual !== declared) {
-    throw new UnsupportedMediaError(`El contenido del archivo es ${actual}, pero se declaró como ${declared}`)
+    throw new UnsupportedMediaError(`The file content is ${actual}, but it was declared as ${declared}`)
   }
 }
 
@@ -106,7 +106,7 @@ type CloudinaryUploadResult = { secure_url: string; bytes: number; format?: stri
 function uploadStream(buffer: Buffer, options: Record<string, unknown>): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
-      if (err || !result) return reject(err || new Error('Cloudinary no devolvió resultado'))
+      if (err || !result) return reject(err || new Error('Cloudinary returned no result'))
       resolve(result as unknown as CloudinaryUploadResult)
     })
     stream.end(buffer)
@@ -266,7 +266,7 @@ export async function verifyAssetExists(url: string): Promise<boolean> {
       return false
     }
     // Otro error (rate limit, etc.) → asumir que existe para no borrar datos por error
-    console.warn('[verifyAssetExists] error no concluyente:', message, err)
+    console.warn('[verifyAssetExists] inconclusive error:', message, err)
     return true
   }
 }

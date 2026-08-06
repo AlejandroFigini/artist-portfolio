@@ -8,13 +8,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { state, useCmsStore } from '@/lib/cms/store'
+import { state, useCmsStore, useUiText } from '@/lib/cms/store'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { loaderDurationMs } from '@/lib/settings'
 
 const FADE_MS = 800
 
 export default function PageLoader() {
+  const ui = useUiText()
   const pathname = usePathname()
   const [gone, setGone] = useState(pathname !== '/')
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
@@ -123,7 +124,7 @@ export default function PageLoader() {
             setIsPreview(false)
             setTimeout(() => setGone(true), FADE_MS)
           }}
-          aria-label="Close preview"
+          aria-label={ui('close_preview')}
         >
           <i className="fa-solid fa-xmark" />
         </button>
@@ -142,13 +143,13 @@ export default function PageLoader() {
           </div>
           <div className="loader-info">
             <h1 className="loader-title">Lucia Montaña <span>| Portfolio</span></h1>
-            <p className="loader-subtitle">Animation &middot; Illustration &middot; 3D Art</p>
+            <p className="loader-subtitle">{ui('loader_subtitle')}</p>
             <div className="loader-status">
               <span className="loader-orbit" aria-hidden="true">
                 <span className="orbit-ring"></span>
                 <span className="orbit-dot"></span>
               </span>
-              <span className="loader-text">Loading<span className="loader-dots"><i>.</i><i>.</i><i>.</i></span></span>
+              <span className="loader-text">{ui('loading')}<span className="loader-dots"><i>.</i><i>.</i><i>.</i></span></span>
             </div>
             <div className="loader-bar"><span className="loader-bar-fill"></span></div>
           </div>

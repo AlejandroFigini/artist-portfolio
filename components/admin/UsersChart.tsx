@@ -98,10 +98,10 @@ export default function UsersChart({ data, loading }: { data: ChartDay[]; loadin
   const peak = useMemo(() => data.reduce<ChartDay | null>((m, d) => (!m || d.val > m.val ? d : m), null), [data])
 
   if (loading && !data.length) {
-    return <div className="ga-chart-empty">Cargando serie temporal…</div>
+    return <div className="ga-chart-empty">Loading time series…</div>
   }
   if (!geometry) {
-    return <div className="ga-chart-empty">Sin datos de visitas para este rango.</div>
+    return <div className="ga-chart-empty">No visit data for this range.</div>
   }
 
   const active = hover !== null ? geometry.points[hover] : null
@@ -109,9 +109,9 @@ export default function UsersChart({ data, loading }: { data: ChartDay[]; loadin
   return (
     <div className="ga-chart">
       <div className="ga-chart-summary">
-        <span><strong>{total.toLocaleString('es')}</strong> usuarios en el rango</span>
+        <span><strong>{total.toLocaleString('en')}</strong> users in range</span>
         {peak && peak.val > 0 && (
-          <span className="ga-chart-peak">Pico: <strong>{peak.val.toLocaleString('es')}</strong> en {peak.day}</span>
+          <span className="ga-chart-peak">Peak: <strong>{peak.val.toLocaleString('en')}</strong> on {peak.day}</span>
         )}
       </div>
 
@@ -122,7 +122,7 @@ export default function UsersChart({ data, loading }: { data: ChartDay[]; loadin
            deformarían en elipses al estirarse el contenedor. */
         className="ga-chart-svg"
         role="img"
-        aria-label={`Usuarios activos por periodo. Total ${total} usuarios${peak ? `, pico de ${peak.val} en ${peak.day}` : ''}.`}
+        aria-label={`Active users per period. Total ${total} users${peak ? `, peak of ${peak.val} on ${peak.day}` : ''}.`}
         onMouseLeave={() => setHover(null)}
       >
         <defs>
@@ -200,7 +200,7 @@ export default function UsersChart({ data, loading }: { data: ChartDay[]; loadin
 
       {active && (
         <div className="ga-chart-tip" style={{ left: `${(active.cx / W) * 100}%` }}>
-          <strong>{active.val.toLocaleString('es')}</strong> usuarios
+          <strong>{active.val.toLocaleString('en')}</strong> users
           <span>{active.day}</span>
         </div>
       )}

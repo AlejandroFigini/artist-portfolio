@@ -13,11 +13,11 @@ import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { fileToDataURL } from '@/lib/media'
-import { saveContent, getTranslations, importTranslations } from '@/lib/api'
+import { saveContent } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { setLanguage, applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey, getAllTranslatableItems } from '@/components/cms/engine'
+import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
+import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
-import { BASE_LANG } from '@/lib/i18n'
 import SocialSettings from './SocialSettings'
 
 export const CV_MAX_BYTES = 10 * 1024 * 1024
@@ -370,7 +370,7 @@ export function FaviconSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar favicon'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save favicon'}
             </button>
           </div>
         </div>
@@ -466,7 +466,7 @@ export function AppleIconSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Guardando…' : 'Guardar ícono'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save icon'}
             </button>
           </div>
         </div>
@@ -542,44 +542,27 @@ export function TranslationSettings() {
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [coverage, setCoverage] = useState<{ section: string; count: number }[]>([])
+
   const onExport = async () => {
-    const server = await getTranslations()
-    const baseItems = getAllTranslatableItems(server[BASE_LANG] || {})
-    if (Object.keys(baseItems).length === 0) {
+    const res = await exportTranslationPrompt()
+    if (!res) {
       toast('No text available for translation yet. Add English content first.', 'error')
       return
     }
-    const prompt = [
-      'Translate the following artist portfolio content (animation, illustration, and 3D) from English (en) to Spanish (es), Portuguese (pt), and French (fr).',
-      'Maintain a professional and artistic tone. Do not translate proper names or software brands.',
-      '',
-      'Respond ONLY with valid JSON, without extra text or markdown formatting, with this exact structure (same keys as the original for each language):',
-      '{ "items": { "es": { ... }, "pt": { ... }, "fr": { ... } } }',
-      '',
-      'Save your response as a .json file and import it in the panel using "Import translations".',
-      '',
-      '--- CONTENT (English) ---',
-      JSON.stringify({ items: { [BASE_LANG]: baseItems } }, null, 2),
-    ].join('\n')
-    const blob = new Blob([prompt], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'translations-prompt.txt'
-    a.click()
-    URL.revokeObjectURL(url)
-    toast(`Prompt exported with ${Object.keys(baseItems).length} texts. Paste it entirely into Claude.`)
+    setCoverage(res.coverage)
+    toast(
+      res.incompleteScan
+        ? `Prompt exported with ${res.count} texts. Browse the site once so every container is scanned.`
+        : `Prompt exported with ${res.count} texts. Paste it entirely into Claude.`,
+      res.incompleteScan ? 'error' : undefined,
+    )
   }
 
   const onImport = async (file: File) => {
-    let parsed: { items?: Record<string, Record<string, string>> }
-    try { parsed = JSON.parse(await file.text()) } catch { toast('Invalid JSON file', 'error'); return }
-    const items = parsed.items || (parsed as Record<string, Record<string, string>>)
     try {
-      const { imported } = await importTranslations(items)
-      state.translations = await getTranslations()
-      setLanguage(state.lang) // reaplica con las traducciones nuevas
-      toast(`${imported} translations imported`)
+      const { imported, skipped } = await importTranslationsFile(file)
+      toast(`${imported} translations imported${skipped ? ` · ${skipped} skipped` : ''}`)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error importing translations', 'error')
     }
@@ -608,6 +591,16 @@ export function TranslationSettings() {
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onImport(f) }}
         />
       </div>
+      {coverage.length > 0 && (
+        <div className="cms-admin-sub" style={{ marginTop: '1rem', fontSize: '0.8rem' }}>
+          <strong>Last export — texts per section:</strong>
+          <ul style={{ margin: '0.4rem 0 0', paddingLeft: '1.1rem' }}>
+            {coverage.map((c) => (
+              <li key={c.section}>{c.section}: {c.count}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <p className="cms-admin-sub" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
         Base language: English. New text containers are automatically included in the next export.
       </p>

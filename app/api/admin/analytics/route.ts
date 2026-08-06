@@ -42,7 +42,7 @@ const mockDataMap: Record<string, MockAnalyticsData> = {
     countries: [
       { code: 'UY', name: 'Uruguay', pct: 55, count: 13 },
       { code: 'AR', name: 'Argentina', pct: 30, count: 7 },
-      { code: 'US', name: 'Estados Unidos', pct: 15, count: 4 },
+      { code: 'US', name: 'United States', pct: 15, count: 4 },
     ],
     devices: { desktop: 55, mobile: 45 },
     chartDays: [
@@ -88,23 +88,23 @@ const mockDataMap: Record<string, MockAnalyticsData> = {
     countries: [
       { code: 'UY', name: 'Uruguay', pct: 48, count: 278 },
       { code: 'AR', name: 'Argentina', pct: 24, count: 139 },
-      { code: 'US', name: 'Estados Unidos', pct: 18, count: 104 },
-      { code: 'ES', name: 'España', pct: 10, count: 59 },
+      { code: 'US', name: 'United States', pct: 18, count: 104 },
+      { code: 'ES', name: 'Spain', pct: 10, count: 59 },
     ],
     devices: { desktop: 62, mobile: 38 },
     chartDays: [
-      { day: 'Lun', val: 18 },
-      { day: 'Mar', val: 24 },
-      { day: 'Mié', val: 31 },
-      { day: 'Jue', val: 22 },
-      { day: 'Vie', val: 29 },
-      { day: 'Sáb', val: 35 },
-      { day: 'Dom', val: 19 },
+      { day: 'Mon', val: 18 },
+      { day: 'Tue', val: 24 },
+      { day: 'Wed', val: 31 },
+      { day: 'Thu', val: 22 },
+      { day: 'Fri', val: 29 },
+      { day: 'Sat', val: 35 },
+      { day: 'Sun', val: 19 },
     ],
   },
   '30d': {
     realtimeUsers: 4,
-    realtimePages: [{ name: 'Ilustraciones Bento', count: 3 }],
+    realtimePages: [{ name: 'Illustrations Bento', count: 3 }],
     uniqueUsers: 2154,
     newUsers: 1980,
     returningUsers: 174,
@@ -136,8 +136,8 @@ const mockDataMap: Record<string, MockAnalyticsData> = {
     countries: [
       { code: 'UY', name: 'Uruguay', pct: 50, count: 1077 },
       { code: 'AR', name: 'Argentina', pct: 20, count: 430 },
-      { code: 'US', name: 'Estados Unidos', pct: 15, count: 323 },
-      { code: 'ES', name: 'España', pct: 15, count: 323 },
+      { code: 'US', name: 'United States', pct: 15, count: 323 },
+      { code: 'ES', name: 'Spain', pct: 15, count: 323 },
     ],
     devices: { desktop: 70, mobile: 30 },
     chartDays: [

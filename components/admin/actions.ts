@@ -23,7 +23,7 @@ export async function deletePermanent(idx: number) {
     await deleteMedia(url).catch(() => {})
     recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Eliminado de Cloudinary' })
   } else {
-    recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Eliminado permanentemente (local)' })
+    recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Permanently deleted (local)' })
   }
   emit()
   flushSyncToServer()
@@ -168,7 +168,7 @@ export function batchMoveUsedToUnused(keys: string[]): number {
   })
   clearItemOverrides(keys)
   persistUsed(); persistUnused(); persistRetired()
-  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Movidos a sin usar (Batch)' })
+  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} items`, summary: 'Moved to unused (batch)' })
   flushSyncToServer()
   return count
 }
@@ -184,7 +184,7 @@ export function batchMoveUnusedToTrash(indices: number[]): number {
     }
   })
   persistUnused(); persistTrash()
-  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Movidos al basurero (Batch)' })
+  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} items`, summary: 'Moved to trash (batch)' })
   flushSyncToServer()
   return count
 }
@@ -204,7 +204,7 @@ export async function batchDeletePermanent(indices: number[]): Promise<number> {
   if (urls.length > 0) purgeUrlsFromAllState(urls)
   emit()
   await Promise.all(urls.map((u) => u && u.includes('cloudinary.com') ? deleteMedia(u).catch(() => {}) : Promise.resolve()))
-  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} ítems`, summary: 'Eliminados permanentemente (Batch)' })
+  recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} items`, summary: 'Permanently deleted (batch)' })
   flushSyncToServer()
   return count
 }
@@ -219,7 +219,7 @@ export function purgeUnused() {
   state.unused.forEach((e) => { e.deletedAt = now; state.trash.push(e) })
   state.unused = []
   persistUnused(); persistTrash()
-  recordAudit({ user: 'superadmin', section: 'Sin usar', label: `${count} ítems`, summary: 'Movidos al basurero (vaciar)' })
+  recordAudit({ user: 'superadmin', section: 'Sin usar', label: `${count} items`, summary: 'Moved to trash (empty)' })
   emit()
   flushSyncToServer()
 }

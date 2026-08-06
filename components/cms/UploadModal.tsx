@@ -346,7 +346,7 @@ function cropToCircle(source: Blob): Promise<Blob> {
 
         canvas.toBlob((blob) => done(blob || source), 'image/png')
       } catch (e) {
-        console.error('[cropToCircle] Error al recortar circularmente:', e)
+        console.error('[cropToCircle] Failed to crop to circle:', e)
         done(source)
       }
     }

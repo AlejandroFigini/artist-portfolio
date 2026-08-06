@@ -283,8 +283,8 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                   <button
                     type="button"
                     className="cms-icon-btn"
-                    title="Subir o elegir nueva imagen"
-                    aria-label="Subir o elegir nueva imagen"
+                    title="Upload or choose a new image"
+                    aria-label="Upload or choose a new image"
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('proj#new_')) {
@@ -301,8 +301,8 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                   <button
                     type="button"
                     className="cms-icon-btn"
-                    title="Editar info (título, descripción, fecha)"
-                    aria-label="Editar info (título, descripción, fecha)"
+                    title="Edit info (title, description, date)"
+                    aria-label="Edit info (title, description, date)"
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('proj#new_')) {

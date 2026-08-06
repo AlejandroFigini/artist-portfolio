@@ -1,26 +1,18 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { getClientIp, checkContactRateLimit } from '@/lib/rate-limit'
+import { buildContactNotification, getNotificationEmails, isValidEmail, sendMail } from '@/lib/mail'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /* POST /api/contact — recibe un mensaje de contacto del formulario público.
    Valida campos, verifica captcha Turnstile, aplica rate limiting por IP,
-   guarda el mensaje en DB y lo envía por email vía Resend. */
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/* El asunto va como cabecera del mail: un \r\n permite inyectar cabeceras
-   propias (Bcc, Reply-To). Se colapsa cualquier salto de línea. */
-function sanitizeHeader(value: string): string {
-  return value.replace(/[\r\n]+/g, ' ').trim()
-}
+   guarda el mensaje en DB y lo notifica por email (lib/mail). */
 
 /* Verificar token de Cloudflare Turnstile contra su API. */
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY
-  if (!secret) return true // sin configurar → captcha deshabilitado
+  const secret = process.env.TURNSTILE_SECRET_KEY!
   try {
     const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
@@ -33,23 +25,6 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
     console.error('[contact] Turnstile verification failed')
     return false
   }
-}
-
-/* Obtener email(s) destino desde la configuración de redes sociales del admin
-   (social.email en cms_data). Soporta dos emails separados por coma. */
-async function getDestinationEmails(): Promise<string[]> {
-  if (!hasDb) return []
-  const pool = getPool()!
-  const { rows } = await pool.query(
-    "SELECT value FROM cms_data WHERE key = 'social.email'",
-  )
-  const val = (rows[0]?.value || '').trim()
-  if (!val) return []
-  // Soporta "email1, email2" separados por coma
-  return val
-    .split(',')
-    .map((e: string) => e.trim())
-    .filter((e: string) => EMAIL_RE.test(e))
 }
 
 export async function POST(req: Request) {
@@ -77,7 +52,7 @@ export async function POST(req: Request) {
   if (!email) {
     return NextResponse.json({ error: 'Email is required.', field: 'email' }, { status: 400 })
   }
-  if (!EMAIL_RE.test(email) || email.length > 255) {
+  if (!isValidEmail(email)) {
     return NextResponse.json({ error: 'Please provide a valid email address.', field: 'email' }, { status: 400 })
   }
   if (!country) {
@@ -98,13 +73,22 @@ export async function POST(req: Request) {
 
   const ip = getClientIp(req)
 
-  // Captcha
-  if (process.env.TURNSTILE_SECRET_KEY) {
+  /* Captcha. En producción se exige sí o sí: si falta TURNSTILE_SECRET_KEY se
+     rechaza en vez de dejar el formulario abierto en silencio. Fuera de
+     producción, sin secreto configurado, se saltea para poder probar en local. */
+  const isProduction = process.env.NODE_ENV === 'production'
+  const hasTurnstileSecret = !!process.env.TURNSTILE_SECRET_KEY
+
+  if (isProduction && !hasTurnstileSecret) {
+    console.error('[contact] TURNSTILE_SECRET_KEY missing in production — rejecting submission')
+    return NextResponse.json({ error: 'The contact form is temporarily unavailable.' }, { status: 503 })
+  }
+
+  if (hasTurnstileSecret) {
     if (!turnstileToken) {
       return NextResponse.json({ error: 'Please complete the captcha.' }, { status: 400 })
     }
-    const ok = await verifyTurnstile(turnstileToken, ip)
-    if (!ok) {
+    if (!await verifyTurnstile(turnstileToken, ip)) {
       return NextResponse.json({ error: 'Captcha verification failed. Please try again.' }, { status: 400 })
     }
   }
@@ -125,61 +109,31 @@ export async function POST(req: Request) {
   }
 
   // Guardar en DB
+  let messageId: number | null = null
   if (hasDb) {
-    const pool = getPool()!
-    await pool.query(
+    const { rows } = await getPool()!.query(
       `INSERT INTO contact_messages (sender_name, sender_email, country, subject, message, ip_address)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
       [name, email, country, subject, message, ip],
     )
+    messageId = rows[0].id
   }
 
-  // Enviar email vía Resend — SOLO en producción.
-  // En desarrollo/local los mensajes se guardan en DB pero no se envían.
-  const isProduction = process.env.NODE_ENV === 'production'
-  const resendKey = process.env.RESEND_API_KEY
-  const destEmails = await getDestinationEmails()
+  /* Notificación por mail. El mensaje ya está persistido, así que un fallo acá
+     no rompe la respuesta al visitante — pero SÍ se registra en la fila para
+     que el panel lo marque y ofrezca reenviar. */
+  const mail = buildContactNotification({ name, email, country, subject, message, ip })
+  const result = await sendMail({ to: await getNotificationEmails(), ...mail })
 
-  if (isProduction && resendKey && destEmails.length > 0) {
-    try {
-      const { Resend } = await import('resend')
-      const resend = new Resend(resendKey)
-      // FROM: dirección verificada en Resend (dominio propio), o fallback
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-      await resend.emails.send({
-        from: `luciamontana.art <${fromEmail}>`,
-        to: destEmails,
-        subject: sanitizeHeader(subject || `New message from ${name}`),
-        replyTo: email,
-        html: `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-            <h2 style="color: #8b5cf6; margin-bottom: 4px;">new email</h2>
-            <hr style="border: none; border-top: 2px solid #8b5cf6; margin: 12px 0 24px;">
-            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-            <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
-            <p><strong>Country:</strong> ${escapeHtml(country)}</p>
-            ${subject ? `<p><strong>Subject:</strong> ${escapeHtml(subject)}</p>` : ''}
-            <h3 style="color: #64748b; margin-top: 24px;">Message:</h3>
-            <div style="background: #f8fafc; border-left: 3px solid #8b5cf6; padding: 16px; border-radius: 4px; white-space: pre-wrap;">${escapeHtml(message)}</div>
-            <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">Sent from the portfolio contact form • IP: ${ip}</p>
-          </div>
-        `,
-      })
-    } catch (err) {
-      console.error('[contact] Resend error:', err)
-      // El mensaje ya se guardó en DB — no falla la respuesta por un error de email
-    }
-  } else if (!isProduction && resendKey) {
-    console.log('[contact] Email skipped (development mode). Message saved to DB.')
+  if (!result.sent) console.error('[contact] notification not sent:', result.reason)
+
+  if (messageId !== null) {
+    await getPool()!.query(
+      `UPDATE contact_messages SET email_sent = $1, email_error = $2 WHERE id = $3`,
+      [result.sent, result.sent ? null : result.reason, messageId],
+    ).catch((err) => console.error('[contact] could not record delivery status:', err))
   }
 
   return NextResponse.json({ success: true })
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import { useUiText } from '@/lib/cms/store'
 const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
 const AUTOPLAY_MS = 5000
@@ -123,6 +124,7 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
 }
 
 function Coverflow() {
+  const ui = useUiText()
   const [active, setActive] = useState(0)
   const stageRef = useRef<HTMLDivElement>(null)
   const hoverRef = useRef(false)
@@ -177,10 +179,10 @@ function Coverflow() {
       </div>
 
       <div className="m3d-coverflow__controls">
-        <button type="button" className="m3d-nav" onClick={() => go(-1)} aria-label="Anterior">
+        <button type="button" className="m3d-nav" onClick={() => go(-1)} aria-label={ui('previous')}>
           <i className="fa-solid fa-chevron-left" />
         </button>
-        <div className="m3d-dots" role="tablist" aria-label="Modelados 3D">
+        <div className="m3d-dots" role="tablist" aria-label="3D models">
           {Array.from({ length: SLIDE_COUNT }, (_, i) => (
             <button
               key={i}
@@ -193,7 +195,7 @@ function Coverflow() {
             />
           ))}
         </div>
-        <button type="button" className="m3d-nav" onClick={() => go(1)} aria-label="Siguiente">
+        <button type="button" className="m3d-nav" onClick={() => go(1)} aria-label={ui('next')}>
           <i className="fa-solid fa-chevron-right" />
         </button>
       </div>

@@ -12,7 +12,7 @@ import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer,
-  persistTrash
+  persistTrash, loadTextDefaults, recordTextDefaults
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -390,8 +390,8 @@ export function ensureSlideMeta(key: string) {
   const m = key.match(/^(.+)\.slide#(\d+)$/)
   if (!m) return
   metaByKey[key] = {
-    label: state.containerNames[key] || `Imagen del carrusel #${Number(m[2]) + 1}`,
-    section: 'Portada',
+    label: state.containerNames[key] || `Carousel Image #${Number(m[2]) + 1}`,
+    section: 'Home',
     kind: 'image',
     accept: 'webp',
     mount: 'none',
@@ -543,54 +543,137 @@ export function hydrate() {
 
 // ----- Idioma (i18n) ----------------------------------------------------------
 
-/** Claves de texto conocidas: campos (key::campo) + contenedores de texto. */
+/** Claves de texto conocidas: campos (key::campo) + contenedores de texto.
+    Se excluyen los contenedores que tienen campos propios: su texto vive en
+    los `::campo` y escribirles el textContent entero borraría su markup. */
 function textKeys(extra: Record<string, string>): Set<string> {
   const keys = new Set<string>()
   Object.keys(state.items).forEach((k) => keys.add(k))
   Object.keys(typeByKey).forEach((k) => { if (typeByKey[k] === 'text') keys.add(k) })
   Object.keys(fieldSetters).forEach((k) => keys.add(k))
   Object.keys(extra).forEach((k) => keys.add(k))
+  Object.keys(metaByKey).forEach((k) => { if (metaByKey[k].fields) keys.delete(k) })
   return keys
 }
 
-/** Collects all translatable text from store, DOM elements, and container fields. */
-export function getAllTranslatableItems(baseFromStore: Record<string, string> = {}): Record<string, string> {
-  const result: Record<string, string> = { ...baseFromStore }
-  // 1. All existing state.items that are translatable
-  for (const [k, v] of Object.entries(state.items)) {
-    if (typeof v === 'string' && isTranslatableEntry(k, v)) result[k] = v
-  }
-  // 2. All text elements registered in elementsByKey / metaByKey
+/* Texto visible de un contenedor editable, sin la cromática del CMS: los
+   botones .cms-tools y el overlay de slot vacío viven DENTRO del elemento, así
+   que leer textContent en crudo exportaría el nombre del contenedor como si
+   fuera contenido del artista. */
+function cleanTextOf(el: HTMLElement): string {
+  const attr = el.getAttribute('data-text')
+  if (attr) return attr.trim()
+  const clone = el.cloneNode(true) as HTMLElement
+  clone.querySelectorAll('.cms-tools, .cms-empty-overlay').forEach((n) => n.remove())
+  return (clone.textContent || '').trim()
+}
+
+/* Recorre los contenedores de texto presentes en el DOM actual (contenedor
+   simple + cada campo de ficha) y entrega key → texto vivo. */
+function scanDomTextKeys(): Record<string, string> {
+  const found: Record<string, string> = {}
   for (const [k, el] of Object.entries(elementsByKey)) {
     const meta = metaByKey[k]
-    if (!meta) continue
-    if (meta.kind === 'text') {
-      const val = state.items[k] || (el ? (el.getAttribute('data-text') || el.textContent || '').trim() : '')
-      if (val && isTranslatableEntry(k, val)) result[k] = val
+    if (!meta || !el || !document.contains(el)) continue
+    // Con campos, el contenido real son los campos: leer además el textContent
+    // del contenedor daría un pegote ("ROLE" + "3D Generalist") y aplicarlo de
+    // vuelta borraría los <span> internos.
+    if (meta.kind === 'text' && !meta.fields) {
+      const val = cleanTextOf(el)
+      if (val) found[k] = val
     }
     if (meta.fields) {
       const cont = meta.container ? el.closest<HTMLElement>(meta.container) : el
+      if (!cont) continue
       meta.fields.forEach((f) => {
-        const compKey = k + '::' + f.key
-        const val = state.items[compKey] != null ? state.items[compKey] : (cont ? f.get(cont) : '')
-        if (val && typeof val === 'string' && isTranslatableEntry(compKey, val)) {
-          result[compKey] = val
-        }
+        const val = (f.get(cont) || '').trim()
+        if (val) found[k + '::' + f.key] = val
       })
     }
   }
+  return found
+}
+
+/* Memoriza el texto por defecto de la ruta montada. Se llama en cada rescan:
+   a medida que el admin navega, el caché va cubriendo el sitio entero y la
+   exportación deja de depender de en qué página se pulsó el botón. */
+export function captureTextDefaults() {
+  // Solo con el idioma base montado: en es/pt/fr el DOM ya trae la traducción
+  // aplicada y guardarla como "default" contaminaría la exportación.
+  if (state.lang !== BASE_LANG) return
+  const found: Record<string, string> = {}
+  for (const [k, v] of Object.entries(scanDomTextKeys())) {
+    if (isTranslatableEntry(k, v)) found[k] = v
+  }
+  recordTextDefaults(found)
+}
+
+/** Claves de texto esperadas según el registro + los contadores de los gestores. */
+export function expectedTextKeys(): string[] {
+  const keys = new Set<string>()
+  for (const [k, meta] of Object.entries(metaByKey)) {
+    if (meta.kind === 'text') keys.add(k)
+    if (meta.fields) meta.fields.forEach((f) => keys.add(k + '::' + f.key))
+  }
+  Object.keys(loadTextDefaults()).forEach((k) => keys.add(k))
+  Object.keys(state.items).forEach((k) => {
+    if (isTranslatableEntry(k, state.items[k])) keys.add(k)
+  })
+  return [...keys]
+}
+
+/* Reúne TODO el texto traducible. Une cuatro fuentes para que ninguna
+   ruta quede fuera: lo que guardó el servidor, los overrides locales, lo que
+   hay montado ahora mismo en el DOM y el caché de textos por defecto. */
+export function getAllTranslatableItems(baseFromStore: Record<string, string> = {}): Record<string, string> {
+  const result: Record<string, string> = {}
+
+  const merge = (src: Record<string, string>) => {
+    for (const [k, v] of Object.entries(src)) {
+      if (typeof v === 'string' && isTranslatableEntry(k, v)) result[k] = v
+    }
+  }
+
+  // Precedencia ascendente: el texto vivo del DOM y los overrides mandan sobre
+  // el caché de defaults (que puede haber quedado viejo tras una edición).
+  merge(loadTextDefaults())
+  merge(baseFromStore)
+  // El DOM solo es fuente fiable con el idioma base montado; en un idioma
+  // destino estaría devolviendo la traducción en lugar del texto original.
+  if (state.lang === BASE_LANG) merge(scanDomTextKeys())
+  merge(state.items)
+
   return result
 }
 
-/* Aplica un idioma a todo el texto del DOM. base (es) restaura state.items;
+/** Resumen por sección para confirmarle al admin qué se está exportando. */
+export function translationCoverage(items: Record<string, string>): { section: string; count: number }[] {
+  const counts: Record<string, number> = {}
+  for (const key of Object.keys(items)) {
+    const base = key.split('::')[0]
+    const section = metaByKey[base]?.section || getContainerMeta(base)?.section || 'Other'
+    counts[section] = (counts[section] || 0) + 1
+  }
+  return Object.entries(counts)
+    .map(([section, count]) => ({ section, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+/* Aplica un idioma a todo el texto del DOM. El idioma base restaura el texto
+   original (override del admin, o el default del contenedor si nunca se editó);
    un idioma destino usa su traducción y cae al base cuando falta la clave.
-   No toca media. Persiste la elección y notifica a los suscriptores. */
+   No toca media. Persiste la elección y notifica a los suscriptores.
+
+   El fallback a los defaults es lo que permite VOLVER al inglés: un contenedor
+   sin editar no tiene entrada en state.items, así que sin él se quedaría
+   mostrando la última traducción aplicada. */
 export function setLanguage(lang: Lang) {
-  const dict = lang === BASE_LANG ? state.items : (state.translations[lang] || {})
-  textKeys(dict).forEach((key) => {
-    const value = lang === BASE_LANG
-      ? state.items[key]
-      : (dict[key] != null ? dict[key] : state.items[key])
+  const dict = lang === BASE_LANG ? {} : (state.translations[lang] || {})
+  const defaults = loadTextDefaults()
+  const baseOf = (key: string) => (state.items[key] != null ? state.items[key] : defaults[key])
+
+  textKeys({ ...defaults, ...dict }).forEach((key) => {
+    const value = lang === BASE_LANG ? baseOf(key) : (dict[key] != null ? dict[key] : baseOf(key))
     if (value != null) applyStored(key, value)
   })
   applyStaticTranslations(lang)
@@ -939,7 +1022,7 @@ export function moveToUnusedSite(key: string) {
   persistUnused(); persistUsed(); persistRetired()
   showEmptySlot(key)
   refreshTools(key)
-  recordAudit({ section: entry.section, label: entry.label, kind: 'gestión', summary: 'Content moved to unused' })
+  recordAudit({ section: entry.section, label: entry.label, kind: 'management', summary: 'Content moved to unused' })
   flushSyncToServer()
 }
 
@@ -1293,6 +1376,12 @@ export function rescan() {
   }
   refreshRetired()
   syncWaveGroups()
-  applyStaticTranslations(state.lang)
+  // Orden importante: primero memorizar el texto base de lo que se acaba de
+  // montar, después repintar el idioma activo sobre ese mismo texto. Las
+  // secciones con next/dynamic entran tarde, así que sin este re-apply se
+  // quedarían en inglés tras un cambio de idioma o una navegación.
+  captureTextDefaults()
+  if (state.lang !== BASE_LANG) setLanguage(state.lang)
+  else applyStaticTranslations(state.lang)
 }
 

@@ -177,11 +177,11 @@ export default function AdminDashboard() {
         <Link href="/" className="logo" onClick={markSkipLoader}>Lucia Montaña <span className="highlight">| Management</span></Link>
         <div className="admin-topbar-right">
           <div className="admin-dropdown-wrapper">
-            <span className="cms-user-chip" title={`Sesión iniciada como ${state.username || 'Administrador'}`}>
-              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrador'} {state.role === 'demo' && <span style={{ marginLeft: 4, padding: '2px 6px', background: 'var(--accent)', color: 'white', borderRadius: 4, fontSize: '0.7em' }}>DEMO</span>} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+            <span className="cms-user-chip" title={`Signed in as ${state.username || 'Administrator'}`}>
+              <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrator'} {state.role === 'demo' && <span style={{ marginLeft: 4, padding: '2px 6px', background: 'var(--accent)', color: 'white', borderRadius: 4, fontSize: '0.7em' }}>DEMO</span>} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
             </span>
             <div className="admin-dropdown-menu">
-              <div className="admin-menu-header">Sesión actual: {state.username || 'Administrador'}</div>
+              <div className="admin-menu-header">Current session: {state.username || 'Administrator'}</div>
               <Link 
                 href="/" 
                 className="cms-navauth-btn" 

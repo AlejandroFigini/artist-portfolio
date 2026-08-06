@@ -852,7 +852,7 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
                     throw new Error(data.error || 'Unknown error')
                   }
                 } catch (e) {
-                  toast(`Download failed: ${e instanceof Error ? e.message : 'error desconocido'}`, 'error')
+                  toast(`Download failed: ${e instanceof Error ? e.message : 'unknown error'}`, 'error')
                 }
               }}>
                 <i className="fa-solid fa-file-zipper"></i> Download ZIP

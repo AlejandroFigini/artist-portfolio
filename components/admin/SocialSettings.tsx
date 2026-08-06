@@ -4,12 +4,18 @@
    cms_data (claves social.*) vía POST /api/content, refleja en el store local y
    actualiza el SocialProvider para aplicar los enlaces en vivo en Nav y Footer. */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SOCIAL_NETWORKS, socialKey } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useToast } from '@/components/ui/Toast'
 import { saveContent } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit } from '@/lib/cms/store'
+
+/* Destino de las notificaciones internas (mensajes del formulario, reporte
+   semanal). Separado del email PÚBLICO que se muestra en el sitio. Bajo
+   `settings.*`, así que isTranslatableEntry() lo deja fuera del export de
+   traducciones. Vacío → lib/mail cae a social.email. */
+const NOTIFY_EMAIL_KEY = 'settings.notifyEmail'
 
 export default function SocialSettings() {
   const { links, setLinks } = useSocial()
@@ -20,10 +26,21 @@ export default function SocialSettings() {
     return init
   })
   const [saving, setSaving] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState('')
+
+  /* El valor vive en cms_data pero no lo trae el SocialProvider (que solo lee
+     social.*), y state.items puede no estar hidratado todavía: sin este fetch
+     el input arrancaría vacío y guardar borraría el valor configurado. */
+  useEffect(() => {
+    fetch('/api/content')
+      .then((r) => r.json())
+      .then((d) => setNotifyEmail(d.items?.[NOTIFY_EMAIL_KEY] || ''))
+      .catch(() => {})
+  }, [])
 
   const save = async () => {
     setSaving(true)
-    const items: Record<string, string> = {}
+    const items: Record<string, string> = { [NOTIFY_EMAIL_KEY]: notifyEmail.trim() }
     SOCIAL_NETWORKS.forEach((n) => { items[socialKey(n.id)] = (vals[n.id] || '').trim() })
     try {
       await saveContent(items)
@@ -32,7 +49,7 @@ export default function SocialSettings() {
       const map: Record<string, string> = {}
       SOCIAL_NETWORKS.forEach((n) => { map[n.id] = items[socialKey(n.id)] })
       setLinks(map)
-      recordAudit({ section: 'Social networks', label: 'Links', summary: 'Social links updated' })
+      recordAudit({ section: 'Social networks', label: 'Links', summary: 'Social links and notification email updated' })
       toast('Links saved')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error saving', 'error')
@@ -66,6 +83,27 @@ export default function SocialSettings() {
           </div>
         ))}
       </div>
+
+      <p className="cms-admin-sub" style={{ marginTop: '1.5rem' }}>
+        Notification email
+        <span className="cms-info-tip" tabIndex={0} aria-label="Where contact form messages and the weekly traffic report are delivered. This address is never shown on the site. Leave it empty to use the public Email address above. Separate several addresses with commas.">
+          <i className="fa-solid fa-circle-info"></i>
+          <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Where contact form messages and the weekly traffic report are delivered. This address is never shown on the site. Leave it empty to use the public Email address above. Separate several addresses with commas.</span>
+        </span>
+      </p>
+      <div className="social-settings">
+        <div className="setting-item">
+          <span><i className="fa-solid fa-bell" style={{ width: '1.2em' }}></i> Notifications</span>
+          <input
+            type="text"
+            className="social-input"
+            placeholder="inbox@example.com"
+            value={notifyEmail}
+            onChange={(e) => setNotifyEmail(e.target.value)}
+          />
+        </div>
+      </div>
+
       <div className="admin-quick" style={{ marginTop: '1.5rem' }}>
         <button type="button" className="cms-btn cms-btn--primary" onClick={save} disabled={saving}>
           <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save links'}

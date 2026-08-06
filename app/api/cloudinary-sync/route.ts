@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     console.error('[cloudinary-sync] faltan credenciales de Cloudinary en el entorno')
     return NextResponse.json({
       resources: [],
-      error: 'Cloudinary no está configurado en este entorno.',
+      error: 'Cloudinary is not configured in this environment.',
     }, { status: 400 })
   }
 

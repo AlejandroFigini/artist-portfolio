@@ -24,7 +24,7 @@ import {
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useInViewRef } from '@/hooks/useInView'
 import { optimizedMediaSrc } from '@/lib/utils'
-import { useCmsStore, state } from '@/lib/cms/store'
+import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { sendGAEvent } from '@next/third-parties/google'
 
@@ -75,15 +75,18 @@ function CharMedia({
 
 function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number; total: number; onOpen: (lb: Lightbox) => void; isHoveringRef?: React.MutableRefObject<boolean> }) {
   useCmsStore()
+  const ui = useUiText()
   const [isHovered, setIsHovered] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0) // 0 = retrato principal, 1..4 = concepts c0..c3
 
   const key = `char#${index}`
   const sampleNames = ['Elena — Paladin Concept', 'Kaelen — Shadow Wanderer', 'Lyra — Star Weaver', 'Thorne — Iron Juggernaut', 'Vael — Frost Blade', 'Zephyr — Sky Hunter', 'Nyx — Void Oracle', 'Orion — Solar Warden']
   const sampleRoles = ['Hero Concept & Turnaround', 'Dark Fantasy Character Design', 'Sci-Fi Protagonist Study', 'Mecha & Armor Lookdev', 'Cryo Warrior Visual Dev', 'Aero Scout Character Sheet', 'Mystic Entity Concept Art', 'Paladin Commander Sculpt']
-  const name = state.items[`${key}::name`] || sampleNames[index % sampleNames.length] || ''
-  const role = state.items[`${key}::role`] || sampleRoles[index % sampleRoles.length] || ''
-  const desc = state.items[`${key}::desc`] || 'Full character exploration: from early rough thumbnails and silhouette studies to finalized lookdev, turnaround sheets, and expression breakdowns.'
+  // Texto vía t(): este panel se re-renderiza desde el store, así que leer
+  // state.items directo pisaría la traducción que aplicó setLanguage.
+  const name = t(`${key}::name`, sampleNames[index % sampleNames.length] || '')
+  const role = t(`${key}::role`, sampleRoles[index % sampleRoles.length] || '')
+  const desc = t(`${key}::desc`, 'Full character exploration: from early rough thumbnails and silhouette studies to finalized lookdev, turnaround sheets, and expression breakdowns.')
   const num = String(index + 1).padStart(2, '0')
   const tot = String(total).padStart(2, '0')
 
@@ -127,7 +130,7 @@ function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number
     return () => clearTimeout(timer)
   }, [isHovered, activeSlide, validConceptIndices])
 
-  const open = (src: string) => onOpen({ src, name: name || `Personaje ${num}`, role, desc })
+  const open = (src: string) => onOpen({ src, name: name || `Character ${num}`, role, desc })
 
   const handleMouseEnter = () => {
     setIsHovered(true)
@@ -190,7 +193,7 @@ function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number
 
         <span className="ch-counter"><b>{num}</b> / {tot}</span>
         <h3 className="ch-name">{name || `Character ${num}`}</h3>
-        <div className="ch-role">{role || 'Character Role'}</div>
+        <div className="ch-role">{role || ui('character_role')}</div>
         <p className="ch-desc">
           {desc || 'Brief character description: from early concept to final design, exploring form, color, and personality.'}
         </p>
@@ -201,6 +204,7 @@ function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number
 
 export default function CharactersShowcase() {
   useCmsStore()
+  const ui = useUiText()
   const isAdmin = state.isAdmin
   const sectionRef = useRef<HTMLElement>(null)
   const isHoveringRef = useRef(false)
@@ -382,8 +386,8 @@ export default function CharactersShowcase() {
               <button
                 type="button"
                 className="ch-showcase__manage"
-                title="Gestionar personajes"
-                aria-label="Gestionar personajes"
+                title="Manage characters"
+                aria-label="Manage characters"
                 onClick={() => window.dispatchEvent(new CustomEvent('cms:charactersManager'))}
               >
                 <i className="fa-solid fa-gear" /> Gestionar
@@ -399,7 +403,7 @@ export default function CharactersShowcase() {
               <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
                 <i className="fa-solid fa-user-astronaut text-xl opacity-80" />
               </div>
-              <h3 className="cms-placeholder-inner text-lg font-bold text-gray-800">No hay personajes configurados</h3>
+              <h3 className="cms-placeholder-inner text-lg font-bold text-gray-800">{ui('no_characters')}</h3>
             </div>
           ) : (
             <Carousel
@@ -433,7 +437,7 @@ export default function CharactersShowcase() {
               type="button"
               className="info-toggle-btn"
               onClick={(e) => { e.stopPropagation(); setShowInfo((p) => !p) }}
-              aria-label="Información"
+              aria-label={ui('information')}
             >
               <i className="fa-solid fa-info" />
             </button>
