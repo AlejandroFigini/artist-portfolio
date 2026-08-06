@@ -1102,10 +1102,12 @@ git commit -m "feat(cms): hook useCollection y aplicador de migracion"
 - Delete: `components/cms/CarouselManager.tsx`
 - Delete: `components/cms/ProjectsManager.tsx`
 - Delete: `components/cms/CharactersManager.tsx`
+- Modify: `components/cms/engine.ts`
 
 **Interfaces:**
-- Consumes: `useCollection`, `CollectionHandle`, `COLLECTIONS`, `CollectionSpec`, `itemKey`, `mediaKeysOf`, `isEmptyMedia`; de `engine`: `ensureCollectionMeta` (creada en Task 7 — hasta entonces, usar el `ensureSlideMeta` existente y cambiarlo en Task 7).
+- Consumes: `useCollection`, `CollectionHandle`, `COLLECTIONS`, `CollectionSpec`, `itemKey`, `mediaKeysOf`, `isEmptyMedia`.
 - Produces:
+  - `function ensureCollectionMeta(key: string): void` en `components/cms/engine.ts`, que reemplaza y borra a `ensureSlideMeta`, `ensureProjectMeta` y `ensureCharacterMeta`.
   - `export default function CollectionManager(props: { spec: CollectionSpec; show?: boolean; onClose: () => void; onPickImage: (key: string) => void; onEditInfo: (key: string) => void }): JSX.Element`
   - `export default function CollectionRow(props: { spec: CollectionSpec; id: string; index: number; total: number; onPick: (key: string) => void; onEditInfo: (key: string) => void; onMove: (dir: -1 | 1) => void; onRemove: () => void }): JSX.Element`
 
@@ -1413,7 +1415,37 @@ export default function CollectionManager({ spec, show = true, onClose, onPickIm
 }
 ```
 
-- [ ] **Step 3: Cablear en `CmsRoot.tsx`**
+- [ ] **Step 3: `engine.ts` — una sola `ensureCollectionMeta`**
+
+Los tres managers eran los únicos consumidores de `ensureSlideMeta`,
+`ensureProjectMeta` y `ensureCharacterMeta`. Se borran las tres y se agrega en su
+lugar:
+
+```ts
+/* Los items de colección no tienen elemento DOM propio indexado por el REGISTRY
+   (React los pinta y el picker escribe la clave directo). Se crea una meta
+   sintética para que los pickers, que hacen `if (!meta) return null`, puedan
+   asignarles contenido. */
+export function ensureCollectionMeta(key: string) {
+  if (metaByKey[key]) return
+  const spec = collectionOf(key)
+  if (!spec) return
+  const conceptMatch = key.match(/::c(\d+)$/)
+  metaByKey[key] = {
+    label: state.containerNames[key]
+      || (conceptMatch ? `Concept image #${Number(conceptMatch[1]) + 1}` : spec.label),
+    section: spec.section,
+    kind: 'image',
+    accept: spec.accept,
+    mount: 'none',
+  }
+  typeByKey[key] = 'media'
+}
+```
+
+Agregar `import { collectionOf } from '@/lib/cms/collections'` en `engine.ts`.
+
+- [ ] **Step 4: Cablear en `CmsRoot.tsx`**
 
 Reemplazar los tres imports dinámicos de managers (`components/cms/CmsRoot.tsx:23-25`) por uno solo:
 
@@ -1429,8 +1461,8 @@ Reemplazar los tres bloques de render (`:247-270`) por uno solo:
               show={true}
               spec={COLLECTIONS[managerCmd.key || 'hero']}
               onClose={() => { setManagerCmd(null); close(); }}
-              onPickImage={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'contentPicker', key }) }}
-              onEditInfo={(key) => { engine.ensureSlideMeta(key); dispatch({ type: 'editInfo', key }) }}
+              onPickImage={(key) => { engine.ensureCollectionMeta(key); dispatch({ type: 'contentPicker', key }) }}
+              onEditInfo={(key) => { engine.ensureCollectionMeta(key); dispatch({ type: 'editInfo', key }) }}
             />
           )}
 ```
@@ -1443,26 +1475,28 @@ import { COLLECTIONS } from '@/lib/cms/collections'
 
 En las líneas `:59`, `:165`, `:169` y `:175`, renombrar el tipo de comando `'carouselManager'` a `'collectionManager'`, y donde se despachaban `'projectsManager'` / `'charactersManager'` pasar a despachar `'collectionManager'` con `key: 'proj'` y `key: 'char'` respectivamente.
 
-- [ ] **Step 4: Borrar los tres managers viejos**
+- [ ] **Step 5: Borrar los tres managers viejos**
 
 ```bash
 git rm components/cms/CarouselManager.tsx components/cms/ProjectsManager.tsx components/cms/CharactersManager.tsx
 ```
 
-- [ ] **Step 5: Verificar tipos y lint**
+- [ ] **Step 6: Verificar tipos y lint**
 
 Run: `npm run type-check && npm run lint`
-Expected: sin errores. Si `type-check` reporta que `ensureProjectMeta` / `ensureCharacterMeta` quedaron sin consumidor, dejarlas — se borran en la Task 7.
+Expected: sin errores, y ninguna referencia colgada a `ensureSlideMeta`,
+`ensureProjectMeta` o `ensureCharacterMeta`. Si alguna quedó, es que un consumidor
+se pasó por alto: corregirlo antes de seguir.
 
-- [ ] **Step 6: Verificar que el build pasa**
+- [ ] **Step 7: Verificar que el build pasa**
 
 Run: `npm run build`
 Expected: build correcto
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add components/cms/CollectionManager.tsx components/cms/CollectionRow.tsx components/cms/CmsRoot.tsx
+git add components/cms/CollectionManager.tsx components/cms/CollectionRow.tsx components/cms/CmsRoot.tsx components/cms/engine.ts
 git commit -m "feat(cms): CollectionManager unico reemplaza los tres managers"
 ```
 
@@ -1696,37 +1730,9 @@ git commit -m "refactor(cms): el store es la unica fuente de los carruseles"
 
 **Interfaces:**
 - Consumes: `COLLECTIONS`, `collectionOf`, `allKeysOf`, `mediaKeysOf`, `readSettings` (Tasks 1-3).
-- Produces: `function ensureCollectionMeta(key: string): void` en `engine.ts`, que reemplaza a `ensureSlideMeta`, `ensureProjectMeta` y `ensureCharacterMeta`.
+- Produces: nada nuevo. `ensureCollectionMeta` ya existe desde la Task 5.
 
-- [ ] **Step 1: `engine.ts` — una sola `ensureCollectionMeta`**
-
-Borrar `ensureSlideMeta`, `ensureProjectMeta` y `ensureCharacterMeta`. Agregar en su lugar:
-
-```ts
-/* Los items de colección no tienen elemento DOM propio indexado por el REGISTRY
-   (React los pinta y el picker escribe la clave directo). Se crea una meta
-   sintética para que los pickers, que hacen `if (!meta) return null`, puedan
-   asignarles contenido. */
-export function ensureCollectionMeta(key: string) {
-  if (metaByKey[key]) return
-  const spec = collectionOf(key)
-  if (!spec) return
-  const conceptMatch = key.match(/::c(\d+)$/)
-  metaByKey[key] = {
-    label: state.containerNames[key]
-      || (conceptMatch ? `Concept image #${Number(conceptMatch[1]) + 1}` : spec.label),
-    section: spec.section,
-    kind: 'image',
-    accept: spec.accept,
-    mount: 'none',
-  }
-  typeByKey[key] = 'media'
-}
-```
-
-Actualizar las llamadas en `CmsRoot.tsx` (`onPickImage` / `onEditInfo` de la Task 5) para usar `engine.ensureCollectionMeta`.
-
-- [ ] **Step 2: `engine.ts` — desactivar el fallback posicional en las bases de colección**
+- [ ] **Step 1: `engine.ts` — desactivar el fallback posicional en las bases de colección**
 
 Agregar el campo opcional al tipo `RegistryEntry`:
 
@@ -1750,7 +1756,7 @@ En `indexEditables()`, reemplazar el bloque de asignación de clave por:
       }
 ```
 
-- [ ] **Step 3: `engine.ts` — `deleteProjectSite` sobre la nueva API**
+- [ ] **Step 2: `engine.ts` — `deleteProjectSite` sobre la nueva API**
 
 Reemplazar la función entera (`:1033` hasta su cierre) por:
 
@@ -1780,7 +1786,7 @@ export async function deleteProjectSite(key: string) {
 }
 ```
 
-- [ ] **Step 4: `engine.ts` — `clearKeys` usa las specs**
+- [ ] **Step 3: `engine.ts` — `clearKeys` usa las specs**
 
 En `clearKeys` (`:1100`), reemplazar la detección `key.match(/^(.+)\.slide#\d+$/)` y el bloque de reset de carruseles (`:1109-1147`) por:
 
@@ -1815,7 +1821,7 @@ Renombrar la variable local `carouselPrefixes` a `collectionPrefixes` y el pará
   clearKeys(allMediaKeys(), Object.keys(COLLECTIONS))
 ```
 
-- [ ] **Step 5: `engine.ts` — `keyInSection` sobre uids**
+- [ ] **Step 4: `engine.ts` — `keyInSection` sobre uids**
 
 Reemplazar el bloque de slides de `keyInSection` (`:1200-1210`) por:
 
@@ -1830,13 +1836,13 @@ Reemplazar el bloque de slides de `keyInSection` (`:1200-1210`) por:
   }
 ```
 
-- [ ] **Step 6: `store.ts` — borrar `compactList` y la normalización legacy**
+- [ ] **Step 5: `store.ts` — borrar `compactList` y la normalización legacy**
 
 Borrar la función `compactList` (`:634` hasta su cierre en `:699`) y sus dos llamadas en `clearItemOverrides` (`:723-724`), junto con los `Set<number>` `charDeleted` / `projDeleted` y los dos `match` de índice (`:704-711`).
 
 Borrar el bloque de normalización de `proj.settings` de 6 a 4 (`:833-843`) completo, incluido su `try/catch`.
 
-- [ ] **Step 7: `store.ts` — `getAllKnownContainerKeys` deriva de los ids**
+- [ ] **Step 6: `store.ts` — `getAllKnownContainerKeys` deriva de los ids**
 
 Reemplazar las seis líneas de colecciones dinámicas (`:502-505`, `:509`, `:514`) por:
 
@@ -1851,7 +1857,7 @@ En la regex de la línea `:529`, quitar las alternativas `hero\.slide`, `hero-ma
 
 En `CONTAINER_BASES` (`:421-449`), borrar las entradas `'hero-main.slide'`, `'hero-sub.slide'`, `'hero.slide'` y `'about-carousel.slide'`; dejar `'char'` y `'proj'` (las usa `getContainerMeta` como fallback de label).
 
-- [ ] **Step 8: `TextModals.tsx` — regex de uid**
+- [ ] **Step 7: `TextModals.tsx` — regex de uid**
 
 En `components/cms/TextModals.tsx:230`, reemplazar:
 
@@ -1867,17 +1873,17 @@ por:
 
 Agregar el import `import { collectionOf } from '@/lib/cms/collections'`.
 
-- [ ] **Step 9: Barrido final de regex de índice**
+- [ ] **Step 8: Barrido final de regex de índice**
 
 Run: `npx rg "#\\\\d\+|#\$\{i\}|proj#\d|char#\d|slide#" --glob '!node_modules' --glob '!docs' components lib app`
 Expected: los únicos resultados deben ser los slots de tamaño fijo (`illustration`, `model3d`, `model3d.gallery`, `soft.*`, `hero.wave`, `hero.marquee`), que conservan la clave posicional a propósito. Cualquier resultado sobre `proj`, `char`, `hero`, `hero-main`, `hero-sub` o `about-carousel` es un caso pendiente: corregirlo antes de commitear.
 
-- [ ] **Step 10: Verificar tipos, lint, tests y build**
+- [ ] **Step 9: Verificar tipos, lint, tests y build**
 
 Run: `npm run type-check && npm run lint && npx vitest run && npm run build`
 Expected: sin errores, suite en verde
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add components/cms/engine.ts lib/cms/store.ts components/cms/TextModals.tsx
