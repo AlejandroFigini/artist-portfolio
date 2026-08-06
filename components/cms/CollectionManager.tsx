@@ -7,7 +7,7 @@
    existe apenas se agrega el item. */
 
 import { useState } from 'react'
-import { CmsModal } from '@/components/ui/Modal'
+import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
 import type { CollectionSpec } from '@/lib/cms/collections'
@@ -25,10 +25,30 @@ type Props = {
 
 export default function CollectionManager({ spec, show = true, onClose, onPickImage, onEditInfo }: Props) {
   const toast = useToast()
+  const modal = useModal()
   useCmsStore()
   const col = useCollection(spec)
   const [saving, setSaving] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+
+  // Cerrar sin guardar borra el borrador en memoria (useCollection no persiste
+  // nada hasta commit()), pero las imágenes YA subidas por UploadModal viven en
+  // el servidor apenas se suben — no esperan al Save. Sin esta confirmación,
+  // cerrar con cambios sin guardar deja filas `proj#<uid>`/`char#<uid>` huérfanas
+  // en la base: el item desaparece de la UI pero la imagen sigue ahí para siempre.
+  const requestClose = () => {
+    if (!col.dirty) { onClose(); return }
+    modal.confirm(
+      'Unsaved changes',
+      <>
+        The current order and item list are not saved yet. Closing now discards them —
+        including any {spec.itemNoun} you added in this session, even if you already uploaded an image for it.
+        <br /><br />
+        Press <strong>Cancel</strong> to go back and hit <strong>Save</strong> first.
+      </>,
+      onClose,
+    )
+  }
 
   const filled = col.ids.filter((id) => !isEmptyMedia(state.items[itemKey(spec, id)])).length
   const hasEmpty = filled < col.ids.length
@@ -94,7 +114,7 @@ export default function CollectionManager({ spec, show = true, onClose, onPickIm
       }
       wide={!!spec.fields}
       show={show}
-      onClose={onClose}
+      onClose={requestClose}
       actions={[]}
     >
       <div className="cms-carousel-manager">

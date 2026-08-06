@@ -34,6 +34,10 @@ export default function CollectionRow({
   const rich = !!spec.fields
   const titleField = spec.fields?.[0]
   const title = titleField ? state.items[`${key}::${titleField.key}`] || '' : ''
+  const subField = spec.fields?.[1]
+  const subValue = subField ? state.items[`${key}::${subField.key}`] || '' : ''
+  const positional = `${spec.itemNoun[0].toUpperCase()}${spec.itemNoun.slice(1)} ${index + 1}`
+  const subtitle = subValue || positional
 
   return (
     <div style={rowStyle}>
@@ -60,9 +64,13 @@ export default function CollectionRow({
 
       <div style={{ flex: 1, minWidth: 160, fontSize: '0.85rem', fontWeight: 600 }}>
         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>
-          {title || `${spec.itemNoun[0].toUpperCase()}${spec.itemNoun.slice(1)} ${index + 1}`}
+          {title || positional}
         </div>
-        {empty && (
+        {rich ? (
+          <div style={{ fontSize: '0.75rem', color: empty ? '#b45309' : 'var(--text-secondary)', fontWeight: 400, marginTop: 2 }}>
+            {subtitle}{empty && ' — no image'}
+          </div>
+        ) : empty && (
           <div style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 400, marginTop: 2 }}>
             no image
           </div>
