@@ -25,7 +25,7 @@ import { readCollectionIds } from '@/lib/cms/useCollection'
 // inyectaba imperativamente sólo en el nodo original → tarjetas en blanco.
 
 
-function ProjectCard({ id }: { id: string }) {
+function ProjectCard({ id, index }: { id: string; index: number }) {
   useCmsStore()
   const key = `proj#${id}`
   const imgSrc = state.items[key] || ''
@@ -139,7 +139,7 @@ function ProjectCard({ id }: { id: string }) {
 
           {/* 2. Título (con altura mínima para alinear las tarjetas de al lado) */}
           <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-normal font-[family-name:var(--font)] text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
-            {title || 'Project Title'}
+            {title || `Project Title ${index + 1}`}
           </h3>
 
           {/* 3. Breve descriptivo (altura fija para que los botones de pie queden alineados) */}
@@ -351,10 +351,10 @@ export default function ProjectsShowcase() {
               }}
             >
               <CarouselContent className="-ml-4 py-4">
-                {ids.map((id) => (
+                {ids.map((id, i) => (
                   <CarouselItem key={id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex items-stretch py-3">
                     <div className="w-full h-full px-1 sm:px-1.5">
-                      <ProjectCard id={id} />
+                      <ProjectCard id={id} index={i} />
                     </div>
                   </CarouselItem>
                 ))}

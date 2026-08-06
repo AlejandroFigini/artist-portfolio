@@ -353,6 +353,18 @@ export default function CharactersShowcase() {
 
   const isLoopable = completedIds.length > 0
 
+  // Embla está en modo `loop`: con pocos paneles no hay contenido suficiente
+  // para clonar la pista y el ciclo queda entrecortado. Repetimos los ids
+  // reales hasta cubrir el mínimo — el `id` sigue siendo la clave del CMS,
+  // la posición repetida sólo se usa para la key de React.
+  const MIN_LOOP_ITEMS = 6
+  let renderIds = completedIds
+  if (isLoopable) {
+    while (renderIds.length < MIN_LOOP_ITEMS) {
+      renderIds = [...renderIds, ...completedIds]
+    }
+  }
+
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
 
@@ -400,9 +412,9 @@ export default function CharactersShowcase() {
               className="ch-carousel"
             >
               <CarouselContent className="-ml-3 md:-ml-4">
-                {completedIds.map((id, i) => (
-                  <CarouselItem key={id} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
-                    <CharacterPanel id={id} index={i} total={completedIds.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
+                {renderIds.map((id, i) => (
+                  <CarouselItem key={`${id}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
+                    <CharacterPanel id={id} index={i % completedIds.length} total={completedIds.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}
               </CarouselContent>
