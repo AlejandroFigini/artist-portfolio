@@ -514,6 +514,8 @@ export function getAllKnownContainerKeys(): string[] {
     'settings.faviconUrl',
     'anim.bg',
     'about.video',
+    // 6 videos fijos de Animations (AnimationsShowcase.tsx → CARD_COUNT).
+    ...Array.from({ length: 6 }, (_, i) => `anim#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.wave#${i}`),
     ...Array.from({ length: 11 }, (_, i) => `hero.marquee#${i}`),
     ...Array.from({ length: 6 }, (_, i) => `soft.global#${i}`),

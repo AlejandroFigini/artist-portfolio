@@ -18,7 +18,7 @@ import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } fr
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc } from '@/lib/utils'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
-import { readSettings, writeSettings, allKeysOf, planCommit } from '@/lib/cms/collection'
+import { readSettings, planCommit } from '@/lib/cms/collection'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
   if (!src && !key) return ''
@@ -1053,10 +1053,16 @@ function clearKeys(keys: Iterable<string>, forceCollections: string[] = []) {
   collectionPrefixes.forEach((prefix) => {
     const spec = COLLECTIONS[prefix]
     const { ids, duration } = readSettings(state.items, prefix)
-    for (const id of ids) {
-      for (const k of allKeysOf(spec, id)) { delete state.items[k]; cleared[k] = '' }
+    // Mismo camino que deleteProjectSite/commit(): archivar (concept images incluidas)
+    // antes de borrar, para que nada se pierda sin pasar por "no usados".
+    const plan = planCommit(spec, ids, [], state.items, duration)
+    for (const k of plan.archiveKeys) archiveMediaKey(k, 'deleted')
+    for (const k of plan.deleteKeys) {
+      delete state.items[k]
+      delete state.usedContent[k]
+      cleared[k] = ''
     }
-    state.items[`${prefix}.settings`] = writeSettings(spec.duration ? { ids: [], duration } : { ids: [] })
+    state.items[`${prefix}.settings`] = plan.payload[`${prefix}.settings`]
     cleared[`${prefix}.settings`] = state.items[`${prefix}.settings`]
   })
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()

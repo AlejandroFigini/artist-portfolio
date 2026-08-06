@@ -8,7 +8,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { saveContent } from '@/lib/api'
 import {
-  archiveMediaKey, emit, loadJSON, LS, persistUnused, persistUsed,
+  archiveMediaKey, emit, loadJSON, LS, persistRetired, persistUnused, persistUsed,
   saveJSON, scheduleSyncToServer, state, useCmsStore,
 } from '@/lib/cms/store'
 import { COLLECTIONS, type CollectionSpec } from './collections'
@@ -119,6 +119,7 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
     }
     persistUnused()
     persistUsed()
+    persistRetired()
 
     for (const [k, v] of Object.entries(plan.payload)) {
       if (v === '') delete state.items[k]
