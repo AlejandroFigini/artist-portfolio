@@ -217,6 +217,21 @@ describe('planCommit', () => {
     expect(plan.archiveKeys).toEqual(['proj#a', 'proj#a::c0', 'proj#b', 'proj#c'])
   })
 
+  it('borrar de una colección sin conceptos ni campos solo toca su clave de media', () => {
+    const heroItems = {
+      'hero.settings': '{"ids":["x","y"],"duration":7000}',
+      'hero#x': 'https://cdn/x.webp',
+      'hero#y': 'https://cdn/y.webp',
+    }
+    const plan = planCommit(hero, ['x', 'y'], ['y'], heroItems, 7000)
+    expect(plan.archiveKeys).toEqual(['hero#x'])
+    expect(plan.deleteKeys).toEqual(['hero#x'])
+    expect(plan.payload).toEqual({
+      'hero.settings': '{"ids":["y"],"duration":7000}',
+      'hero#x': '',
+    })
+  })
+
   it('persiste la duración en las colecciones que rotan', () => {
     const plan = planCommit(hero, ['x'], ['x'], { 'hero#x': 'https://cdn/x.webp' }, 9000)
     expect(plan.payload['hero.settings']).toBe('{"ids":["x"],"duration":9000}')
