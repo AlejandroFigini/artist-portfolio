@@ -1,19 +1,20 @@
 'use client'
 
 /* Hero slideshow — portado de script.js (initHeroSlideshow): crossfade
-   GSAP con zoom sutil. CMS-aware: CmsRoot emite 'cms:hero' con las
-   slides (hero.slide#i) y la duración (hero.settings) del backend.
+   GSAP con zoom sutil. CMS-aware: lee las slides y la duración directo del
+   store (colección 'hero'), no de un evento — así no depende de si CmsRoot
+   ya emitió antes de que este componente montara.
    Sin imágenes → fondo blanco (sin portadas estáticas). 1 imagen → fija,
    sin rotación. Con prefers-reduced-motion queda la primera slide fija. */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
-import { useCmsStore } from '@/lib/cms/store'
-
+import { state, useCmsStore } from '@/lib/cms/store'
+import { COLLECTIONS } from '@/lib/cms/collections'
+import { itemKey } from '@/lib/cms/collection'
+import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection'
 import { optimizedMediaSrc } from '@/lib/utils'
-
-const DEFAULT_INTERVAL_MS = 6000
 
 /* El fondo es 100vw × 100vh: pedir 1600px fijos en un teléfono era traer ~2.5×
    los píxeles necesarios. Las slides llegan por evento del CMS (nunca en SSR),
@@ -23,24 +24,13 @@ function backdropWidth(): number {
   return Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2))
 }
 
-type HeroDetail = { slides: string[]; duration: number }
-
 export default function HeroSlideshow() {
   useCmsStore()
-  const [slides, setSlides] = useState<string[]>([])
-  const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS)
-
-  // contenido del CMS (CmsRoot → evento tras el fetch de /api/content)
-  useEffect(() => {
-    const onHero = (e: Event) => {
-      const { slides: cmsSlides, duration } = (e as CustomEvent<HeroDetail>).detail
-      // Solo las slides con imagen real. Vacío → []  → fondo blanco.
-      setSlides(cmsSlides.filter((s) => s && s.trim() !== ''))
-      if (duration) setIntervalMs(duration)
-    }
-    window.addEventListener('cms:hero', onHero)
-    return () => window.removeEventListener('cms:hero', onHero)
-  }, [])
+  // Solo las slides con imagen real. Vacío → [] → fondo blanco.
+  const slides = readCollectionIds('hero')
+    .map((id) => state.items[itemKey(COLLECTIONS['hero'], id)] || '')
+    .filter((s) => s.trim() !== '')
+  const intervalMs = readCollectionDuration('hero')
 
   useEffect(() => {
     if (prefersReducedMotion()) return

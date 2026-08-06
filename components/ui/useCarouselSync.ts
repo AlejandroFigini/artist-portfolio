@@ -4,8 +4,7 @@
 
 import { useEffect, type DependencyList } from 'react'
 import { type CarouselApi } from '@/components/ui/carousel'
-import { useCmsStore, state } from '@/lib/cms/store'
-import { rescan } from '@/components/cms/engine'
+import { useCmsStore } from '@/lib/cms/store'
 
 /**
  * Re‑initialize the carousel when the provided signature changes.
@@ -24,13 +23,8 @@ export function useCarouselSync(
    
   useEffect(() => {
     if (!api) return
-    // Re‑initialize Embla to rebuild cloned slides.
+    // Re-initialize Embla to rebuild cloned slides.
     api.reInit()
-    // If admin, trigger a short rescan to update engine.
-    if (state.isAdmin) {
-      const t = setTimeout(() => rescan(), 100)
-      return () => clearTimeout(t)
-    }
     /* El spread es la API del hook: cada carrusel aporta sus propias
        dependencias extra. El linter no puede verificar un array variádico. */
     // eslint-disable-next-line react-hooks/exhaustive-deps

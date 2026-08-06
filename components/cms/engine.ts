@@ -414,24 +414,9 @@ export function ensureCollectionMeta(key: string) {
   typeByKey[key] = 'media'
 }
 
-// Re-emite el evento del carrusel para que el slideshow (Slideshow.tsx) se
-// actualice en vivo tras asignar/quitar una slide (no hay elemento DOM por
-// slide; el slideshow se hidrata desde state.items vía este evento).
-export function broadcastCarousel(prefix: string) {
-  let settings = { count: 3, duration: 7000 }
-  try { settings = Object.assign(settings, JSON.parse(state.items[`${prefix}.settings`] || '')) } catch {}
-  // count puede ser 0 (carrusel limpiado): respetarlo. `|| 3` lo trataría como
-  // "usar 3" → reaparecerían slides/defaults tras limpiar.
-  const count = Number.isFinite(settings.count) ? Math.max(0, settings.count) : 3
-  const slides: string[] = []
-  for (let i = 0; i < count; i++) slides.push(state.items[`${prefix}.slide#${i}`] || '')
-  window.dispatchEvent(new CustomEvent(`cms:${prefix}`, { detail: { slides, duration: settings.duration || 7000 } }))
-}
-
 export function applyMedia(key: string, value: string) {
-  // Slides del carrusel: no tienen elemento propio → actualizar vía evento.
-  const slideMatch = key.match(/^(.+)\.slide#\d+$/)
-  if (slideMatch) { broadcastCarousel(slideMatch[1]); return }
+  // Items de colección: los pinta React desde el store, no el motor.
+  if (collectionOf(key)) { emit(); return }
 
   // Galería 3D (cinta): mismo data-cms-key en las 2 copias → actualizar todas
   // las instancias (la copia clon mantiene el loop seamless con contenido).
@@ -1109,7 +1094,6 @@ function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
     })
     state.items[`${p}.settings`] = JSON.stringify({ count: 0, duration })
     cleared[`${p}.settings`] = state.items[`${p}.settings`]
-    broadcastCarousel(p)
   })
 
   // Limpiar también las tarjetas dinámicas si se borran sus contenidos (count:0)

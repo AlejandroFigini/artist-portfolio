@@ -2,24 +2,11 @@ import { useEffect, useState } from 'react';
 import { ensureGSAP, gsap } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
+import { COLLECTIONS } from '@/lib/cms/collections';
+import { itemKey } from '@/lib/cms/collection';
+import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection';
 
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils';
-// Default duration if not provided by CMS
-const DEFAULT_DURATION_MS = 7000;
-
-function readCarousel(prefix: string): { slides: string[]; duration: number } {
-  let count = 0;
-  let duration = DEFAULT_DURATION_MS;
-  try {
-    const s = JSON.parse(state.items[`${prefix}.settings`] || '');
-    if (s && typeof s.count === 'number') count = s.count;
-    if (s && typeof s.duration === 'number') duration = s.duration;
-  } catch {}
-  const slides: string[] = [];
-  const n = Number.isFinite(count) ? Math.max(0, count) : 0;
-  for (let i = 0; i < n; i++) slides.push(state.items[`${prefix}.slide#${i}`] || '');
-  return { slides, duration };
-}
 
 function SmoothImage({ src, className }: { src: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -58,13 +45,11 @@ export default function HeroMediaCarousel({
   className = 'cms-media',
   label = 'Home carousel',
 }: Props) {
-  // ensure component re‑renders when CMS store updates (hydration, admin edits, etc.)
   useCmsStore();
 
-  // Read slides & duration directly from CMS state
-  const { slides, duration } = readCarousel(prefix);
-
-  // No default fallback – if slides array is empty we render nothing (fully empty carousel)
+  const spec = COLLECTIONS[prefix];
+  const slides = readCollectionIds(prefix).map((id) => state.items[itemKey(spec, id)] || '');
+  const duration = readCollectionDuration(prefix);
   const finalPanels = slides;
 
   // Signature for sync hook – concatenated slide sources

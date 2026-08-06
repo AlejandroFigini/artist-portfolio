@@ -14,6 +14,9 @@ import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 
 // Shared hook for carousel reinitialization
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
+import { COLLECTIONS } from '@/lib/cms/collections'
+import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
+import { readCollectionIds } from '@/lib/cms/useCollection'
 
 
 // El contenido se lee reactivamente desde el store (state.items) y se renderiza
@@ -22,9 +25,9 @@ import { useCarouselSync } from '@/components/ui/useCarouselSync'
 // inyectaba imperativamente sólo en el nodo original → tarjetas en blanco.
 
 
-function ProjectCard({ index }: { index: number }) {
+function ProjectCard({ id }: { id: string }) {
   useCmsStore()
-  const key = `proj#${index}`
+  const key = `proj#${id}`
   const imgSrc = state.items[key] || ''
   // Texto vía t(): esta tarjeta se re-renderiza desde el store, así que leer
   // state.items directo pisaría la traducción que aplicó setLanguage.
@@ -136,7 +139,7 @@ function ProjectCard({ index }: { index: number }) {
 
           {/* 2. Título (con altura mínima para alinear las tarjetas de al lado) */}
           <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-normal font-[family-name:var(--font)] text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
-            {title || `Project Title ${index + 1}`}
+            {title || 'Project Title'}
           </h3>
 
           {/* 3. Breve descriptivo (altura fija para que los botones de pie queden alineados) */}
@@ -171,43 +174,28 @@ export default function ProjectsShowcase() {
   const sectionRef = useRef<HTMLElement>(null)
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
 
-  let count = 4;
-  try {
-    const s = JSON.parse(state.items['proj.settings'] || '');
-    if (s && typeof s.count === 'number' && s.count >= 0) {
-      if (s.count !== 6 || state.items['proj#4'] || state.items['proj#5']) {
-        count = s.count;
-      }
-    }
-  } catch {}
-  const displayCount = count > 0 ? count : 4
+  const ids = readCollectionIds('proj')
+  const spec = COLLECTIONS['proj']
 
-  const completedIndices: number[] = []
-  if (count > 0) {
-    for (let i = 0; i < count; i++) {
-      const src = state.items[`proj#${i}`] || ''
-      const title = state.items[`proj#${i}::title`] || ''
-      const hasImage = !!src && !src.includes('placeholder')
-      if (hasImage && !!title.trim()) {
-        completedIndices.push(i)
-      }
-    }
-  }
+  const completedIds = ids.filter((id) => {
+    const key = itemKey(spec, id)
+    return !isEmptyMedia(state.items[key]) && !!(state.items[`${key}::title`] || '').trim()
+  })
 
   // Embla clona los slides con loop:true y los clones son copias estáticas del
-  // DOM; al cambiar contenido (alta/baja/reemplazo/reorden) sin reInit, los clones
-  // quedan viejos → "la tarjeta vecina pierde/cambia la imagen". Firmamos todo el
-  // contenido visible y reInit cuando cambia para que los clones se reconstruyan.
-  const projSignature = Array.from({ length: count }, (_, i) =>
-    [
-      state.items[`proj#${i}`] || '',
-      state.items[`proj#${i}::title`] || '',
-      state.items[`proj#${i}::start_date`] || '',
-      state.items[`proj#${i}::summary`] || '',
-    ].join('|'),
-  ).join('~')
-  // Reinitialize carousel when content changes using shared hook
-  useCarouselSync(carouselApi, projSignature, [displayCount])
+  // DOM; al cambiar contenido sin reInit quedan viejos. Firmamos todo el
+  // contenido visible para reconstruirlos cuando cambia.
+  const projSignature = ids.map((id) => {
+    const key = itemKey(spec, id)
+    return [
+      state.items[key] || '',
+      state.items[`${key}::title`] || '',
+      state.items[`${key}::start_date`] || '',
+      state.items[`${key}::summary`] || '',
+    ].join('|')
+  }).join('~')
+
+  useCarouselSync(carouselApi, projSignature, [ids.length])
 
   // Fuera de pantalla el autoplay sigue disparando scrolls (y repintando el
   // track) sin que nadie lo vea: se frena hasta que la sección vuelve.
@@ -330,7 +318,7 @@ export default function ProjectsShowcase() {
 
         {/* Carrusel de proyectos / Estado vacío (Equilibrado como sub-sección horizontal) */}
         <div className="w-full relative mt-3">
-          {completedIndices.length === 0 && count === 0 ? (
+          {ids.length === 0 ? (
             <div className="w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300/80 rounded-lg bg-white/60 shadow-sm transition-all duration-300">
               <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
                 <i className="fa-solid fa-layer-group text-xl opacity-80" />
@@ -339,7 +327,7 @@ export default function ProjectsShowcase() {
             </div>
           ) : (
             <Carousel
-              key={`${displayCount}-${completedIndices.join('-')}`}
+              key={`${ids.length}-${completedIds.join('-')}`}
               setApi={setCarouselApi}
               opts={{
                 align: 'start',
@@ -363,10 +351,10 @@ export default function ProjectsShowcase() {
               }}
             >
               <CarouselContent className="-ml-4 py-4">
-                {Array.from({ length: displayCount }, (_, i) => i).map((index) => (
-                  <CarouselItem key={index} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex items-stretch py-3">
+                {ids.map((id) => (
+                  <CarouselItem key={id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex items-stretch py-3">
                     <div className="w-full h-full px-1 sm:px-1.5">
-                      <ProjectCard index={index} />
+                      <ProjectCard id={id} />
                     </div>
                   </CarouselItem>
                 ))}

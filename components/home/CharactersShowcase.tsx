@@ -27,18 +27,11 @@ import { optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { sendGAEvent } from '@next/third-parties/google'
+import { COLLECTIONS } from '@/lib/cms/collections'
+import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
+import { readCollectionIds } from '@/lib/cms/useCollection'
 
 const CONCEPTS_PER = 3
-
-function readCount(): number {
-  try {
-    const s = JSON.parse(state.items['char.settings'] || '')
-    if (s && typeof s.count === 'number' && s.count >= 0) {
-      return s.count
-    }
-  } catch {}
-  return 8
-}
 
 type Lightbox = { src: string; name: string; role: string; desc: string } | null
 
@@ -73,13 +66,13 @@ function CharMedia({
   )
 }
 
-function CharacterPanel({ index, total, onOpen, isHoveringRef }: { index: number; total: number; onOpen: (lb: Lightbox) => void; isHoveringRef?: React.MutableRefObject<boolean> }) {
+function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: string; index: number; total: number; onOpen: (lb: Lightbox) => void; isHoveringRef?: React.MutableRefObject<boolean> }) {
   useCmsStore()
   const ui = useUiText()
   const [isHovered, setIsHovered] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0) // 0 = retrato principal, 1..4 = concepts c0..c3
 
-  const key = `char#${index}`
+  const key = `char#${id}`
   const sampleNames = ['Elena — Paladin Concept', 'Kaelen — Shadow Wanderer', 'Lyra — Star Weaver', 'Thorne — Iron Juggernaut', 'Vael — Frost Blade', 'Zephyr — Sky Hunter', 'Nyx — Void Oracle', 'Orion — Solar Warden']
   const sampleRoles = ['Hero Concept & Turnaround', 'Dark Fantasy Character Design', 'Sci-Fi Protagonist Study', 'Mecha & Armor Lookdev', 'Cryo Warrior Visual Dev', 'Aero Scout Character Sheet', 'Mystic Entity Concept Art', 'Paladin Commander Sculpt']
   // Texto vía t(): este panel se re-renderiza desde el store, así que leer
@@ -233,28 +226,26 @@ export default function CharactersShowcase() {
     return () => { api.off('reInit', apply) }
   }, [api, inView])
 
-  const totalSlots = readCount()
-  const completedIndices: number[] = []
-  for (let i = 0; i < totalSlots; i++) {
-    const src = state.items[`char#${i}`] || ''
-    const name = state.items[`char#${i}::name`] || ''
-    const hasImage = !!src && !src.includes('placeholder')
-    if (hasImage && !!name.trim()) {
-      completedIndices.push(i)
-    }
-  }
+  const ids = readCollectionIds('char')
+  const spec = COLLECTIONS['char']
+
+  const completedIds = ids.filter((id) => {
+    const key = itemKey(spec, id)
+    return !isEmptyMedia(state.items[key]) && !!(state.items[`${key}::name`] || '').trim()
+  })
 
   // Firma del contenido visible → reInit de embla cuando cambian alta/baja/orden
   // o las imágenes (los clones/medidas se reconstruyen), igual que en Projects.
-  const signature = Array.from({ length: totalSlots }, (_, i) =>
-    [
-      state.items[`char#${i}`] || '',
-      state.items[`char#${i}::name`] || '',
-      ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`char#${i}::c${m}`] || ''),
-    ].join('|'),
-  ).join('~')
-  // Reinitialize carousel when content changes using shared hook
-  useCarouselSync(api, signature, [totalSlots])
+  const signature = ids.map((id) => {
+    const key = itemKey(spec, id)
+    return [
+      state.items[key] || '',
+      state.items[`${key}::name`] || '',
+      ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`${key}::c${m}`] || ''),
+    ].join('|')
+  }).join('~')
+
+  useCarouselSync(api, signature, [ids.length])
 
   // Retomar el movimiento automático casi instantáneamente (120ms) tras soltar el mouse o finalizar arrastre
   useEffect(() => {
@@ -360,14 +351,7 @@ export default function CharactersShowcase() {
 
   // Si está vacío, se renderiza el estado vacío ocupando el mismo espacio de altura
 
-  let renderIndices = [...completedIndices]
-  const isLoopable = completedIndices.length > 0
-  
-  if (isLoopable && renderIndices.length < 6) {
-    while (renderIndices.length < 6) {
-      renderIndices = [...renderIndices, ...completedIndices]
-    }
-  }
+  const isLoopable = completedIds.length > 0
 
   return (
     <section ref={sectionRef} className="ch-showcase" id="characters" aria-labelledby="ch-showcase-title">
@@ -398,7 +382,7 @@ export default function CharactersShowcase() {
         </header>
 
         <div className="ch-showcase__cards-container">
-          {completedIndices.length === 0 ? (
+          {completedIds.length === 0 ? (
             <div className="w-full min-h-[520px] md:min-h-[580px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-violet-300/60 rounded-2xl bg-white/60 shadow-sm transition-all duration-300">
               <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
                 <i className="fa-solid fa-user-astronaut text-xl opacity-80" />
@@ -407,7 +391,7 @@ export default function CharactersShowcase() {
             </div>
           ) : (
             <Carousel
-              key={`${totalSlots}-${signature}`}
+              key={`${ids.length}-${signature}`}
               setApi={setApi}
               opts={{ align: 'center', loop: isLoopable, dragFree: true, watchDrag: true }}
               plugins={isLoopable && !prefersReducedMotion() ? [
@@ -416,9 +400,9 @@ export default function CharactersShowcase() {
               className="ch-carousel"
             >
               <CarouselContent className="-ml-3 md:-ml-4">
-                {renderIndices.map((index, i) => (
-                  <CarouselItem key={`${index}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
-                    <CharacterPanel index={index} total={completedIndices.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
+                {completedIds.map((id, i) => (
+                  <CarouselItem key={id} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
+                    <CharacterPanel id={id} index={i} total={completedIds.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}
               </CarouselContent>

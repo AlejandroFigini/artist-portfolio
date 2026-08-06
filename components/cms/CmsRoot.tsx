@@ -111,34 +111,17 @@ export default function CmsRoot() {
     engine.indexEditables()
     engine.refreshRetired()
 
-    // First fetch overrides (content) – this may be stale, we will re‑broadcast only after server merge
+    // First fetch overrides (content) – this may be stale, se valida al mergear el server state
     getContent()
       .catch(() => ({}))
       .then((serverItems) => {
         state.items = serverItems
-        // Do NOT broadcast carousel yet; wait for server state validation
         engine.hydrate()
         engine.refreshRetired()
         emit()
 
         // Load full server state (usedContent, etc.)
         loadServerState().then(() => {
-          // After merge, broadcast carousels based on the now‑validated overrides
-          const broadcastCarousel = (prefix: string) => {
-            let settings = { count: 3, duration: 7000 }
-            try { settings = Object.assign(settings, JSON.parse(state.items[`${prefix}.settings`] || '')) } catch {}
-            const count = Number.isFinite(settings.count) ? Math.max(0, settings.count) : 3
-            const slides: string[] = []
-            for (let i = 0; i < count; i++) {
-              slides.push(state.items[`${prefix}.slide#${i}`] || '')
-            }
-            window.dispatchEvent(new CustomEvent(`cms:${prefix}`, { detail: { slides, duration: settings.duration || 7000 } }))
-          }
-          broadcastCarousel('hero')
-          broadcastCarousel('hero-main')
-          broadcastCarousel('hero-sub')
-          broadcastCarousel('about-carousel')
-
           cleanOrphanOverrides()
           engine.refreshRetired()
           engine.seedUsedContent()
