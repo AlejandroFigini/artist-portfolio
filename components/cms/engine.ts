@@ -391,6 +391,17 @@ export function ensureCollectionMeta(key: string) {
   const spec = collectionOf(key)
   if (!spec) return
   const conceptMatch = key.match(/::c(\d+)$/)
+  // `spec.fields` (CollectionSpec, lib/cms/collections.ts) es metadata declarativa
+  // { key, label, type } para que el gestor decida qué columna mostrar — no sirve
+  // para el modal. `FieldDef[]` (PROJECT_FIELDS / CHARACTER_FIELDS, este archivo)
+  // es lo que EditInfoModal necesita: trae get/set que leen y escriben el DOM.
+  // Las claves de ambos arrays tienen que coincidir (arman los sufijos ::title,
+  // ::name, etc.) o el modal termina escribiendo en claves que nadie lee.
+  // Una clave de concept art (::cN) es un slot de media suelto, sin ficha propia.
+  const fields = conceptMatch ? undefined
+    : spec.prefix === 'proj' ? PROJECT_FIELDS
+    : spec.prefix === 'char' ? CHARACTER_FIELDS
+    : undefined
   metaByKey[key] = {
     label: state.containerNames[key]
       || (conceptMatch ? `Concept image #${Number(conceptMatch[1]) + 1}` : spec.label),
@@ -398,6 +409,7 @@ export function ensureCollectionMeta(key: string) {
     kind: 'image',
     accept: spec.accept,
     mount: 'none',
+    ...(fields ? { fields } : {}),
   }
   typeByKey[key] = 'media'
 }
