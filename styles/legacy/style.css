@@ -3306,6 +3306,10 @@ body.is-admin .cms-empty-slot .cms-tools {
     animation: none !important;
     filter: none !important;
     backdrop-filter: none !important;
+    /* El contenedor vacío no tiene efectos que transicionar, pero la regla de
+       la sección igual dejaba registrada la transition de box-shadow: eran 64
+       "animaciones no compuestas" del reporte, una por slot vacío. */
+    transition: none !important;
 }
 
 /* ---- Content Picker: modal con 2 opciones grandes ---- */

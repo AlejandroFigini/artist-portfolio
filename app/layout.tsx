@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
-import { GoogleAnalytics } from '@next/third-parties/google'
 import '@/styles/globals.css'
 import Providers from '@/components/ui/Providers'
+import DeferredAnalytics from '@/components/ui/DeferredAnalytics'
 import { getSiteSettingsServer } from '@/lib/site-server'
 import { fontVariables } from '@/lib/fonts'
+import { CMS_BOOTSTRAP_ID, getCmsBootstrapServer, serializeCmsBootstrap } from '@/lib/cms-bootstrap-server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -73,12 +74,25 @@ const BOOT_SCRIPT = `
 `
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const initialSettings = await getSiteSettingsServer()
+  const [initialSettings, cmsBootstrap] = await Promise.all([
+    getSiteSettingsServer(),
+    getCmsBootstrapServer(),
+  ])
   return (
     <html lang="en" className={fontVariables} data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
+        {/* Única variante de Font Awesome que aparece en el primer viewport
+            (nav, hero, overlays de contenedor vacío). Con `font-display: swap`
+            en styles/icons.css, precargarla evita el paso por el glifo vacío. */}
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/fa-solid-900-subset.woff2"
+          crossOrigin="anonymous"
+        />
         {/* Font Awesome ya no viene de CDN: styles/icons.css sirve un subset
             propio con los ~128 iconos que usamos (278 KB → 14 KB).
             Las cuatro familias de texto tampoco: las self-hostea next/font
@@ -86,8 +100,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body suppressHydrationWarning>
         <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${BOOT_SCRIPT}</script>` }} style={{ display: 'none' }} />
+        {/* Contenido del CMS embebido: el arranque lo lee de acá en vez de
+            encadenar /api/content → /api/translations después de hidratar.
+            Es JSON inerte (type="application/json"), no se ejecuta. */}
+        <script
+          id={CMS_BOOTSTRAP_ID}
+          type="application/json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: serializeCmsBootstrap(cmsBootstrap) }}
+        />
         <Providers initialSettings={initialSettings}>{children}</Providers>
-        <GoogleAnalytics gaId="G-SPJEZ45JR0" />
+        <DeferredAnalytics gaId="G-SPJEZ45JR0" />
       </body>
     </html>
   )

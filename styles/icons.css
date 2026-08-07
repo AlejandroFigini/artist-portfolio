@@ -6,7 +6,7 @@
   font-family: 'Font Awesome 6 Free';
   font-style: normal;
   font-weight: 900;
-  font-display: block;
+  font-display: swap;
   src: url('/fonts/fa-solid-900-subset.woff2') format('woff2');
 }
 .fa, .fas, .fa-solid {
@@ -18,7 +18,7 @@
   font-family: 'Font Awesome 6 Free';
   font-style: normal;
   font-weight: 400;
-  font-display: block;
+  font-display: swap;
   src: url('/fonts/fa-regular-400-subset.woff2') format('woff2');
 }
 .far, .fa-regular {
@@ -30,7 +30,7 @@
   font-family: 'Font Awesome 6 Brands';
   font-style: normal;
   font-weight: 400;
-  font-display: block;
+  font-display: swap;
   src: url('/fonts/fa-brands-400-subset.woff2') format('woff2');
 }
 .fab, .fa-brands {

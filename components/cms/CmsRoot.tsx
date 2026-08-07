@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
 import { state, loadState, useCmsStore, setAdminFlag, emit, loadLang, loadServerState, cleanOrphanOverrides } from '@/lib/cms/store'
+import { readCmsBootstrap } from '@/lib/cms/bootstrap'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { markLoaderGate } from '@/lib/loader-ready'
 import * as engine from './engine'
@@ -114,37 +115,59 @@ export default function CmsRoot() {
     engine.indexEditables()
     engine.refreshRetired()
 
-    // First fetch overrides (content) – this may be stale, se valida al mergear el server state
-    getContent()
-      .catch(() => ({}))
-      .then((serverItems) => {
-        state.items = serverItems
-        engine.hydrate()
-        engine.refreshRetired()
-        emit()
+    /* Contenido + traducciones + `retired`: el server ya los mandó embebidos en
+       el HTML, así que se aplican acá mismo. Antes esto eran dos fetch en serie
+       (`/api/content`, y con su respuesta `/api/translations`) que la pantalla
+       de carga esperaba: en 4G lento, latencia pura adentro del LCP con el
+       sitio ya descargado. Sin payload (DB caída, o el server no pudo leer) se
+       cae al camino de fetch de siempre. */
+    const applyContent = (items: Record<string, string>) => {
+      state.items = items
+      engine.hydrate()
+      engine.refreshRetired()
+      emit()
+    }
 
-        // Load full server state (usedContent, etc.)
-        loadServerState().then(() => {
-          cleanOrphanOverrides()
-          engine.refreshRetired()
-          engine.seedUsedContent()
-          state.serverReady = true
-          emit()
+    /* El resto de cms_state (media_meta, audit, unused, trash) son ~96 KB que
+       solo mira gestión. Se trae siempre, pero con el payload embebido ya no
+       retiene la pantalla de carga. */
+    const finishServerState = () => {
+      cleanOrphanOverrides()
+      engine.refreshRetired()
+      engine.seedUsedContent()
+      state.serverReady = true
+      emit()
+    }
+
+    getAccount().then((account) => setAdmin(!!account, account?.username, account?.role, account?.needsSetup))
+
+    const boot = readCmsBootstrap()
+    if (boot) {
+      state.retired = boot.retired
+      applyContent(boot.items)
+      state.translations = boot.translations
+      engine.setLanguage(loadLang())
+      markLoaderGate('i18n')
+      state.serverReady = true
+      emit()
+      loadServerState().then(finishServerState)
+    } else {
+      getContent()
+        .catch(() => ({}))
+        .then((serverItems) => {
+          applyContent(serverItems)
+          loadServerState().then(finishServerState)
+          getTranslations()
+            .then((tr) => {
+              state.translations = tr
+              engine.setLanguage(loadLang())
+            })
+            .catch(() => {})
+            // Gate del loader: sin esto el sitio aparece en inglés y salta al
+            // idioma guardado un instante después.
+            .finally(() => markLoaderGate('i18n'))
         })
-
-        // Session & i18n handling (unchanged)
-        getAccount().then((account) => setAdmin(!!account, account?.username, account?.role, account?.needsSetup))
-        getTranslations()
-          .then((tr) => {
-            state.translations = tr
-            const lang = loadLang()
-            engine.setLanguage(lang)
-          })
-          .catch(() => {})
-          // Gate del loader: sin esto el sitio aparece en inglés y salta al
-          // idioma guardado un instante después.
-          .finally(() => markLoaderGate('i18n'))
-      })
+    }
 
     const t = setTimeout(() => engine.rescan(), 300)
 

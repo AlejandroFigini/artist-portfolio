@@ -150,7 +150,11 @@ for (const [style, cfg] of Object.entries(FAMILY)) {
     `  font-family: '${cfg.family}';`,
     '  font-style: normal;',
     `  font-weight: ${cfg.weight};`,
-    '  font-display: block;',
+    // `block` deja el icono invisible hasta 3s y Lighthouse lo cobra en FCP.
+    // Con `swap` el hueco se pinta enseguida; la variante solid —la única que
+    // aparece en el primer viewport— va precargada en el layout, así que el
+    // intercambio no llega a verse.
+    '  font-display: swap;',
     `  src: url('/fonts/${cfg.file}-subset.woff2') format('woff2');`,
     '}',
     `${cfg.classes.join(', ')} {`,
