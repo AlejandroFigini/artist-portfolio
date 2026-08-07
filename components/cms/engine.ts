@@ -284,13 +284,30 @@ export function indexEditables() {
 
 // ----- Aplicar valores ---------------------------------------------------------
 
+/* Cada medición es una lectura de layout, y `applyStored` alterna medir →
+   escribir `src`/`backgroundImage` sobre decenas de contenedores: la escritura
+   ensucia el layout y la medición siguiente lo fuerza a recalcularse. Como el
+   arranque encadena varias pasadas sobre los mismos nodos (hydrate → rescan →
+   setLanguage), se memoriza el ancho por elemento y se descarta al cambiar el
+   viewport. Solo se cachean medidas reales: un contenedor todavía sin layout
+   mide 0 y cae al fallback, que no debe quedar congelado. */
+let renderWidths = new WeakMap<HTMLElement, number>()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => { renderWidths = new WeakMap() }, { passive: true })
+}
+
 /* Ancho real de render × DPR: la imagen se pide al tamaño en que se ve.
    Sin layout todavía (contenedor oculto) cae al ancho del viewport. */
 function renderWidthOf(el: HTMLElement): number {
+  const cached = renderWidths.get(el)
+  if (cached !== undefined) return cached
   const w = el.clientWidth || el.getBoundingClientRect().width
   const base = w > 0 ? w : (typeof window !== 'undefined' ? window.innerWidth : 1280)
   const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)
-  return Math.ceil(base * dpr)
+  const out = Math.ceil(base * dpr)
+  if (w > 0) renderWidths.set(el, out)
+  return out
 }
 
 /* `data-cms-src` guarda SIEMPRE la URL original: lo que se pinta puede ser una
@@ -362,7 +379,14 @@ function applyValue(el: HTMLElement, type: string, value: string) {
   } else if (type === 'video') {
     const v = el as HTMLVideoElement
     const s = el.querySelector('source')
-    const target = value || null
+    /* f_auto/q_auto: sin esto Cloudinary entrega el contenedor tal cual se
+       subió (típicamente webm) a CUALQUIER navegador. Safari/iOS nunca
+       soportó webm en <video> — con f_auto, Cloudinary detecta el user-agent
+       en cada request y sirve mp4/h264 a Safari, webm al resto, desde el
+       mismo archivo original. Mismo tratamiento que ya recibe la imagen unas
+       líneas arriba (optimizedMediaSrc); acá faltaba conectarlo. */
+    const optimized = optimizedMediaSrc(value)
+    const target = optimized || null
     const actual = s ? s.getAttribute('src') : v.getAttribute('src')
 
     /* Salir si la fuente ya es la que corresponde. `load()` reinicia el video
@@ -372,10 +396,10 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     if (actual === target) return
 
     if (s) {
-      if (value) s.src = value
+      if (value) s.src = optimized
       else s.removeAttribute('src')
     } else {
-      if (value) v.src = value
+      if (value) v.src = optimized
       else v.removeAttribute('src')
     }
     try {

@@ -55,3 +55,4 @@ skills-lock.json
 
 # npm lockfile: el deploy usa pnpm (nixpacks.toml)
 package-lock.json
+.gstack/

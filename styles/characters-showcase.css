@@ -29,7 +29,7 @@
   pointer-events: none;
 }
 .ch-showcase__rail-fig {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: #6d28d9;
@@ -64,7 +64,7 @@
 }
 .ch-showcase__fig {
   display: inline-block;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.22em;
   color: #7c3aed;
@@ -105,7 +105,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -280,10 +280,10 @@
   pointer-events: none;
   z-index: 0;
 }
-.ch-counter { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.6rem; }
+.ch-counter { position: relative; z-index: 1; font-family: var(--font-mono), monospace; font-size: 0.74rem; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.6rem; }
 .ch-counter b { color: #7c3aed; }
 .ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 200; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
-.ch-role { position: relative; z-index: 1; font-family: 'Fira Code', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
+.ch-role { position: relative; z-index: 1; font-family: var(--font-mono), monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
 .ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; width: 100%; }
 
 /* --- Empty (sin personajes) --- */
@@ -334,7 +334,7 @@
 }
 .ch-lightbox__info-panel h3 { font-family: var(--font-display); font-size: 1.65rem; margin: 0 0 1.2rem; line-height: 1.2; }
 .ch-lightbox__meta { display: flex; flex-direction: column; gap: 1rem; margin: 0; }
-.ch-lightbox__meta dt { font-family: 'Fira Code', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-bottom: 0.25rem; }
+.ch-lightbox__meta dt { font-family: var(--font-mono), monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-bottom: 0.25rem; }
 .ch-lightbox__meta dd { margin: 0; font-size: 0.95rem; line-height: 1.6; color: rgba(255, 255, 255, 0.92); }
 
 /* --- Responsive --- */
@@ -346,6 +346,19 @@
      las proporciones del panel. */
   .ch-portrait-wrap { aspect-ratio: 1 / 1; max-height: 380px; }
   .ch-panel__info { padding-top: 0.5rem; }
+
+  /* El bloque de texto ocupaba de más y estiraba la tarjeta a lo alto.
+     El `min-height` de 520px está pensado para el panel de 2 columnas de
+     escritorio (retrato al lado del texto); apilado en una sola columna era
+     un piso artificial que estiraba el info a 146px cuando su contenido pedía
+     97px. Sin él la tarjeta mide lo que mide su contenido. El interlineado de
+     la descripción baja de 1.65 a 1.55 — el cuerpo NO se toca: probado a
+     0.9rem, ahorraba 5px y dejaba el texto en 12.6px. */
+  .ch-panel { min-height: 0; }
+  .ch-counter { margin-bottom: 0.3rem; }
+  .ch-name { margin-bottom: 0.2rem; }
+  .ch-role { margin-bottom: 0.45rem; }
+  .ch-desc { line-height: 1.55; }
   .ch-lightbox__media.is-shifted { transform: none; }
   .ch-lightbox__info-panel { position: static; width: auto; margin-top: 1rem; }
   .ch-lightbox__media { flex-direction: column; }

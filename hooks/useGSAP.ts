@@ -1,161 +1,94 @@
 'use client'
 
-/* Wrapper de GSAP para React — useEffect + gsap.context con cleanup
-   automático (ctx.revert mata tweens y ScrollTriggers del scope).
-   Respeta prefers-reduced-motion: el setup no corre si está activo. */
+/* Façade de GSAP para React. NO importa `gsap` de forma estática a propósito:
+   el runtime vive en `hooks/gsap-runtime` y se trae con `import()`, así GSAP +
+   ScrollTrigger (~149 KB crudos) quedan en su propio chunk y no bloquean ni la
+   descarga ni el parseo del primer viewport.
 
-import { useEffect } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+   Uso en componentes:
 
-let registered = false
+     const motion = useMotionReady()
+     useEffect(() => {
+       if (!motion || prefersReducedMotion()) return
+       const { gsap, ScrollTrigger } = motion
+       const ctx = gsap.context(() => { ... })
+       return () => ctx.revert()
+     }, [motion])
 
-export function ensureGSAP() {
-  if (!registered) {
-    gsap.registerPlugin(ScrollTrigger)
-    registered = true
-  }
-  return gsap
+   `motion` arranca en null y pasa al runtime cuando el chunk llegó: React
+   vuelve a correr el efecto solo, con el mismo cleanup de siempre. Si el chunk
+   ya estaba cargado (navegación interna) el primer render ya lo devuelve, sin
+   frame de espera. */
+
+import { useEffect, useState } from 'react'
+import { prefersReducedMotion } from './motion-flags'
+
+export { motionOffActive, prefersReducedMotion } from './motion-flags'
+export type { LoopHandle } from './motion-flags'
+
+export type MotionRuntime = typeof import('./gsap-runtime')
+
+let runtime: MotionRuntime | null = null
+let pending: Promise<MotionRuntime> | null = null
+
+/* `html.motion-pending` (boot script del layout) mantiene ocultos los elementos
+   que el setup de GSAP va a poner en autoAlpha 0, así no se ven enteros durante
+   los ms que tarda el chunk.
+
+   NO se saca al resolver el runtime: entre que resuelve y que los efectos de los
+   componentes corren hay un render de por medio, y sacarla ahí devuelve el mismo
+   parpadeo. GSAP escribe `visibility` inline al revelar, y lo inline gana contra
+   un selector de clase — así que la clase puede quedarse mientras la coreografía
+   hace su trabajo. Solo la saca el failsafe, para que un chunk que nunca llegó no
+   deje contenido escondido. */
+const PENDING_FAILSAFE_MS = 2500
+
+if (typeof window !== 'undefined') {
+  window.setTimeout(() => document.documentElement.classList.remove('motion-pending'), PENDING_FAILSAFE_MS)
 }
 
-/* Toggle "Pausar animaciones" (SettingsPanel) activo. */
-export function motionOffActive() {
-  return typeof document !== 'undefined' && document.documentElement.classList.contains('motion-off')
+/** Trae el chunk de GSAP (idempotente). El plugin se registra en el módulo. */
+export function loadGSAP(): Promise<MotionRuntime> {
+  if (runtime) return Promise.resolve(runtime)
+  if (!pending) pending = import('./gsap-runtime').then((m) => (runtime = m))
+  return pending
 }
 
-/* Guard único de "no animar" para todos los setups GSAP del sitio:
-   prefers-reduced-motion del sistema O el toggle "Pausar animaciones".
-   Los componentes lo chequean al montar → con la pausa activa ningún
-   setup corre (nada queda en autoAlpha 0 esperando reveal: contenido
-   visible estático). */
-export function prefersReducedMotion() {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches || motionOffActive()
-}
-
-export function useGSAP(setup: () => void, deps: unknown[] = []) {
+/** Runtime ya cargado, o null mientras el chunk viaja. */
+export function useMotionReady(): MotionRuntime | null {
+  const [m, setM] = useState<MotionRuntime | null>(runtime)
   useEffect(() => {
-    if (prefersReducedMotion() || motionOffActive()) return
-    ensureGSAP()
-    const ctx = gsap.context(setup)
+    if (m) return
+    let alive = true
+    loadGSAP().then((mod) => { if (alive) setM(mod) })
+    return () => { alive = false }
+  }, [m])
+  return m
+}
+
+export function useGSAP(setup: (m: MotionRuntime) => void, deps: unknown[] = []) {
+  const motion = useMotionReady()
+  useEffect(() => {
+    if (!motion || prefersReducedMotion()) return
+    const ctx = motion.gsap.context(() => setup(motion))
     return () => ctx.revert()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps)
+  }, [motion, ...deps])
 }
 
-// ----- Pausa global (toggle "Pausar animaciones") ----------------------------
-// Mata toda la coreografía GSAP viva: loops de reveal (dejan el texto pleno),
-// tweens en curso (saltan a estado final) y ScrollTriggers (quedan completados
-// y deshabilitados → nada más "aparece" al scrollear).
-const liveLoops = new Set<LoopHandle>()
+/* Congelar la coreografía global mientras hay un modal arriba. No-op si el
+   runtime nunca se cargó: no hay timeline que pausar, y traerlo para eso sería
+   bajar 149 KB al abrir un modal. */
+export function pauseGlobalMotion() { try { runtime?.gsap.globalTimeline.pause() } catch {} }
+export function playGlobalMotion() { try { runtime?.gsap.globalTimeline.play() } catch {} }
 
-export function killAllMotion() {
-  ensureGSAP()
-  liveLoops.forEach((h) => h.kill())
-  liveLoops.clear()
-  ScrollTrigger.getAll().forEach((st) => { try { st.animation?.progress(1); st.disable(false) } catch {} })
-  gsap.globalTimeline.getChildren(true, true, false).forEach((t) => { try { t.progress(1); t.kill() } catch {} })
+/* Toggle "Pausar animaciones": si GSAP nunca se cargó no hay nada que matar,
+   pero sí que reanudar cuando el usuario lo vuelve a prender. */
+export function killAllMotion(): Promise<void> {
+  if (runtime) runtime.killAllMotion()
+  return Promise.resolve()
 }
 
-// Reactiva ScrollTriggers (los loops de reveal muertos vuelven al recargar).
-export function resumeMotion() {
-  ensureGSAP()
-  ScrollTrigger.getAll().forEach((st) => { try { st.enable() } catch {} })
+export function resumeMotion(): Promise<void> {
+  return loadGSAP().then((m) => m.resumeMotion())
 }
-
-// Handle killable para animaciones en loop manejadas con recursión.
-export type LoopHandle = { kill: () => void }
-
-type BuildFn = (text: string) => string
-type AnimFn = (targets: NodeListOf<HTMLElement>, onDone: () => void) => gsap.core.Tween
-
-// Motor compartido de reveal en loop. Recursión con delayedCall: cada ciclo
-// RE-LEE el textContent (clave: si el CMS editó el texto, el ciclo siguiente
-// toma el valor nuevo en vez de revertir al original), reconstruye el HTML y
-// anima los spans recién creados. Preserva .cms-tools (no rompe la edición).
-function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animate: AnimFn): LoopHandle {
-  gsap.set(el, { autoAlpha: 1 })
-  let killed = false
-  let tween: gsap.core.Tween | null = null
-  let wait: gsap.core.Tween | null = null
-  let lastText = el.textContent || ''
-
-  const detachTools = () => {
-    const t = el.querySelector(':scope > .cms-tools')
-    if (t) t.remove()
-    return t
-  }
-
-  const cycle = () => {
-    /* `killed` se asignaba en kill() pero no se consultaba en ningún lado: un
-       callback que cayera justo después de kill() reprogramaba el ciclo y el
-       loop revivía. Se comprueba acá y en el callback de animate. */
-    if (killed) return
-    // pausa global o modal abierto mid-loop → dejar el texto pleno y no re-animar
-    const modalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
-    if (motionOffActive() || modalOpen) { wait = gsap.delayedCall(intervalSec, cycle); return }
-    const tools = detachTools()
-    const text = el.textContent || ''
-    lastText = text
-    if (!text.trim()) {
-      if (tools) el.appendChild(tools)
-      wait = gsap.delayedCall(intervalSec, cycle)
-      return
-    }
-    el.innerHTML = build(text)
-    const targets = el.querySelectorAll<HTMLElement>('.tw-char, .tw-word')
-    tween = animate(targets, () => {
-      if (killed) return
-      el.textContent = text
-      if (tools) el.appendChild(tools)
-      wait = gsap.delayedCall(intervalSec, cycle)
-    })
-  }
-  cycle()
-
-  const handle: LoopHandle = {
-    kill: () => {
-      killed = true
-      tween?.kill()
-      wait?.kill()
-      const tools = detachTools()
-      el.textContent = lastText
-      if (tools) el.appendChild(tools)
-      liveLoops.delete(handle)
-    },
-  }
-  liveLoops.add(handle)
-  return handle
-}
-
-// Reveal letra por letra LOOPING — para títulos de sección con repetición.
-export function typewriterRevealLoop(el: HTMLElement, intervalSec = 8): LoopHandle {
-  return revealLoop(
-    el,
-    intervalSec,
-    (text) =>
-      text
-        .split('')
-        .map((c) => `<span class="tw-char" style="display:inline-block">${c === ' ' ? '&nbsp;' : c}</span>`)
-        .join(''),
-    (targets, onDone) =>
-      gsap.from(targets, { autoAlpha: 0, duration: 0.05, stagger: 0.06, ease: 'none', onComplete: onDone }),
-  )
-}
-
-// Reveal por palabras en loop — para párrafos (más fluido que char-by-char).
-export function wordRevealLoop(el: HTMLElement, intervalSec = 8): LoopHandle {
-  return revealLoop(
-    el,
-    intervalSec,
-    (text) =>
-      text
-        .split(/(\s+)/)
-        .map((w) => (/^\s+$/.test(w) ? w : `<span class="tw-word" style="display:inline-block">${w}</span>`))
-        .join(''),
-    (targets, onDone) =>
-      gsap.from(targets, { autoAlpha: 0, y: 8, duration: 0.4, stagger: 0.045, ease: 'power2.out', onComplete: onDone }),
-  )
-}
-
-export { gsap, ScrollTrigger }

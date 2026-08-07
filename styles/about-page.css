@@ -90,7 +90,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -163,7 +163,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem 1.4rem;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -236,7 +236,7 @@
   left: 8px;
   padding: 3px 8px;
   background: rgba(13, 13, 18, 0.62);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.56rem;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.85);
@@ -278,7 +278,7 @@
 }
 .ab-spec { display: flex; flex-direction: column; gap: 0.25rem; }
 .ab-spec-k {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -314,7 +314,7 @@
 }
 .ab-tool:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-primary)); }
 .ab-tool-idx {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   color: var(--accent);
@@ -327,7 +327,7 @@
   color: var(--text-primary);
 }
 .ab-tool-cat {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -379,7 +379,7 @@
 }
 .ab-tl-item:first-child .ab-tl-node { top: 0.3rem; }
 .ab-tl-year {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -395,7 +395,7 @@
   color: var(--text-primary);
 }
 .ab-tl-place {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -451,7 +451,7 @@
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -479,7 +479,7 @@
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   color: var(--text-primary);

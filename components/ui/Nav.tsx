@@ -9,7 +9,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useUiText } from '@/lib/cms/store'
 import { setLanguage } from '@/components/cms/engine'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
@@ -29,6 +29,7 @@ const GALLERY_LINKS = [
 ]
 
 export default function Nav() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const pathname = usePathname()
   const ui = useUiText() // re-render al cambiar el idioma global
   const { links } = useSocial()
@@ -80,18 +81,48 @@ export default function Nav() {
 
   // header.scrolled (compacta la barra al scrollear; en legacy lo hacía ScrollTrigger)
   // + regla de progreso de lectura (scaleX según avance del documento)
+  //
+  // El handler leía `scrollHeight` y escribía `transform` + `classList` en el
+  // mismo tick, en cada evento de scroll: la escritura ensucia el layout y la
+  // lectura del evento siguiente lo fuerza a recalcularse entero (el
+  // "forced reflow" del reporte). Ahora el alto del documento se mide una vez
+  // y se refresca solo cuando puede haber cambiado (resize / mutación del
+  // contenido), y las escrituras van en un rAF: el scroll queda sin lecturas
+  // de layout.
   useEffect(() => {
-    const onScroll = () => {
-      headerRef.current?.classList.toggle('scrolled', window.scrollY > 50)
+    let maxScroll = 0
+    let frame = 0
+
+    const measure = () => { maxScroll = document.documentElement.scrollHeight - window.innerHeight }
+
+    const paint = () => {
+      frame = 0
+      const y = window.scrollY
+      headerRef.current?.classList.toggle('scrolled', y > 50)
       const fill = progressRef.current
-      if (fill) {
-        const max = document.documentElement.scrollHeight - window.innerHeight
-        fill.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`
-      }
+      if (fill) fill.style.transform = `scaleX(${maxScroll > 0 ? Math.min(1, y / maxScroll) : 0})`
     }
-    onScroll()
+
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(paint) }
+    // En pestaña oculta el rAF no corre: al volver, ponerse al día sin esperar
+    // a que el usuario scrollee.
+    const onVisible = () => { if (!document.hidden) { measure(); paint() } }
+
+    measure()
+    paint()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', measure)
+    document.addEventListener('visibilitychange', onVisible)
+    // Las secciones code-split montan después: el alto del documento crece.
+    const ro = new ResizeObserver(measure)
+    ro.observe(document.documentElement)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', measure)
+      document.removeEventListener('visibilitychange', onVisible)
+      ro.disconnect()
+    }
   }, [])
 
   // Visor de corchetes: enmarca el link bajo el cursor y descansa en el activo.
@@ -101,7 +132,8 @@ export default function Nav() {
     const finder = viewfinderRef.current
     if (!links || !finder) return
     const mq = window.matchMedia('(min-width: 993px) and (hover: hover)')
-    ensureGSAP()
+    if (!motion) return
+    const { gsap } = motion
     const reduced = prefersReducedMotion()
     const PAD = 10
 
@@ -172,7 +204,7 @@ export default function Nav() {
       teardown()
       gsap.killTweensOf(finder)
     }
-  }, [pathname])
+  }, [motion, pathname])
 
   const closeNav = () => { setNavOpen(false); setDropdown(null) }
   const toggleDropdown = (name: 'gallery' | 'portfolio') =>

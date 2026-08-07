@@ -21,6 +21,7 @@ import {
   startLoaderGateTimers,
   subscribeLoaderGates,
 } from '@/lib/loader-ready'
+import { optimizedMediaSrc } from '@/lib/utils'
 
 const FADE_MS = 800
 // Techo duro sobre el piso configurable: por encima del gate más lento (8s).
@@ -34,6 +35,7 @@ export default function PageLoader() {
   const [forced, setForced] = useState(false)
   const [isPreview, setIsPreview] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
   const { settings } = useSiteSettings()
   const serverReady = state.serverReady
@@ -60,6 +62,27 @@ export default function PageLoader() {
     // setState en render: patrón de estado derivado de React, no un efecto.
     setVideoSrc(resolvedSrc)
   }
+
+  /* Autoplay defensivo. El <video> se sirve sin `src` —los ajustes llegan
+     async— así que el navegador evalúa el autoplay contra un elemento vacío y
+     hay motores que no lo reintentan cuando la fuente aparece después. Se
+     vuelve a pedir play en cada cambio de fuente y en cuanto hay datos. Si el
+     navegador lo bloquea igual (modo de bajo consumo en iOS, o autoplay
+     denegado para el sitio) la promesa se rechaza y se ignora: es una
+     decisión del usuario, no un error que deba romper el arranque. */
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !videoSrc) return
+    v.muted = true // el atributo se sirve en el HTML; la propiedad es la que evalúa play()
+    const tryPlay = () => { void v.play().catch(() => {}) }
+    tryPlay()
+    v.addEventListener('loadeddata', tryPlay)
+    v.addEventListener('canplay', tryPlay)
+    return () => {
+      v.removeEventListener('loadeddata', tryPlay)
+      v.removeEventListener('canplay', tryPlay)
+    }
+  }, [videoSrc])
 
   // 1. Escuchar cuando se solicita vista previa de la pantalla de carga desde gestión
   useEffect(() => {
@@ -175,9 +198,17 @@ export default function PageLoader() {
         <div className="loader-stage">
           <div className="loader-media">
             <video
+              ref={videoRef}
               data-cms-key="loader.gallop"
               className="loader-gallop"
-              src={videoSrc || undefined}
+              // f_auto/q_auto: sin esto Safari/iOS recibe el contenedor tal
+              // cual se subió (típicamente webm, que nunca soportó) y el
+              // video queda mudo — no es un bloqueo de autoplay, el navegador
+              // no puede decodificarlo. Cloudinary sirve mp4/h264 a Safari y
+              // webm al resto desde el mismo archivo. Este <video> es
+              // React-controlled (no pasa por engine.ts), así que se aplica
+              // acá aparte.
+              src={optimizedMediaSrc(videoSrc) || undefined}
               autoPlay loop muted playsInline preload="auto"
             ></video>
             <div className="loader-media-glow"></div>

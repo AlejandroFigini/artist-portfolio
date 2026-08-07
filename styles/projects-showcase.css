@@ -27,7 +27,7 @@
   pointer-events: none;
 }
 .proj-showcase__rail-fig {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: rgba(255, 255, 255, 0.35);
@@ -115,7 +115,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;

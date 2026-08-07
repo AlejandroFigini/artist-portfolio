@@ -205,7 +205,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <input ref={nameRef} type="text" defaultValue={getFileBasename(file.name)} onChange={checkDuplicate} style={{ flex: 1, borderTopRightRadius: getFileExtension(file.name) ? 0 : undefined, borderBottomRightRadius: getFileExtension(file.name) ? 0 : undefined }} />
               {getFileExtension(file.name) && (
-                <span style={{ padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                <span style={{ padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderLeft: 0, borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
                   {getFileExtension(file.name)}
                 </span>
               )}
@@ -218,7 +218,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             )}
           </label>
           <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-            <div><span style={{ fontWeight: 400 }}>Size:</span> <span style={{ fontFamily: "'Fira Code', monospace", fontWeight: 400 }}>{fmtBytes(file.size)}</span></div>
+            <div><span style={{ fontWeight: 400 }}>Size:</span> <span style={{ fontFamily: 'var(--font-mono), monospace', fontWeight: 400 }}>{fmtBytes(file.size)}</span></div>
             <div><span style={{ fontWeight: 400 }}>Format:</span> <span style={{ fontWeight: 400 }}>{file.type || 'File'}</span></div>
           </div>
           {fields.length > 0 && (
@@ -277,12 +277,12 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
               <li><strong>Type:</strong> {isVid ? 'Video' : 'Image'} &middot; {result.final_format}</li>
               <li>
                 <strong>Size:</strong>{' '}
-                <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(result.final_bytes)}</span>{' '}
+                <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(result.final_bytes)}</span>{' '}
                 <span style={{ fontSize: '0.78rem', opacity: 0.7 }}>(initial: {fmtBytes(file.size)})</span>
               </li>
               <li>
                 <strong style={{ color: 'var(--accent)' }}>Saved:</strong>{' '}
-                <strong style={{ color: 'var(--accent)', fontFamily: "'Fira Code', monospace" }}>
+                <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono), monospace' }}>
                   {file.size > result.final_bytes ? Math.round((1 - result.final_bytes / file.size) * 100) + '%' : '0%'}
                 </strong>
               </li>

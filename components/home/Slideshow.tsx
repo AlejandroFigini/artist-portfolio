@@ -9,7 +9,7 @@
 
 import { useEffect } from 'react'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
-import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { itemKey } from '@/lib/cms/collection'
@@ -17,15 +17,24 @@ import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollecti
 import { markLoaderGate } from '@/lib/loader-ready'
 import { optimizedMediaSrc } from '@/lib/utils'
 
+/* Anchos de `mediaSrcSet`. El fondo es un background-image (no acepta srcSet),
+   así que elige uno a mano — pero de la MISMA escalera que usa el
+   `<link rel=preload imagesrcset>` del server (app/(site)/page.tsx). Si el
+   ancho no cayera en un peldaño de esa lista, el precargado y el que pide el
+   div serían dos URLs distintas y la portada se bajaría dos veces. */
+const BACKDROP_STEPS = [640, 828, 1200, 1920]
+
 /* El fondo es 100vw × 100vh: pedir 1600px fijos en un teléfono era traer ~2.5×
    los píxeles necesarios. Las slides llegan por evento del CMS (nunca en SSR),
    así que leer `window` acá es seguro. */
 function backdropWidth(): number {
-  if (typeof window === 'undefined') return 1600
-  return Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2))
+  if (typeof window === 'undefined') return 1920
+  const need = Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2))
+  return BACKDROP_STEPS.find((w) => w >= need) ?? BACKDROP_STEPS[BACKDROP_STEPS.length - 1]
 }
 
 export default function HeroSlideshow() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   useCmsStore()
   const serverReady = state.serverReady
   // Solo las slides con imagen real. Vacío → [] → fondo blanco.
@@ -56,7 +65,8 @@ export default function HeroSlideshow() {
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap } = motion
     const els = document.querySelectorAll('.hero-bg-carousel .carousel-slide')
     if (els.length < 2) return
 
@@ -80,7 +90,7 @@ export default function HeroSlideshow() {
       clearInterval(timer)
       gsap.killTweensOf(els)
     }
-  }, [slidesKey, intervalMs])
+  }, [motion, slidesKey, intervalMs])
 
   // Sync with CMS admin changes using shared hook
   useCarouselSync(undefined, slidesKey)

@@ -10,7 +10,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useKeyHandler } from '@/hooks/useKeyHandler'
-import { gsap } from '@/hooks/useGSAP'
+import { pauseGlobalMotion, playGlobalMotion } from '@/hooks/useGSAP'
 
 export type ModalAction = {
   label: React.ReactNode
@@ -49,12 +49,12 @@ export function CmsModal({ title, children, actions, wide, className = '', overl
 
   useEffect(() => {
     document.body.classList.add('cms-modal-open')
-    try { gsap.globalTimeline.pause() } catch {}
+    pauseGlobalMotion()
     window.dispatchEvent(new CustomEvent('modal:open'))
     return () => {
       if (!document.querySelector('.cms-modal-overlay')) {
         document.body.classList.remove('cms-modal-open')
-        try { gsap.globalTimeline.play() } catch {}
+        playGlobalMotion()
         window.dispatchEvent(new CustomEvent('modal:close'))
       }
     }

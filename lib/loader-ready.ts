@@ -9,13 +9,16 @@
    resueltos (o cuando cada uno agota su propio techo de espera: un gate colgado
    nunca deja el sitio bloqueado). El peso define cuánto aporta a la barra. */
 
+/* Solo entra acá lo que ocupa el primer viewport. Las secciones de abajo del
+   fold se siguen precargando mientras el loader está arriba (HomeFx), pero ya
+   no lo retienen: el visitante no las ve hasta scrollear, y esperarlas metía
+   la descarga de tres chunks enteros adentro del LCP. */
 export type LoaderGate =
   | 'serverState'   // contenido del CMS mergeado (state.serverReady)
   | 'fonts'         // document.fonts.ready → sin FOUT ni reflow de títulos
   | 'i18n'          // traducciones traídas y aplicadas al DOM
   | 'heroBackdrop'  // primera slide del fondo decodificada
   | 'heroPanel'     // primera imagen del carrusel principal pintada
-  | 'sections'      // chunks next/dynamic de abajo del fold descargados
 
 type GateSpec = { weight: number; timeoutMs: number }
 
@@ -25,7 +28,6 @@ const GATES: Record<LoaderGate, GateSpec> = {
   i18n: { weight: 1, timeoutMs: 5000 },
   heroBackdrop: { weight: 3, timeoutMs: 7000 },
   heroPanel: { weight: 2, timeoutMs: 7000 },
-  sections: { weight: 2, timeoutMs: 5000 },
 }
 
 const GATE_IDS = Object.keys(GATES) as LoaderGate[]

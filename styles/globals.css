@@ -23,6 +23,7 @@
 @import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
+@import "./motion-pending.css"; /* estado inicial de los reveals mientras baja el chunk de GSAP */
 
 /* ============================================================
    RITMO VERTICAL EN MÓVIL — regla transversal a las secciones.

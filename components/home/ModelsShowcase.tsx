@@ -11,7 +11,7 @@
    contenedores son estáticos; el engine los muta imperativamente. */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
 const SLIDE_COUNT = 4
@@ -331,11 +331,13 @@ function GalleryStrip() {
 }
 
 export default function ModelsShowcase() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -379,7 +381,7 @@ export default function ModelsShowcase() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   return (
     <section ref={sectionRef} className="m3d-showcase" aria-labelledby="m3d-showcase-title">

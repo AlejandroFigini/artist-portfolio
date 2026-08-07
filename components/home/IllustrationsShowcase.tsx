@@ -9,7 +9,7 @@
    permite subir la ilustración después. */
 
 import { useEffect, useRef } from 'react'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import { openLightbox } from '@/components/ui/lightbox'
 import { sendGAEvent } from '@next/third-parties/google'
 const CELL_COUNT = 15
@@ -41,11 +41,13 @@ function Cell() {
 }
 
 export default function IllustrationsShowcase() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -85,7 +87,7 @@ export default function IllustrationsShowcase() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   return (
     <section ref={sectionRef} className="illu-showcase" id="illustrations" aria-labelledby="illu-showcase-title">

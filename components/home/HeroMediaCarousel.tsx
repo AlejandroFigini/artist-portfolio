@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ensureGSAP, gsap } from '@/hooks/useGSAP';
+import { useMotionReady } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 import { COLLECTIONS } from '@/lib/cms/collections';
@@ -51,6 +51,7 @@ export default function HeroMediaCarousel({
   label = 'Home carousel',
   readyGate,
 }: Props) {
+  const motion = useMotionReady() // GSAP llega en su propio chunk;
   useCmsStore();
   const serverReady = state.serverReady;
 
@@ -74,7 +75,8 @@ export default function HeroMediaCarousel({
 
   // Effect to drive cross‑fade animation when slides are present
   useEffect(() => {
-    ensureGSAP();
+    if (!motion) return;
+    const { gsap } = motion;
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
     if (els.length === 0) return;
     gsap.set(els, { opacity: 0 });
@@ -103,7 +105,7 @@ export default function HeroMediaCarousel({
       gsap.killTweensOf(els);
     };
     // slidesKey changes when images are added/removed → re‑arm crossfade.
-  }, [slidesKey, duration, prefix]);
+  }, [motion, slidesKey, duration, prefix]);
 
   return (
     <>

@@ -28,7 +28,7 @@
   pointer-events: none;
 }
 .illu-showcase__rail-fig {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: var(--text-secondary);
@@ -64,7 +64,7 @@
 }
 .illu-showcase__fig {
   display: inline-block;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.22em;
   color: var(--accent);
@@ -194,20 +194,41 @@
 @media (max-width: 960px) {
   .illu-showcase__rail { display: none; }
 }
+/* Bento de 2 columnas — mismo criterio que el de escritorio (formas variadas
+   que tilan un rectángulo perfecto, sin huecos), replanteado para dos
+   columnas. Antes acá se reseteaba el placement a `auto`: quedaban 15 celdas
+   idénticas, y por debajo de 560px una sola columna, o sea una pila de
+   imágenes en vez de una galería.
+   Mapa 2×12: 1 big (2×2) · 3 wide (2×1) · 3 tall (1×2) · 8 cuadradas.
+   Al cambiar la cantidad de celdas hay que rehacer el mapa o quedan huecos. */
 @media (max-width: 900px) {
   .illu-masonry {
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: clamp(130px, 30vw, 190px);
+    /* ~ancho de columna: las 1×1 salen cuadradas */
+    grid-auto-rows: clamp(110px, 40vw, 240px);
   }
-  /* reset del placement explícito (misma especificidad, gana por orden) */
-  .illu-masonry .illu-cell { grid-column: auto; grid-row: auto; }
+  .illu-masonry .illu-cell:nth-child(1)  { grid-column: 1 / span 2; grid-row: 1 / span 2; }  /* big */
+  .illu-masonry .illu-cell:nth-child(2)  { grid-column: 1 / span 1; grid-row: 3 / span 1; }
+  .illu-masonry .illu-cell:nth-child(3)  { grid-column: 2 / span 1; grid-row: 3 / span 1; }
+  .illu-masonry .illu-cell:nth-child(4)  { grid-column: 1 / span 1; grid-row: 4 / span 2; }  /* tall */
+  .illu-masonry .illu-cell:nth-child(5)  { grid-column: 2 / span 1; grid-row: 4 / span 1; }
+  .illu-masonry .illu-cell:nth-child(6)  { grid-column: 2 / span 1; grid-row: 5 / span 1; }
+  .illu-masonry .illu-cell:nth-child(7)  { grid-column: 1 / span 2; grid-row: 6 / span 1; }  /* wide */
+  .illu-masonry .illu-cell:nth-child(8)  { grid-column: 1 / span 1; grid-row: 7 / span 1; }
+  .illu-masonry .illu-cell:nth-child(9)  { grid-column: 2 / span 1; grid-row: 7 / span 2; }  /* tall */
+  .illu-masonry .illu-cell:nth-child(10) { grid-column: 1 / span 1; grid-row: 8 / span 1; }
+  .illu-masonry .illu-cell:nth-child(11) { grid-column: 1 / span 2; grid-row: 9 / span 1; }  /* wide */
+  .illu-masonry .illu-cell:nth-child(12) { grid-column: 1 / span 1; grid-row: 10 / span 2; } /* tall */
+  .illu-masonry .illu-cell:nth-child(13) { grid-column: 2 / span 1; grid-row: 10 / span 1; }
+  .illu-masonry .illu-cell:nth-child(14) { grid-column: 2 / span 1; grid-row: 11 / span 1; }
+  .illu-masonry .illu-cell:nth-child(15) { grid-column: 1 / span 2; grid-row: 12 / span 1; } /* wide */
 }
-@media (max-width: 560px) {
-  .illu-masonry {
-    grid-template-columns: 1fr;
-    grid-auto-rows: clamp(190px, 62vw, 280px);
-  }
-  .illu-masonry .illu-cell { grid-column: auto; grid-row: auto; }
+
+/* Aire lateral extra: la galería llega casi al borde y con el bento de dos
+   columnas se nota más que en el resto de las secciones. `border-box` hace que
+   el padding recorte el ancho del grid sin mover la caja. */
+@media (max-width: 768px) {
+  .illu-showcase__frame { padding-inline: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

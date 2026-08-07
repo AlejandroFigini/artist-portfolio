@@ -23,6 +23,11 @@ const LS_HIDE_CMS = 'cms_hide_controls_v1'
    styles/legacy/style.css: el retiro de la tuerca es solo de móvil. */
 const GEAR_AWAY_MQ = '(max-width: 768px)'
 
+/* Fracción de pantalla que "About me" tiene que haber invadido para que la
+   tuerca entre. Con 1 (el borde inferior exacto) aparecería ya en la portada,
+   porque el hero mide 100svh y el tope de About coincide con el pliegue. */
+const GEAR_AWAY_ENTER_RATIO = 0.75
+
 
 // Al pausar el movimiento, los títulos typewriter muestran su texto
 // completo para que no queden vacíos (port revealTypewriters)
@@ -167,19 +172,27 @@ export default function SettingsPanel() {
               document.documentElement.style.setProperty('--settings-bottom', '30px')
             }
           }
-          /* La tuerca entra recién cuando el final de "About me" toca el borde
-             inferior de la pantalla: hasta ahí sobra sobre la portada. Es un
-             comportamiento SOLO de móvil, así que el media query se evalúa acá
-             y no solo en CSS: si no, en escritorio el cierre forzado de los
-             paneles de abajo se disparaba con cualquier scroll sobre la
-             portada. El breakpoint acompaña al de la regla `.is-away`
+          /* La tuerca entra al ENTRAR en "About me": hasta ahí sobra sobre la
+             portada. Se mide contra el borde superior de la sección y no
+             contra el inferior — con el inferior había que recorrer los 1300px
+             de About enteros antes de que apareciera. Es un comportamiento
+             SOLO de móvil, así que el media query se evalúa acá y no solo en
+             CSS: si no, en escritorio el cierre forzado de los paneles de
+             abajo se disparaba con cualquier scroll sobre la portada. El
+             breakpoint acompaña al de la regla `.is-away`
              (legacy/style.css). Se consulta el DOM en cada tick porque la
              sección solo existe en la home: en el resto de las rutas no hay
              nada que esperar y la tuerca queda visible desde el arranque. */
-          const about = window.matchMedia(GEAR_AWAY_MQ).matches
-            ? document.querySelector('.about-section')
-            : null
-          const away = !!about && about.getBoundingClientRect().bottom > window.innerHeight
+          const isMobile = window.matchMedia(GEAR_AWAY_MQ).matches
+          const about = isMobile ? document.querySelector('.about-section') : null
+          const beforeAbout = !!about
+            && about.getBoundingClientRect().top > window.innerHeight * GEAR_AWAY_ENTER_RATIO
+          /* El footer cierra el recorrido: ahí la tuerca ya no tiene contenido
+             debajo al que aplicar y se superpone al bloque de contacto, así
+             que se retira igual que sobre la portada. */
+          const atFooter = isMobile && !!footer
+            && footer.getBoundingClientRect().top < window.innerHeight
+          const away = beforeAbout || atFooter
           setGearAway(away)
           // si se retira con un panel abierto, el panel se va con ella
           if (away) { setOpen(false); setAdminOpen(false) }

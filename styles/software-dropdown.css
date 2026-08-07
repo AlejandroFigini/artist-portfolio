@@ -13,7 +13,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;

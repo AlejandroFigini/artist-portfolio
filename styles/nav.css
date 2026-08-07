@@ -203,7 +203,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   background: transparent !important;
   padding: 0.45rem 0.95rem !important;
   position: relative;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -297,7 +297,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   }
 }
 .admin-menu-header {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.62rem;
   color: var(--text-secondary);
   padding: 0.7rem 1rem 0.6rem;
@@ -382,6 +382,24 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
 
   header > .nav-container { padding: var(--nav-pad-y) 0 !important; }
 
+  /* Hamburguesa más compacta y pegada al logo. Con 44px de caja y 1rem de
+     margen, el título quedaba a 14px del icono pero a solo 6px del grupo de
+     acciones (el `margin-right: auto` del logo se comía lo que sobraba), así
+     que se leía como parte de los iconos de la derecha. Los 17px que se
+     liberan acá se los queda ese auto y pasan a separar título de acciones.
+     34px es la misma caja que el resto de los botones de la barra. */
+  .nav-toggle {
+    width: 34px;
+    height: 34px;
+    gap: 5px;
+    margin-right: 0.5rem;
+  }
+  .nav-toggle span { width: 22px; }
+  /* El recorrido de la X acompaña al alto del stack (barra 1px + gap 5px):
+     con los 8px de legacy las aspas se cruzaban de más. */
+  body.nav-open .nav-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  body.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
   /* El logo del drawer se posiciona contra el viewport, no dentro de la barra:
      tiene que arrancar en el mismo offset que el contenido del header o deja
      de alinear con el botón X.
@@ -454,7 +472,6 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   @media (max-width: 360px) {
     .nav-actions .lang-btn { padding: 0 0.25rem !important; }
     .nav-actions .lang-btn .lang-code { margin-left: 0.2rem; }
-    .nav-toggle { margin-right: 0.5rem; }
     header > .nav-container > .logo { font-size: 0.86rem !important; }
     header > .nav-container > .logo span.highlight { font-size: 0.6rem !important; }
   }

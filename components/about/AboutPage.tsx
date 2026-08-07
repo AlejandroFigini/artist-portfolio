@@ -14,7 +14,7 @@
    float del retrato son CSS (ver styles/about-page.css). */
 
 import { useEffect, useRef } from 'react'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const SPECS = [
   { k: 'ROLE',      v: '3D Generalist & Animator', i18nK: 'spec_role_k', i18nV: 'spec_role_v' },
@@ -76,11 +76,13 @@ const SOCIALS = [
 ]
 
 export default function AboutPage() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const rootRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger } = motion
     const root = rootRef.current
     if (!root) return
 
@@ -139,7 +141,7 @@ export default function AboutPage() {
     }, rootRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [motion])
 
   return (
     <main ref={rootRef} className="ab-main">

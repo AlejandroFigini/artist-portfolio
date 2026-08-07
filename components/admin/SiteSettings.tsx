@@ -156,16 +156,20 @@ export function useSaveSettings() {
 
 // ----- 1) Pantalla de carga --------------------------------------------------
 
+/* Espejo de loaderDurationMs(): el panel tiene que mostrar el piso que el
+   sitio realmente aplica cuando el ajuste nunca se guardó. */
+const DEFAULT_DURATION = '1.2'
+
 export function LoaderSettings() {
   useCmsStore()
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [duration, setDuration] = useState(() => settings.loaderDuration || '3')
+  const [duration, setDuration] = useState(() => settings.loaderDuration || DEFAULT_DURATION)
   const [saving, setSaving] = useState(false)
 
   const currentVideo = state.items['loader.gallop'] !== undefined ? state.items['loader.gallop'] : (settings.loaderVideo || '')
-  const isChanged = duration !== (settings.loaderDuration || '3') || currentVideo !== (settings.loaderVideo || '')
+  const isChanged = duration !== (settings.loaderDuration || DEFAULT_DURATION) || currentVideo !== (settings.loaderVideo || '')
 
   useEffect(() => {
     indexEditables()
@@ -185,7 +189,7 @@ export function LoaderSettings() {
   const onSaveConfiguration = async () => {
     setSaving(true)
     await save({
-      loaderDuration: String(parseFloat(duration) || 3),
+      loaderDuration: String(parseFloat(duration) || parseFloat(DEFAULT_DURATION)),
       loaderVideo: currentVideo,
     }, 'Loading screen settings updated')
     setSaving(false)
@@ -247,7 +251,7 @@ export function LoaderSettings() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="number"
-                min={1}
+                min={0.5}
                 max={15}
                 step={0.5}
                 className="social-input"

@@ -1,0 +1,64 @@
+/* ============================================================
+   ESTADO PREVIO A LA COREOGRAFÍA DE ENTRADA
+
+   GSAP ya no viaja en el bundle inicial (hooks/useGSAP → import dinámico):
+   su chunk llega unos cientos de ms después del primer paint. Estos son
+   exactamente los elementos que el setup de GSAP pone en `autoAlpha: 0` /
+   `yPercent` antes de revelarlos — sin este archivo se verían enteros, GSAP
+   los escondería al llegar y recién ahí entrarían. Un parpadeo.
+
+   `html.motion-pending` lo pone el boot script del layout ANTES del primer
+   paint, y solo cuando va a haber animación (sin prefers-reduced-motion y sin
+   "Pausar animaciones"). Se saca en cuanto el runtime resuelve, y hay un
+   failsafe por tiempo: si el chunk nunca llega, el contenido aparece igual.
+
+   La lista sale de los `gsap.set(...)` de los componentes: si se agrega un
+   reveal nuevo con estado inicial oculto, va también acá.
+   ============================================================ */
+
+html.motion-pending .ab-hero-eyebrow,
+html.motion-pending .ab-hero-lede,
+html.motion-pending .ab-hero-meta span,
+html.motion-pending .ab-hero-name .ab-line,
+html.motion-pending .about-bio p,
+html.motion-pending .about-corner,
+html.motion-pending .about-fig,
+html.motion-pending .about-lede,
+html.motion-pending .about-meta-row,
+html.motion-pending .about-portrait,
+html.motion-pending .about-social,
+html.motion-pending .about-spec,
+html.motion-pending .about-title .line,
+html.motion-pending .about-video-container,
+html.motion-pending .anim-card,
+html.motion-pending .anim-showcase__desc,
+html.motion-pending .anim-showcase__fig,
+html.motion-pending .anim-showcase__title,
+html.motion-pending .badge,
+html.motion-pending .bp-corner,
+html.motion-pending .bp-fig,
+html.motion-pending .bp-measure-label,
+html.motion-pending .bp-tick,
+html.motion-pending .ch-panel,
+html.motion-pending .ch-showcase__desc,
+html.motion-pending .ch-showcase__fig,
+html.motion-pending .hero-media-wrapper .media-container,
+html.motion-pending .hero-software-wave,
+html.motion-pending .hero-subtitle,
+html.motion-pending .hero-title .line,
+html.motion-pending .illu-cell,
+html.motion-pending .illu-showcase__desc,
+html.motion-pending .illu-showcase__fig,
+html.motion-pending .illu-showcase__title,
+html.motion-pending .m3d-coverflow,
+html.motion-pending .m3d-gallery,
+html.motion-pending .m3d-showcase__desc,
+html.motion-pending .m3d-showcase__fig,
+html.motion-pending .m3d-showcase__title,
+html.motion-pending .m3d-text,
+html.motion-pending .proj-showcase__desc,
+html.motion-pending .proj-showcase__fig,
+html.motion-pending .proj-showcase__title,
+html.motion-pending .project-item {
+    visibility: hidden;
+}

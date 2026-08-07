@@ -14,7 +14,7 @@
    Vacíos: cms-empty-overlay (solo icono, ver styles/about.css). */
 
 import { useEffect, useRef } from 'react'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import { sendGAEvent } from '@next/third-parties/google'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
@@ -47,6 +47,7 @@ function Corners() {
 const TITLE = 'About'
 
 export default function AboutSection() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
   useCmsStore()
   const isAdmin = state.isAdmin
@@ -55,7 +56,8 @@ export default function AboutSection() {
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -121,7 +123,7 @@ export default function AboutSection() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { clearTimeout(twTimeout); titleTw?.kill(); ledeTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   return (
     <section ref={sectionRef} className="about-section" aria-labelledby="about-title-h">

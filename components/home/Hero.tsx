@@ -11,7 +11,7 @@ import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
-import { ensureGSAP, gsap, prefersReducedMotion } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
@@ -43,6 +43,7 @@ function whenLoaderDone(cb: () => void): () => void {
 }
 
 export default function Hero() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
   useCmsStore() // re-render al cambiar admin (muestra/oculta los engranajes)
   const isAdmin = state.isAdmin
@@ -50,7 +51,8 @@ export default function Hero() {
   // Coreografía de entrada + parallax de scroll
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -94,13 +96,14 @@ export default function Hero() {
       return () => cancelWait()
     }, sectionRef)
     return () => ctx.revert()
-  }, [])
+  }, [motion])
 
   // Rig de profundidad: los planos responden al mouse (solo puntero fino)
   useEffect(() => {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
     if (!fine || prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap } = motion
     const section = sectionRef.current
     const rig = section?.querySelector('.hero-media-wrapper')
     if (!section || !rig) return
@@ -127,7 +130,7 @@ export default function Hero() {
       section.removeEventListener('mouseleave', onLeave)
       gsap.killTweensOf(rig)
     }
-  }, [])
+  }, [motion])
 
   // Reveal sutil del título cada ~9s: cada letra hace fade + desenfoque en
   // su lugar (chars en spans inline-block → sin reflow, el texto no se mueve).

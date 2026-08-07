@@ -16,8 +16,8 @@
     --c-subir: #8b5cf6;
 
     /* Variables generales */
-    --font: 'Plus Jakarta Sans', sans-serif;
-    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font: var(--font-jakarta), sans-serif;
+    --font-display: var(--font-jakarta), sans-serif;
     --letter-spacing-elegant: 0.05em;
     --radius: 1.5rem;
     --radius-sm: 0.75rem;
@@ -280,7 +280,7 @@ header.scrolled {
     align-items: center;
     gap: 0.4rem;
 
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.95rem;
     font-weight: 300;
     letter-spacing: 0.1em;
@@ -882,7 +882,7 @@ section {
     color: #f1f5f9;
     /* Near white, very legible */
     font-size: 0.95rem;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-weight: 500;
     letter-spacing: 0.05em;
 }
@@ -896,7 +896,7 @@ section {
     border-radius: 6px;
     font-size: 0.95rem;
     font-weight: 800;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), sans-serif;
     color: white;
     cursor: help;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1007,7 +1007,7 @@ section {
     border: 1px solid var(--accent);
     background: transparent;
     color: var(--accent);
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.9rem;
     font-weight: 500;
     letter-spacing: 0.05em;
@@ -2060,6 +2060,14 @@ input:checked+.slider:before {
     /* En mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil el footer estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ centrado: el CV vuelve a centrarse. */
     .cv-btn-footer { align-self: center; }
 
+    /* Las burbujas de redes venÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­an en una sola lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea sin wrap ni centrado: con las
+       7 redes cargadas el contenedor pedÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a 378px sobre 333 disponibles y la
+       ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºltima quedaba cortada por el borde de la pantalla. */
+    .footer-social-bubbles {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
     .footer-bottom-bar {
         flex-direction: column;
         gap: 1rem;
@@ -2580,7 +2588,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 .loader-title {
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-weight: 300;
     letter-spacing: 0.08em;
     font-size: clamp(1.8rem, 4.5vw, 3.2rem);
@@ -2594,7 +2602,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 .loader-subtitle {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: clamp(0.7rem, 1.6vw, 0.85rem);
     letter-spacing: 0.25em;
     text-transform: uppercase;
@@ -2645,7 +2653,7 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 .loader-text {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.95rem;
     letter-spacing: 0.15em;
     color: rgba(255, 255, 255, 0.8);
@@ -3319,7 +3327,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     background: var(--bg-secondary);
     color: var(--text-primary);
     cursor: pointer;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .cms-picker-option:hover {
@@ -3517,7 +3525,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     background: var(--bg-secondary);
     color: var(--text-primary);
     font-size: 0.85rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
 }
 
 /* ---- Repo Filter Buttons (styled like GestiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n tabs) ---- */
@@ -3532,7 +3540,7 @@ body.is-admin .cms-empty-slot .cms-tools {
     color: var(--text-secondary);
     font-size: 0.8rem;
     font-weight: 600;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -3639,7 +3647,7 @@ body.is-admin .cms-hero-gear {
     border: 1.5px solid var(--accent);
     background: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.85rem;
     flex: 1;
     min-width: 120px;
@@ -3674,7 +3682,7 @@ body.is-admin .cms-mount.cms-empty-slot {
 
 /* Botones genÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ricos del CMS (settings, modales) */
 .cms-btn {
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     padding: 0.45rem 0.9rem;
@@ -3823,7 +3831,7 @@ body.is-admin .cms-mount.cms-empty-slot {
 
 .cms-textarea {
     width: 100%;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.85rem;
     line-height: 1.5;
     padding: 0.8rem;
@@ -4044,7 +4052,7 @@ html.motion-off #animBlobCanvas {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -4059,7 +4067,7 @@ html.motion-off #animBlobCanvas {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     letter-spacing: 0.03em;
@@ -4167,7 +4175,7 @@ body.cms-modal-open { overflow: hidden; }
     background: var(--bg-secondary);
     color: var(--text-primary);
     font-size: 0.9rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     resize: vertical;
 }
 
@@ -4296,7 +4304,7 @@ body.cms-modal-open { overflow: hidden; }
     background: rgba(124, 58, 237, 0.05);
     color: var(--accent);
     cursor: pointer;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.85rem;
     transition: all 0.25s ease;
 }
@@ -4387,7 +4395,7 @@ body.cms-modal-open { overflow: hidden; }
     border-radius: 999px;
     background: rgba(124, 58, 237, 0.15);
     color: var(--accent);
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
 }
 
 /* Cantidad de archivos + tamaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±o destacados debajo del header ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ndar
@@ -4475,7 +4483,7 @@ body.cms-modal-open { overflow: hidden; }
     border-radius: 0;
     color: var(--text-primary);
     font-size: 0.85rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-weight: 500;
     transition: background 0.15s ease;
     white-space: nowrap;
@@ -4545,7 +4553,7 @@ body.cms-modal-open { overflow: hidden; }
     line-height: 1;
     letter-spacing: -0.02em;
     color: var(--text-primary);
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     text-transform: none;
 }
 
@@ -4554,7 +4562,7 @@ body.cms-modal-open { overflow: hidden; }
 /* peso total de la categorÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a, debajo del label */
 .admin-stat-size {
     margin-top: 0.15rem;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.9rem;
     font-weight: 600;
     letter-spacing: 0;
@@ -4648,7 +4656,7 @@ body.cms-modal-open { overflow: hidden; }
 
 .cms-mlib-label {
     display: flex;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.98rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -4680,7 +4688,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 .cms-mlib-meta {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), sans-serif;
     font-variant-numeric: lining-nums;
     font-size: 0.75rem;
     color: var(--text-primary);
@@ -4794,7 +4802,7 @@ body.cms-modal-open { overflow: hidden; }
     border: none;
     color: var(--text-primary);
     font-size: 0.85rem;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-weight: 500;
     cursor: pointer;
     transition: background 0.15s;
@@ -4883,7 +4891,7 @@ body.cms-modal-open { overflow: hidden; }
     border: none;
     background: transparent;
     border-radius: 7px;
-    font-family: 'Raleway', sans-serif;
+    font-family: var(--font-raleway), sans-serif;
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--text-secondary);
@@ -4942,7 +4950,7 @@ body.cms-modal-open { overflow: hidden; }
     font-size: 0.8em;
     opacity: 0.8;
     font-weight: 600;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     display: inline-flex;
     align-items: center;
     gap: 0.2ch;
@@ -5333,7 +5341,7 @@ body.cms-modal-open { overflow: hidden; }
 }
 .cms-batch-info { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .cms-batch-count {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-weight: 700;
     font-size: 0.8rem;
     line-height: 1;
@@ -5410,7 +5418,7 @@ body.cms-modal-open { overflow: hidden; }
 
 /* Global Font Settings for Redesigned Sections */
 .hero-premium-grid {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: var(--font-jakarta), sans-serif;
     background-color: var(--bg-obsidian);
     color: var(--text-primary);
     transition: background-color 0.5s ease;
@@ -5474,7 +5482,7 @@ body.cms-modal-open { overflow: hidden; }
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 10px;
     color: var(--text-muted);
     margin-bottom: 3rem;
@@ -5960,7 +5968,7 @@ body.is-admin .wave-item .cms-tools .cms-tool-replace {
     font-size: 0.8rem;
     font-weight: 700;
     color: #fff;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
 }
 .soft-badge.ai { background: #FF9A00; }
 .soft-badge.ps { background: #31A8FF; }
@@ -6065,7 +6073,7 @@ body.hide-cms-controls .cms-placeholder-inner {
     background: transparent;
     padding: 0.4rem 0.85rem;
     font-size: 0.78rem;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-weight: 500;
     border-radius: 6px;
     cursor: pointer;
@@ -6118,7 +6126,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 .ga-pulse-text {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -6247,7 +6255,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 .ga-chart-peak {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.72rem;
     opacity: 0.75;
 }
@@ -6261,7 +6269,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 }
 
 .ga-chart-axis {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 20px; /* en unidades del viewBox, no px de pantalla */
     fill: currentColor;
     opacity: 0.45;
@@ -6335,7 +6343,7 @@ body.hide-cms-controls .cms-placeholder-inner {
 
 .ga-chart-tip span {
     display: block;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.68rem;
     opacity: 0.7;
 }
@@ -6490,7 +6498,7 @@ select.ga-metric-select option {
 }
 
 .ga-countries-layout .ga-list-sub {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.8rem;
     color: var(--text-primary);
 }
@@ -6533,7 +6541,7 @@ select.ga-metric-select option {
 .ga-list-sub {
     font-size: 0.72rem;
     opacity: 0.65;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
 }
 
 .ga-progress-wrap {
@@ -6559,7 +6567,7 @@ select.ga-metric-select option {
 }
 
 .ga-pct-label {
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.7rem;
     font-weight: 600;
     width: 2.2rem;

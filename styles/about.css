@@ -54,7 +54,7 @@
   pointer-events: none;
 }
 .about-rail-fig {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: var(--text-secondary);
@@ -96,7 +96,7 @@
 }
 .about-fig {
   display: inline-block;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.22em;
   color: var(--accent);
@@ -187,7 +187,7 @@
 }
 .about-meta-head {
   display: inline-block;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.2em;
   color: var(--accent);
@@ -212,7 +212,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
 }
 .about-spec-k {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
   color: #000;
@@ -244,7 +244,7 @@
   padding: 0.4rem 0.7rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   color: #000;
@@ -358,7 +358,7 @@
   align-items: center;
   padding: 0.5rem 0.8rem;
   background: transparent;
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.8);
@@ -468,7 +468,7 @@
   right: 6px;
   padding: 2px 6px;
   background: rgba(13, 13, 18, 0.7);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.55rem;
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.8);
@@ -513,7 +513,7 @@
    la mitad de la pantalla. Solo se achica acá — de 961px para arriba manda el
    bloque de tablet y el max-width de escritorio queda intacto. */
 @media (max-width: 768px) {
-  .about-video-container { max-width: 265px; }
+  .about-video-container { max-width: 225px; }
 }
 
 /* ============================================================

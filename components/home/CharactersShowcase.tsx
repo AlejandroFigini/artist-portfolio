@@ -17,10 +17,7 @@ import {
   Carousel, CarouselContent, CarouselItem, type CarouselApi,
 } from '@/components/ui/carousel'
 import AutoScroll from 'embla-carousel-auto-scroll'
-import {
-  ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion,
-  typewriterRevealLoop, wordRevealLoop, type LoopHandle,
-} from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useInViewRef } from '@/hooks/useInView'
 import { optimizedMediaSrc } from '@/lib/utils'
@@ -194,6 +191,7 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
 }
 
 export default function CharactersShowcase() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   useCmsStore()
   const ui = useUiText()
   const isAdmin = state.isAdmin
@@ -294,7 +292,8 @@ export default function CharactersShowcase() {
   // Reveal de entrada del encabezado + typewriter del título (patrón hermano).
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
     let titleTw: LoopHandle | null = null
@@ -328,7 +327,7 @@ export default function CharactersShowcase() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   // Panel de info del lightbox: aparece 1s después de ampliar.
   useEffect(() => {

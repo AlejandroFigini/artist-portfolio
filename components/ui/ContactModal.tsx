@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useUiText } from '@/lib/cms/store'
-import { gsap } from '@/hooks/useGSAP'
+import { pauseGlobalMotion, playGlobalMotion } from '@/hooks/useGSAP'
 import '@/styles/contact-modal.css'
 
 type ContactField = 'name' | 'email' | 'country' | 'subject' | 'message'
@@ -97,7 +97,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       }
     })
 
-    try { gsap.globalTimeline.pause() } catch {}
+    pauseGlobalMotion()
     window.dispatchEvent(new CustomEvent('modal:open'))
 
     return () => {
@@ -105,7 +105,7 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
       pausedVideos.forEach((v) => {
         try { v.play() } catch {}
       })
-      try { gsap.globalTimeline.play() } catch {}
+      playGlobalMotion()
       window.dispatchEvent(new CustomEvent('modal:close'))
     }
   }, [])

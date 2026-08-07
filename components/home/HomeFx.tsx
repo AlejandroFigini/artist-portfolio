@@ -7,7 +7,6 @@
    Todo respeta prefers-reduced-motion. */
 
 import { useEffect } from 'react'
-import { markLoaderGate } from '@/lib/loader-ready'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -76,15 +75,22 @@ const motionOff = () => document.documentElement.classList.contains('motion-off'
 export default function HomeFx() {
   /* Precalentado de las secciones code-split (next/dynamic en page.tsx):
      mientras la pantalla de carga está arriba se bajan sus chunks, así hidratan
-     junto con el resto en vez de montar tarde sobre el sitio ya visible. */
+     junto con el resto en vez de montar tarde sobre el sitio ya visible.
+     Precalentar, no retener: el loader no espera a que terminen (ver
+     lib/loader-ready) — están abajo del fold y su descarga caía adentro del
+     LCP. Se dispara en idle para no competir con lo del primer viewport. */
   useEffect(() => {
-    let alive = true
-    Promise.all([
-      import('@/components/home/CharactersShowcase'),
-      import('@/components/home/ModelsShowcase'),
-      import('@/components/home/IllustrationsShowcase'),
-    ]).catch(() => {}).finally(() => { if (alive) markLoaderGate('sections') })
-    return () => { alive = false }
+    const warm = () => {
+      void Promise.all([
+        import('@/components/home/CharactersShowcase'),
+        import('@/components/home/ModelsShowcase'),
+        import('@/components/home/IllustrationsShowcase'),
+      ]).catch(() => {})
+    }
+    const ric = window.requestIdleCallback
+    if (!ric) { const t = window.setTimeout(warm, 200); return () => clearTimeout(t) }
+    const id = ric(warm, { timeout: 2000 })
+    return () => window.cancelIdleCallback(id)
   }, [])
 
   // Reveals (.visible) + typewriter de section-typewriter

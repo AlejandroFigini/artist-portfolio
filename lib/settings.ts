@@ -24,9 +24,12 @@ export type SiteSettings = {
 
 export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '', appleIconUrl: '' }
 
-/** Duración del loader en ms, con default 3s y clamp defensivo (1s–15s). */
+/* Piso estético del loader en ms, con clamp defensivo (0.5s–15s).
+   El piso es tiempo en el que la portada ya está pintada pero tapada: entra
+   entero en el LCP. 1.2s alcanza para que la animación se lea sin volverse el
+   techo de la métrica. El admin lo sigue subiendo desde Gestión. */
 export function loaderDurationMs(raw: string): number {
   const secs = parseFloat(raw)
-  if (!Number.isFinite(secs) || secs <= 0) return 3000
-  return Math.min(Math.max(secs, 1), 15) * 1000
+  if (!Number.isFinite(secs) || secs <= 0) return 1200
+  return Math.min(Math.max(secs, 0.5), 15) * 1000
 }

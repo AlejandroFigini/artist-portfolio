@@ -163,9 +163,10 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
   )
 }
 
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 
 export default function ProjectsShowcase() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk;
   useCmsStore();
   const ui = useUiText()
   const isAdmin = state.isAdmin;
@@ -246,7 +247,8 @@ export default function ProjectsShowcase() {
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -285,7 +287,7 @@ export default function ProjectsShowcase() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   return (
     <section ref={sectionRef} className="proj-showcase w-full">

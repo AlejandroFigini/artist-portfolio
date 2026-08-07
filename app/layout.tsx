@@ -3,6 +3,7 @@ import { GoogleAnalytics } from '@next/third-parties/google'
 import '@/styles/globals.css'
 import Providers from '@/components/ui/Providers'
 import { getSiteSettingsServer } from '@/lib/site-server'
+import { fontVariables } from '@/lib/fonts'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -57,6 +58,11 @@ const BOOT_SCRIPT = `
     }
   };
   document.documentElement.classList.add(lite ? 'perf-lite' : 'perf-full');
+  // Estado previo de los reveals mientras baja el chunk de GSAP (styles/motion-pending.css).
+  // Solo si va a haber coreografía: con reduced-motion o la pausa activa el
+  // contenido tiene que verse entero desde el primer paint.
+  var motionOff = document.documentElement.classList.contains('motion-off');
+  if (!reduced && !motionOff) document.documentElement.classList.add('motion-pending');
   var skipLoader = false;
   try {
     skipLoader = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1';
@@ -69,28 +75,14 @@ const BOOT_SCRIPT = `
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const initialSettings = await getSiteSettingsServer()
   return (
-    <html lang="en" data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="en" className={fontVariables} data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
         {/* Font Awesome ya no viene de CDN: styles/icons.css sirve un subset
-            propio con los ~128 iconos que usamos (278 KB → 14 KB). */}
-        {/* Solo las familias y pesos que el sitio realmente pinta:
-            Plus Jakarta Sans (--font/--font-display), Raleway 300/400/500/600,
-            Fira Code 400/500 (cotas blueprint) e Inter 400/800 (.soft-badge y
-            .cms-mlib-meta). Cormorant Garamond y Syne no se usaban en ninguna
-            regla — Syne solo aparecía como fallback de var(--font-display),
-            que siempre está definido, así que nunca llegaba a aplicarse. */}
-        {/* La regla apunta a pages/_document.js del Pages Router. Acá el
-            layout raíz ES el documento, así que la hoja aplica a todo el sitio
-            y la advertencia no corresponde. */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Raleway:wght@300;400;500;600&family=Inter:wght@400;800&family=Fira+Code:wght@400;500&display=swap"
-        />
+            propio con los ~128 iconos que usamos (278 KB → 14 KB).
+            Las cuatro familias de texto tampoco: las self-hostea next/font
+            (ver lib/fonts.ts) y se consumen por variable CSS. */}
       </head>
       <body suppressHydrationWarning>
         <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${BOOT_SCRIPT}</script>` }} style={{ display: 'none' }} />

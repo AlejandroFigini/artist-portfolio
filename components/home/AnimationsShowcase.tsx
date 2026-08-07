@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ensureGSAP, gsap, ScrollTrigger, prefersReducedMotion, typewriterRevealLoop, wordRevealLoop, type LoopHandle } from '@/hooks/useGSAP'
+import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -276,6 +276,7 @@ function AnimCard({ index }: { index: number }) {
 }
 
 export default function AnimationsShowcase() {
+  const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const [page, setPage] = useState(0)
@@ -318,7 +319,8 @@ export default function AnimationsShowcase() {
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-    ensureGSAP()
+    if (!motion) return
+    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -360,7 +362,7 @@ export default function AnimationsShowcase() {
       ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
-  }, [])
+  }, [motion])
 
   return (
     <section ref={sectionRef} className="anim-showcase" aria-labelledby="anim-showcase-title">

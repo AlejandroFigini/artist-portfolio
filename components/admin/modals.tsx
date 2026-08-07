@@ -549,14 +549,14 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                     onChange={(e) => handleNameChange(0, e.target.value)}
                     style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
                   {getFileExtension(files[0].name) && (
-                    <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                    <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
                       {getFileExtension(files[0].name)}
                     </span>
                   )}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <div><strong>Size:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files[0].size)}</span></div>
+                <div><strong>Size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(files[0].size)}</span></div>
                 <div><strong>Content type:</strong> {files[0].type.includes('video') ? 'Video' : 'Image'}</div>
                 <div><strong>Format:</strong> {files[0].type || 'File'}</div>
               </div>
@@ -588,14 +588,14 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                             <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
                             File {i + 1}
                           </span>
-                          <span style={{ fontFamily: "'Fira Code', monospace", color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
+                          <span style={{ fontFamily: 'var(--font-mono), monospace', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
                           <input type="text" className="cms-field" value={fileNames[i]}
                             onChange={(e) => handleNameChange(i, e.target.value)}
                             style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
                           {ext && (
-                            <span style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: "'Fira Code', monospace", fontSize: '0.85rem', userSelect: 'none' }}>
+                            <span style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
                               {ext}
                             </span>
                           )}
@@ -611,7 +611,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                 </div>
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <strong>Total size:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
+                <strong>Total size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
               </div>
               {hasAnyDuplicate && (
                 <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
@@ -647,7 +647,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
               <div key={i} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
                 <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>
                   <div><strong style={{ color: 'var(--text-primary)' }}>File:</strong> {result.original_name}</div>
-                  <div><strong style={{ color: 'var(--text-primary)' }}>Final size:</strong> <span style={{ fontFamily: "'Fira Code', monospace" }}>{fmtBytes(result.final_bytes)}</span></div>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Final size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(result.final_bytes)}</span></div>
                   <div><strong style={{ color: 'var(--text-primary)' }}>Format:</strong> {result.final_format}</div>
                 </div>
                 {result.isVid ? (
