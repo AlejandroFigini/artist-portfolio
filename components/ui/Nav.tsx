@@ -45,6 +45,7 @@ export default function Nav() {
   const [langOpen, setLangOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const activeLang = LANG_META[state.lang]
+  const isAdmin = state.isAdmin
   const headerRef = useRef<HTMLElement>(null)
   const linksRef = useRef<HTMLElement>(null)
   const viewfinderRef = useRef<HTMLSpanElement>(null)
@@ -304,11 +305,20 @@ export default function Nav() {
               >
                 <i className="fa-solid fa-file-arrow-down"></i><span>CV</span>
               </a>
+              {/* Espejo del botón de sesión de la barra: CmsRoot lo renderiza
+                  en un portal, así que se delega el click al original en vez de
+                  duplicar la lógica de login/logout. */}
               <button
                 className="login-min-btn"
-                onClick={() => { closeNav(); document.querySelector<HTMLButtonElement>('#cms-auth-nav button')?.click(); }}
+                title={ui(isAdmin ? 'log_out' : 'log_in')}
+                aria-label={ui(isAdmin ? 'log_out' : 'log_in')}
+                onClick={() => {
+                  closeNav()
+                  document.querySelector<HTMLButtonElement>(`#cms-auth-nav [data-cms-auth="${isAdmin ? 'logout' : 'login'}"]`)?.click()
+                }}
               >
-                <i className="fa-solid fa-right-to-bracket"></i><span>{ui('log_in')}</span>
+                <i className={`fa-solid ${isAdmin ? 'fa-right-from-bracket' : 'fa-right-to-bracket'}`}></i>
+                <span>{ui(isAdmin ? 'log_out' : 'log_in')}</span>
               </button>
               <div className="lang-selector-nav mobile-lang" style={{ display: 'flex' }}>
                 <button

@@ -133,9 +133,13 @@
   34%, 100% { transform: translateY(72vh); opacity: 0; }
 }
 
-/* --- Responsive: instrumentos fuera en pantallas chicas --- */
+/* --- Responsive: instrumentos fuera en pantallas chicas ---
+   La cota (línea violeta + "W // 12-COL · REV.03") es decoración de plano
+   técnico pensada para el ancho de escritorio: en móvil sobrecarga el bloque
+   de texto, y por debajo de 430px el svg ya se ocultaba dejando el label
+   suelto. Se apaga entera y queda solo título + subtítulo. */
 @media (max-width: 768px) {
-  .bp-measure { max-width: 100%; }
+  .bp-measure { display: none; }
   .bp-fig { font-size: 0.55rem; }
 }
 
@@ -156,11 +160,15 @@
   }
   .hero-grid { gap: clamp(1.5rem, 5svh, 2.5rem); }
 
+  /* Fondo del hero: `contain` (escritorio) deja la imagen apoyada en el ancho
+     y con dos franjas blancas enormes arriba y abajo en un viewport vertical.
+     En móvil llena la pantalla. */
+  .carousel-slide { background-size: cover; }
+
   /* Bloque de texto: ritmo vertical compacto y cajas centradas de verdad
      (text-align solo centra el texto, no la caja con max-width). */
   .badge { margin-bottom: 1rem; }
   .hero-title { margin-bottom: 1.1rem; }
-  .bp-measure { justify-content: center; margin: -0.2rem auto 1.1rem; }
   .hero-subtitle { max-width: 34ch; margin-inline: auto; margin-bottom: 0; }
 
   /* Par de planos solapados: mismas proporciones, recalibradas a la columna
@@ -168,10 +176,6 @@
   .hero-media-wrapper { height: clamp(260px, 42svh, 380px); }
   .hero-primary { width: 70%; height: 74%; top: 0; right: 2%; }
   .hero-secondary { width: 44%; height: 46%; bottom: 6%; right: 48%; }
-}
-@media (max-width: 430px) {
-  /* sin la cota dibujada queda solo el label: centrado con el resto */
-  .bp-measure svg { display: none; }
 }
 
 /* --- Reduced motion: vida continua apagada, todo visible --- */

@@ -128,6 +128,7 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   language: { en: 'Language', es: 'Idioma', pt: 'Idioma', fr: 'Langue' },
   change_language: { en: 'Change language', es: 'Cambiar idioma', pt: 'Mudar idioma', fr: 'Changer de langue' },
   log_in: { en: 'Log in', es: 'Iniciar sesión', pt: 'Entrar', fr: 'Se connecter' },
+  log_out: { en: 'Log out', es: 'Cerrar sesión', pt: 'Sair', fr: 'Se déconnecter' },
   cv_unavailable: { en: 'CV not available yet', es: 'CV no disponible aún', pt: 'CV ainda não disponível', fr: 'CV pas encore disponible' },
   download_cv_pdf: { en: 'Download Curriculum Vitae (PDF)', es: 'Descargar Curriculum Vitae (PDF)', pt: 'Baixar Curriculum Vitae (PDF)', fr: 'Télécharger le Curriculum Vitae (PDF)' },
 

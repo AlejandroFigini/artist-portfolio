@@ -245,10 +245,19 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   display: inline-flex;
   align-items: center;
 }
+/* El chip pasó de <span> a <button> (tap para abrir el menú): hay que anular
+   el borde y el fondo que le pone el user-agent. */
 .admin-dropdown-wrapper .cms-user-chip {
   cursor: pointer;
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+  appearance: none;
+  border: none;
+}
+.admin-dropdown-wrapper .cms-user-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .admin-dropdown-menu {
   position: absolute;
@@ -270,11 +279,22 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   display: flex;
   flex-direction: column;
 }
-.admin-dropdown-wrapper:hover .admin-dropdown-menu,
-.admin-dropdown-wrapper:focus-within .admin-dropdown-menu {
+/* `.is-open` lo pone el tap sobre el chip (CmsRoot): en táctil no hay hover,
+   así que sin esto el menú de sesión —y con él "Log out"— era inalcanzable. */
+.admin-dropdown-wrapper.is-open .admin-dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+/* El hover sigue siendo el gesto de escritorio; en táctil se "clava" tras el
+   tap y peleaba con el toggle, por eso queda restringido al puntero fino. */
+@media (hover: hover) and (pointer: fine) {
+  .admin-dropdown-wrapper:hover .admin-dropdown-menu,
+  .admin-dropdown-wrapper:focus-within .admin-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
 }
 .admin-menu-header {
   font-family: 'Fira Code', monospace;
@@ -356,7 +376,9 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      el logo del drawer y el padding superior del menú. El logo del drawer está
      posicionado en absolute sobre el viewport, así que si el padding de la
      barra se toca sin actualizarlo, deja de alinear con el botón X. */
-  :root { --nav-pad-y: clamp(1.05rem, 2.4svh, 1.4rem); }
+  /* Fijo, no svh: el alto de la barra —y con él el offset del drawer— tiene
+     que ser el mismo en un SE que en un iPhone 13. */
+  :root { --nav-pad-y: 1.15rem; }
 
   header > .nav-container { padding: var(--nav-pad-y) 0 !important; }
 
@@ -392,6 +414,21 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      El `margin-right: auto` del logo (legacy) queda intacto: es lo que empuja
      el grupo contra el borde derecho. --- */
   .nav-actions { gap: clamp(0.3rem, 1.5vw, 0.7rem) !important; }
+
+  /* Sesión iniciada: el chip toma la misma forma que el resto de las acciones
+     (círculo de 34px, solo icono). Legacy lo escondía entero por debajo de
+     768px y con él desaparecía la única entrada al menú de "Log out". */
+  .nav-actions .cms-user-chip {
+    display: inline-flex !important;
+    padding: 0 !important;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    gap: 0;
+  }
+  .nav-actions .cms-user-chip .cms-user-name,
+  .nav-actions .cms-user-chip .fa-chevron-down { display: none; }
+  .nav-actions .cms-user-chip i { margin: 0 !important; font-size: 0.95rem; }
   /* a 320px el grupo no entra con la pastilla de idioma a ancho completo */
   @media (max-width: 360px) {
     .nav-actions .lang-btn { padding: 0 0.25rem !important; }
@@ -444,31 +481,34 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      quedaba cortado en pantallas cortas (iPhone SE). */
   .nav-links {
     padding-top: calc(var(--nav-pad-y) + 44px + 0.35rem) !important;
-    padding-bottom: clamp(0.6rem, 1.6svh, 2rem) !important;
+    padding-bottom: 0.5rem !important;
   }
   .nav-menu-scrollable {
     justify-content: safe center;
-    gap: clamp(0.05rem, 0.35svh, 0.4rem) !important;
+    gap: 0.15rem !important;
     padding: 0 !important;
   }
 
-  /* Tipografía del drawer. Todo en clamp con vw/svh: crece en pantallas
-     grandes y se repliega en las cortas, donde igual queda el scroll interno
-     de .nav-menu-scrollable como red. */
+  /* Tipografía del drawer. El tamaño sigue escalando con vw (a 320px el texto
+     tiene que achicarse o no entra a lo ancho), pero el RITMO VERTICAL es fijo:
+     con svh, las 16 filas del menú medían 601px contra 538px disponibles en un
+     iPhone SE y "Contact" caía fuera de vista. En valores fijos el bloque mide
+     ~500px y entra completo, idéntico en cualquier teléfono. */
   .nav-links > a,
   .nav-menu-scrollable > a,
   .nav-links .dropbtn {
     font-size: clamp(0.94rem, 3.8vw, 1.15rem) !important;
-    padding: clamp(0.22rem, 0.8svh, 0.6rem) 0 !important;
+    padding: 0.24rem 0 !important;
   }
   .nav-links .dropdown-content {
-    padding: clamp(0.05rem, 0.22svh, 0.28rem) 0 clamp(0.2rem, 0.6svh, 0.75rem) 1rem !important;
+    padding: 0.1rem 0 0.3rem 1rem !important;
   }
   .nav-links .dropdown-content a {
     font-size: clamp(0.82rem, 3.25vw, 0.98rem) !important;
     /* El aire entre sub-opciones se mantiene con padding y no con gap: además
        de separarlas agranda el área táctil, que es lo que se toca al elegir. */
-    padding: clamp(0.26rem, 0.85svh, 0.6rem) 0 !important;
+    line-height: 1.5;
+    padding: 0.28rem 0 !important;
   }
 
   /* Las sub-opciones NO se mueven al arrastrar el dedo.
@@ -487,7 +527,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     transition-delay: 0s !important;
   }
   .mobile-drawer-actions {
-    padding-top: clamp(0.7rem, 2svh, 1.5rem) !important;
+    padding-top: 0.7rem !important;
     gap: clamp(0.4rem, 2.5vw, 0.8rem) !important;
   }
 }

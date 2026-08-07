@@ -42,6 +42,8 @@ export default function CmsRoot() {
   // host del portal del botón de sesión: se resuelve post-mount para apuntar
   // al nodo definitivo del DOM (patrón estándar de portales)
   const [authHost, setAuthHost] = useState<HTMLElement | null>(null)
+  // En táctil no hay :hover: el menú de sesión se abre por tap sobre el chip.
+  const [authMenuOpen, setAuthMenuOpen] = useState(false)
   const serverReady = state.serverReady
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingKeyRef = useRef<string>('')
@@ -165,6 +167,21 @@ export default function CmsRoot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // El menú de sesión abierto por tap se cierra igual que los del nav.
+  useEffect(() => {
+    if (!authMenuOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.admin-dropdown-wrapper')) setAuthMenuOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAuthMenuOpen(false) }
+    document.addEventListener('click', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [authMenuOpen])
+
   const close = useCallback(() => {
     setCmd((prev) => (prev !== null ? null : prev))
   }, [])
@@ -177,28 +194,36 @@ export default function CmsRoot() {
           {/* botón de sesión en la navbar (port renderAuth) */}
           {authHost && createPortal(
             state.isAdmin ? (
-              <div className="admin-dropdown-wrapper">
-                <span className="cms-user-chip" title={`Signed in as ${state.username || 'Administrator'}`}>
-                  <i className="fa-solid fa-user-shield"></i> {state.username || 'Administrator'} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
-                </span>
+              <div className={`admin-dropdown-wrapper${authMenuOpen ? ' is-open' : ''}`}>
+                <button
+                  type="button"
+                  className="cms-user-chip"
+                  title={`Signed in as ${state.username || 'Administrator'}`}
+                  aria-expanded={authMenuOpen}
+                  onClick={(e) => { e.stopPropagation(); setAuthMenuOpen((o) => !o) }}
+                >
+                  <i className="fa-solid fa-user-shield"></i>
+                  <span className="cms-user-name">{state.username || 'Administrator'}</span>
+                  <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
+                </button>
                 <div className="admin-dropdown-menu">
                   <div className="admin-menu-header">Current session: {state.username || 'Administrator'}</div>
-                  <a 
-                    href="/admin" 
-                    className="cms-navauth-btn" 
+                  <a
+                    href="/admin"
+                    className="cms-navauth-btn"
                     style={{ textDecoration: 'none', display: 'inline-block' }}
                     onClick={() => { try { sessionStorage.setItem('cms_skip_loader', '1') } catch {} }}
                   >
                     <i className="fa-solid fa-sliders"></i> Management
                   </a>
-                  <button type="button" className="cms-navauth-btn" title="Log out"
-                    onClick={() => { logout().finally(() => { setAdmin(false); toast('Logged out') }) }}>
+                  <button type="button" className="cms-navauth-btn" title="Log out" data-cms-auth="logout"
+                    onClick={() => { setAuthMenuOpen(false); logout().finally(() => { setAdmin(false); toast('Logged out') }) }}>
                     <i className="fa-solid fa-right-from-bracket"></i> Log out
                   </button>
                 </div>
               </div>
             ) : (
-              <button type="button" className="login-min-btn" onClick={() => setCmd({ type: 'login' })}>
+              <button type="button" className="login-min-btn" data-cms-auth="login" onClick={() => setCmd({ type: 'login' })}>
                 <i className="fa-solid fa-right-to-bracket"></i>
                 <span>Log in</span>
               </button>
