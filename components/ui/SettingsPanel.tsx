@@ -19,6 +19,11 @@ import { sendGAEvent } from '@next/third-parties/google'
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
 
+/* Debe coincidir con el media query de `.settings-gear.is-away` en
+   styles/legacy/style.css: el retiro de la tuerca es solo de móvil. */
+const GEAR_AWAY_MQ = '(max-width: 768px)'
+
+
 // Al pausar el movimiento, los títulos typewriter muestran su texto
 // completo para que no queden vacíos (port revealTypewriters)
 function revealTypewriters() {
@@ -60,6 +65,8 @@ export default function SettingsPanel() {
   const transFileRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  // true mientras la tuerca todavía no debe mostrarse (portada, en móvil)
+  const [gearAway, setGearAway] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [sectionClear, setSectionClear] = useState<{ label: string; keys: string[]; count: number } | null>(null)
   // lazy init: en SSR no hay window; en hidratación lee el tema que el boot
@@ -143,7 +150,8 @@ export default function SettingsPanel() {
     return () => document.removeEventListener('click', onClick)
   }, [open, adminOpen])
 
-  // Elevación dinámica de la tuerca al hacer scroll hasta el footer
+  // Elevación dinámica de la tuerca al hacer scroll hasta el footer + retiro de
+  // la tuerca mientras se está en la portada (móvil, ver `gearAway`).
   useEffect(() => {
     let ticking = false
     const onScroll = () => {
@@ -159,6 +167,22 @@ export default function SettingsPanel() {
               document.documentElement.style.setProperty('--settings-bottom', '30px')
             }
           }
+          /* La tuerca entra recién cuando el final de "About me" toca el borde
+             inferior de la pantalla: hasta ahí sobra sobre la portada. Es un
+             comportamiento SOLO de móvil, así que el media query se evalúa acá
+             y no solo en CSS: si no, en escritorio el cierre forzado de los
+             paneles de abajo se disparaba con cualquier scroll sobre la
+             portada. El breakpoint acompaña al de la regla `.is-away`
+             (legacy/style.css). Se consulta el DOM en cada tick porque la
+             sección solo existe en la home: en el resto de las rutas no hay
+             nada que esperar y la tuerca queda visible desde el arranque. */
+          const about = window.matchMedia(GEAR_AWAY_MQ).matches
+            ? document.querySelector('.about-section')
+            : null
+          const away = !!about && about.getBoundingClientRect().bottom > window.innerHeight
+          setGearAway(away)
+          // si se retira con un panel abierto, el panel se va con ella
+          if (away) { setOpen(false); setAdminOpen(false) }
           ticking = false
         })
         ticking = true
@@ -185,10 +209,10 @@ export default function SettingsPanel() {
   return (
     <>
       {/* Tuerca general — visible para todos los usuarios */}
-      <button ref={gearRef} id="settings-toggle" className="settings-gear" aria-label={ui('settings')} onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
+      <button ref={gearRef} id="settings-toggle" className={`settings-gear${gearAway ? ' is-away' : ''}`} aria-label={ui('settings')} onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
         <i className="fa-solid fa-gear"></i>
       </button>
-      <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}`}>
+      <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}${gearAway ? ' is-away' : ''}`}>
         <h3>{ui('settings')}</h3>
         <div className="setting-item">
           <span>{ui('dark_mode')}</span>
@@ -252,14 +276,14 @@ export default function SettingsPanel() {
           <button
             ref={adminGearRef}
             id="admin-settings-toggle"
-            className="settings-gear settings-gear--admin"
+            className={`settings-gear settings-gear--admin${gearAway ? ' is-away' : ''}`}
             aria-label="Admin settings"
             title="Admin settings"
             onClick={() => { setAdminOpen((o) => !o); setOpen(false) }}
           >
             <i className="fa-solid fa-user-gear"></i>
           </button>
-          <div ref={adminPanelRef} id="admin-settings-panel" className={`settings-panel settings-panel--admin${adminOpen ? '' : ' hidden'}`}>
+          <div ref={adminPanelRef} id="admin-settings-panel" className={`settings-panel settings-panel--admin${adminOpen ? '' : ' hidden'}${gearAway ? ' is-away' : ''}`}>
             <h3>Admin Settings</h3>
             <div className="setting-item">
           <span>Hide Edit actions</span>

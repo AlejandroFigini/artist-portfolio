@@ -376,6 +376,22 @@
   .m3d-showcase__rail { display: none; }
   .m3d-coverflow__stage { height: clamp(200px, 52vw, 300px); }
   .m3d-slide { width: clamp(240px, 78vw, 400px); }
+
+  /* `.m3d-media` deja de existir para el layout: la cinta de imágenes y el
+     coverflow pasan a ser items directos de la grilla de 1 columna y se
+     ordenan alrededor de los textos — cinta bajo el desplegable de software,
+     coverflow después del último bloque ("Tools").
+
+     Esto además corrige el solapamiento: `.m3d-coverflow` lleva `flex: 1 1 0`
+     para absorber el alto sobrante de la columna en el grid de 2 columnas de
+     escritorio, pero en una sola columna nadie le impone alto y el
+     `flex-basis: 0` lo colapsaba a 0px; el stage se desbordaba y sus slides
+     absolutas pintaban encima de la cinta. Como item de grilla el alto lo
+     vuelve a fijar el contenido. */
+  .m3d-media { display: contents; }
+  .m3d-gallery { order: 1; }
+  .m3d-texts { order: 2; }
+  .m3d-coverflow { order: 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .m3d-slide { transition: opacity 0.3s ease; }

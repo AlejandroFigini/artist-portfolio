@@ -23,3 +23,25 @@
 @import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
+
+/* ============================================================
+   RITMO VERTICAL EN MÓVIL — regla transversal a las secciones.
+   Cada sección define su padding con clamp(); en teléfono todas caen
+   al piso del clamp (42px, y 21px en Projects) y quedaban pegadas
+   entre sí. Se iguala el aire de todas acá en vez de repetir el mismo
+   media query en los seis archivos de sección.
+   Va DESPUÉS de los @import a propósito: los archivos de sección traen
+   la misma especificidad y ganarían por orden de fuente. El hero queda
+   afuera: tiene su propio alto de 100svh.
+   ============================================================ */
+@media (max-width: 768px) {
+  .about-section,
+  .anim-showcase,
+  .proj-showcase,
+  .ch-showcase,
+  .m3d-showcase,
+  .illu-showcase {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}

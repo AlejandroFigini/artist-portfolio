@@ -509,6 +509,13 @@
   .about-media-blob--b { width: 65%; }
 }
 
+/* En teléfono el reel es 3/4: a 320px de ancho se comía 427px de alto, más de
+   la mitad de la pantalla. Solo se achica acá — de 961px para arriba manda el
+   bloque de tablet y el max-width de escritorio queda intacto. */
+@media (max-width: 768px) {
+  .about-video-container { max-width: 265px; }
+}
+
 /* ============================================================
    CMS modals — versión compacta del UploadModal para evitar scroll.
    Mantiene la base visual de .cms-modal pero adapta padding y layout

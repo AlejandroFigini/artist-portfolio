@@ -98,6 +98,16 @@
   .proj-showcase__rail { display: none; }
 }
 
+/* En teléfono la tarjeta llegaba a 325px de ancho sobre 375 de pantalla: casi
+   de borde a borde. El ancho lo fija la celda del carrusel, así que se ensancha
+   su padding lateral en vez de tocar `.project-item` (que va a width:100%). */
+@media (max-width: 768px) {
+  .proj-showcase [role="group"] {
+    padding-left: 1.75rem !important;
+    padding-right: 1.75rem !important;
+  }
+}
+
 /* Override shadcn carousel buttons if necessary */
 
 /* --- Admin Management Button --- */

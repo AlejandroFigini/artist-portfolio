@@ -25,9 +25,6 @@
   cursor: pointer;
   transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
-.sw-trigger:hover,
-.sw-dropdown:hover .sw-trigger,
-.sw-dropdown:focus-within .sw-trigger,
 .sw-dropdown.is-open .sw-trigger {
   border-color: color-mix(in srgb, var(--accent) 48%, transparent);
   background: #fff;
@@ -37,7 +34,6 @@
   font-size: 0.6rem;
   transition: transform 0.3s ease;
 }
-.sw-dropdown:hover .sw-chev,
 .sw-dropdown.is-open .sw-chev { transform: rotate(180deg); }
 
 .sw-list {
@@ -70,13 +66,34 @@
   right: 0;
   height: 0.65rem;
 }
-.sw-dropdown:hover .sw-list,
-.sw-dropdown:focus-within .sw-list,
 .sw-dropdown.is-open .sw-list {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
   border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+}
+
+/* Apertura por hover/foco: SOLO con puntero fino. En táctil el :hover se clava
+   tras el tap y el :focus-within queda pegado al botón, así que el segundo tap
+   apagaba el `is-open` de React pero el panel seguía abierto — solo se cerraba
+   tocando fuera. Con el hover fuera de juego manda el toggle del botón. */
+@media (hover: hover) and (pointer: fine) {
+  .sw-trigger:hover,
+  .sw-dropdown:hover .sw-trigger,
+  .sw-dropdown:focus-within .sw-trigger {
+    border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+    background: #fff;
+    box-shadow: 0 6px 18px -8px rgba(124, 58, 237, 0.22);
+  }
+  .sw-dropdown:hover .sw-chev { transform: rotate(180deg); }
+  .sw-dropdown:hover .sw-list,
+  .sw-dropdown:focus-within .sw-list {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+  }
+  .sw-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 }
 
 .sw-item {
@@ -87,8 +104,6 @@
   border-radius: 4px;
   transition: background 0.2s ease;
 }
-.sw-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
-
 .sw-icon-wrap { position: relative; flex-shrink: 0; }
 .sw-icon {
   display: flex;

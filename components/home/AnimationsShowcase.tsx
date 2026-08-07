@@ -7,7 +7,16 @@ import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
 
+/* 6 contenedores = 2 filas de 3 en la grilla de escritorio. Al cambiar este
+   número hay que acompañarlo en FIXED_SLOTS (`lib/cms/collections.ts`), que es
+   de donde salen las claves `anim#0..n` del CMS. */
 const CARD_COUNT = 6
+/* Móvil: las 6 tarjetas apiladas obligaban a un scroll largo. La grilla pasa a
+   páginas de ancho completo con scroll-snap (CSS puro, ver animations-showcase
+   .css) — dos tarjetas por página, y estas flechas empujan de página en
+   página. En escritorio la grilla no scrollea y las flechas están ocultas. */
+const CARDS_PER_PAGE = 2
+const PAGE_COUNT = Math.ceil(CARD_COUNT / CARDS_PER_PAGE)
 
 function Corners() {
   return (
@@ -268,6 +277,44 @@ function AnimCard({ index }: { index: number }) {
 
 export default function AnimationsShowcase() {
   const sectionRef = useRef<HTMLElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [page, setPage] = useState(0)
+  const ui = useUiText()
+
+  /* Se mide contra la página real y no contra `clientWidth`: el gap entre
+     páginas hace que un paso no sea exactamente el ancho del viewport.
+     El estado se adelanta acá y no se espera al evento `scroll`: con scroll
+     suave ese evento llega tarde, y un segundo click antes de que llegara
+     apuntaba de nuevo a la página actual (delta 0, el carrusel se trababa).
+     El índice da la vuelta: pasada la última página se vuelve a la primera y
+     al revés, así que las flechas nunca se agotan. */
+  const goToPage = useCallback((next: number) => {
+    const grid = gridRef.current
+    const wrapped = ((next % PAGE_COUNT) + PAGE_COUNT) % PAGE_COUNT
+    const target = grid?.children[wrapped] as HTMLElement | undefined
+    if (!grid || !target) return
+    setPage(wrapped)
+    const delta = target.getBoundingClientRect().left - grid.getBoundingClientRect().left
+    grid.scrollBy({ left: delta, behavior: 'smooth' })
+  }, [])
+
+  // El swipe nativo también mueve la página: las flechas leen de acá su estado.
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+    const onScroll = () => {
+      const left = grid.getBoundingClientRect().left
+      let nearest = 0
+      let best = Infinity
+      Array.from(grid.children).forEach((pageEl, i) => {
+        const d = Math.abs(pageEl.getBoundingClientRect().left - left)
+        if (d < best) { best = d; nearest = i }
+      })
+      setPage(nearest)
+    }
+    grid.addEventListener('scroll', onScroll, { passive: true })
+    return () => grid.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -330,10 +377,34 @@ export default function AnimationsShowcase() {
           <SoftwareDropdown prefix="anim" count={4} />
         </div>
 
-        <div className="animations-grid">
-          {Array.from({ length: CARD_COUNT }, (_, i) => (
-            <AnimCard key={i} index={i} />
-          ))}
+        <div className="anim-carousel">
+          {/* Las páginas son `display: contents` en escritorio: desaparecen del
+              layout y las tarjetas vuelven a ser ítems directos de la grilla. */}
+          <div className="animations-grid" ref={gridRef}>
+            {Array.from({ length: PAGE_COUNT }, (_, p) => (
+              <div className="animations-grid__page" key={p}>
+                {Array.from({ length: CARDS_PER_PAGE }, (_, j) => (
+                  <AnimCard key={j} index={p * CARDS_PER_PAGE + j} />
+                ))}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="anim-carousel__arrow anim-carousel__arrow--prev"
+            onClick={() => goToPage(page - 1)}
+            aria-label={ui('previous')}
+          >
+            <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="anim-carousel__arrow anim-carousel__arrow--next"
+            onClick={() => goToPage(page + 1)}
+            aria-label={ui('next')}
+          >
+            <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </section>

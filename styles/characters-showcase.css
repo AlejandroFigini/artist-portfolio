@@ -341,7 +341,10 @@
 @media (max-width: 880px) {
   .ch-showcase__rail { display: none; }
   .ch-panel { grid-template-columns: 1fr; max-height: none; }
-  .ch-portrait-wrap { aspect-ratio: 4 / 5; max-height: 380px; }
+  /* 1/1 y no 4/5: el retrato es lo que marca el alto de la tarjeta y a 375px
+     se iba a 308px. Cuadrado baja a ~247px sin tocar el ancho ni el resto de
+     las proporciones del panel. */
+  .ch-portrait-wrap { aspect-ratio: 1 / 1; max-height: 380px; }
   .ch-panel__info { padding-top: 0.5rem; }
   .ch-lightbox__media.is-shifted { transform: none; }
   .ch-lightbox__info-panel { position: static; width: auto; margin-top: 1rem; }

@@ -130,8 +130,81 @@
 @media (max-width: 1024px) {
   .animations-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* --- Carrusel (solo móvil) ---
+   Las 6 tarjetas apiladas en una columna pedían un scroll largo. En móvil la
+   grilla pasa a ser un carril de páginas de ancho completo (2 tarjetas cada
+   una) con scroll-snap: el swipe lo resuelve el navegador y las flechas
+   (AnimationsShowcase.tsx) solo empujan el scroll. El orden del DOM no cambia,
+   así que el CMS sigue indexando por `.animations-grid .anim-video`.
+
+   En escritorio las páginas son `display: contents` — no existen para el
+   layout y las tarjetas siguen siendo ítems directos de la grilla 3×2. */
+.animations-grid__page { display: contents; }
+
+.anim-carousel { position: relative; }
+.anim-carousel__arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: opacity 0.25s ease, background 0.25s ease;
+}
+.anim-carousel__arrow--prev { left: 0; }
+.anim-carousel__arrow--next { right: 0; }
+.anim-carousel__arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 @media (max-width: 640px) {
-  .animations-grid { grid-template-columns: 1fr; }
+  /* El carril lateral cumple doble función: despega los contenedores del borde
+     (iban a 19px del canto) y es donde se apoyan las flechas. */
+  .anim-carousel { padding-inline: 2.1rem; }
+  .anim-carousel__arrow { display: inline-flex; }
+
+  /* Flex y no grid con `grid-auto-columns: 100%`: dentro de un contenedor con
+     scroll ese porcentaje se resuelve contra una caja que depende del propio
+     contenido, y el navegador terminaba reportando un `scrollWidth` de 543px
+     para 823px de páginas — la tercera quedaba inalcanzable. Un `flex-basis`
+     del 100% se mide contra el content-box y no tiene esa circularidad. */
+  .animations-grid {
+    display: flex;
+    /* legacy trae `justify-content: center` para centrar las 3 columnas fijas
+       del escritorio; en un carril con overflow eso reparte el desborde a
+       ambos lados y la primera página queda a la izquierda del origen, fuera
+       del alcance del scroll. */
+    justify-content: flex-start;
+    gap: 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    /* aire para que la sombra de las tarjetas no quede recortada por el scroll */
+    padding-block: 5px;
+  }
+  .animations-grid::-webkit-scrollbar { display: none; }
+  .animations-grid__page {
+    display: grid;
+    grid-template-rows: repeat(2, auto);
+    gap: 1rem;
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+  /* El :hover se clava tras el tap y una tarjeta escalada dentro del carril de
+     scroll pelea con el snap. */
+  .anim-card:hover { scale: 1; }
+
   .anim-showcase__rail { display: none; }
 }
 

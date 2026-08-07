@@ -52,6 +52,8 @@ export const COLLECTIONS: Record<string, CollectionSpec> = {
     section: 'Projects',
     accept: 'webp',
     concepts: 3,
+    // el carrusel rota solo: el intervalo se edita desde Gestionar proyectos
+    duration: true,
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'start_date', label: 'Start date', type: 'date' },

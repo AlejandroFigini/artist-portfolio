@@ -30,6 +30,11 @@ describe('COLLECTIONS', () => {
     expect(COLLECTIONS['char'].fields?.map((f) => f.key)).toEqual(['name', 'role', 'desc'])
   })
 
+  it('proj rota solo (intervalo editable); char no', () => {
+    expect(COLLECTIONS['proj'].duration).toBe(true)
+    expect(COLLECTIONS['char'].duration).toBeUndefined()
+  })
+
   it('legacyBase conserva el infijo .slide de los carruseles', () => {
     expect(COLLECTIONS['hero'].legacyBase).toBe('hero.slide')
     expect(COLLECTIONS['about-carousel'].legacyBase).toBe('about-carousel.slide')
@@ -238,8 +243,14 @@ describe('planCommit', () => {
   })
 
   it('ignora la duración en las colecciones que no rotan', () => {
+    const char = COLLECTIONS['char']
+    const plan = planCommit(char, ['a'], ['a'], { 'char#a': 'https://cdn/a.webp' }, 9000)
+    expect(plan.payload['char.settings']).toBe('{"ids":["a"]}')
+  })
+
+  it('persiste la duración en Featured Projects, que rota solo', () => {
     const plan = planCommit(proj, ['a'], ['a'], items, 9000)
-    expect(plan.payload['proj.settings']).toBe('{"ids":["a"]}')
+    expect(plan.payload['proj.settings']).toBe('{"ids":["a"],"duration":9000}')
   })
 
   it('borra y archiva un concepto no declarado (::c4) presente en items (D6)', () => {

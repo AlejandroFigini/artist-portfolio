@@ -16,7 +16,7 @@ import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
-import { readCollectionIds } from '@/lib/cms/useCollection'
+import { readCollectionIds, readCollectionDuration } from '@/lib/cms/useCollection'
 
 
 // El contenido se lee reactivamente desde el store (state.items) y se renderiza
@@ -174,6 +174,11 @@ export default function ProjectsShowcase() {
 
   const ids = readCollectionIds('proj')
   const spec = COLLECTIONS['proj']
+  /* Intervalo de rotación, editable desde Gestionar proyectos (spec.duration).
+     Autoplay recibe el delay al construirse, así que va también en la `key` del
+     carrusel: sin remontar, un cambio de intervalo no se aplicaría hasta
+     recargar. */
+  const autoplayDelay = readCollectionDuration('proj')
 
   const completedIds = ids.filter((id) => {
     const key = itemKey(spec, id)
@@ -325,7 +330,7 @@ export default function ProjectsShowcase() {
             </div>
           ) : (
             <Carousel
-              key={`${ids.length}-${completedIds.join('-')}`}
+              key={`${ids.length}-${completedIds.join('-')}-${autoplayDelay}`}
               setApi={setCarouselApi}
               opts={{
                 align: 'start',
@@ -333,7 +338,7 @@ export default function ProjectsShowcase() {
               }}
               plugins={prefersReducedMotion() ? [] : [
                 Autoplay({
-                  delay: 4000,
+                  delay: autoplayDelay,
                   stopOnMouseEnter: true,
                   stopOnInteraction: true,
                 }),

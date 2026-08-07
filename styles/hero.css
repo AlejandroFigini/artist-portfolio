@@ -160,10 +160,12 @@
   }
   .hero-grid { gap: clamp(1.5rem, 5svh, 2.5rem); }
 
-  /* Fondo del hero: `contain` (escritorio) deja la imagen apoyada en el ancho
-     y con dos franjas blancas enormes arriba y abajo en un viewport vertical.
-     En móvil llena la pantalla. */
-  .carousel-slide { background-size: cover; }
+  /* Fondo del hero. Las portadas son 4174×2226 (≈1.88): con `contain` quedaban
+     apoyadas en el ancho dejando el 75% de la pantalla vacío, y con `cover` se
+     escalan a ~1520px de ancho y solo se ve un cuarto de la imagen. El alto fijo
+     es el punto medio: llena la mayor parte del viewport y deja ver ~45% del
+     encuadre. Subir/bajar este único número regula cuánto se acerca. */
+  .carousel-slide { background-size: auto 70%; }
 
   /* Bloque de texto: ritmo vertical compacto y cajas centradas de verdad
      (text-align solo centra el texto, no la caja con max-width). */

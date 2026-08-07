@@ -1401,6 +1401,24 @@ footer {
     .settings-panel--admin { left: auto; right: 30px; }
 }
 
+/* En móvil la tuerca no acompaña a la portada: sobra sobre el hero y recién
+   entra al llegar al tramo final de "About me". `.is-away` lo pone
+   SettingsPanel.tsx según el scroll; en escritorio la regla no existe y la
+   tuerca sigue fija desde el arranque. */
+@media (max-width: 768px) {
+    .settings-gear.is-away,
+    .settings-panel.is-away {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(14px);
+    }
+    .settings-gear {
+        transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                    opacity 0.35s ease, visibility 0.35s;
+    }
+}
+
 .settings-panel h3 {
     margin-top: 0;
     margin-bottom: 1rem;

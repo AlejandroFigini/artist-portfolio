@@ -420,6 +420,8 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      768px y con él desaparecía la única entrada al menú de "Log out". */
   .nav-actions .cms-user-chip {
     display: inline-flex !important;
+    /* sin esto el icono se apoya en el borde izquierdo del círculo */
+    justify-content: center;
     padding: 0 !important;
     width: 34px;
     height: 34px;
@@ -429,6 +431,25 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   .nav-actions .cms-user-chip .cms-user-name,
   .nav-actions .cms-user-chip .fa-chevron-down { display: none; }
   .nav-actions .cms-user-chip i { margin: 0 !important; font-size: 0.95rem; }
+
+  /* El menú de sesión cuelga dentro de .nav-actions, así que las reglas que
+     reducen los botones DE LA BARRA a un círculo sin etiqueta le caían también
+     a sus ítems: "Management" y "Log out" quedaban en 28×28 sin texto ni área
+     de toque. Va con !important porque la regla de ≤450px de legacy lo usa. */
+  .nav-actions .admin-dropdown-menu .cms-navauth-btn {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0.8rem 1.2rem !important;
+    border-radius: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.9rem;
+  }
+  .nav-actions .admin-dropdown-menu .cms-navauth-btn i {
+    margin: 0;
+    font-size: 0.85em !important;
+  }
   /* a 320px el grupo no entra con la pastilla de idioma a ancho completo */
   @media (max-width: 360px) {
     .nav-actions .lang-btn { padding: 0 0.25rem !important; }
@@ -529,6 +550,28 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   .mobile-drawer-actions {
     padding-top: 0.7rem !important;
     gap: clamp(0.4rem, 2.5vw, 0.8rem) !important;
+  }
+}
+
+/* --- Teléfonos altos: el menú respira ---
+   El ritmo compacto de arriba existe para que las 16 filas entren en un SE
+   (667px de alto). De 780px para arriba sobran ~200px y las opciones quedaban
+   apelmazadas sin motivo. El umbral va en alto y no en ancho: lo que decide si
+   el menú entra es el alto, y un mismo teléfono rotado cae solo al modo
+   compacto, que es el que corresponde. --- */
+@media (max-width: 992px) and (min-height: 780px) {
+  .nav-menu-scrollable { gap: 0.28rem !important; }
+  .nav-links > a,
+  .nav-menu-scrollable > a,
+  .nav-links .dropbtn {
+    padding: 0.5rem 0 !important;
+  }
+  .nav-links .dropdown-content {
+    padding: 0.2rem 0 0.5rem 1rem !important;
+  }
+  .nav-links .dropdown-content a {
+    line-height: 1.55;
+    padding: 0.45rem 0 !important;
   }
 }
 
