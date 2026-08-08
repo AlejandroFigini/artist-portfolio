@@ -49,17 +49,33 @@ export function openLightbox(src: string, title?: string, desc?: string, link?: 
   img.src = src
   const titleEl = lb.querySelector<HTMLElement>('.info-title')
   const descEl = lb.querySelector<HTMLElement>('.info-desc')
-  const linkEl = lb.querySelector<HTMLAnchorElement>('.info-link')
+  const linkSlot = lb.querySelector<HTMLElement>('.info-link-slot')
   if (titleEl) titleEl.innerText = title || 'Illustration'
   if (descEl) descEl.innerText = desc || 'A piece from my collection.'
   applyLightboxMeta(lb, meta)
-  if (linkEl) {
-    if (link) {
-      linkEl.href = link
-      linkEl.style.display = ''
-    } else {
-      linkEl.removeAttribute('href')
-      linkEl.style.display = 'none'
+  /* El ancla se construye acá y no viaja en el markup: sin URL no existe, así
+     no queda un enlace sin href para los rastreadores. Se acepta solo http(s)
+     — el valor lo escribe el admin desde el CMS, y un `javascript:` en un href
+     se ejecutaría al hacer click. */
+  if (linkSlot) {
+    linkSlot.textContent = ''
+    const safe = (() => {
+      if (!link) return ''
+      try {
+        const u = new URL(link, window.location.href)
+        return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''
+      } catch { return '' }
+    })()
+    if (safe) {
+      const a = document.createElement('a')
+      a.className = 'info-link'
+      a.target = '_blank'
+      a.rel = 'noopener'
+      a.href = safe
+      const icon = document.createElement('i')
+      icon.className = 'fa-solid fa-up-right-from-square'
+      a.append(icon, document.createTextNode(' View original post'))
+      linkSlot.appendChild(a)
     }
   }
   showLightbox(lb)

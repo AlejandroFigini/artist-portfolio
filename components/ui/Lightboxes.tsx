@@ -17,11 +17,13 @@ function InfoPanel({ withLink }: { withLink?: boolean }) {
       </div>
       <p className="info-desc"></p>
       <p className="info-inspiration hidden"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>Inspiration:</b> <span className="val"></span></p>
-      {withLink && (
-        <a className="info-link" target="_blank" rel="noopener" style={{ display: 'none' }}>
-          <i className="fa-solid fa-up-right-from-square"></i> View original post
-        </a>
-      )}
+      {/* Hueco vacío, no un <a> sin href. Un ancla sin href no es un enlace y
+          los rastreadores la reportan como enlace muerto (fallaba
+          `crawlable-anchors`); esconderla con display:none no la saca del
+          markup. El ancla la crea lightbox.ts solo cuando hay URL real.
+          `display: contents` deja al ancla en el flujo del panel como si
+          fuera hija directa, así el CSS de .info-link no cambia. */}
+      {withLink && <span className="info-link-slot" style={{ display: 'contents' }} />}
       <div className="info-footer">
         <span><i className="fa-solid fa-palette"></i> Lucia Montaña</span>
       </div>
