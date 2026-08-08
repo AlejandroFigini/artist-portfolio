@@ -3,12 +3,24 @@ import ReactDOM from 'react-dom'
 import HomeFx from '@/components/home/HomeFx'
 import HeroSlideshow from '@/components/home/Slideshow'
 import Hero from '@/components/home/Hero'
-import AboutSection from '@/components/home/AboutSection'
-import AnimationsShowcase from '@/components/home/AnimationsShowcase'
-import ProjectsShowcase from '@/components/home/ProjectsShowcase'
 import { getHeroPreloadServer } from '@/lib/hero-server'
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
 
+/* Todo lo que está abajo del fold va por `next/dynamic`. No es por el peso
+   total —el HTML se sigue renderizando en el server, así que el contenido está
+   igual— sino por CUÁNDO baja su JavaScript.
+
+   El primer pintado es bandwidth-bound: medido en producción, en los primeros
+   3.2s bajan ~305 KB y 238 KB son JavaScript que el FCP no necesita, pero que
+   le pelea el ancho de banda a la hoja de estilos (33 KB que sola tardan 884ms
+   y acompañada 2094ms). Sacando estas secciones de la primera ola, la portada
+   compite contra menos.
+
+   HomeFx las precalienta en idle, así que siguen hidratando antes de que el
+   visitante llegue a scrollearlas. */
+const AboutSection = dynamic(() => import('@/components/home/AboutSection'))
+const AnimationsShowcase = dynamic(() => import('@/components/home/AnimationsShowcase'))
+const ProjectsShowcase = dynamic(() => import('@/components/home/ProjectsShowcase'))
 const CharactersShowcase = dynamic(() => import('@/components/home/CharactersShowcase'))
 const ModelsShowcase = dynamic(() => import('@/components/home/ModelsShowcase'))
 const IllustrationsShowcase = dynamic(() => import('@/components/home/IllustrationsShowcase'))

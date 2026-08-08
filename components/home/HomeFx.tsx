@@ -82,6 +82,9 @@ export default function HomeFx() {
   useEffect(() => {
     const warm = () => {
       void Promise.all([
+        import('@/components/home/AboutSection'),
+        import('@/components/home/AnimationsShowcase'),
+        import('@/components/home/ProjectsShowcase'),
         import('@/components/home/CharactersShowcase'),
         import('@/components/home/ModelsShowcase'),
         import('@/components/home/IllustrationsShowcase'),
