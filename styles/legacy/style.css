@@ -2580,7 +2580,17 @@ html.skip-loader body.loading-active { overflow: auto !important; }
 }
 
 .loader-title {
-    font-family: var(--font-raleway), sans-serif;
+    /* Familia de display (Jakarta), NO Raleway. Este h1 es el elemento que
+       Chrome elige como LCP: es el texto más grande de lo primero que se ve.
+       Raleway no va precargada —es de detalle— y en 4G lento llega a los
+       4561ms, o sea ~1s DESPUÉS del primer paint: el título se pintaba con la
+       fuente de respaldo y al llegar Raleway se re-renderizaba, y ese segundo
+       pintado era el que Chrome registraba como LCP.
+       Jakarta ya viaja precargada (llega a los 3014ms, antes del primer paint),
+       así que el titular sale en su fuente final de una sola vez. Precargar
+       Raleway habría sido meter 42KB en un camino que ya está limitado por
+       ancho de banda. */
+    font-family: var(--font-display);
     font-weight: 300;
     letter-spacing: 0.08em;
     font-size: clamp(1.8rem, 4.5vw, 3.2rem);
