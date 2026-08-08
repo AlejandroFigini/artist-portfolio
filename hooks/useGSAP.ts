@@ -54,6 +54,18 @@ export function loadGSAP(): Promise<MotionRuntime> {
   return pending
 }
 
+/* La descarga arranca al EVALUARSE este módulo, no en el efecto de
+   `useMotionReady`. Next no emite preload para un `import()` de runtime, así que
+   el chunk no se descubría hasta que React corría los efectos: medido en
+   producción, los 16 chunks iniciales arrancaban todos a los ~1.0s y el de GSAP
+   recién a los 4.1s, para terminar a los 5.4s. La coreografía del hero no podía
+   empezar hasta entonces y el elemento LCP es justamente uno de sus targets.
+
+   Evaluar el módulo pasa mientras corre el bundle inicial, antes de que termine
+   la hidratación: adelanta el pedido sin volver a meter GSAP en el bundle
+   crítico (sigue siendo su propio chunk, y se ejecuta igual de tarde). */
+if (typeof window !== 'undefined') void loadGSAP()
+
 /** Runtime ya cargado, o null mientras el chunk viaja. */
 export function useMotionReady(): MotionRuntime | null {
   const [m, setM] = useState<MotionRuntime | null>(runtime)

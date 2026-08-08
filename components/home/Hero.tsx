@@ -84,7 +84,16 @@ export default function Hero() {
         .to('.bp-line-h', { strokeDashoffset: 0, duration: 0.9, ease: 'power2.inOut' }, '-=0.7')
         .to('.bp-tick', { autoAlpha: 1, duration: 0.3 }, '-=0.25')
         .to('.bp-measure-label', { autoAlpha: 1, duration: 0.5 }, '-=0.3')
-        .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 0.9 }, '-=0.75')
+        /* El subtítulo es el elemento que Chrome elige como LCP (es el bloque
+           de texto más grande del primer viewport). Encadenado con '-=0.75'
+           entraba recién a 1.46s de la timeline —después del badge, del título
+           y de todas las cotas—, y esa espera se sumaba entera a la métrica.
+           Pasa a un offset absoluto temprano: entra fluyendo bajo el título en
+           vez de esperar a que terminen las cotas.
+           Ojo al mover esto: el '-=0.9' de .bp-corner se calcula sobre el fin
+           de .hero-secondary (2.4s), que es posterior, así que sacar al
+           subtítulo de la cadena no corre nada de lo que viene después. */
+        .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 0.9 }, 0.4)
         // media: entrada delicada con fade in + micro-zoom suave
         .to('.hero-primary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.4)
         .to('.hero-secondary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.6)
