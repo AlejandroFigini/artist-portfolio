@@ -2539,9 +2539,17 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     animation: loaderIntro 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Sin opacidad a propósito: solo movimiento.
+   El h1 de este stage es el elemento que Chrome elige como LCP, y un elemento
+   con opacidad 0 no califica como candidato. Arrancando en opacity 0 el LCP no
+   podía dispararse hasta que la animación subiera la opacidad — medido: FCP a
+   1360ms y el h1 recién a 1924ms, con la animación aportando buena parte de esa
+   brecha. Con el stage opaco desde el primer frame el titular se pinta junto
+   con el resto y el LCP deja de esperar a una animación de 300ms.
+   El translate + scale se mantienen: la entrada sigue teniendo vida. */
 @keyframes loaderIntro {
-    from { opacity: 0; transform: translateY(10px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { transform: translateY(10px) scale(0.98); }
+    to   { transform: translateY(0) scale(1); }
 }
 
 /* --- Costado: video de galope --- */
@@ -2717,6 +2725,16 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     margin-left: 0.7rem;
     color: #a78bfa;
     font-variant-numeric: tabular-nums;
+    /* Ancho reservado para "100%" desde el primer pintado. El contador va de
+       "0%" a "100%": son dos caracteres más, y al crecer reflowea la línea de
+       estado, que al envolverse cambia el alto de .loader-info. Como
+       .loader-stage está centrado, ese cambio de alto MUEVE el titular —medido:
+       top 423px → 413px—, y cada movimiento del titular es un candidato LCP
+       nuevo, porque ese h1 es el elemento que Chrome elige.
+       `tabular-nums` ya fijaba el ancho por dígito; esto fija la cantidad. */
+    display: inline-block;
+    min-width: 3.4ch;
+    text-align: right;
 }
 
 /* Loader responsive: apilar en vertical en pantallas chicas */
