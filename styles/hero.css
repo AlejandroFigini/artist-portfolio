@@ -250,3 +250,87 @@
 @media (max-width: 960px) {
   .hero-rail { display: none; }
 }
+
+/* ============================================================
+   ENTRADA DEL TEXTO DEL HERO — en CSS, no en GSAP
+
+   `.hero-subtitle` es el elemento que Chrome elige como LCP (es el bloque de
+   texto más grande del primer viewport). Mientras su reveal vivía en la
+   timeline de GSAP no podía pintarse hasta que llegara el chunk de GSAP:
+   medido en producción, la pantalla de carga se va a los 3202ms y GSAP recién
+   aplica su estado inicial a los 3485ms. Era GSAP —no el loader— lo que ataba
+   la métrica, y ninguna optimización de red lo arreglaba porque el texto no
+   esperaba a la red: esperaba permiso.
+
+   Badge, título y subtítulo pasan a CSS y arrancan en cuanto el loader suelta
+   el body. Sin JavaScript de por medio. El resto de la coreografía (cotas,
+   planos, esquinas, wave) sigue en GSAP, con sus tiempos convertidos a offsets
+   absolutos para que no se corran al salir estos tres de la cadena.
+
+   Curvas y duraciones son las que tenía la timeline. El cubic-bezier es el
+   equivalente de `power4.out`, que era el ease por defecto del tl.
+
+   CAMBIO DELIBERADO: antes el subtítulo entraba último, después de las cotas
+   (a 1.46s de la timeline). Ahora entra junto al título. Es el precio de que
+   el elemento LCP no espere al bundle.
+
+   Estado previo atado a `body.loading-active`: si el JS nunca corre, esa clase
+   no existe y el texto se ve normal desde el primer paint.
+   ============================================================ */
+
+body.loading-active .badge,
+body.loading-active .hero-subtitle { opacity: 0; }
+body.loading-active .hero-title .line { transform: translateY(115%) skewY(4deg); }
+
+@keyframes hero-badge-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes hero-line-in {
+  from { transform: translateY(115%) skewY(4deg); }
+  to   { transform: translateY(0) skewY(0); }
+}
+@keyframes hero-subtitle-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+body:not(.loading-active) .badge {
+  animation: hero-badge-in 0.7s cubic-bezier(0.165, 0.84, 0.44, 1) 0.1s both;
+}
+body:not(.loading-active) .hero-title .line {
+  animation: hero-line-in 1.3s cubic-bezier(0.165, 0.84, 0.44, 1) 0.18s both;
+}
+/* La línea 2 declara las DOS animaciones juntas, y no hereda una.
+   `.hero-title .line-wrap:nth-child(2) .line` ya trae `hero-stroke-breathe`
+   con especificidad (0,4,0), que le gana a (0,3,1) de la regla de arriba — y
+   `animation` no es aditiva: la que gana reemplaza, no suma. Declarándolas por
+   separado, la línea 2 se quedaba sin su reveal de máscara.
+   El segundo valor del stagger 0.14 de la timeline va como delay acá. */
+body:not(.loading-active) .hero-title .line-wrap:nth-child(2) .line {
+  animation:
+    hero-line-in 1.3s cubic-bezier(0.165, 0.84, 0.44, 1) 0.32s both,
+    hero-stroke-breathe 5.5s ease-in-out infinite;
+}
+body:not(.loading-active) .hero-subtitle {
+  animation: hero-subtitle-in 0.9s cubic-bezier(0.165, 0.84, 0.44, 1) 0.18s both;
+}
+
+/* Sin animación: el texto tiene que estar visible y quieto desde el principio,
+   incluso mientras la pantalla de carga está arriba. */
+@media (prefers-reduced-motion: reduce) {
+  body.loading-active .badge,
+  body.loading-active .hero-subtitle { opacity: 1; }
+  body.loading-active .hero-title .line { transform: none; }
+  body:not(.loading-active) .badge,
+  body:not(.loading-active) .hero-title .line,
+  body:not(.loading-active) .hero-title .line-wrap:nth-child(2) .line,
+  body:not(.loading-active) .hero-subtitle { animation: none; }
+}
+html.motion-off body.loading-active .badge,
+html.motion-off body.loading-active .hero-subtitle { opacity: 1; }
+html.motion-off body.loading-active .hero-title .line { transform: none; }
+html.motion-off body:not(.loading-active) .badge,
+html.motion-off body:not(.loading-active) .hero-title .line,
+html.motion-off body:not(.loading-active) .hero-title .line-wrap:nth-child(2) .line,
+html.motion-off body:not(.loading-active) .hero-subtitle { animation: none; }

@@ -13,6 +13,8 @@
    visible). Intro corre al montar; el resto revela on-scroll. Auroras y
    float del retrato son CSS (ver styles/about-page.css). */
 
+import '@/styles/about-page.css'
+
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 

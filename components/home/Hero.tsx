@@ -69,37 +69,31 @@ export default function Hero() {
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })
 
-      // estados iniciales (solo cuando la animación va a correr)
-      gsap.set('.hero-title .line', { yPercent: 115, skewY: 4 })
-      gsap.set('.badge', { autoAlpha: 0, y: 14 })
-      gsap.set('.hero-subtitle', { autoAlpha: 0, y: 18 })
+      /* Estados iniciales (solo cuando la animación va a correr).
+         Badge, título y subtítulo NO están acá: su entrada vive en CSS
+         (styles/hero.css). El subtítulo es el elemento LCP y atarlo a esta
+         timeline lo hacía esperar el chunk de GSAP. */
       gsap.set('.bp-line-h', { strokeDasharray: 600, strokeDashoffset: 600 })
       gsap.set('.bp-measure-label, .bp-fig, .bp-tick', { autoAlpha: 0 })
       gsap.set('.hero-media-wrapper .media-container', { autoAlpha: 0, scale: 1.04 })
       gsap.set('.bp-corner', { autoAlpha: 0, scale: 0.4 })
       gsap.set('.hero-software-wave', { autoAlpha: 0, y: 24 })
 
-      tl.to('.badge', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.1)
-        .to('.hero-title .line', { yPercent: 0, skewY: 0, duration: 1.3, stagger: 0.14 }, 0.18)
-        .to('.bp-line-h', { strokeDashoffset: 0, duration: 0.9, ease: 'power2.inOut' }, '-=0.7')
-        .to('.bp-tick', { autoAlpha: 1, duration: 0.3 }, '-=0.25')
-        .to('.bp-measure-label', { autoAlpha: 1, duration: 0.5 }, '-=0.3')
-        /* El subtítulo es el elemento que Chrome elige como LCP (es el bloque
-           de texto más grande del primer viewport). Encadenado con '-=0.75'
-           entraba recién a 1.46s de la timeline —después del badge, del título
-           y de todas las cotas—, y esa espera se sumaba entera a la métrica.
-           Pasa a un offset absoluto temprano: entra fluyendo bajo el título en
-           vez de esperar a que terminen las cotas.
-           Ojo al mover esto: el '-=0.9' de .bp-corner se calcula sobre el fin
-           de .hero-secondary (2.4s), que es posterior, así que sacar al
-           subtítulo de la cadena no corre nada de lo que viene después. */
-        .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 0.9 }, 0.4)
+      /* Offsets ABSOLUTOS a propósito. Antes venían encadenados con '-=x'
+         relativo al fin de la timeline, y ese fin lo marcaban el badge y el
+         título: al sacarlos, cada '-=x' se habría corrido hacia el cero y toda
+         la instrumentación blueprint habría entrado antes de tiempo. Estos
+         números son los que esas restas ya daban (título terminaba en 1.76,
+         .hero-secondary en 2.4), así que el resultado visual no cambia. */
+      tl.to('.bp-line-h', { strokeDashoffset: 0, duration: 0.9, ease: 'power2.inOut' }, 1.06)
+        .to('.bp-tick', { autoAlpha: 1, duration: 0.3 }, 1.71)
+        .to('.bp-measure-label', { autoAlpha: 1, duration: 0.5 }, 1.71)
         // media: entrada delicada con fade in + micro-zoom suave
         .to('.hero-primary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.4)
         .to('.hero-secondary', { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, 0.6)
-        .to('.bp-corner', { autoAlpha: 1, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out' }, '-=0.9')
-        .to('.bp-fig', { autoAlpha: 0.85, duration: 0.5 }, '-=0.5')
-        .to('.hero-software-wave', { autoAlpha: 1, y: 0, duration: 0.9 }, '-=0.7')
+        .to('.bp-corner', { autoAlpha: 1, scale: 1, duration: 0.45, stagger: 0.045, ease: 'power3.out' }, 1.5)
+        .to('.bp-fig', { autoAlpha: 0.85, duration: 0.5 }, 1.9)
+        .to('.hero-software-wave', { autoAlpha: 1, y: 0, duration: 0.9 }, 1.7)
 
       const cancelWait = whenLoaderDone(() => tl.play())
       return () => cancelWait()

@@ -14,6 +14,10 @@
 
    La lista sale de los `gsap.set(...)` de los componentes: si se agrega un
    reveal nuevo con estado inicial oculto, va también acá.
+
+   NO están el badge, el título ni el subtítulo del hero: su entrada ya no la
+   hace GSAP sino CSS (styles/hero.css), atada a `body.loading-active`. El
+   subtítulo es el elemento LCP y no puede depender de que llegue el bundle.
    ============================================================ */
 
 html.motion-pending .ab-hero-eyebrow,
@@ -34,7 +38,6 @@ html.motion-pending .anim-card,
 html.motion-pending .anim-showcase__desc,
 html.motion-pending .anim-showcase__fig,
 html.motion-pending .anim-showcase__title,
-html.motion-pending .badge,
 html.motion-pending .bp-corner,
 html.motion-pending .bp-fig,
 html.motion-pending .bp-measure-label,
@@ -44,8 +47,6 @@ html.motion-pending .ch-showcase__desc,
 html.motion-pending .ch-showcase__fig,
 html.motion-pending .hero-media-wrapper .media-container,
 html.motion-pending .hero-software-wave,
-html.motion-pending .hero-subtitle,
-html.motion-pending .hero-title .line,
 html.motion-pending .illu-cell,
 html.motion-pending .illu-showcase__desc,
 html.motion-pending .illu-showcase__fig,
