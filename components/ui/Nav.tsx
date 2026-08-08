@@ -324,19 +324,40 @@ export default function Nav() {
               <button
                 type="button"
                 className="cv-min-btn"
+                title={ui('contact_me')}
+                aria-label={ui('contact_me')}
                 onClick={() => { setContactOpen(true); closeNav(); sendGAEvent('event', 'email_click') }}
               >
                 <i className="fa-solid fa-envelope"></i><span>{ui('email')}</span>
               </button>
-              <a
-                className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`}
-                href={settings.cvUrl || undefined}
-                download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
-                target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-                onClick={() => sendGAEvent('event', 'cv_download')}
-              >
-                <i className="fa-solid fa-file-arrow-down"></i><span>CV</span>
-              </a>
+              {/* Sin CV subido va un <button disabled>, no un <a> sin href: un
+                  ancla sin href no es un enlace —no tiene rol— así que
+                  `aria-disabled` ahí está prohibido y los rastreadores lo
+                  reportan como enlace muerto. `disabled` nativo dice lo mismo
+                  sin ARIA. */}
+              {settings.cvUrl ? (
+                <a
+                  className="cv-min-btn"
+                  href={settings.cvUrl}
+                  download={settings.cvName || 'CV.pdf'}
+                  target="_blank" rel="noopener noreferrer"
+                  title={ui('download_cv')}
+                  aria-label={ui('download_cv')}
+                  onClick={() => sendGAEvent('event', 'cv_download')}
+                >
+                  <i className="fa-solid fa-file-arrow-down"></i><span>{ui('cv')}</span>
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="cv-min-btn is-disabled"
+                  disabled
+                  title={ui('cv_unavailable')}
+                  aria-label={ui('cv_unavailable')}
+                >
+                  <i className="fa-solid fa-file-arrow-down"></i><span>{ui('cv')}</span>
+                </button>
+              )}
               {/* Espejo del botón de sesión de la barra: CmsRoot lo renderiza
                   en un portal, así que se delega el click al original en vez de
                   duplicar la lógica de login/logout. */}
@@ -389,18 +410,31 @@ export default function Nav() {
               <span>{ui('email')}</span>
             </button>
             {/* Siempre presente; sin CV subido queda deshabilitado (sin href). */}
-            <a
-              className={`cv-min-btn${settings.cvUrl ? '' : ' is-disabled'}`} id="cv-download"
-              href={settings.cvUrl || undefined}
-              download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
-              target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
-              title={settings.cvUrl ? ui('download_cv') : ui('cv_unavailable')}
-              aria-label={ui('download_cv')} aria-disabled={!settings.cvUrl || undefined}
-              onClick={() => sendGAEvent('event', 'cv_download')}
-            >
-              <i className="fa-solid fa-file-arrow-down"></i>
-              <span>{ui('cv')}</span>
-            </a>
+            {settings.cvUrl ? (
+              <a
+                className="cv-min-btn" id="cv-download"
+                href={settings.cvUrl}
+                download={settings.cvName || 'CV.pdf'}
+                target="_blank" rel="noopener noreferrer"
+                title={ui('download_cv')}
+                aria-label={ui('download_cv')}
+                onClick={() => sendGAEvent('event', 'cv_download')}
+              >
+                <i className="fa-solid fa-file-arrow-down"></i>
+                <span>{ui('cv')}</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="cv-min-btn is-disabled" id="cv-download"
+                disabled
+                title={ui('cv_unavailable')}
+                aria-label={ui('cv_unavailable')}
+              >
+                <i className="fa-solid fa-file-arrow-down"></i>
+                <span>{ui('cv')}</span>
+              </button>
+            )}
             {/* cms.js renderiza aquí el botón de login / menú de sesión (Sesión 3) */}
             <div id="cms-auth-nav"></div>
             <div className="lang-selector-nav">

@@ -252,7 +252,7 @@ export default function CmsRoot() {
                 </div>
               </div>
             ) : (
-              <button type="button" className="login-min-btn" data-cms-auth="login" onClick={() => setCmd({ type: 'login' })}>
+              <button type="button" className="login-min-btn" data-cms-auth="login" title="Log in" aria-label="Log in" onClick={() => setCmd({ type: 'login' })}>
                 <i className="fa-solid fa-right-to-bracket"></i>
                 <span>Log in</span>
               </button>
