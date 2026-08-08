@@ -14,6 +14,7 @@ import { usePathname } from 'next/navigation'
 import { state, useCmsStore, useUiText } from '@/lib/cms/store'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { loaderDurationMs } from '@/lib/settings'
+import { CRITICAL_FONT_FAMILY } from '@/lib/fonts'
 import {
   loaderProgress,
   loaderProgressServer,
@@ -24,6 +25,8 @@ import {
 import { optimizedMediaSrc } from '@/lib/utils'
 
 const FADE_MS = 800
+// Mínimo que la animación de carga se queda en pantalla una vez pintada.
+const MIN_ON_SCREEN_MS = 400
 // Techo duro sobre el piso configurable: por encima del gate más lento (8s).
 const FAILSAFE_MS = 9000
 
@@ -98,17 +101,38 @@ export default function PageLoader() {
     return () => window.removeEventListener('cms:previewLoader', onPreviewLoader)
   }, [])
 
-  // 2. Piso estético (minDisplay) + techo duro (failsafe). El failsafe fuerza
-  //    el cierre aunque queden gates abiertos: el sitio nunca queda tapado.
+  /* 2. Piso estético (minDisplay) + techo duro (failsafe). El failsafe fuerza
+        el cierre aunque queden gates abiertos: el sitio nunca queda tapado.
+
+        Los dos se cuentan desde el INICIO DE LA NAVEGACIÓN, no desde que corre
+        este efecto. Este componente monta recién al hidratar, y en 4G lento eso
+        pasa a los ~3.8s: el piso de 1.2s se convertía en "tapar el sitio hasta
+        los 5s" y terminaba atando el cierre incluso después de que todos los
+        gates estaban resueltos (medido: gates listos 4535ms, piso vencido
+        4980ms). Cuanto más lenta la conexión más tarde arrancaba el reloj, o
+        sea que el piso castigaba justo a quien ya venía sufriendo.
+
+        `performance.now()` es el tiempo transcurrido desde navigationStart, así
+        que restarlo da el semantic correcto: "el loader se ve al menos 1.2s de
+        la vida de la página". En una conexión rápida el piso sigue actuando
+        igual que antes.
+
+        El segundo término evita el efecto colateral: el loader se pinta en el
+        FCP, antes de hidratar, pero si el FCP llegara muy tarde y los gates
+        resolvieran de golpe la animación podría durar dos frames. Se le
+        garantiza un mínimo en pantalla contado desde que se pintó. */
   useEffect(() => {
     if (gone || isPreview) return
+    const since = performance.now()
+    const painted = performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? 0
+    const floor = Math.max(minDisplay - since, MIN_ON_SCREEN_MS - (since - painted), 0)
     const timer = window.setTimeout(() => {
       setMinTimeElapsed(true)
-    }, minDisplay)
+    }, floor)
     const failsafeTimer = window.setTimeout(() => {
       setMinTimeElapsed(true)
       setForced(true)
-    }, failsafe)
+    }, Math.max(0, failsafe - since))
     return () => {
       clearTimeout(timer)
       clearTimeout(failsafeTimer)
@@ -126,12 +150,25 @@ export default function PageLoader() {
     if (serverReady) markLoaderGate('serverState')
   }, [serverReady])
 
+  /* Sin fuentes listas los títulos reflowean apenas se va el loader. Pero
+     `document.fonts.ready` espera a TODAS las que arrancaron, y el sitio carga
+     cuatro familias: Raleway (42 KB) y Fira Code (36 KB) son de detalle —
+     cotas blueprint, badges— y no aparecen en el texto grande de arriba. En 4G
+     lento terminaban a los ~4.5s y retenían el loader por un reflow que nadie
+     iba a ver.
+
+     Se espera solo a la familia del hero. `fonts.load()` resuelve cuando esa
+     está lista; si el navegador no soporta la API o el shorthand falla, se
+     libera el gate igual (fail-open: un gate colgado no puede tapar el sitio). */
   useEffect(() => {
-    // Sin fuentes listas los títulos reflowean apenas se va el loader.
-    if (!document.fonts) { markLoaderGate('fonts'); return }
+    if (!document.fonts?.load) { markLoaderGate('fonts'); return }
     let alive = true
     const done = () => { if (alive) markLoaderGate('fonts') }
-    document.fonts.ready.then(done, done)
+    try {
+      document.fonts.load(`1rem ${CRITICAL_FONT_FAMILY}`).then(done, done)
+    } catch {
+      done()
+    }
     return () => { alive = false }
   }, [])
 

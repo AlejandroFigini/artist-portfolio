@@ -53,11 +53,19 @@ export function markLoaderGate(id: LoaderGate) {
   recompute()
 }
 
-/** Arranca el techo de espera de cada gate. Idempotente. */
+/* Arranca el techo de espera de cada gate. Idempotente.
+
+   Los techos se cuentan desde el INICIO DE LA NAVEGACIÓN, no desde esta
+   llamada: quien la hace es PageLoader al montar, o sea recién al hidratar, y
+   en 4G lento eso son ~3.8s. Un techo de 8s pasaba a valer 11.8s reales, con lo
+   cual dejaba de ser un techo. `performance.now()` mide desde navigationStart,
+   así que restarlo devuelve el sentido original: ningún gate retiene el sitio
+   más allá de su techo contado desde que el usuario pidió la página. */
 export function startLoaderGateTimers() {
   if (timers.length || typeof window === 'undefined') return
+  const since = performance.now()
   timers = GATE_IDS.map((id) =>
-    window.setTimeout(() => markLoaderGate(id), GATES[id].timeoutMs),
+    window.setTimeout(() => markLoaderGate(id), Math.max(0, GATES[id].timeoutMs - since)),
   )
 }
 

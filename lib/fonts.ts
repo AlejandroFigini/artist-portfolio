@@ -53,3 +53,10 @@ export const fontVariables = [
   fontInter.variable,
   fontMono.variable,
 ].join(' ')
+
+/* Familia que pinta el texto del primer viewport (--font y --font-display salen
+   de esta). Es la única cuyo reflow se vería al irse la pantalla de carga, así
+   que es la única que el gate `fonts` tiene que esperar — ver PageLoader.
+   next/font genera el nombre con hash en el build; se lee de acá y no se
+   escribe a mano. */
+export const CRITICAL_FONT_FAMILY = fontSans.style.fontFamily
