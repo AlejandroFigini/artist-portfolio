@@ -70,6 +70,12 @@ export default function CmsRoot() {
   const setAdmin = useCallback((on: boolean, username?: string, role?: string, needsSetup?: boolean) => {
     setAdminFlag(on, username, role, needsSetup)
     document.body.classList.toggle('is-admin', on)
+    /* Los estilos de gestión (barras de herramientas, modales, repositorio) son
+       62 KB que el visitante nunca usa —coverage sobre producción: 1%— y hasta
+       ahora viajaban en la hoja que bloquea el primer render. Se traen recién
+       acá, cuando hay sesión: el chunk de CSS baja aparte y no toca el FCP de
+       nadie más. */
+    if (on) void import('@/styles/legacy/admin.css')
     if (on && !needsSetup) {
       engine.indexEditables()
       engine.seedUsedContent()
