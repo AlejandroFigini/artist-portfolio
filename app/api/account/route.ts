@@ -26,8 +26,10 @@ export async function PATCH(req: Request) {
   let body: { username?: string; currentPassword?: string; newPassword?: string }
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
 
-  if (me.needsSetup && (!body.username || !body.newPassword)) {
-    return NextResponse.json({ success: false, error: 'You must change both username and password to complete setup.' }, { status: 400 })
+  // En el primer setup solo se exige contraseña nueva; el username es opcional
+  // (se puede cambiar después en cualquier momento).
+  if (me.needsSetup && !body.newPassword) {
+    return NextResponse.json({ success: false, error: 'You must set a new password to complete setup.' }, { status: 400 })
   }
 
   const pool = getPool()!
@@ -39,7 +41,7 @@ export async function PATCH(req: Request) {
     if (username.length < 3 || username.length > 64) {
       return NextResponse.json({ success: false, error: 'Username must be between 3 and 64 characters' }, { status: 400 })
     }
-    const dup = await pool.query('SELECT 1 FROM users WHERE username = $1 AND id <> $2', [username, me.id])
+    const dup = await pool.query('SELECT 1 FROM users WHERE LOWER(username) = LOWER($1) AND id <> $2', [username, me.id])
     if (dup.rows.length) {
       return NextResponse.json({ success: false, error: 'Username is already in use' }, { status: 409 })
     }
@@ -53,10 +55,15 @@ export async function PATCH(req: Request) {
     if (newPassword.length < 8) {
       return NextResponse.json({ success: false, error: 'New password must be at least 8 characters long' }, { status: 400 })
     }
-    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
-    const ok = await verifyPassword(String(body.currentPassword || ''), rows[0].password_hash)
-    if (!ok) {
-      return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 401 })
+    // Re-auth con la contraseña actual — salvo en el primer setup, donde el
+    // usuario todavía no tiene una "actual" propia (entró con la temporal que
+    // le puso el owner) y la sesión ya prueba su identidad.
+    if (!me.needsSetup) {
+      const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
+      const ok = await verifyPassword(String(body.currentPassword || ''), rows[0].password_hash)
+      if (!ok) {
+        return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 401 })
+      }
     }
     values.push(await hashPassword(newPassword))
     updates.push(`password_hash = $${values.length}`)

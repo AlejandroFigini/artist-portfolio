@@ -473,6 +473,20 @@ body.is-admin .cms-hero-gear {
     padding: 0.35rem 0.7rem;
 }
 
+/* Botón peligroso "ghost": contorno rojo, y hover con un tinte rojo tenue en
+   vez del relleno violeta del .cms-btn base (que se veía fuera de lugar en una
+   acción destructiva). Definido DESPUÉS de .cms-btn:hover para ganar por orden. */
+.cms-btn--danger-ghost {
+    color: #d32f2f;
+    border-color: #d32f2f;
+    background: transparent;
+}
+.cms-btn--danger-ghost:hover {
+    background: rgba(211, 42, 42, 0.08);
+    color: #d32f2f;
+    border-color: #d32f2f;
+}
+
 /* Modales del CMS */
 .cms-modal-overlay {
     position: fixed;
@@ -693,7 +707,10 @@ body.is-admin .cms-hero-gear {
     bottom: 24px;
     left: 50%;
     transform: translate(-50%, 16px);
-    z-index: 100001;
+    /* Por encima de CUALQUIER panel/modal (algunos usan z-index enormes, ej. el
+       modal de gestión de usuario). Antes el toast quedaba detrás del backdrop
+       y solo se leía al cerrar el panel. */
+    z-index: 2147483000;
     padding: 0.7rem 1.1rem;
     border-radius: 10px;
     background: #1e293b;
@@ -743,10 +760,10 @@ body.is-admin .cms-hero-gear {
 }
 
 .cms-navauth-btn:hover {
+    /* Minimalista: relleno de acento sin lift ni sombra pesada (antes tenía un
+       box-shadow violeta grande + translateY que se sentía cargado). */
     background: var(--accent);
     color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
 }
 
 /* SesiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n iniciada: estilo lleno para diferenciar */
@@ -1055,17 +1072,18 @@ body.cms-modal-open { overflow: hidden; }
 }
 
 .admin-options-panel .cms-btn:hover {
-    background: rgba(124, 58, 237, 0.12);
-    color: var(--accent);
+    /* Hover neutral: solo un fondo gris muy tenue, sin recolorear texto/icono. */
+    background: rgba(120, 120, 130, 0.10);
+    color: var(--text-primary);
     transform: none; /* override bulky button transform */
 }
 
 .admin-options-panel .admin-select-group {
-    justify-content: space-between; 
+    justify-content: space-between;
 }
 .admin-options-panel .admin-select-group:hover {
-    background: rgba(124, 58, 237, 0.12);
-    color: var(--accent);
+    background: rgba(120, 120, 130, 0.10);
+    color: var(--text-primary);
 }
 
 .admin-options-panel .cms-btn i,
@@ -1078,7 +1096,7 @@ body.cms-modal-open { overflow: hidden; }
 
 .admin-options-panel .cms-btn:hover i,
 .admin-options-panel .admin-select-group:hover > span > i {
-    color: var(--accent);
+    color: var(--text-secondary); /* sin recolorear el icono en hover */
 }
 
 .admin-options-panel .cms-btn[style*="color"] i { color: inherit; }
@@ -2096,6 +2114,28 @@ body.is-admin .wave-item .cms-tools .cms-tool-replace {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+}
+
+/* Desktop: mapa a un lado y la columna de países al otro. Este bloque vive en
+   admin.css (que carga DESPUÉS de style.css) porque si no, la regla base de
+   arriba (column) pisaba el `row` que definía style.css y quedaban apilados. */
+@media (min-width: 768px) {
+    .ga-countries-layout {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .ga-countries-layout .ga-map-wrapper {
+        flex: 1.5;
+        max-width: 60%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .ga-countries-layout .ga-list--countries {
+        flex: 1;
+        max-width: 35%;
+    }
 }
 
 .ga-list-header {

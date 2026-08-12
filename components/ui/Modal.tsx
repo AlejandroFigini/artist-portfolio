@@ -48,6 +48,16 @@ export function CmsModal({ title, children, actions, wide, className = '', overl
   }, [])
 
   useEffect(() => {
+    /* Los estilos base del modal (.cms-modal-overlay, .cms-field, .cms-btn…)
+       viven en admin.css, que se difiere por perf y solo se carga en sesión
+       admin. Un visitante sin sesión que abre un modal público (login,
+       contacto) no los tendría → modal sin estilar, renderizado inline. Se
+       traen on-demand al montar cualquier modal: no afecta el FCP de nadie
+       (solo baja ante una acción deliberada) y queda cacheado. */
+    void import('@/styles/legacy/admin.css')
+  }, [])
+
+  useEffect(() => {
     document.body.classList.add('cms-modal-open')
     pauseGlobalMotion()
     window.dispatchEvent(new CustomEvent('modal:open'))

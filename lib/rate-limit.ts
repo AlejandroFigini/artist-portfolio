@@ -64,6 +64,33 @@ export type RateVerdict = { limited: false } | { limited: true; scope: 'ip' | 'g
 
 type Queryable = { query: (sql: string, params?: unknown[]) => Promise<{ rows: { n: number }[] }> }
 
+/* Lockout de login sobre failed_logins (ya se registra cada fallo). Sin esto
+   el endpoint aceptaba intentos ilimitados: fuerza bruta libre contra los
+   usuarios sin 2FA. Se cuenta por IP y por username en la misma ventana; si
+   cualquiera supera el tope, se frena. No agrega filas durante el lockout, así
+   la ventana corre desde el último fallo real y se libera sola. */
+export const LOGIN_MAX_FAILS = 10
+export const LOGIN_WINDOW_MIN = 15
+
+type LoginRateQueryable = { query: (sql: string, params?: unknown[]) => Promise<{ rows: { n: number }[] }> }
+
+export async function checkLoginRateLimit(pool: LoginRateQueryable, ip: string, username: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS n
+       FROM failed_logins
+      WHERE created_at > NOW() - INTERVAL '${LOGIN_WINDOW_MIN} minutes'
+        AND (ip_address = $1 OR username = $2)`,
+    [ip, username.substring(0, 64)],
+  )
+  return (rows[0]?.n ?? 0) >= LOGIN_MAX_FAILS
+}
+
+/* Limpia los fallos al autenticar OK: un login exitoso resetea el contador,
+   así el usuario legítimo nunca queda trabado por intentos viejos. */
+export async function clearLoginFails(pool: { query: (sql: string, params?: unknown[]) => Promise<unknown> }, ip: string, username: string): Promise<void> {
+  await pool.query('DELETE FROM failed_logins WHERE ip_address = $1 OR username = $2', [ip, username.substring(0, 64)])
+}
+
 export async function checkContactRateLimit(pool: Queryable, ip: string): Promise<RateVerdict> {
   /* Una sola consulta para los dos conteos: son la misma ventana temporal y
      el índice (ip_address, created_at) sirve para ambos. */

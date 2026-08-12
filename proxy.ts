@@ -106,8 +106,14 @@ function applySecurityHeaders(res: NextResponse): void {
 
 // --------------- Rate Limit Config ---------------
 
-// Login y 2FA: máx 5 intentos por IP cada 15 minutos
-const AUTH_RATE_LIMIT  = { max: 5,  windowMs: 15 * 60 * 1000 }
+/* Login y 2FA: backstop GRUESO anti-flood por IP (protege incluso el costo de
+   bcrypt ante un aluvión). NO es el lockout fino: ese vive en /api/login (mide
+   por IP+username, verifica credenciales igual y un login correcto limpia el
+   contador). El proxy corre ANTES del handler, así que no puede saber si el
+   intento fue exitoso — por eso acá el tope es alto (no traba el uso normal:
+   un login con 2FA son 2 requests, logout+login otro par...) y el trabajo fino
+   lo hace el route. Con max=5 este backstop bloqueaba hasta los logins correctos. */
+const AUTH_RATE_LIMIT  = { max: 30,  windowMs: 15 * 60 * 1000 }
 // API general: máx 120 requests por IP por minuto
 const API_RATE_LIMIT   = { max: 120, windowMs: 60 * 1000 }
 

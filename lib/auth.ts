@@ -33,7 +33,16 @@ export async function createSession(userId: number, role: string = 'owner'): Pro
     const customTtl = rows[0]?.session_ttl_minutes
     ttl = customTtl ? customTtl * 60 * 1000 : 60 * 60 * 1000 // default 1 hour
   }
-  
+
+  // Tope global de vida de sesión (política del owner, cms_state.session_policy).
+  // Se aplica a TODOS los roles: la sesión nunca vive más que este máximo, así
+  // cada usuario re-loguea al vencer la suya.
+  try {
+    const { rows: sp } = await pool.query("SELECT value FROM cms_state WHERE key = 'session_policy'")
+    const maxMin = (sp[0]?.value as { maxMinutes?: number } | undefined)?.maxMinutes
+    if (typeof maxMin === 'number' && maxMin > 0) ttl = Math.min(ttl, maxMin * 60 * 1000)
+  } catch { /* si cms_state no existe todavía, sin tope */ }
+
   const expires = new Date(Date.now() + ttl)
   await pool.query('INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)', [token, userId, expires])
   return { token, maxAge: Math.floor(ttl / 1000) }

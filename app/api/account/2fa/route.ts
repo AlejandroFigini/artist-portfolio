@@ -22,20 +22,22 @@ export async function POST(req: Request) {
   try {
     if (body.action === 'setup') {
       const secret = generateSecret()
-      // guardado pero NO activado hasta verificar el primer código
-      await pool.query('UPDATE users SET totp_secret = $1, totp_enabled = FALSE WHERE id = $2', [secret, me.id])
+      // Se guarda como PENDIENTE: no pisa totp_secret ni apaga un 2FA ya activo.
+      // El 2FA vigente sigue funcionando hasta que 'enable' confirme el nuevo.
+      await pool.query('UPDATE users SET totp_pending_secret = $1 WHERE id = $2', [secret, me.id])
       const label = encodeURIComponent(`LuciaMontana:${me.username}`)
       const uri = `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent('LuciaMontana')}`
       return NextResponse.json({ success: true, secret, uri })
     }
 
     if (body.action === 'enable') {
-      const { rows } = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [me.id])
-      const secret = rows[0]?.totp_secret
+      const { rows } = await pool.query('SELECT totp_pending_secret FROM users WHERE id = $1', [me.id])
+      const secret = rows[0]?.totp_pending_secret
       if (!secret) return NextResponse.json({ success: false, error: 'First generate the QR code (setup)' }, { status: 400 })
       const result = await verify({ token: String(body.code || ''), secret, epochTolerance: 30 })
       if (!result.valid) return NextResponse.json({ success: false, error: 'Incorrect 2FA code' }, { status: 401 })
-      await pool.query('UPDATE users SET totp_enabled = TRUE WHERE id = $1', [me.id])
+      // Recién acá el secreto pendiente se promueve a activo.
+      await pool.query('UPDATE users SET totp_secret = $1, totp_enabled = TRUE, totp_pending_secret = NULL WHERE id = $2', [secret, me.id])
       return NextResponse.json({ success: true })
     }
 
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
       const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
       const ok = await verifyPassword(String(body.password || ''), rows[0].password_hash)
       if (!ok) return NextResponse.json({ success: false, error: 'Incorrect password' }, { status: 401 })
-      await pool.query('UPDATE users SET totp_enabled = FALSE, totp_secret = NULL WHERE id = $1', [me.id])
+      await pool.query('UPDATE users SET totp_enabled = FALSE, totp_secret = NULL, totp_pending_secret = NULL WHERE id = $1', [me.id])
       return NextResponse.json({ success: true })
     }
 

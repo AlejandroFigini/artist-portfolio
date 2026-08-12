@@ -154,6 +154,21 @@ const MIGRATIONS: { id: string; sql: string }[] = [
       ADD COLUMN IF NOT EXISTS email_error TEXT;
     `,
   },
+  {
+    /* El default 'owner' de la columna role era un footgun: cualquier INSERT
+       que olvidara `role` creaba un owner. El único insert legítimo sin role
+       explícito es el seed, que ahora lo setea a mano. Bajar el default a
+       'demo' (least-privilege) no toca las filas existentes. */
+    id: '2026_08_users_role_default_demo',
+    sql: "ALTER TABLE users ALTER COLUMN role SET DEFAULT 'demo'",
+  },
+  {
+    /* Secreto TOTP pendiente de confirmación (setup). Separado de totp_secret
+       para que regenerar el QR no apague ni pise el 2FA activo hasta que el
+       usuario verifique el primer código (enable). */
+    id: '2026_08_users_totp_pending',
+    sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_pending_secret TEXT',
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales
@@ -170,7 +185,7 @@ async function seedUsers(pool: Pool): Promise<void> {
   for (const s of seeds) {
     if (!s.name || !s.pass) continue
     await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
+      "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'owner') ON CONFLICT (username) DO NOTHING",
       [s.name, await bcrypt.hash(s.pass, 12)],
     )
   }

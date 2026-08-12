@@ -147,7 +147,7 @@ export default function AdminDashboard() {
         <main className="admin-root">
           <div className="admin-card admin-denied">
             <h2><i className="fa-solid fa-lock"></i> Access restricted</h2>
-            <p>This page is only for the superadmin. Log in from the site.</p>
+            <p>Log in from the site.</p>
             <Link className="cms-btn cms-btn--primary" href="/">Go to site</Link>
           </div>
         </main>
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                 )}
               </span>
             </button>
-            {state.role === 'owner' && (
+            {(state.role === 'owner' || state.role === 'admin') && (
               <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
                 <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
               </button>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
 
           {section === 'analitica' && <AnalyticsSection />}
           {section === 'mensajes' && <MessagesSection onUnreadChange={setUnreadCount} />}
-          {section === 'usuarios' && state.role === 'owner' && <UsersSection />}
+          {section === 'usuarios' && (state.role === 'owner' || state.role === 'admin') && <UsersSection />}
 
           {isAjustes && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>

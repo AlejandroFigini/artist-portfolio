@@ -7,9 +7,10 @@
    - Activación de 2FA con guía paso a paso (app autenticadora + QR). */
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toDataURL } from 'qrcode'
 import { state, useCmsStore, setAdminFlag, recordAudit } from '@/lib/cms/store'
-import { updateAccount, twoFa, getUsers, createUser, updateUserAdmin, deleteUserAdmin, type UserRow } from '@/lib/api'
+import { updateAccount, twoFa, getUsers, createUser, updateUserAdmin, deleteUserAdmin, getSessionPolicy, setSessionPolicy, resetAllSessions, type UserRow } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { fmtDate } from '@/lib/utils'
 
@@ -28,6 +29,9 @@ export default function UsersSection() {
   const [users, setUsers] = useState<UserRow[]>([])
   const [view, setView] = useState<View>('menu')
   const [openMenuUser, setOpenMenuUser] = useState<string | null>(null)
+  // Rect del botón engranaje al abrir → el menú se posiciona fixed sobre él
+  // (portal a body). Antes era absolute dentro del <td> y la tabla lo clippeaba.
+  const [menuRect, setMenuRect] = useState<DOMRect | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeUser, setActiveUser] = useState<UserRow | null>(null)
   const [qr, setQr] = useState<{ img: string; secret: string } | null>(null)
@@ -36,8 +40,13 @@ export default function UsersSection() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  const [sessionMax, setSessionMax] = useState('0') // minutos; '0' = sin tope
   const refresh = useCallback(() => { getUsers().then(setUsers) }, [])
   useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    if (state.role !== 'owner') return
+    getSessionPolicy().then((p) => setSessionMax(String(p.maxMinutes ?? 0))).catch(() => {})
+  }, [])
 
   const me = users.find((u) => u.username === state.username)
 
@@ -151,6 +160,20 @@ export default function UsersSection() {
     refresh()
   })
 
+  const saveSessionPolicy = () => run(async () => {
+    const m = parseInt(sessionMax, 10) || 0
+    await setSessionPolicy(m > 0 ? m : null)
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Set global session max to ${m > 0 ? m + 'm' : 'off'}` })
+    toast('Session policy saved')
+  })
+
+  const handleResetAll = () => run(async () => {
+    if (!confirm('Reset ALL sessions now? Everyone will be logged out (except your current session).')) return
+    const n = await resetAllSessions()
+    recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Reset all sessions (${n} killed)` })
+    toast(`${n} session(s) reset`)
+  })
+
   const handleDeleteUser = (u: UserRow) => run(async () => {
     if (!confirm(`Are you sure you want to completely delete ${u.username}?`)) return
     await deleteUserAdmin(u.username)
@@ -187,13 +210,15 @@ export default function UsersSection() {
           </div>
           <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
             <label className="cms-field"><span>Username (min 3 chars)</span>
-              <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
+              <input type="text" value={form.username} onChange={set('username')} autoComplete="off" name="cms-new-user" />
             </label>
-            <label className="cms-field"><span>Password (min 8 chars)</span>
-              <input type="password" value={form.next} onChange={set('next')} />
+            {/* autoComplete="new-password" evita que el gestor del navegador
+                autocomplete las credenciales del owner en el alta. */}
+            <label className="cms-field"><span>Temporary password (the user resets it on first login)</span>
+              <input type="password" value={form.next} onChange={set('next')} autoComplete="new-password" />
             </label>
             <label className="cms-field"><span>Repeat password</span>
-              <input type="password" value={form.repeat} onChange={set('repeat')} />
+              <input type="password" value={form.repeat} onChange={set('repeat')} autoComplete="new-password" />
             </label>
             <label className="cms-field"><span>Role</span>
               <select value={form.newRole} onChange={e => setForm(f => ({ ...f, newRole: e.target.value }))} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
@@ -204,7 +229,7 @@ export default function UsersSection() {
             <div className="cms-confirm-actions">
               <button
                 type="button" className="cms-btn cms-btn--primary"
-                disabled={busy || form.username.length < 3 || form.next.length < 8 || !form.repeat}
+                disabled={busy || form.username.length < 3 || form.next.length < 1 || !form.repeat}
                 onClick={handleCreateUser}
               >
                 {busy ? 'Creating…' : 'Create User'}
@@ -218,21 +243,24 @@ export default function UsersSection() {
         <table className="cms-audit-table">
           <thead><tr><th>User</th><th>Role</th><th>2FA</th><th>Last login</th><th>Created</th><th>Actions</th></tr></thead>
           <tbody>
-            {users.length === 0 && <tr><td colSpan={4} className="cms-audit-empty">Loading users…</td></tr>}
+            {users.length === 0 && <tr><td colSpan={6} className="cms-audit-empty">Loading users…</td></tr>}
             {users.map((u) => (
               <tr key={u.username}>
                 <td>
                   {u.username}
+                  {u.isBlocked && (
+                    <i className="fa-solid fa-lock" title="Blocked" style={{ color: '#d32f2f', marginLeft: 8 }}></i>
+                  )}
                   {u.username === state.username && <span className="cms-tag" style={{ marginLeft: 8 }}>your session</span>}
                 </td>
                 <td>
-                  {u.isBlocked ? (
-                    <span className="cms-tag" style={{ background: '#d32f2f' }}>BLOCKED</span>
-                  ) : (
-                    <span className="cms-tag" style={{ background: u.role === 'demo' ? '#ffa500' : u.role === 'owner' ? 'var(--accent)' : 'var(--color-primary)' }}>
-                      {u.role ? u.role.toUpperCase() : 'UNKNOWN'}
-                    </span>
-                  )}
+                  {/* El rol es una propiedad estable del usuario: el bloqueo NO lo
+                      pisa (eso vive junto al nombre como candado). Colores de fondo
+                      explícitos + texto blanco → contraste garantizado (var(--color-primary)
+                      era casi blanco y dejaba el tag admin ilegible). */}
+                  <span className="cms-tag" style={{ background: u.role === 'demo' ? '#ea8a00' : u.role === 'owner' ? 'var(--accent)' : '#2563eb', color: '#fff' }}>
+                    {u.role ? u.role.toUpperCase() : 'UNKNOWN'}
+                  </span>
                 </td>
                 <td>
                   <span className="cms-tag" style={{ color: u.totpEnabled ? 'var(--color-primary)' : undefined }}>
@@ -241,46 +269,53 @@ export default function UsersSection() {
                 </td>
                 <td>{u.lastLoginAt ? fmtDate(new Date(u.lastLoginAt).getTime()) : 'Never'}</td>
                 <td>{fmtDate(new Date(u.createdAt).getTime())}</td>
-                <td style={{ position: 'relative' }}>
-                  {u.username !== state.username && u.role !== 'owner' && (
+                <td>
+                  {state.role === 'owner' && u.username !== state.username && u.role !== 'owner' && (
                     <>
-                      <button type="button" className="cms-btn" style={{ padding: '0.4rem 0.6rem' }} onClick={() => setOpenMenuUser(openMenuUser === u.username ? null : u.username)}>
+                      <button type="button" className="cms-btn" style={{ padding: '0.4rem 0.6rem' }} onClick={(e) => {
+                        if (openMenuUser === u.username) { setOpenMenuUser(null); return }
+                        setMenuRect(e.currentTarget.getBoundingClientRect())
+                        setOpenMenuUser(u.username)
+                      }}>
                         <i className="fa-solid fa-gear"></i>
                       </button>
 
-                      {openMenuUser === u.username && (
-                        <div style={{ position: 'absolute', right: '10px', top: '100%', zIndex: 100, background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', minWidth: '200px', padding: '0.5rem', overflow: 'hidden' }}>
-                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleBlockUser(u, !u.isBlocked); setOpenMenuUser(null) }}>
-                            <i className={`fa-solid ${u.isBlocked ? 'fa-unlock' : 'fa-lock'}`} style={{ width: 20 }}></i> {u.isBlocked ? 'Unblock' : 'Block'}
-                          </button>
+                      {openMenuUser === u.username && menuRect && createPortal(
+                        <>
+                          {/* backdrop transparente: cierra al click afuera */}
+                          <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setOpenMenuUser(null)} />
+                          <div style={{ position: 'fixed', top: menuRect.bottom + 4, right: Math.max(8, window.innerWidth - menuRect.right), zIndex: 9999, background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', minWidth: '200px', padding: '0.5rem', overflow: 'hidden' }}>
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleBlockUser(u, !u.isBlocked); setOpenMenuUser(null) }}>
+                              <i className={`fa-solid ${u.isBlocked ? 'fa-unlock' : 'fa-lock'}`} style={{ width: 20 }}></i> {u.isBlocked ? 'Unblock' : 'Block'}
+                            </button>
 
-                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleRoleChange(u, u.role === 'demo' ? 'admin' : 'demo'); setOpenMenuUser(null) }}>
-                            <i className="fa-solid fa-user-shield" style={{ width: 20 }}></i> Make {u.role === 'demo' ? 'Admin' : 'Demo'}
-                          </button>
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleRoleChange(u, u.role === 'demo' ? 'admin' : 'demo'); setOpenMenuUser(null) }}>
+                              <i className="fa-solid fa-user-shield" style={{ width: 20 }}></i> Make {u.role === 'demo' ? 'Admin' : 'Demo'}
+                            </button>
 
-                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleForceReset(u); setOpenMenuUser(null) }}>
-                            <i className="fa-solid fa-rotate-left" style={{ width: 20 }}></i> Force Reset
-                          </button>
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => { handleForceReset(u); setOpenMenuUser(null) }}>
+                              <i className="fa-solid fa-rotate-left" style={{ width: 20 }}></i> Force Reset
+                            </button>
 
-                          {u.role === 'demo' && (
                             <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ff9800', borderBottom: '1px solid var(--border)' }} onClick={() => { handleKillSessions(u); setOpenMenuUser(null) }}>
                               <i className="fa-solid fa-skull" style={{ width: 20 }}></i> Kill Sessions
                             </button>
-                          )}
 
-                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => {
-                            setActiveUser(u)
-                            setForm(f => ({ ...f, username: u.username, next: '', repeat: '', newRole: u.role, sessionTtl: String(u.sessionTtlMinutes || 60) }))
-                            setView('manage-user')
-                            setOpenMenuUser(null)
-                          }}>
-                            <i className="fa-solid fa-key" style={{ width: 20 }}></i> Credentials & TTL
-                          </button>
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }} onClick={() => {
+                              setActiveUser(u)
+                              setForm(f => ({ ...f, username: u.username, next: '', repeat: '', newRole: u.role, sessionTtl: String(u.sessionTtlMinutes || 60) }))
+                              setView('manage-user')
+                              setOpenMenuUser(null)
+                            }}>
+                              <i className="fa-solid fa-key" style={{ width: 20 }}></i> Credentials & TTL
+                            </button>
 
-                          <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#d32f2f' }} onClick={() => { handleDeleteUser(u); setOpenMenuUser(null) }}>
-                            <i className="fa-solid fa-trash" style={{ width: 20 }}></i> Delete User
-                          </button>
-                        </div>
+                            <button type="button" style={{ textAlign: 'left', padding: '0.6rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#d32f2f' }} onClick={() => { handleDeleteUser(u); setOpenMenuUser(null) }}>
+                              <i className="fa-solid fa-trash" style={{ width: 20 }}></i> Delete User
+                            </button>
+                          </div>
+                        </>,
+                        document.body
                       )}
                     </>
                   )}
@@ -290,6 +325,27 @@ export default function UsersSection() {
           </tbody>
         </table>
       </div>
+
+      {/* ----- Política de sesiones (solo owner), debajo de la tabla ----- */}
+      {state.role === 'owner' && view !== 'create-user' && (
+        <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1rem', marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', background: 'color-mix(in srgb, var(--bg-primary) 97%, var(--text-primary))' }}>
+          <div style={{ minWidth: 0, flex: '1 1 240px' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}><i className="fa-solid fa-clock-rotate-left" style={{ marginRight: 6 }}></i> Session policy</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>Max session lifetime, counted from each login — every user re-logs in when theirs expires. Applies to all roles.</div>
+          </div>
+          <select value={sessionMax} onChange={(e) => setSessionMax(e.target.value)} style={{ padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+            <option value="0">No limit</option>
+            <option value="60">1 hour</option>
+            <option value="480">8 hours</option>
+            <option value="1440">24 hours</option>
+            <option value="10080">7 days</option>
+          </select>
+          <button type="button" className="cms-btn cms-btn--primary cms-btn--sm" disabled={busy} onClick={saveSessionPolicy}>Save</button>
+          <button type="button" className="cms-btn cms-btn--sm cms-btn--danger-ghost" disabled={busy} onClick={handleResetAll}>
+            <i className="fa-solid fa-skull"></i> Reset all sessions now
+          </button>
+        </div>
+      )}
 
       {view === 'manage-user' && activeUser && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -323,15 +379,15 @@ export default function UsersSection() {
                 </div>
               )}
 
-              <h4 style={{ margin: '1rem 0 0.5rem', fontSize: '0.9rem' }}>Directly Change Credentials</h4>
-              <label className="cms-field"><span>New Username (leave blank to keep current)</span>
-                <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
+              <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>Directly Change Credentials</h4>
+              <label className="cms-field"><span>New Username</span>
+                <input type="text" value={form.username} onChange={set('username')} autoComplete="off" name="cms-edit-user" />
               </label>
-              <label className="cms-field"><span>New Password (leave blank to keep current)</span>
-                <input type="password" value={form.next} onChange={set('next')} />
+              <label className="cms-field"><span>New Password</span>
+                <input type="password" value={form.next} onChange={set('next')} autoComplete="new-password" />
               </label>
               <label className="cms-field"><span>Repeat New Password</span>
-                <input type="password" value={form.repeat} onChange={set('repeat')} />
+                <input type="password" value={form.repeat} onChange={set('repeat')} autoComplete="new-password" />
               </label>
               <div className="cms-confirm-actions">
                 <button
@@ -352,21 +408,21 @@ export default function UsersSection() {
         <i className="fa-solid fa-user-pen"></i> Edit Account
       </h2>
 
-      <div style={{ display: view === 'create-user' ? 'none' : 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 600 }}>
+      <div style={{ display: view === 'create-user' ? 'none' : 'block', maxWidth: 600, border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'color-mix(in srgb, var(--bg-primary) 97%, var(--text-primary))' }}>
 
-        {/* Username Block */}
-        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
-            <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Username</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{state.username}</div>
+        {/* Username row */}
+        <div style={{ borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.85rem 1rem' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Username</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{state.username}</div>
             </div>
-            <button type="button" className="cms-btn" onClick={() => setView(view === 'username' ? 'menu' : 'username')}>
+            <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === 'username' ? 'menu' : 'username')}>
               {view === 'username' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-pen"></i> Edit</>}
             </button>
           </div>
           {view === 'username' && (
-            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+            <div className="cms-login-form" style={{ padding: '0 1rem 1rem' }}>
               <label className="cms-field"><span>New username</span>
                 <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />
               </label>
@@ -379,27 +435,27 @@ export default function UsersSection() {
           )}
         </div>
 
-        {/* Password Block */}
-        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
-            <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Password</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '3px' }}>••••••••</div>
+        {/* Password row */}
+        <div style={{ borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.85rem 1rem' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Password</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '3px', marginTop: '0.1rem' }}>••••••••</div>
             </div>
-            <button type="button" className="cms-btn" onClick={() => setView(view === 'password' ? 'menu' : 'password')}>
+            <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === 'password' ? 'menu' : 'password')}>
               {view === 'password' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-key"></i> Update</>}
             </button>
           </div>
           {view === 'password' && (
-            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+            <div className="cms-login-form" style={{ padding: '0 1rem 1rem' }}>
               <label className="cms-field"><span>Current password</span>
-                <input type="password" value={form.current} onChange={set('current')} />
+                <input type="password" value={form.current} onChange={set('current')} autoComplete="current-password" />
               </label>
               <label className="cms-field"><span>New password (min 8 characters)</span>
-                <input type="password" value={form.next} onChange={set('next')} />
+                <input type="password" value={form.next} onChange={set('next')} autoComplete="new-password" />
               </label>
               <label className="cms-field"><span>Repeat new password</span>
-                <input type="password" value={form.repeat} onChange={set('repeat')} />
+                <input type="password" value={form.repeat} onChange={set('repeat')} autoComplete="new-password" />
               </label>
               <div className="cms-confirm-actions">
                 <button
@@ -414,28 +470,28 @@ export default function UsersSection() {
           )}
         </div>
 
-        {/* 2FA Block */}
-        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 96%, var(--text-primary))', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
-            <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>2FA Security</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: me?.totpEnabled ? 'var(--accent)' : 'var(--text-secondary)' }}>
+        {/* 2FA row */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.85rem 1rem' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>2FA Security</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: me?.totpEnabled ? 'var(--accent)' : 'var(--text-secondary)', marginTop: '0.1rem' }}>
                 {me?.totpEnabled ? <><i className="fa-solid fa-shield-halved"></i> Enabled</> : 'Disabled'}
               </div>
             </div>
             {me?.totpEnabled ? (
-              <button type="button" className="cms-btn" onClick={() => setView(view === '2fa-disable' ? 'menu' : '2fa-disable')}>
+              <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === '2fa-disable' ? 'menu' : '2fa-disable')}>
                 {view === '2fa-disable' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : 'Disable 2FA'}
               </button>
             ) : (
-              <button type="button" className="cms-btn cms-btn--primary" onClick={() => view === '2fa-setup' ? setView('menu') : start2fa()}>
+              <button type="button" className="cms-btn cms-btn--primary cms-btn--sm" onClick={() => view === '2fa-setup' ? setView('menu') : start2fa()}>
                 {view === '2fa-setup' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-shield-halved"></i> Enable 2FA</>}
               </button>
             )}
           </div>
 
           {view === '2fa-setup' && qr && (
-            <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+            <div style={{ padding: '0 1rem 1rem' }}>
               <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>
               <ol className="cms-2fa-guide" style={{ margin: '0.8rem 0 1.2rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.6rem' }}>
                 {GUIDE_STEPS.map((s, i) => (
@@ -462,7 +518,7 @@ export default function UsersSection() {
           )}
 
           {view === '2fa-disable' && (
-            <div className="cms-login-form" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg-primary) 94%, var(--text-primary))' }}>
+            <div className="cms-login-form" style={{ padding: '0 1rem 1rem' }}>
               <p className="cms-hint">Enter your password to disable 2FA. Your account will be protected only by username and password.</p>
               <label className="cms-field"><span>Password</span>
                 <input type="password" value={form.password} onChange={set('password')} />

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import RealtimeCard from './RealtimeCard'
-import UsersChart from './UsersChart'
 import WorldMap from "react-svg-worldmap"
 /* El mapa tipa `country` como unión de códigos ISO literales. */
 type CountryIsoCode = React.ComponentProps<typeof WorldMap>['data'][number]['country']
@@ -340,19 +339,6 @@ export default function AnalyticsSection() {
             <span className="ga-stat-desc">Security alerts</span>
           </div>
         </div>
-      </div>
-
-      {/* Evolución de usuarios — la granularidad (hora/día/mes) la decide el
-          endpoint según el rango elegido. */}
-      <div className="ga-box" style={{ marginBottom: '1.2rem' }}>
-        <div className="ga-box-header">
-          <i className="fa-solid fa-chart-area"></i> Users Over Time
-          <span className="cms-info-tip" tabIndex={0} aria-label="Active users across the selected range. The scale adjusts itself: hourly for single-day ranges, daily for weeks, monthly for long ranges." style={{ marginLeft: '0.4rem' }}>
-            <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip">Active users across the selected range. The scale adjusts itself: hourly for single-day ranges, daily for weeks, monthly for long ranges.</span>
-          </span>
-        </div>
-        <UsersChart data={active.chartDays || []} loading={isUpdating} />
       </div>
 
       {/* Países Principales */}

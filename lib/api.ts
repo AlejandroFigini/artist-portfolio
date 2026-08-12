@@ -143,6 +143,35 @@ export async function deleteUserAdmin(username: string): Promise<void> {
   if (!r.ok) throw new Error((data as { error?: string }).error || 'Error deleting user')
 }
 
+/* Política global de sesiones (solo owner) — ver app/api/admin/sessions. */
+export async function getSessionPolicy(): Promise<{ maxMinutes: number | null }> {
+  const r = await fetch('/api/admin/sessions', { cache: 'no-store' })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error loading session policy')
+  return { maxMinutes: (data as { maxMinutes?: number | null }).maxMinutes ?? null }
+}
+
+export async function setSessionPolicy(maxMinutes: number | null): Promise<void> {
+  const r = await fetch('/api/admin/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ maxMinutes }),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error saving session policy')
+}
+
+export async function resetAllSessions(): Promise<number> {
+  const r = await fetch('/api/admin/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'reset_all' }),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error((data as { error?: string }).error || 'Error resetting sessions')
+  return (data as { killed?: number }).killed ?? 0
+}
+
 export async function twoFa(payload:
   | { action: 'setup' }
   | { action: 'enable'; code: string }

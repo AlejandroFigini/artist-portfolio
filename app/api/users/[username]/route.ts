@@ -37,8 +37,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
   try {
     if (action === 'block') {
-      if (targetUser.role === 'owner' && auth.user.username === targetUsername) {
-        return NextResponse.json({ success: false, error: 'Cannot block yourself' }, { status: 400 })
+      // Ningún owner es bloqueable: con 2+ owners, bloquearse mutuamente dejaba
+      // a la cuenta sin nadie que la reactive. Coherente con role/creds/delete.
+      if (targetUser.role === 'owner') {
+        return NextResponse.json({ success: false, error: 'Cannot block an owner account' }, { status: 400 })
       }
       const newBlockedStatus = !!body.is_blocked
       await pool.query('UPDATE users SET is_blocked = $1 WHERE id = $2', [newBlockedStatus, targetUser.id])
@@ -57,6 +59,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         return NextResponse.json({ success: false, error: 'Invalid role' }, { status: 400 })
       }
       await pool.query('UPDATE users SET role = $1 WHERE id = $2', [newRole, targetUser.id])
+      // Matar sus sesiones: el rol se resuelve al crear la sesión, así que sin
+      // esto seguiría con los permisos viejos hasta re-loguear.
+      await pool.query('DELETE FROM sessions WHERE user_id = $1', [targetUser.id])
       return NextResponse.json({ success: true })
     }
 
@@ -71,13 +76,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         return NextResponse.json({ success: false, error: 'Session TTL can only be set for demo users' }, { status: 400 })
       }
       const ttl = body.session_ttl_minutes
+      // null limpia (vuelve al default de 1h). Si viene valor, acotarlo: un
+      // negativo/0 hacía que createSession calcule un expiry en el pasado y la
+      // sesión demo muriera al instante. Tope 1 semana.
+      if (ttl != null && (!Number.isInteger(ttl) || ttl < 1 || ttl > 10080)) {
+        return NextResponse.json({ success: false, error: 'Session TTL must be between 1 and 10080 minutes' }, { status: 400 })
+      }
       await pool.query('UPDATE users SET session_ttl_minutes = $1 WHERE id = $2', [ttl || null, targetUser.id])
       return NextResponse.json({ success: true })
     }
 
     if (action === 'kill_sessions') {
-      if (targetUser.role === 'owner' && auth.user.username === targetUsername) {
-        return NextResponse.json({ success: false, error: 'Cannot kill your own sessions from here' }, { status: 400 })
+      if (targetUser.role === 'owner') {
+        return NextResponse.json({ success: false, error: 'Cannot kill sessions of an owner account' }, { status: 400 })
       }
       await pool.query('DELETE FROM sessions WHERE user_id = $1', [targetUser.id])
       return NextResponse.json({ success: true })
@@ -103,11 +114,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         if (newUsername.length < 3 || newUsername.length > 64) {
           return NextResponse.json({ success: false, error: 'Username must be between 3 and 64 characters' }, { status: 400 })
         }
-        if (newUsername !== targetUsername) {
-          const dup = await pool.query('SELECT 1 FROM users WHERE username = $1', [newUsername])
-          if (dup.rows.length) {
-            return NextResponse.json({ success: false, error: 'Username is already in use' }, { status: 409 })
-          }
+        const dup = await pool.query('SELECT 1 FROM users WHERE LOWER(username) = LOWER($1) AND id <> $2', [newUsername, targetUser.id])
+        if (dup.rows.length) {
+          return NextResponse.json({ success: false, error: 'Username is already in use' }, { status: 409 })
         }
         updates.push(`username = $${idx++}`)
         values.push(newUsername)
