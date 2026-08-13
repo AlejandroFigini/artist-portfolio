@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import {
-  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, type FieldValue,
+  state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, isDeferredMediaKey, type FieldValue,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
@@ -118,7 +118,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
             recordAudit({ section: meta.section, label: meta.label, kind: 'metadata', summary: `Field "${f.label}" updated` })
           }
         })
-        if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+        if (isDeferredMediaKey(cmsKey)) {
+          // Colección con manager abierto: preview local; persiste en el commit (Save).
+          emit()
+        } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
           persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
         } else {
           emit()

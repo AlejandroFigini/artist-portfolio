@@ -61,7 +61,13 @@ export function useSaveSettings() {
 
     const optimistic = { ...settings, ...patch }
     const final: SiteSettings = {
-      loaderVideo: server?.loaderVideo !== undefined ? server.loaderVideo : (optimistic.loaderVideo || ''),
+      /* `server || optimistic` (no `!== undefined`): un valor recién asignado no
+         se pisa con un vacío del server. El caso especial anterior dejaba que un
+         `loaderVideo: ''` del backend (lectura desincronizada tras el guardado)
+         borrara la animación recién elegida — el contenido "desaparecía" al
+         apretar Save. El server sigue ganando cuando trae un valor (URL canónica);
+         un remove manda '' en ambos lados y queda vacío igual. */
+      loaderVideo: server?.loaderVideo || optimistic.loaderVideo || '',
       loaderImage: server?.loaderImage || optimistic.loaderImage,
       loaderDuration: server?.loaderDuration || optimistic.loaderDuration,
       cvUrl: server?.cvUrl || optimistic.cvUrl,

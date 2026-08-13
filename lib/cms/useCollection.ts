@@ -5,15 +5,15 @@
    `commit()`. Esa es la diferencia con los managers viejos, que guardaban desde
    un efecto y se realimentaban en bucle. */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { saveContent, renameTranslations } from '@/lib/api'
 import {
   archiveMediaKey, emit, loadJSON, LS, persistRetired, persistUnused, persistUsed,
-  saveJSON, scheduleSyncToServer, state, useCmsStore,
+  saveJSON, scheduleSyncToServer, setCollectionDeferred, state, useCmsStore,
 } from '@/lib/cms/store'
 import { COLLECTIONS, type CollectionSpec } from './collections'
 import {
-  migrationIdGenerator, newId, planCommit, planMigration, readSettings, type MigrationPlan,
+  mediaKeysOf, migrationIdGenerator, newId, planCommit, planMigration, readSettings, type MigrationPlan,
 } from './collection'
 
 export const DEFAULT_DURATION_MS = 7000
@@ -24,6 +24,18 @@ export function readCollectionIds(prefix: string): string[] {
 
 export function readCollectionDuration(prefix: string): number {
   return readSettings(state.items, prefix).duration ?? DEFAULT_DURATION_MS
+}
+
+/* Foto de la media actual (base + conceptos) de todos los items de la colección.
+   Es la línea base para detectar asignaciones pendientes y para revertirlas. */
+function snapshotMedia(spec: CollectionSpec): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const id of readSettings(state.items, spec.prefix).ids) {
+    for (const k of mediaKeysOf(spec, id)) {
+      if (state.items[k] !== undefined) out[k] = state.items[k]
+    }
+  }
+  return out
 }
 
 export type CollectionHandle = {
@@ -52,16 +64,34 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
   // se cayera a `false` aunque el guardado nunca llegó al servidor.
   const [saveFailed, setSaveFailed] = useState(false)
 
+  /* Guardado diferido de la ASIGNACIÓN de contenido: mientras este manager está
+     montado, el prefijo se marca "diferido" (el picker no persiste la media al
+     instante) y se guarda un snapshot de la media para marcar `dirty` con
+     asignaciones pendientes y revertirlas al descartar. */
+  const [mediaBaseline, setMediaBaseline] = useState<Record<string, string>>(() => snapshotMedia(spec))
+
+  useEffect(() => {
+    setCollectionDeferred(spec.prefix, true)
+    return () => setCollectionDeferred(spec.prefix, false)
+  }, [spec.prefix])
+
   const ids = draft?.ids ?? persistedIds
   const duration = draft?.duration ?? persisted.duration ?? DEFAULT_DURATION_MS
 
-  const dirty = useMemo(() => {
+  const structuralDirty = useMemo(() => {
     if (!draft) return false
     if (saveFailed) return true
     if (draft.ids.length !== persistedIds.length) return true
     if (spec.duration && draft.duration !== (persisted.duration ?? DEFAULT_DURATION_MS)) return true
     return draft.ids.some((id, i) => id !== persistedIds[i])
   }, [draft, persistedIds, persisted.duration, spec.duration, saveFailed])
+
+  /* Asignaciones de media pendientes vs el snapshot. Se computa en cada render:
+     `useCmsStore()` repinta con el `emit()` del picker, y `state.items` no es una
+     dependencia reactiva de React. */
+  const mediaDirty = ids.some((id) => mediaKeysOf(spec, id).some((k) => (state.items[k] || '') !== (mediaBaseline[k] || '')))
+
+  const dirty = structuralDirty || mediaDirty
 
   const edit = useCallback((fn: (prev: { ids: string[]; duration: number }) => { ids: string[]; duration: number }) => {
     setDraft((prev) => fn(prev ?? {
@@ -120,19 +150,41 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
   }, [edit])
 
   const reset = useCallback(() => {
+    // Revertir las asignaciones de media pendientes (no guardadas) al snapshot:
+    // volver a lo que había antes de abrir el manager. Descarta como los slides.
+    const currentIds = draft?.ids ?? persistedIds
+    for (const id of currentIds) {
+      for (const k of mediaKeysOf(spec, id)) {
+        if ((state.items[k] || '') === (mediaBaseline[k] || '')) continue
+        if (mediaBaseline[k] !== undefined) state.items[k] = mediaBaseline[k]
+        else delete state.items[k]
+      }
+    }
     setDraft(null)
     setSaveFailed(false)
-  }, [])
+    emit()
+  }, [draft, persistedIds, spec, mediaBaseline])
 
   const commit = useCallback(async () => {
     if (!state.isAdmin) return
-    const current = draft
-    if (!current) return
+    // Puede no haber `draft` si el único cambio fue asignar contenido (sin tocar
+    // la lista de slides): igual hay que persistir la media pendiente.
+    const current = draft ?? { ids: persistedIds, duration: persisted.duration ?? DEFAULT_DURATION_MS }
 
     const plan = planCommit(
       spec, persistedIds, current.ids, state.items,
       spec.duration ? current.duration : undefined,
     )
+
+    // Media pendiente (asignada en esta sesión, aún no persistida): se agrega al
+    // payload del commit. Solo las claves que cambiaron respecto del snapshot.
+    for (const id of current.ids) {
+      for (const k of mediaKeysOf(spec, id)) {
+        const cur = state.items[k]
+        if ((cur || '') === (mediaBaseline[k] || '')) continue
+        plan.payload[k] = cur || ''
+      }
+    }
 
     // Archivar UNA sola vez, solo lo que realmente desaparece.
     for (const k of plan.archiveKeys) archiveMediaKey(k, 'deleted')
@@ -171,8 +223,9 @@ export function useCollection(spec: CollectionSpec): CollectionHandle {
 
     setSaveFailed(false)
     setDraft(null)
+    setMediaBaseline(snapshotMedia(spec)) // lo recién guardado pasa a ser la línea base
     emit()
-  }, [draft, persistedIds, spec])
+  }, [draft, persistedIds, persisted.duration, spec, mediaBaseline])
 
   return { ids, duration, dirty, add, remove, move, setDuration, commit, reset }
 }

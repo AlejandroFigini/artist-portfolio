@@ -11,7 +11,7 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
 import {
-  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState,
+  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState, isDeferredMediaKey,
 } from '@/lib/cms/store'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
@@ -270,7 +270,11 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     persistUsed()
     cloudinaryMove(src, getCloudinaryFolder(meta.section))
     recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
-    if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+    if (isDeferredMediaKey(cmsKey)) {
+      // Colección con manager abierto (guardado diferido): preview local; el
+      // contenido se persiste recién en el commit (Save) del manager.
+      emit()
+    } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
       persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
     } else {
       emit()

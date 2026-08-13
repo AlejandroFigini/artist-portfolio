@@ -36,17 +36,21 @@ export default function CollectionManager({ spec, show = true, onClose, onPickIm
   // el servidor apenas se suben — no esperan al Save. Sin esta confirmación,
   // cerrar con cambios sin guardar deja filas `proj#<uid>`/`char#<uid>` huérfanas
   // en la base: el item desaparece de la UI pero la imagen sigue ahí para siempre.
+  // Descartar revierte también las ASIGNACIONES de contenido pendientes (col.reset),
+  // no solo el orden/lista: la asignación ahora es parte del Save.
+  const discardAndClose = () => { col.reset(); onClose() }
   const requestClose = () => {
-    if (!col.dirty) { onClose(); return }
+    if (!col.dirty) { discardAndClose(); return }
     modal.confirm(
       'Unsaved changes',
       <>
-        The current order and item list are not saved yet. Closing now discards them —
-        including any {spec.itemNoun} you added in this session, even if you already uploaded an image for it.
+        The current order, item list and any content you assigned are not saved yet.
+        Closing now discards them — including any {spec.itemNoun} you added or image you
+        picked in this session.
         <br /><br />
         Press <strong>Cancel</strong> to go back and hit <strong>Save</strong> first.
       </>,
-      onClose,
+      discardAndClose,
     )
   }
 

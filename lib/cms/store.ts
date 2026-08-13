@@ -114,6 +114,23 @@ export const state = {
   translations: {} as Record<string, Record<string, string>>, // lang -> key -> valor traducido
 }
 
+/* Colecciones cuyo manager está abierto con "guardado diferido": mientras el
+   prefijo está acá, asignar media a un item de esa colección NO se persiste al
+   instante — el picker la deja como preview local y el commit del manager la
+   guarda. Fuera de un manager abierto el set está vacío y todo persiste como
+   siempre. Solo aplica a colecciones (carrusel/proyectos/personajes). */
+export const deferredCollectionPrefixes = new Set<string>()
+
+export function setCollectionDeferred(prefix: string, on: boolean) {
+  if (on) deferredCollectionPrefixes.add(prefix)
+  else deferredCollectionPrefixes.delete(prefix)
+}
+
+export function isDeferredMediaKey(key: string): boolean {
+  const c = collectionOf(key)
+  return !!c && deferredCollectionPrefixes.has(c.prefix)
+}
+
 /** Idioma guardado (localStorage). Default = base (en). */
 export function loadLang(): Lang {
   try {
