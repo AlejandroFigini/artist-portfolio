@@ -59,21 +59,28 @@ export function useSaveSettings() {
       server = r.ok ? await r.json() : null
     } catch { /* sin DB → usar patch optimista */ }
 
-    const optimistic = { ...settings, ...patch }
+    /* Resolución por campo, distinguiendo ASIGNAR de QUITAR (la clave de los dos
+       bugs):
+       - Campo tocado por el patch con valor '' → QUITAR: se honra el vacío. Antes
+         `server || patch` dejaba que un eco viejo de /api/site RESUCITARA el CV
+         recién removido ("Remove CV no funciona").
+       - Campo tocado con valor → ASIGNAR: gana la URL canónica del server si vino,
+         si no el propio patch (así un vacío desincronizado del server NO borra lo
+         recién elegido — el bug del loader).
+       - Campo NO tocado → lo del server, o lo actual. */
+    const pick = (field: keyof SiteSettings): string => {
+      const p = patch[field]
+      if (p !== undefined) return p === '' ? '' : (server?.[field] || p)
+      return (server?.[field] ?? settings[field] ?? '')
+    }
     const final: SiteSettings = {
-      /* `server || optimistic` (no `!== undefined`): un valor recién asignado no
-         se pisa con un vacío del server. El caso especial anterior dejaba que un
-         `loaderVideo: ''` del backend (lectura desincronizada tras el guardado)
-         borrara la animación recién elegida — el contenido "desaparecía" al
-         apretar Save. El server sigue ganando cuando trae un valor (URL canónica);
-         un remove manda '' en ambos lados y queda vacío igual. */
-      loaderVideo: server?.loaderVideo || optimistic.loaderVideo || '',
-      loaderImage: server?.loaderImage || optimistic.loaderImage,
-      loaderDuration: server?.loaderDuration || optimistic.loaderDuration,
-      cvUrl: server?.cvUrl || optimistic.cvUrl,
-      cvName: server?.cvName || optimistic.cvName,
-      faviconUrl: server?.faviconUrl || optimistic.faviconUrl,
-      appleIconUrl: server?.appleIconUrl || optimistic.appleIconUrl,
+      loaderVideo: pick('loaderVideo'),
+      loaderImage: pick('loaderImage'),
+      loaderDuration: pick('loaderDuration'),
+      cvUrl: pick('cvUrl'),
+      cvName: pick('cvName'),
+      faviconUrl: pick('faviconUrl'),
+      appleIconUrl: pick('appleIconUrl'),
     }
     setSettings(final)
     if (typeof window !== 'undefined') {
@@ -529,7 +536,9 @@ export function CvSettings() {
       {settings.cvUrl ? (
         <div className="site-setting-file">
           <i className="fa-solid fa-file-pdf"></i>
-          <a href={settings.cvUrl} target="_blank" rel="noopener noreferrer">{settings.cvName || 'CV.pdf'}</a>
+          {/* /api/cv (no la URL cruda de Cloudinary): descarga con el nombre real
+              en vez del public_id interno ("settings.*"). */}
+          <a href="/api/cv" rel="noopener noreferrer">{settings.cvName || 'CV.pdf'}</a>
           <span className="cms-tag" style={{ background: '#22c55e', color: '#fff' }}>Active</span>
         </div>
       ) : (

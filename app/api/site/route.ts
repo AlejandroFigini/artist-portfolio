@@ -12,6 +12,9 @@ export async function GET() {
   // (dev/mock) el cliente cae a cms_overrides_v1. (Fix del flash de contenido
   // removido en el loader.)
   const res = NextResponse.json({ ...settings, hasDb })
-  res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  // Sin cache compartido: son ajustes editables por el admin y el cliente los lee
+  // con `no-store`. Un `public, max-age` dejaba que una caché sirviera valores
+  // viejos tras editar → CV "removido" que reaparece, loader que se borra.
+  res.headers.set('Cache-Control', 'no-store')
   return res
 }
