@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 import { state, recordAudit, persistUsed, performRenameContainer, type FieldValue, emit } from '@/lib/cms/store'
 import { collectionOf } from '@/lib/cms/collections'
 import {
-  elementsByKey, metaByKey, applyStored, persistOverrides, moveToUnusedSite, deleteProjectSite, computeFields,
+  elementsByKey, metaByKey, applyStored, persistOverrideKeys, moveToUnusedSite, deleteProjectSite, computeFields,
 } from './engine'
 
 // Etiqueta amigable para la página actual a partir del pathname.
@@ -97,7 +97,7 @@ export function EditTextModal({ cmsKey, onClose }: KeyProps) {
           const v = taRef.current?.value ?? ''
           state.items[cmsKey] = v
           applyStored(cmsKey, v)
-          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+          persistOverrideKeys([cmsKey]).catch(() => toast('Network error while syncing with server', 'error'))
           recordAudit({ section: meta.section, label: meta.label, kind: 'text', summary: 'Container updated' })
           toast('Container updated')
         } },
@@ -172,6 +172,7 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
           onClick: () => {
             commitRename()
             let changed = false
+            const changedKeys: string[] = []
             fields.forEach((f) => {
               const inp = valuesRef.current[f.key]
               if (!inp) return
@@ -179,6 +180,7 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
               if (v !== f.value) {
                 const compositeKey = cmsKey + '::' + f.key
                 state.items[compositeKey] = v
+                changedKeys.push(compositeKey)
                 const def = meta.fields!.find((d) => d.key === f.key)
                 if (def && cont) def.set(cont, v)
                 const used = state.usedContent[cmsKey]
@@ -188,7 +190,8 @@ export function EditInfoModal({ cmsKey, onClose }: { cmsKey: string; onClose: ()
                 changed = true
               }
             })
-            persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+            // Guardado ACOTADO a las claves que cambiaron (no el estado entero).
+            if (changedKeys.length) persistOverrideKeys(changedKeys).catch(() => toast('Network error while syncing with server', 'error'))
             persistUsed()
             emit()
             toast(changed ? 'Container updated' : 'No changes')

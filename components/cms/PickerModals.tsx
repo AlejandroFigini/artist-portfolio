@@ -15,7 +15,7 @@ import {
 } from '@/lib/cms/store'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
-  elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields,
+  elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields,
   syncWaveGroups, refreshTools, refreshContainerLabel,
 } from './engine'
 
@@ -275,7 +275,9 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       // contenido se persiste recién en el commit (Save) del manager.
       emit()
     } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
-      persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+      // Guardado ACOTADO a la clave asignada (no el estado entero): inmune a un
+      // ítem problemático del estado que tumbaría el POST completo.
+      persistOverrideKeys([cmsKey]).catch(() => toast('Network error while syncing with server', 'error'))
     } else {
       emit()
     }

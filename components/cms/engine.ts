@@ -1287,6 +1287,22 @@ export async function persistOverrides() {
   flushSyncToServer()
 }
 
+/** Igual que persistOverrides pero al backend manda SOLO las claves indicadas.
+    Asignar contenido a un contenedor guardaba el estado ENTERO (saveContent(state.items)):
+    si un solo ítem del estado hacía fallar /api/content (p.ej. un data URL que la
+    subida rechaza → 5xx, que saveContent traga en silencio), la asignación se veía
+    aplicada pero no persistía y "se iba" al recargar. Guardando solo la clave recién
+    asignada, la escritura es inmune al resto del estado (igual que el commit del
+    carrusel). El caché local sigue siendo el estado completo. */
+export async function persistOverrideKeys(keys: string[]) {
+  persistOverridesLocal()
+  emit()
+  const payload: Record<string, string> = {}
+  for (const k of keys) payload[k] = state.items[k] ?? ''
+  await saveContent(payload)
+  flushSyncToServer()
+}
+
 export function rescan() {
   indexEditables()
   if (state.isAdmin) {

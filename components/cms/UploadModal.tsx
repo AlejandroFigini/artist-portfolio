@@ -13,7 +13,7 @@ import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, isDeferredMediaKey, type FieldValue,
 } from '@/lib/cms/store'
 import {
-  elementsByKey, metaByKey, applyMedia, persistOverrides, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
+  elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
 } from './engine'
 
 const CLOUDINARY_CONSOLE =
@@ -122,7 +122,10 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           // Colección con manager abierto: preview local; persiste en el commit (Save).
           emit()
         } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
-          persistOverrides().catch(() => toast('Network error while syncing with server', 'error'))
+          // Guardado ACOTADO: la clave asignada + sus campos. Inmune a un ítem
+          // problemático del estado que tumbaría el POST completo.
+          persistOverrideKeys([cmsKey, ...fieldValues.map(({ f }) => `${cmsKey}::${f.key}`)])
+            .catch(() => toast('Network error while syncing with server', 'error'))
         } else {
           emit()
         }
