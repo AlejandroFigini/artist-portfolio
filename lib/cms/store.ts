@@ -375,7 +375,27 @@ export function recordAudit(entry: Partial<AuditEntry> & { user?: string }) {
   emit()
 }
 
+/* Purga el cache local del CMS. Se usa para el usuario demo: sus cambios viven
+   solo en el navegador y no deben persistir entre sesiones ni filtrarse al sitio
+   público (los overrides se aplican sin gate de admin). No toca el idioma. */
+export function clearDemoLocalState() {
+  const keys = [
+    LS.OVERRIDES, LS.OVERRIDES_HASH, LS.GLOBAL_HASH, LS.AUDIT, LS.MEDIA, LS.UNUSED,
+    LS.USED, LS.RETIRED, LS.TRASH, LS.TRASH_POLICY, LS.UPLOAD_TEST, LS.REPO_FILTER,
+    LS.CONTAINER_NAMES, LS.TEXT_DEFAULTS,
+    'cms_state_used_content', 'cms_state_unused', 'cms_state_retired', 'cms_state_trash',
+    'cms_state_media_meta', 'cms_state_audit', 'cms_state_container_names',
+  ]
+  try { keys.forEach((k) => localStorage.removeItem(k)) } catch {}
+}
+
 export function setAdminFlag(on: boolean, username?: string, role?: string, needsSetup?: boolean) {
+  const prevRole = state.role
+  // Demo efímero: al ENTRAR o SALIR de una sesión demo, se purga el cache local
+  // para arrancar de cero y no dejar rastro (ni en el sitio público de ese navegador).
+  if ((on && role === 'demo') || (!on && prevRole === 'demo')) {
+    clearDemoLocalState()
+  }
   state.isAdmin = on
   state.username = on ? username || state.username : ''
   state.role = on ? role || state.role : ''

@@ -170,7 +170,9 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
           <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || mm?.name || '—'}>{e.name || mm?.name || '—'}</span></div>
           <div><strong>Format:</strong> {getFormat(e)}</div>
           <div><strong>Size:</strong> {fmtBytes(size)}</div>
-          <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+          {state.role !== 'demo' && (
+            <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+          )}
           {occCount > 1 && (
             <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
           )}

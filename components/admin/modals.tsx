@@ -370,7 +370,12 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div><strong>File name:</strong> {e.name || '—'}</div>
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
+            {/* Demo: se oculta info sensible (fecha/hora de subida y el enlace/URL
+                a Cloudinary, incluido el download que expone la URL). */}
+            {state.role !== 'demo' && (
             <div><strong>Upload date:</strong> {ts ? `${fmtDateOnly(ts)} ${fmtTimeOnly(ts)}` : '—'}</div>
+            )}
+            {state.role !== 'demo' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               <div>
                 <strong>Cloudinary console:</strong>{' '}
@@ -398,6 +403,7 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
                 <i className="fa-solid fa-download"></i> Download
               </a>
             </div>
+            )}
             {occCount > 1 && (
               <div><strong>Uses:</strong> <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{`${occCount} times`}</span></div>
             )}

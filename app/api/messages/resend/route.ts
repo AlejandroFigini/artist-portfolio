@@ -11,8 +11,9 @@ export const dynamic = 'force-dynamic'
    Cierra el hueco de los fallos silenciosos: el mensaje siempre se guardó, pero
    antes no había forma de recuperar el aviso perdido. */
 export async function POST(req: Request) {
-  const auth = await requireRole(req, ['owner', 'admin'])
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+  if (auth.user.role === 'demo') return NextResponse.json({ success: true }) // no-op
   if (!hasDb) return NextResponse.json({ error: 'No database configured' }, { status: 503 })
 
   let body: { id?: number }

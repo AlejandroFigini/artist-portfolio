@@ -44,7 +44,7 @@ export default function UsersSection() {
   const refresh = useCallback(() => { getUsers().then(setUsers) }, [])
   useEffect(() => { refresh() }, [refresh])
   useEffect(() => {
-    if (state.role !== 'owner') return
+    if (state.role !== 'owner' && state.role !== 'demo') return
     getSessionPolicy().then((p) => setSessionMax(String(p.maxMinutes ?? 0))).catch(() => {})
   }, [])
 
@@ -326,8 +326,8 @@ export default function UsersSection() {
         </table>
       </div>
 
-      {/* ----- Política de sesiones (solo owner), debajo de la tabla ----- */}
-      {state.role === 'owner' && view !== 'create-user' && (
+      {/* ----- Política de sesiones (owner; demo la ve en modo mock/no-op) ----- */}
+      {(state.role === 'owner' || state.role === 'demo') && view !== 'create-user' && (
         <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1rem', marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', background: 'color-mix(in srgb, var(--bg-primary) 97%, var(--text-primary))' }}>
           <div style={{ minWidth: 0, flex: '1 1 240px' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}><i className="fa-solid fa-clock-rotate-left" style={{ marginRight: 6 }}></i> Session policy</div>

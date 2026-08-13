@@ -10,6 +10,18 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+
+  // Demo: bandeja ficticia. Nunca se exponen mensajes reales (nombres/emails/IPs).
+  if (auth.user.role === 'demo') {
+    const url = new URL(req.url)
+    const { demoMessagesResponse } = await import('@/lib/demo-mock')
+    return NextResponse.json(demoMessagesResponse({
+      onlyUnread: url.searchParams.get('unread') === 'true',
+      onlyStarred: url.searchParams.get('starred') === 'true',
+      onlyTrashed: url.searchParams.get('trashed') === 'true',
+    }))
+  }
+
   if (!hasDb) return NextResponse.json({ messages: [], total: 0, unread: 0 })
 
   await ensureDb()
@@ -78,8 +90,9 @@ export async function GET(req: Request) {
 /* PATCH /api/messages — marcar leído/no leído, destacado/no destacado, o basura.
    Body: { id: number, is_read?: boolean, is_starred?: boolean, is_trashed?: boolean } | { ids: number[], is_read?: boolean, is_starred?: boolean, is_trashed?: boolean } */
 export async function PATCH(req: Request) {
-  const auth = await requireRole(req, ['owner', 'admin'])
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+  if (auth.user.role === 'demo') return NextResponse.json({ success: true }) // no-op
   if (!hasDb) return NextResponse.json({ success: true })
 
   await ensureDb()
@@ -119,8 +132,9 @@ export async function PATCH(req: Request) {
    Body: { id: number } | { ids: number[] }
    Query: ?empty_trash=true */
 export async function DELETE(req: Request) {
-  const auth = await requireRole(req, ['owner', 'admin'])
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+  if (auth.user.role === 'demo') return NextResponse.json({ success: true }) // no-op
   if (!hasDb) return NextResponse.json({ success: true })
   await ensureDb()
   const pool = getPool()!

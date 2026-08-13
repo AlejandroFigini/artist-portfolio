@@ -8,10 +8,15 @@ export const dynamic = 'force-dynamic'
 /* GET /api/users → lista de usuarios para la sección "Administrar usuarios"
    de Gestión. Solo con sesión. Nunca expone hashes ni secretos TOTP. */
 export async function GET(req: Request) {
-  // Owner y admin pueden VER la lista; crear/editar/borrar (POST/PATCH/DELETE)
-  // sigue siendo exclusivo del owner.
-  const auth = await requireRole(req, ['owner', 'admin'])
+  // Owner y admin pueden VER la lista; el demo ve una tabla ficticia; crear/
+  // editar/borrar (POST/PATCH/DELETE) sigue siendo exclusivo del owner.
+  const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
+
+  if (auth.user.role === 'demo') {
+    const { DEMO_USERS } = await import('@/lib/demo-mock')
+    return NextResponse.json({ success: true, users: DEMO_USERS })
+  }
 
   try {
     const { rows } = await getPool()!.query(

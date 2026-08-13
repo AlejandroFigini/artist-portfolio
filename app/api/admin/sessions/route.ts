@@ -15,16 +15,18 @@ export const dynamic = 'force-dynamic'
 const MAX_MINUTES = 10080 // 1 semana
 
 export async function GET(req: Request) {
-  const auth = await requireRole(req, ['owner'])
+  const auth = await requireRole(req, ['owner', 'demo'])
   if ('deny' in auth) return auth.deny
+  if (auth.user.role === 'demo') return NextResponse.json({ success: true, maxMinutes: null }) // mock
   const { rows } = await getPool()!.query("SELECT value FROM cms_state WHERE key = 'session_policy'")
   const maxMinutes = (rows[0]?.value as { maxMinutes?: number } | undefined)?.maxMinutes ?? null
   return NextResponse.json({ success: true, maxMinutes })
 }
 
 export async function POST(req: Request) {
-  const auth = await requireRole(req, ['owner'])
+  const auth = await requireRole(req, ['owner', 'demo'])
   if ('deny' in auth) return auth.deny
+  if (auth.user.role === 'demo') return NextResponse.json({ success: true, killed: 0 }) // no-op
 
   let body: { action?: string; maxMinutes?: number | null }
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }

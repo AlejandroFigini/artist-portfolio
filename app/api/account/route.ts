@@ -26,6 +26,13 @@ export async function PATCH(req: Request) {
   let body: { username?: string; currentPassword?: string; newPassword?: string }
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
 
+  // Demo: efímero, no se tocan credenciales en DB. Devuelve el username que
+  // "quedaría" para que la UI refleje el cambio localmente, sin persistir nada.
+  if (me.role === 'demo') {
+    const username = body.username !== undefined ? String(body.username).trim() : me.username
+    return NextResponse.json({ success: true, user: { username, role: me.role, needsSetup: false, totpEnabled: me.totpEnabled } })
+  }
+
   // En el primer setup solo se exige contraseña nueva; el username es opcional
   // (se puede cambiar después en cualquier momento).
   if (me.needsSetup && !body.newPassword) {

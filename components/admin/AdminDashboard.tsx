@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                 )}
               </span>
             </button>
-            {(state.role === 'owner' || state.role === 'admin') && (
+            {(state.role === 'owner' || state.role === 'admin' || state.role === 'demo') && (
               <button type="button" className={`admin-nav-item${section === 'usuarios' ? ' active' : ''}`} onClick={() => goto('usuarios')}>
                 <i className="fa-solid fa-users-gear"></i><span>Manage users</span>
               </button>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
 
           {section === 'analitica' && <AnalyticsSection />}
           {section === 'mensajes' && <MessagesSection onUnreadChange={setUnreadCount} />}
-          {section === 'usuarios' && (state.role === 'owner' || state.role === 'admin') && <UsersSection />}
+          {section === 'usuarios' && (state.role === 'owner' || state.role === 'admin' || state.role === 'demo') && <UsersSection />}
 
           {isAjustes && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>

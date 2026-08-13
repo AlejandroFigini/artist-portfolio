@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtDate } from '@/lib/utils'
+import { state } from '@/lib/cms/store'
 
 type Message = {
   id: number
@@ -89,6 +90,17 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     return fetchMessages(p, tab)
   }, [page, activeTab, fetchMessages])
 
+  /* Demo: las mutaciones no tocan la DB (endpoints no-op). Para que la bandeja
+     ficticia se sienta viva DENTRO de la sesión, se actualiza el estado local y
+     NO se re-fetchea (traería el mock intacto). Al recargar vuelve al set base. */
+  const demoUpdate = (transform: (msgs: Message[]) => Message[]) => {
+    if (!data) return
+    const messages = transform(data.messages)
+    const unread = messages.filter((m) => !m.is_read).length
+    setData({ ...data, messages, total: messages.length, unread })
+    if (onUnreadChange && activeTab !== 'trash') onUnreadChange(unread)
+  }
+
   useEffect(() => {
     /* fetchMessages no toca el estado antes de su primer `await`, así que no
        encadena renders; la regla no distingue eso y marca cualquier llamada a
@@ -100,6 +112,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   }, [])
 
   const toggleRead = async (msg: Message) => {
+    if (state.role === 'demo') { demoUpdate((ms) => ms.map((m) => (m.id === msg.id ? { ...m, is_read: !msg.is_read } : m))); return }
     try {
       const r = await fetch('/api/messages', {
         method: 'PATCH',
@@ -113,6 +126,13 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   }
 
   const toggleStar = async (msg: Message) => {
+    if (state.role === 'demo') {
+      demoUpdate((ms) => {
+        const mapped = ms.map((m) => (m.id === msg.id ? { ...m, is_starred: !msg.is_starred } : m))
+        return activeTab === 'starred' ? mapped.filter((m) => m.is_starred) : mapped
+      })
+      return
+    }
     try {
       const r = await fetch('/api/messages', {
         method: 'PATCH',
@@ -126,6 +146,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   }
 
   const toggleTrash = async (msg: Message, trash: boolean) => {
+    if (state.role === 'demo') { demoUpdate((ms) => ms.filter((m) => m.id !== msg.id)); toast(trash ? 'Moved to trash' : 'Restored'); return }
     try {
       const r = await fetch('/api/messages', {
         method: 'PATCH',
@@ -148,6 +169,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
       'Delete message',
       <>Permanently delete the message from <strong>{msg.sender_name}</strong>? This action cannot be undone.</>,
       async () => {
+        if (state.role === 'demo') { demoUpdate((ms) => ms.filter((m) => m.id !== msg.id)); toast('Message deleted'); return }
         try {
           const r = await fetch('/api/messages', {
             method: 'DELETE',
@@ -166,6 +188,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   }
 
   const resendNotification = async (msg: Message) => {
+    if (state.role === 'demo') { toast('Notification sent'); return }
     setResending(msg.id)
     try {
       const r = await fetch('/api/messages/resend', {
@@ -191,6 +214,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     if (!data?.messages.length) return
     const unreadIds = data.messages.filter((m) => !m.is_read).map((m) => m.id)
     if (unreadIds.length === 0) return
+    if (state.role === 'demo') { demoUpdate((ms) => ms.map((m) => ({ ...m, is_read: true }))); toast(`Marked ${unreadIds.length} message(s) as read`); return }
     try {
       const r = await fetch('/api/messages', {
         method: 'PATCH',
@@ -212,6 +236,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
       'Empty trash',
       'Are you sure you want to permanently delete every message in the trash? This action cannot be undone.',
       async () => {
+        if (state.role === 'demo') { demoUpdate(() => []); toast('Trash emptied'); return }
         try {
           const r = await fetch('/api/messages?empty_trash=true', { method: 'DELETE' })
           if (r.ok) {
@@ -227,6 +252,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
 
   const saveAutoDeleteDays = async (days: string) => {
     setAutoDeleteDays(days)
+    if (state.role === 'demo') { toast('Settings saved'); return }
     try {
       await fetch('/api/content/batch', {
         method: 'POST',

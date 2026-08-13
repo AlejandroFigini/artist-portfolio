@@ -17,6 +17,18 @@ export async function POST(req: Request) {
 
   let body: { action?: string; code?: string; password?: string }
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
+
+  // Demo: el flujo 2FA "funciona" visualmente pero nada se guarda en DB.
+  if (me.role === 'demo') {
+    if (body.action === 'setup') {
+      const secret = 'JBSWY3DPEHPK3PXP' // secreto de ejemplo (RFC), solo para pintar el QR
+      const uri = `otpauth://totp/${encodeURIComponent(`LuciaMontana:${me.username}`)}?secret=${secret}&issuer=${encodeURIComponent('LuciaMontana')}`
+      return NextResponse.json({ success: true, secret, uri })
+    }
+    // enable / disable → OK falso, sin escribir
+    return NextResponse.json({ success: true })
+  }
+
   const pool = getPool()!
 
   try {

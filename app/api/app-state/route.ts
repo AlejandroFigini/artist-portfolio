@@ -64,6 +64,12 @@ export async function POST(req: Request) {
   const auth = await requireSession(req)
   if ('deny' in auth) return auth.deny
 
+  // Demo: 0 repercusión en DB. El estado de la biblioteca de medios (used/unused/
+  // trash/media_meta/audit/container_names) vive solo en el navegador del demo.
+  if (auth.user.role === 'demo') {
+    return NextResponse.json({ success: true })
+  }
+
   let body: Record<string, unknown>
   try { body = await req.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
