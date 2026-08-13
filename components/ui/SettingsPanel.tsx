@@ -249,9 +249,8 @@ export default function SettingsPanel() {
           <span>{ui('curriculum_vitae')}</span>
           <a
             className={`cv-btn cv-btn-settings${settings.cvUrl ? '' : ' is-disabled'}`}
-            id="cv-download-settings" href={settings.cvUrl || undefined}
+            id="cv-download-settings" href={settings.cvUrl ? '/api/cv' : undefined}
             download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
-            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
             title={settings.cvUrl ? ui('download_cv_pdf') : ui('cv_unavailable')}
             aria-disabled={!settings.cvUrl || undefined}
             onClick={() => sendGAEvent('event', 'cv_download')}

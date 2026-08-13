@@ -59,6 +59,24 @@ export async function destroyOtherSessions(userId: number, keepToken: string): P
   await getPool()!.query('DELETE FROM sessions WHERE user_id = $1 AND id <> $2', [userId, keepToken])
 }
 
+/* Materializa el auto-bloqueo recurrente del demo: bloquea (y desloguea) a
+   cualquier demo cuyo demo_lock_at ya venció. Idempotente y barato — se llama
+   de forma perezosa en el login y al listar usuarios, así no hace falta cron. */
+export async function enforceDemoAutoLock(): Promise<void> {
+  const pool = getPool()
+  if (!pool) return
+  const { rows } = await pool.query(
+    `UPDATE users SET is_blocked = TRUE
+       WHERE role = 'demo' AND is_blocked = FALSE
+         AND demo_lock_interval_minutes IS NOT NULL AND demo_lock_interval_minutes > 0
+         AND demo_lock_at IS NOT NULL AND demo_lock_at <= NOW()
+     RETURNING id`,
+  )
+  if (rows.length) {
+    await pool.query('DELETE FROM sessions WHERE user_id = ANY($1::int[])', [rows.map((r: { id: number }) => r.id)])
+  }
+}
+
 function readSid(req: Request): string | null {
   const cookie = req.headers.get('cookie') || ''
   const m = cookie.match(/(?:^|;\s*)sid=([^;]+)/)

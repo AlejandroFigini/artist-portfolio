@@ -77,27 +77,35 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
   const [settings, setSettings] = useState<SiteSettings>(initialSettings || EMPTY_SETTINGS)
 
   useEffect(() => {
-    // 1) fallback local inmediato (sin flash en dev sin DB)
-    setTimeout(() => {
-      setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
-    }, 0)
-    // 2) valores canónicos del backend (ganan si están presentes)
+    /* El primer paint ya usa initialSettings (render del server, autoritativo).
+       Antes se aplicaban los overrides locales de inmediato Y con prioridad sobre
+       el backend (`local || server`): en producción eso resucitaba contenido ya
+       removido —el server lo devolvía vacío pero el cache local viejo ganaba— y
+       era el flash del loader. Ahora: con DB el server manda (aunque vacío); solo
+       sin DB (dev/mock) se cae a los overrides locales. */
     fetch('/api/site', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: SiteSettings | null) => {
+      .then((d: (SiteSettings & { hasDb?: boolean }) | null) => {
         if (!d) return
-        const local = fromLocalOverrides()
-        setSettings((s) => ({
-          loaderVideo: local.loaderVideo || d.loaderVideo || s.loaderVideo,
-          loaderImage: local.loaderImage || d.loaderImage || s.loaderImage,
-          loaderDuration: local.loaderDuration || d.loaderDuration || s.loaderDuration,
-          cvUrl: local.cvUrl || d.cvUrl || s.cvUrl,
-          cvName: local.cvName || d.cvName || s.cvName,
-          faviconUrl: local.faviconUrl || d.faviconUrl || s.faviconUrl,
-          appleIconUrl: local.appleIconUrl || d.appleIconUrl || s.appleIconUrl,
-        }))
+        if (d.hasDb) {
+          setSettings({
+            loaderVideo: d.loaderVideo || '',
+            loaderImage: d.loaderImage || '',
+            loaderDuration: d.loaderDuration || '',
+            cvUrl: d.cvUrl || '',
+            cvName: d.cvName || '',
+            faviconUrl: d.faviconUrl || '',
+            appleIconUrl: d.appleIconUrl || '',
+          })
+        } else {
+          const local = fromLocalOverrides()
+          setSettings((s) => ({ ...s, ...local }))
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Red caída: último recurso, overrides locales.
+        setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
+      })
   }, [])
 
   useEffect(() => {

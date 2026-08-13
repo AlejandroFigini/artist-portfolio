@@ -43,6 +43,12 @@ type AnimFn = (targets: NodeListOf<HTMLElement>, onDone: () => void) => gsap.cor
 // anima los spans recién creados. Preserva .cms-tools (no rompe la edición).
 function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animate: AnimFn): LoopHandle {
   gsap.set(el, { autoAlpha: 1 })
+  /* En móvil / equipos ligeros (html.perf-lite) el reveal corre UNA sola vez —
+     es la entrada del texto— y no se repite. El re-revelado perpetuo cada 8s
+     se sentía forzado y, corriendo en 6 secciones a la vez, robaba el main
+     thread justo cuando el scroll dispara los reveals de imágenes (se veían
+     poco fluidos). En desktop se conserva el loop. */
+  const runOnce = typeof document !== 'undefined' && document.documentElement.classList.contains('perf-lite')
   let killed = false
   let tween: gsap.core.Tween | null = null
   let wait: gsap.core.Tween | null = null
@@ -76,6 +82,7 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
       if (killed) return
       el.textContent = text
       if (tools) el.appendChild(tools)
+      if (runOnce) { liveLoops.delete(handle); return } // móvil: una sola pasada, sin re-loop
       wait = gsap.delayedCall(intervalSec, cycle)
     })
   }

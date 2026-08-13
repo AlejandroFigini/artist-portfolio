@@ -44,6 +44,10 @@ export async function PATCH(req: Request) {
   const values: unknown[] = []
 
   if (body.username !== undefined) {
+    // Un admin no puede cambiar su propio username (política). El owner sí.
+    if (me.role === 'admin') {
+      return NextResponse.json({ success: false, error: 'Admins cannot change their own username' }, { status: 403 })
+    }
     const username = String(body.username).trim()
     if (username.length < 3 || username.length > 64) {
       return NextResponse.json({ success: false, error: 'Username must be between 3 and 64 characters' }, { status: 400 })

@@ -7,6 +7,7 @@
 import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import PasswordInput from '@/components/ui/PasswordInput'
 import { login } from '@/lib/api'
 
 type Props = { onSuccess: (username?: string, role?: string, needsSetup?: boolean) => void; onClose: () => void }
@@ -58,11 +59,14 @@ export default function LoginModal({ onSuccess, onClose }: Props) {
       <div className="cms-login-form">
         {phase === 'creds' ? (
           <>
-            <label className="cms-field"><span>Username</span>
+            {/* key distinto por fase: sin él React reusa el mismo nodo <input> en
+                la posición 0 (creds→2fa) y, al ser no controlado (ref), el valor
+                tipeado del username se arrastraba al campo del código 2FA. */}
+            <label key="user-field" className="cms-field"><span>Username</span>
               <input ref={userRef} type="text" autoComplete="off" />
             </label>
             <label className="cms-field"><span>Password</span>
-              <input ref={passRef} type="password" onKeyDown={onEnter} />
+              <PasswordInput ref={passRef} onKeyDown={onEnter} />
             </label>
             <p className="cms-hint" style={{ marginTop: 15 }}>
               <i className="fa-solid fa-lock"></i> Secured with Google Authenticator 2FA.
@@ -70,8 +74,11 @@ export default function LoginModal({ onSuccess, onClose }: Props) {
           </>
         ) : (
           <>
-            <label className="cms-field"><span>2FA Code (Google Authenticator)</span>
-              <input ref={codeRef} type="text" autoComplete="off" maxLength={6} autoFocus onKeyDown={onEnter} />
+            <label key="code-field" className="cms-field"><span>2FA Code (Google Authenticator)</span>
+              {/* one-time-code + inputMode numérico: sin esto el navegador/gestor
+                  ignora autoComplete="off" y autocompleta el username guardado en
+                  este campo de texto. Marcado como OTP ya no lo hace. */}
+              <input ref={codeRef} type="text" name="otp" autoComplete="one-time-code" inputMode="numeric" maxLength={6} autoFocus onKeyDown={onEnter} />
             </label>
             <p className="cms-hint" style={{ color: 'var(--color-primary)' }}>
               <i className="fa-solid fa-shield-halved"></i> Enter the dynamic code from your app.

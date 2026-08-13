@@ -43,7 +43,11 @@ export default function Nav() {
      touchstart sin que nada de la UI dependiera del valor. */
   const swipeOrigin = useRef<{ x: number; y: number } | null>(null)
   const [dropdown, setDropdown] = useState<'gallery' | 'portfolio' | null>(null)
-  const [langOpen, setLangOpen] = useState(false)
+  /* Qué selector de idioma está abierto. Antes era un booleano compartido por
+     el de la barra superior y el del drawer: tocar el del drawer abría TAMBIÉN
+     el de la barra (que en móvil aparece arriba, fuera del menú). Ahora cada
+     uno se identifica y solo abre el suyo. */
+  const [langMenu, setLangMenu] = useState<'bar' | 'drawer' | null>(null)
   const [contactOpen, setContactOpen] = useState(false)
   const activeLang = LANG_META[state.lang]
   const isAdmin = state.isAdmin
@@ -64,7 +68,7 @@ export default function Nav() {
   }, [])
 
   useEffect(() => {
-    const closeAll = () => { setDropdown(null); setLangOpen(false) }
+    const closeAll = () => { setDropdown(null); setLangMenu(null) }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { closeAll(); setNavOpen(false) }
     }
@@ -338,9 +342,8 @@ export default function Nav() {
               {settings.cvUrl ? (
                 <a
                   className="cv-min-btn"
-                  href={settings.cvUrl}
+                  href="/api/cv"
                   download={settings.cvName || 'CV.pdf'}
-                  target="_blank" rel="noopener noreferrer"
                   title={ui('download_cv')}
                   aria-label={ui('download_cv')}
                   onClick={() => sendGAEvent('event', 'cv_download')}
@@ -376,19 +379,19 @@ export default function Nav() {
               <div className="lang-selector-nav mobile-lang" style={{ display: 'flex' }}>
                 <button
                   className="lang-btn"
-                  onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
+                  onClick={(e) => { e.stopPropagation(); setLangMenu((m) => (m === 'drawer' ? null : 'drawer')) }}
                 >
                   {/* Bandera SVG inline de LANG_META: next/image no optimiza SVG. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" />
                   <span className="lang-code">{state.lang.toUpperCase()}</span>
                 </button>
-                <div className={`lang-dropdown${langOpen ? ' active' : ''}`}>
+                <div className={`lang-dropdown${langMenu === 'drawer' ? ' active' : ''}`}>
                   {ALL_LANGS.map((code) => (
                     <button
                       key={code}
                       className="lang-option"
-                      onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
+                      onClick={() => { setLanguage(code as Lang); setLangMenu(null) }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}
@@ -413,9 +416,8 @@ export default function Nav() {
             {settings.cvUrl ? (
               <a
                 className="cv-min-btn" id="cv-download"
-                href={settings.cvUrl}
+                href="/api/cv"
                 download={settings.cvName || 'CV.pdf'}
-                target="_blank" rel="noopener noreferrer"
                 title={ui('download_cv')}
                 aria-label={ui('download_cv')}
                 onClick={() => sendGAEvent('event', 'cv_download')}
@@ -443,20 +445,20 @@ export default function Nav() {
                 id="lang-toggle-nav"
                 aria-label={ui('change_language')}
                 title={ui('language')}
-                onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
+                onClick={(e) => { e.stopPropagation(); setLangMenu((m) => (m === 'bar' ? null : 'bar')) }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={activeLang.svg} alt={activeLang.label} className="lang-flag-img" id="lang-flag-nav" />
                 <span className="lang-code" id="lang-code-nav">{state.lang.toUpperCase()}</span>
               </button>
-              <div className={`lang-dropdown${langOpen ? ' active' : ''}`} id="lang-dropdown-nav">
+              <div className={`lang-dropdown${langMenu === 'bar' ? ' active' : ''}`} id="lang-dropdown-nav">
                 {ALL_LANGS.map((code) => (
                   <button
                     key={code}
                     className="lang-option"
                     data-lang={code}
                     title={LANG_META[code].label}
-                    onClick={() => { setLanguage(code as Lang); setLangOpen(false) }}
+                    onClick={() => { setLanguage(code as Lang); setLangMenu(null) }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={LANG_META[code].svg} alt={LANG_META[code].label} className="lang-flag-img" /> {LANG_META[code].label}

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verify } from 'otplib'
 import { getPool, ensureDb, hasDb } from '@/lib/db'
-import { verifyPassword, createSession, setSessionCookie } from '@/lib/auth'
+import { verifyPassword, createSession, setSessionCookie, enforceDemoAutoLock } from '@/lib/auth'
 import { getClientIp, checkLoginRateLimit, clearLoginFails, LOGIN_WINDOW_MIN } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -31,6 +31,9 @@ export async function POST(req: Request) {
   try {
     await ensureDb()
     const pool = getPool()!
+    // Materializa el auto-bloqueo del demo antes de leer is_blocked: un demo cuyo
+    // temporizador venció queda bloqueado y cae en el guard de más abajo.
+    await enforceDemoAutoLock()
 
     // Lockout: se mide por IP y por username (rotar uno no esquiva el tope).
     // Clave: NO se bloquea a ciegas. Se verifican las credenciales igual; el 429

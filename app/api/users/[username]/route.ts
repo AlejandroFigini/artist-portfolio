@@ -7,14 +7,16 @@ export const dynamic = 'force-dynamic'
 
 /* PATCH /api/users/[username] → Múltiples acciones sobre un usuario. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ username: string }> }) {
-  const auth = await requireRole(req, ['owner'])
+  // El admin entra para poder gestionar SOLO el bloqueo del demo (block + demo_lock);
+  // todo lo demás (rol, credenciales, ttl, reset, kill) sigue siendo del owner.
+  const auth = await requireRole(req, ['owner', 'admin'])
   if ('deny' in auth) return auth.deny
 
   const { username: targetUsername } = await params
   if (!targetUsername) return NextResponse.json({ success: false, error: 'Username required' }, { status: 400 })
 
   const pool = getPool()!
-  const targetUserRes = await pool.query('SELECT id, role, is_blocked FROM users WHERE username = $1', [targetUsername])
+  const targetUserRes = await pool.query('SELECT id, role, is_blocked, demo_lock_interval_minutes FROM users WHERE username = $1', [targetUsername])
   if (targetUserRes.rows.length === 0) {
     return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
   }
@@ -28,12 +30,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     is_blocked: boolean
     role: string
     session_ttl_minutes: number | null
+    demo_lock_interval_minutes: number | null
     newUsername: string
     newPassword: string
   }>
   try { body = await req.json() } catch { return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 }) }
 
   const action = body.action
+
+  // Puerta de permisos del admin: solo bloquear/desbloquear y configurar el
+  // auto-bloqueo del usuario demo. Cualquier otra acción es exclusiva del owner.
+  if (auth.user.role === 'admin') {
+    const adminAllowed = (action === 'block' || action === 'demo_lock') && targetUser.role === 'demo'
+    if (!adminAllowed) {
+      return NextResponse.json({ success: false, error: 'Admins can only manage the demo user lock' }, { status: 403 })
+    }
+  }
 
   try {
     if (action === 'block') {
@@ -43,9 +55,42 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         return NextResponse.json({ success: false, error: 'Cannot block an owner account' }, { status: 400 })
       }
       const newBlockedStatus = !!body.is_blocked
-      await pool.query('UPDATE users SET is_blocked = $1 WHERE id = $2', [newBlockedStatus, targetUser.id])
       if (newBlockedStatus) {
+        await pool.query('UPDATE users SET is_blocked = TRUE WHERE id = $1', [targetUser.id])
         await pool.query('DELETE FROM sessions WHERE user_id = $1', [targetUser.id]) // Kill sessions if blocked
+      } else {
+        // Al DESBLOQUEAR un demo con auto-bloqueo activo, se reinicia el anclaje:
+        // vuelve a contar el intervalo completo desde ahora.
+        await pool.query(
+          `UPDATE users SET is_blocked = FALSE,
+             demo_lock_at = CASE
+               WHEN role = 'demo' AND demo_lock_interval_minutes IS NOT NULL AND demo_lock_interval_minutes > 0
+               THEN NOW() + make_interval(mins => demo_lock_interval_minutes)
+               ELSE demo_lock_at END
+           WHERE id = $1`,
+          [targetUser.id],
+        )
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === 'demo_lock') {
+      if (targetUser.role !== 'demo') {
+        return NextResponse.json({ success: false, error: 'Auto-lock can only be set for demo users' }, { status: 400 })
+      }
+      const mins = body.demo_lock_interval_minutes
+      // Tope 30 días. null/0 desactiva el auto-bloqueo (limpia intervalo y fecha).
+      if (mins != null && (!Number.isInteger(mins) || mins < 1 || mins > 43200)) {
+        return NextResponse.json({ success: false, error: 'Interval must be between 1 and 43200 minutes' }, { status: 400 })
+      }
+      if (mins && mins > 0) {
+        // Setear/editar el intervalo REINICIA el anclaje: cuenta desde ahora.
+        await pool.query(
+          'UPDATE users SET demo_lock_interval_minutes = $1, demo_lock_at = NOW() + make_interval(mins => $1) WHERE id = $2',
+          [mins, targetUser.id],
+        )
+      } else {
+        await pool.query('UPDATE users SET demo_lock_interval_minutes = NULL, demo_lock_at = NULL WHERE id = $1', [targetUser.id])
       }
       return NextResponse.json({ success: true })
     }
@@ -66,7 +111,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     }
 
     if (action === 'reset') {
-      await pool.query('UPDATE users SET needs_setup = true WHERE id = $1', [targetUser.id])
+      // Al demo NO se le fuerza cambio de contraseña (es efímero): solo se le
+      // matan las sesiones. Al resto se le marca needs_setup.
+      if (targetUser.role !== 'demo') {
+        await pool.query('UPDATE users SET needs_setup = true WHERE id = $1', [targetUser.id])
+      }
       await pool.query('DELETE FROM sessions WHERE user_id = $1', [targetUser.id])
       return NextResponse.json({ success: true })
     }

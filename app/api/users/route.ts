@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { requireRole } from '@/lib/auth'
+import { requireRole, enforceDemoAutoLock } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,16 +19,20 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Bloquea a los demos vencidos antes de listar → la tabla refleja el estado real.
+    await enforceDemoAutoLock()
     const { rows } = await getPool()!.query(
-      'SELECT username, role, totp_enabled, is_blocked, session_ttl_minutes, last_login_at, created_at FROM users ORDER BY id',
+      'SELECT username, role, totp_enabled, is_blocked, session_ttl_minutes, demo_lock_interval_minutes, demo_lock_at, last_login_at, created_at FROM users ORDER BY id',
     )
     return NextResponse.json({
       success: true,
-      users: rows.map((r: { username: string; role: string; totp_enabled: boolean; is_blocked: boolean; session_ttl_minutes: number | null; last_login_at: string | null; created_at: string }) => ({
+      users: rows.map((r: { username: string; role: string; totp_enabled: boolean; is_blocked: boolean; session_ttl_minutes: number | null; demo_lock_interval_minutes: number | null; demo_lock_at: string | null; last_login_at: string | null; created_at: string }) => ({
         username: r.username,
         role: r.role,
         isBlocked: !!r.is_blocked,
         sessionTtlMinutes: r.session_ttl_minutes,
+        demoLockIntervalMinutes: r.demo_lock_interval_minutes,
+        demoLockAt: r.demo_lock_at,
         totpEnabled: !!r.totp_enabled,
         lastLoginAt: r.last_login_at,
         createdAt: r.created_at,
@@ -75,9 +79,12 @@ export async function POST(req: Request) {
 
   try {
     const hashed = await hashPassword(password)
+    // El demo es efímero y NO se le pide cambiar la contraseña en el primer
+    // login (needs_setup=false). El resto de roles sí entra en setup forzado.
+    const needsSetup = role !== 'demo'
     await pool.query(
-      'INSERT INTO users (username, password_hash, role, needs_setup) VALUES ($1, $2, $3, true)',
-      [username, hashed, role]
+      'INSERT INTO users (username, password_hash, role, needs_setup) VALUES ($1, $2, $3, $4)',
+      [username, hashed, role, needsSetup]
     )
     return NextResponse.json({ success: true })
   } catch (err) {

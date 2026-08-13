@@ -50,8 +50,24 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [resending, setResending] = useState<number | null>(null)
   const [autoDeleteDays, setAutoDeleteDays] = useState('0')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
   const { confirm } = useModal()
   const toast = useToast()
+
+  const toggleSelect = (id: number) => setSelected((s) => {
+    const n = new Set(s)
+    if (n.has(id)) n.delete(id); else n.add(id)
+    return n
+  })
+  const toggleSelectAllOnPage = () => {
+    if (!data) return
+    setSelected((s) => {
+      const n = new Set(s)
+      const allSel = data.messages.every((m) => n.has(m.id))
+      data.messages.forEach((m) => (allSel ? n.delete(m.id) : n.add(m.id)))
+      return n
+    })
+  }
 
   /* La búsqueda va separada del `setLoading(true)` para que el efecto de montaje
      pueda llamarla sin disparar un setState síncrono dentro del efecto (que
@@ -250,6 +266,44 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     )
   }
 
+  /* Borrado múltiple de los seleccionados. En papelera es permanente (confirma);
+     en bandeja/favoritos manda a la papelera (reversible). */
+  const deleteSelected = () => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    const permanent = activeTab === 'trash'
+    const run = async () => {
+      if (state.role === 'demo') { demoUpdate((ms) => ms.filter((m) => !selected.has(m.id))); setSelected(new Set()); toast(permanent ? 'Messages deleted' : 'Moved to trash'); return }
+      try {
+        const r = permanent
+          ? await fetch('/api/messages', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) })
+          : await fetch('/api/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, is_trashed: true }) })
+        if (r.ok) { toast(permanent ? 'Messages deleted' : `${ids.length} moved to trash`); setSelected(new Set()); load() }
+      } catch { toast('Failed to delete messages', 'error') }
+    }
+    if (permanent) confirm('Delete messages', `Permanently delete ${ids.length} selected message(s)? This action cannot be undone.`, run)
+    else run()
+  }
+
+  /* "Eliminar todo": en papelera vacía (permanente); en bandeja/favoritos manda
+     TODO el scope a la papelera (todas las páginas, no solo la cargada). */
+  const deleteAll = () => {
+    if (!data) return
+    if (activeTab === 'trash') { emptyTrash(); return }
+    const scope: 'inbox' | 'starred' = activeTab === 'starred' ? 'starred' : 'inbox'
+    confirm(
+      'Delete all',
+      `Move all ${scope === 'starred' ? 'starred ' : ''}messages to the trash? You can still restore them from the trash.`,
+      async () => {
+        if (state.role === 'demo') { demoUpdate(() => []); setSelected(new Set()); toast('Moved to trash'); return }
+        try {
+          const r = await fetch('/api/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashAll: scope }) })
+          if (r.ok) { toast('All messages moved to trash'); setSelected(new Set()); load() }
+        } catch { toast('Failed to delete messages', 'error') }
+      }
+    )
+  }
+
   const saveAutoDeleteDays = async (days: string) => {
     setAutoDeleteDays(days)
     if (state.role === 'demo') { toast('Settings saved'); return }
@@ -267,12 +321,14 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
+    setSelected(new Set())
     load(newPage, activeTab)
   }
 
   const handleFilterChange = (tab: 'inbox' | 'starred' | 'trash') => {
     setActiveTab(tab)
     setPage(1)
+    setSelected(new Set())
     load(1, tab)
   }
 
@@ -351,6 +407,11 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
           {data && data.unread > 0 && activeTab === 'inbox' && (
             <button type="button" className="cms-btn cms-btn--sm" onClick={markAllRead}>
               <i className="fa-solid fa-check-double"></i> Mark all read
+            </button>
+          )}
+          {data && data.messages.length > 0 && activeTab !== 'trash' && (
+            <button type="button" className="cms-btn cms-btn--sm" onClick={deleteAll} style={{ color: '#ef4444' }}>
+              <i className="fa-solid fa-trash"></i> Delete all
             </button>
           )}
         </div>
@@ -444,7 +505,25 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
       )}
 
       {data && data.messages.length > 0 && (
-        <div className="msg-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+        <>
+        {/* Barra de selección múltiple */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.6rem 0.2rem', flexWrap: 'wrap' }}>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={data.messages.every((m) => selected.has(m.id))}
+              onChange={toggleSelectAllOnPage}
+              style={{ width: 16, height: 16, cursor: 'pointer' }}
+            />
+            Select all on page
+          </label>
+          {selected.size > 0 && (
+            <button type="button" className="cms-btn cms-btn--sm" onClick={deleteSelected} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+              <i className={`fa-solid ${activeTab === 'trash' ? 'fa-eraser' : 'fa-trash'}`}></i> {activeTab === 'trash' ? 'Delete' : 'Move to trash'} ({selected.size})
+            </button>
+          )}
+        </div>
+        <div className="msg-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
           {data.messages.map((msg) => (
             <div
               key={msg.id}
@@ -465,6 +544,13 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
             >
               {/* Header row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(msg.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => toggleSelect(msg.id)}
+                  style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
+                />
                 {msg.is_starred && (
                   <i className="fa-solid fa-star" style={{ color: '#fbbf24', fontSize: '0.9rem' }} title="Favorito"></i>
                 )}
@@ -661,6 +747,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* Pagination */}

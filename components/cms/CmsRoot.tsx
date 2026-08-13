@@ -233,6 +233,11 @@ export default function CmsRoot() {
                 >
                   <i className="fa-solid fa-user-shield"></i>
                   <span className="cms-user-name">{state.username || 'Administrator'}</span>
+                  {/* Tag de rol también en el sitio (no solo en gestión). Mismos
+                      colores que la tabla/dashboard. Se oculta en móvil (chip circular). */}
+                  {state.role && (
+                    <span className="cms-user-role" style={{ marginLeft: 6, padding: '2px 6px', background: state.role === 'demo' ? '#ea8a00' : state.role === 'owner' ? 'var(--accent)' : '#2563eb', color: '#fff', borderRadius: 4, fontSize: '0.65em', letterSpacing: '0.04em', fontWeight: 700 }}>{state.role.toUpperCase()}</span>
+                  )}
                   <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.7em', marginLeft: '0.3rem' }}></i>
                 </button>
                 <div className="admin-dropdown-menu">

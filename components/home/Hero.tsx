@@ -173,12 +173,16 @@ export default function Hero() {
       title.classList.add('anim-in')
     }
 
+    // En móvil / equipos ligeros el shimmer del título corre UNA vez (entrada) y
+    // no se repite: el replay perpetuo cada 9s se sentía forzado y competía con
+    // el scroll. En desktop se mantiene el loop.
+    const liteOnce = document.documentElement.classList.contains('perf-lite')
     const start = setTimeout(() => {
       const fulls = lines.map((l) => l.textContent || '')
       if (fulls.every((f) => !f)) return
       lines.forEach(splitLine)
       replay()
-      intervalId = setInterval(replay, 9000)
+      if (!liteOnce) intervalId = setInterval(replay, 9000)
     }, 3200)
 
     return () => {

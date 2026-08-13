@@ -169,6 +169,21 @@ const MIGRATIONS: { id: string; sql: string }[] = [
     id: '2026_08_users_totp_pending',
     sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_pending_secret TEXT',
   },
+  {
+    /* Auto-bloqueo recurrente del usuario demo (independiente del TTL de sesión):
+       - demo_lock_interval_minutes: cada cuánto se bloquea (null/0 = desactivado).
+       - demo_lock_at: instante ABSOLUTO en que el auto-bloqueo se dispara
+         (anclaje + intervalo). Se recalcula al setear el intervalo y al desbloquear.
+       El bloqueo se materializa de forma perezosa (login + GET /api/users). */
+    id: '2026_08_users_demo_autolock',
+    sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS demo_lock_interval_minutes INTEGER, ADD COLUMN IF NOT EXISTS demo_lock_at TIMESTAMP',
+  },
+  {
+    /* Al demo nunca se le pide cambiar la contraseña: limpiar el needs_setup de
+       cualquier demo ya sembrado antes de esta regla. */
+    id: '2026_08_users_demo_no_setup',
+    sql: "UPDATE users SET needs_setup = FALSE WHERE role = 'demo' AND needs_setup = TRUE",
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

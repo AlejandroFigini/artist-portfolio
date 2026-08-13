@@ -57,16 +57,20 @@ export default function AboutSection() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
+    const { gsap, ScrollTrigger, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
     let twTimeout: ReturnType<typeof setTimeout>
-    let titleTw: LoopHandle | null = null
     let ledeTw: LoopHandle | null = null
 
     const ctx = gsap.context(() => {
-      gsap.set('.about-title .line', { yPercent: 115, skewY: 4 })
+      /* Se anima el .about-title ENTERO, no el `.line` interno: about.title es
+         contenedor CMS (data-cms-key) y el motor le reescribe el textContent al
+         hidratar/traducir, borrando el <span class="line"> que el reveal
+         apuntaba. Resultado: el título quedaba en opacity 1 sin animar mientras
+         el lede sí entraba. Animar el elemento sobrevive al flatten. */
+      gsap.set('.about-title', { autoAlpha: 0, y: 26 })
       gsap.set('.about-fig', { autoAlpha: 0, y: 12 })
       gsap.set('.about-lede', { autoAlpha: 0, y: 22 })
       gsap.set('.about-bio p', { autoAlpha: 0, y: 22 })
@@ -78,18 +82,22 @@ export default function AboutSection() {
       gsap.set('.about-social', { autoAlpha: 0, y: 10 })
       gsap.set('.about-rail-fill', { scaleY: 0, transformOrigin: 'top center' })
 
+      /* Orden pedido: primero el SUB-TEXTO (lede), después el TÍTULO. Posiciones
+         absolutas para que la secuencia sea explícita y no dependa del encadenado
+         relativo. La instrumentación (fig/media/portrait/bio/meta) mantiene sus
+         tiempos previos. */
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.about-fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.about-title .line', { yPercent: 0, skewY: 0, duration: 1.0, stagger: 0.1 }, 0.05)
-        .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, '-=0.85')
-        .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, '-=0.7')
-        .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, '-=0.6')
-        .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04 }, '-=0.5')
-        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.95')
-        .to('.about-bio p', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, '-=0.6')
-        .to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' }, '-=0.5')
-        .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, '-=0.45')
-        .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.05, ease: 'power3.out' }, '-=0.35')
+        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.2)
+        .to('.about-title', { autoAlpha: 1, y: 0, duration: 0.9 }, 0.75)
+        .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, 0.1)
+        .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, 0.5)
+        .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, 0.85)
+        .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04 }, 1.35)
+        .to('.about-bio p', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, 1.0)
+        .to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' }, 1.3)
+        .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, 1.45)
+        .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.05, ease: 'power3.out' }, 1.7)
 
       let played = false
       const io = new IntersectionObserver((entries) => {
@@ -98,10 +106,8 @@ export default function AboutSection() {
             played = true
             tl.play()
             io.disconnect()
-            const lineEl = sec.querySelector<HTMLElement>('.about-title .line')
             const ledeEl = sec.querySelector<HTMLElement>('.about-lede')
             twTimeout = setTimeout(() => {
-              if (lineEl) titleTw = typewriterRevealLoop(lineEl, 8)
               if (ledeEl) ledeTw = wordRevealLoop(ledeEl, 8)
             }, (tl.duration() + 1) * 1000)
           }
@@ -122,7 +128,7 @@ export default function AboutSection() {
 
       ScrollTrigger.refresh()
     }, sectionRef)
-    return () => { clearTimeout(twTimeout); titleTw?.kill(); ledeTw?.kill(); ctx.revert() }
+    return () => { clearTimeout(twTimeout); ledeTw?.kill(); ctx.revert() }
   }, [motion])
 
   return (

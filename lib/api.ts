@@ -95,7 +95,7 @@ export async function updateAccount(payload: {
   return (data as { user: AccountUser }).user
 }
 
-export type UserRow = AccountUser & { lastLoginAt: string | null; createdAt: string; isBlocked?: boolean; sessionTtlMinutes?: number | null }
+export type UserRow = AccountUser & { lastLoginAt: string | null; createdAt: string; isBlocked?: boolean; sessionTtlMinutes?: number | null; demoLockIntervalMinutes?: number | null; demoLockAt?: string | null }
 
 export async function getUsers(): Promise<UserRow[]> {
   const r = await fetch('/api/users', { cache: 'no-store' })
@@ -124,6 +124,8 @@ export type AdminUserUpdate =
   | { action: 'ttl'; session_ttl_minutes: number | null }
   | { action: 'kill_sessions' }
   | { action: 'credentials'; newUsername?: string; newPassword?: string }
+  // Auto-bloqueo recurrente del demo: intervalo en minutos (null/0 lo desactiva).
+  | { action: 'demo_lock'; demo_lock_interval_minutes: number | null }
 
 export async function updateUserAdmin(username: string, payload: AdminUserUpdate): Promise<void> {
   const r = await fetch(`/api/users/${encodeURIComponent(username)}`, {

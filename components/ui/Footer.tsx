@@ -56,9 +56,8 @@ export default function Footer() {
           <a
             className={`cv-btn cv-btn-footer${settings.cvUrl ? '' : ' is-disabled'}`}
             id="cv-download-footer"
-            href={settings.cvUrl || undefined}
+            href={settings.cvUrl ? '/api/cv' : undefined}
             download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
-            target={settings.cvUrl ? '_blank' : undefined} rel="noopener noreferrer"
             title={settings.cvUrl ? ui('download_cv') : ui('cv_unavailable')}
             aria-label={ui('download_cv')} aria-disabled={!settings.cvUrl || undefined}
             onClick={() => sendGAEvent('event', 'cv_download')}

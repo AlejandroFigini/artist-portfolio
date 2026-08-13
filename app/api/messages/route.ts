@@ -98,8 +98,16 @@ export async function PATCH(req: Request) {
   await ensureDb()
   const pool = getPool()!
 
-  let body: { id?: number; ids?: number[]; is_read?: boolean; is_starred?: boolean; is_trashed?: boolean }
+  let body: { id?: number; ids?: number[]; is_read?: boolean; is_starred?: boolean; is_trashed?: boolean; trashAll?: 'inbox' | 'starred' }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+
+  // "Eliminar todo" (bandeja/favoritos): manda a la papelera TODO el scope, no
+  // solo la página cargada. La papelera se vacía por separado (DELETE empty_trash).
+  if (body.trashAll) {
+    const starredFilter = body.trashAll === 'starred' ? ' AND is_starred = TRUE' : ''
+    await pool.query(`UPDATE contact_messages SET is_trashed = TRUE WHERE is_trashed = FALSE${starredFilter}`)
+    return NextResponse.json({ success: true })
+  }
 
   const ids = body.ids || (body.id != null ? [body.id] : [])
   if (ids.length === 0) return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
