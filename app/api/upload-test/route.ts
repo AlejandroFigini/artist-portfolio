@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic'
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024
+const MAX_PDF_BYTES = 10 * 1024 * 1024
 
 export async function POST(req: Request) {
   const auth = await requireRole(req, ['owner', 'admin', 'demo'])
@@ -39,17 +40,18 @@ export async function POST(req: Request) {
 
   const isVideo = file.type.startsWith('video/')
   const isImage = file.type.startsWith('image/')
-  if (!isVideo && !isImage) {
+  const isPdf = file.type === 'application/pdf'
+  if (!isVideo && !isImage && !isPdf) {
     return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 })
   }
 
   /* El tamaño se comprueba con file.size ANTES de leer los bytes: si el
      archivo excede el límite se rechaza sin llegar a cargarlo en memoria. */
-  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : isPdf ? MAX_PDF_BYTES : MAX_IMAGE_BYTES
   if (file.size > maxBytes) {
-    const limitMb = isVideo ? 100 : 20
+    const limitMb = isVideo ? 100 : isPdf ? 10 : 20
     return NextResponse.json(
-      { error: `File too large. Maximum ${limitMb} MB for ${isVideo ? 'videos' : 'images'}.` },
+      { error: `File too large. Maximum ${limitMb} MB for ${isVideo ? 'videos' : isPdf ? 'PDF' : 'images'}.` },
       { status: 413 },
     )
   }
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
     const folder = folderSlug(section, mediaState || undefined)
-    const media = await uploadBuffer(buffer, isVideo ? 'video' : 'image', folder, originalName, file.type)
+    const media = await uploadBuffer(buffer, isVideo ? 'video' : isPdf ? 'raw' : 'image', folder, originalName, file.type)
     return NextResponse.json({
       success: true,
       secure_url: media.url,

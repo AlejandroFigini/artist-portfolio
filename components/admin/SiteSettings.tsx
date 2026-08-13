@@ -12,8 +12,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
-import { fileToDataURL } from '@/lib/media'
-import { saveContent } from '@/lib/api'
+import { saveContent, uploadMedia } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
@@ -491,9 +490,17 @@ export function CvSettings() {
     if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
     if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
     setSaving(true)
-    const dataUrl = await fileToDataURL(file)
-    await save({ cvUrl: dataUrl, cvName: file.name }, `CV updated (${file.name})`)
-    setSaving(false)
+    try {
+      // Multipart (no data URL dentro de un JSON): sube el PDF con su nombre real
+      // y persiste la URL resultante. Evita el body gigante que hacía fallar el
+      // guardado (Replace/Remove) y el asset con nombre "settings.*".
+      const res = await uploadMedia(file, file.name, 'CV')
+      await save({ cvUrl: res.secure_url, cvName: file.name }, `CV updated (${file.name})`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Failed to upload CV', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const remove = async () => {

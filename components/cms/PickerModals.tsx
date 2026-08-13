@@ -143,8 +143,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
   useEffect(() => {
     let mounted = true
-    import('@/lib/api').then(({ getState }) => {
-      getState().then((server) => {
+    import('@/lib/api').then(({ getState, listCloudinaryResources }) => {
+      getState().then(async (server) => {
         if (!mounted) return
         mergeServerState(server)
         const list: RepoEntry[] = []
@@ -183,6 +183,37 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           list.push({ src, name: e.name || mm.name, size: e.size ?? mm.size, label: e.label || mm.label, section: e.section || mm.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts ?? mm.ts, type: e.type || mm.type })
         })
 
+        /* Suplemento: media que EXISTE en Cloudinary pero no está registrada en
+           cms_state (used/unused). Sin esto el repo salía "No content available"
+           aunque el contenido estuviera subido y sincronizado en Cloudinary.
+           Se deduplica por src y se ignora la papelera. Best-effort: si Cloudinary
+           no está configurado o falla, el picker sigue con lo de cms_state. */
+        try {
+          const { resources } = await listCloudinaryResources()
+          for (const r of resources) {
+            const src = r.secure_url
+            if (!src || seenSrc.has(src) || trashSrcs.has(src)) continue
+            if ((r.folder || '').includes('basurero')) continue // papelera fuera
+            seenSrc.add(src)
+            const kind: 'image' | 'video' = r.resource_type === 'video' ? 'video' : 'image'
+            const srcKey = src.split('?')[0].split('#')[0]
+            const mm = state.mediaMeta[srcKey] || state.mediaMeta[src] || {}
+            const derivedName = decodeURIComponent((r.public_id || '').split('/').pop() || '') + (r.format ? `.${r.format}` : '')
+            list.push({
+              src,
+              name: mm.name || derivedName || 'media',
+              size: r.bytes ?? mm.size ?? null,
+              label: mm.label,
+              section: mm.section,
+              kind,
+              _state: 'sin usar',
+              ts: (r.created_at ? Date.parse(r.created_at) || undefined : undefined) ?? mm.ts,
+              type: `${r.resource_type}/${r.format || ''}`,
+            })
+          }
+        } catch { /* Cloudinary no disponible → sin suplemento */ }
+
+        if (!mounted) return
         setAll(list)
         setLoadingDb(false)
       })
