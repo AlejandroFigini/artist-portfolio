@@ -18,7 +18,7 @@ import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } fr
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc } from '@/lib/utils'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
-import { readSettings, planCommit } from '@/lib/cms/collection'
+import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
   if (!src && !key) return ''
@@ -949,7 +949,20 @@ export function refreshRetired() {
   document.querySelectorAll('.cms-retired').forEach((e) => e.classList.remove('cms-retired'))
   document.querySelectorAll('.cms-empty-slot').forEach((e) => e.classList.remove('cms-empty-slot'))
   document.querySelectorAll('.cms-empty-overlay').forEach((e) => e.remove())
-  
+
+  /* Reconciliar: una clave CON contenido no puede estar "retirada". Al asignar,
+     `performAssign` saca la clave de `retired` y lo persiste, pero ese borrado y
+     el guardado del contenido son syncs separados: si el de `retired` no aterriza
+     (o llega una foto vieja del server), la clave queda retirada aunque tenga
+     contenido, y el overlay vacío lo tapaba al recargar → "el contenido
+     desaparece". Acá se limpia (y se re-persiste una vez) para que nunca se pinte
+     un slot vacío sobre contenido real. */
+  const cleaned = state.retired.filter((key) => isEmptyMedia(state.items[key]))
+  if (cleaned.length !== state.retired.length) {
+    state.retired = cleaned
+    persistRetired()
+  }
+
   // Retirados: mismo marco vacío para admin Y visitante (el contenedor nunca
   // desaparece de la página; CSS ya oculta icono/nombre/click al visitante).
   state.retired.forEach((key) => {
