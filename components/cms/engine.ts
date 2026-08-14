@@ -696,7 +696,11 @@ export function seedUsedContent() {
   let changed = false
   const allKeys = new Set([...Object.keys(elementsByKey), ...getAllKnownContainerKeys()])
   allKeys.forEach((key) => {
-    if (state.retired.includes(key)) return
+    // Una clave retirada PERO con contenido no es un slot vacío: se siembra igual
+    // (mismo criterio que el reconcile de refreshRetired). Sin esto, un contenedor
+    // que quedó marcado retired con contenido —p.ej. el favicon— no aparecía en
+    // "en uso". Retirado y realmente vacío sí se saltea.
+    if (state.retired.includes(key) && isEmptyMedia(state.items[key])) return
     const el = elementsByKey[key] || null
     const meta = metaByKey[key] || getContainerMeta(key)
     if (!meta || (meta.kind !== 'image' && meta.kind !== 'video')) return
