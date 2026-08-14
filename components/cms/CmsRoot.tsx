@@ -257,7 +257,12 @@ export default function CmsRoot() {
                 </div>
               </div>
             ) : (
-              <button type="button" className="login-min-btn" data-cms-auth="login" title="Log in" aria-label="Log in" onClick={() => setCmd({ type: 'login' })}>
+              <button type="button" className="login-min-btn" data-cms-auth="login" title="Log in" aria-label="Log in"
+                /* Precarga los estilos del modal (viven en admin.css, que si no se
+                   cargaba recién al loguearse) para que el login no aparezca un
+                   instante sin CSS. En hover ya empieza a bajar el chunk. */
+                onMouseEnter={() => { void import('@/styles/legacy/admin.css') }}
+                onClick={() => { void import('@/styles/legacy/admin.css'); setCmd({ type: 'login' }) }}>
                 <i className="fa-solid fa-right-to-bracket"></i>
                 <span>Log in</span>
               </button>

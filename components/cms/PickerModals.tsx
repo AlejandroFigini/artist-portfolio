@@ -150,11 +150,25 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
         const list: RepoEntry[] = []
         const seenSrc = new Set<string>()
 
+        /* Clave de deduplicación: el MISMO asset puede aparecer con URLs distintas
+           (transformaciones f_auto/q_auto, versión /vNNN/, o cambio de carpeta tras
+           cloudinaryMove). Deduplicar por la URL literal dejaba el contenido dos
+           veces (uno "en uso", otro "sin usar"). Se normaliza al public_id de
+           Cloudinary (sin transforms, sin versión, sin extensión). */
+        const dedupKey = (u: string): string => {
+          if (!u) return u
+          const s = u.split('?')[0].split('#')[0]
+          const m = s.match(/\/(?:image|video|raw)\/upload\/(.+)$/)
+          if (!m) return s
+          const id = m[1].split('/').filter((p) => !p.includes(',') && !/^v\d+$/.test(p)).join('/')
+          return id.replace(/\.[a-z0-9]+$/i, '')
+        }
+
         // Trash URLs should NEVER appear in the repository selector
         const trashSrcs = new Set<string>()
         state.trash.forEach((t) => {
-          if (t.src) trashSrcs.add(t.src)
-          if (t.dataUrl) trashSrcs.add(t.dataUrl)
+          if (t.src) trashSrcs.add(dedupKey(t.src))
+          if (t.dataUrl) trashSrcs.add(dedupKey(t.dataUrl))
         })
 
         const usedSrc = server.used_content && typeof server.used_content === 'object' && Object.keys(server.used_content).length > 0 ? server.used_content : state.usedContent
@@ -163,8 +177,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
         Object.keys(usedSrc).forEach((k) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const e = (usedSrc as Record<string, any>)[k]
-          if (!e || !e.src || seenSrc.has(e.src) || trashSrcs.has(e.src)) return
-          seenSrc.add(e.src)
+          if (!e || !e.src) return
+          const nk = dedupKey(e.src)
+          if (seenSrc.has(nk) || trashSrcs.has(nk)) return
+          seenSrc.add(nk)
           const srcKey = e.src.split('?')[0].split('#')[0]
           const mm = state.mediaMeta[srcKey] || state.mediaMeta[e.src] || state.mediaMeta[k] || {}
           list.push({ src: e.src, name: e.name || mm.name, size: e.size ?? mm.size, label: e.label || mm.label, section: e.section || mm.section, kind: e.kind as 'image' | 'video', _state: 'usado', _key: k, ts: e.ts ?? mm.ts, type: e.type || mm.type })
@@ -176,8 +192,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           if (!e) return
           const eIsVid = !!((e.type && (e.type.includes('video') || e.type.includes('webm'))) || (e.name && /\.webm$/i.test(e.name)))
           const src = e.src || e.dataUrl || ''
-          if (!src || seenSrc.has(src) || trashSrcs.has(src)) return
-          seenSrc.add(src)
+          if (!src) return
+          const nk = dedupKey(src)
+          if (seenSrc.has(nk) || trashSrcs.has(nk)) return
+          seenSrc.add(nk)
           const srcKey = src.split('?')[0].split('#')[0]
           const mm = state.mediaMeta[srcKey] || state.mediaMeta[src] || (e.key ? state.mediaMeta[e.key] : null) || {}
           list.push({ src, name: e.name || mm.name, size: e.size ?? mm.size, label: e.label || mm.label, section: e.section || mm.section, kind: eIsVid ? 'video' : 'image', _state: 'sin usar', _key: e.key, ts: e.ts ?? mm.ts, type: e.type || mm.type })
@@ -192,9 +210,11 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           const { resources } = await listCloudinaryResources()
           for (const r of resources) {
             const src = r.secure_url
-            if (!src || seenSrc.has(src) || trashSrcs.has(src)) continue
+            if (!src) continue
+            const nk = dedupKey(src)
+            if (seenSrc.has(nk) || trashSrcs.has(nk)) continue // ya está en used/unused
             if ((r.folder || '').includes('basurero')) continue // papelera fuera
-            seenSrc.add(src)
+            seenSrc.add(nk)
             const kind: 'image' | 'video' = r.resource_type === 'video' ? 'video' : 'image'
             const srcKey = src.split('?')[0].split('#')[0]
             const mm = state.mediaMeta[srcKey] || state.mediaMeta[src] || {}
