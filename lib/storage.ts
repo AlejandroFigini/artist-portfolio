@@ -183,6 +183,19 @@ export async function uploadBuffer(
       options.resource_type = 'image'
       options.format = 'webp'
       options.quality = 'auto'
+      /* Pre-genera (eager, sync) las derivadas más comunes que sirve el front, con
+         los MISMOS parámetros que `cloudinaryOptimize`/`cloudinaryThumb` (f_auto,
+         q_auto, anchos típicos + el thumb 150). Así la primera visita NO dispara la
+         generación on-the-fly de Cloudinary (que deja el contenedor en negro un
+         instante). Los anchos no cubiertos caen en el retry del front. Solo imagen:
+         el video NO se transcodea eager (fallaría en archivos grandes por el límite
+         de Cloudinary). */
+      options.eager = [
+        { fetch_format: 'auto', quality: 'auto', width: 640, crop: 'limit' },
+        { fetch_format: 'auto', quality: 'auto', width: 1200, crop: 'limit' },
+        { fetch_format: 'auto', quality: 'auto', width: 150, height: 150, crop: 'fill' },
+      ]
+      options.eager_async = false
     }
     const res = await uploadStream(buffer, options)
     return {

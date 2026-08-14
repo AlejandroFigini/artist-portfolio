@@ -66,6 +66,58 @@ export function cloudinaryOptimize(src?: string | null, opts: { width?: number; 
   return src.replace('/upload/', `/upload/f_auto,q_${q}${w}/`)
 }
 
+/* Retry ante 404 de una derivada de Cloudinary. La primera vez que se pide una
+   derivada (f_auto en imagen, transcode en video) Cloudinary la GENERA on-the-fly:
+   hasta que termina puede dar 404 y el contenedor queda negro (al subir y en la
+   primera visita, más en celular con video). Ante error se reintenta la misma URL
+   con backoff (para entonces ya está generada); si tras varios intentos sigue
+   fallando, se cae al ORIGINAL sin transformar (siempre servible). Se attachea
+   una sola vez por elemento; sirve para media del engine y para <video>/<img> de
+   React (vía ref callback). `original` es opcional (fallback); si no se pasa, se
+   usa el data-cms-src del elemento. */
+export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, original?: string): void {
+  if (!el || el.dataset.cldRetry) return
+  el.dataset.cldRetry = '1'
+  let tries = 0
+  const setSrc = (url: string) => {
+    if (el instanceof HTMLVideoElement) {
+      const s = el.querySelector('source')
+      if (s) s.setAttribute('src', url); else el.setAttribute('src', url)
+      try { el.load(); if (el.autoplay) void el.play().catch(() => {}) } catch {}
+    } else {
+      el.src = url
+    }
+  }
+  const cur = (): string => {
+    if (el instanceof HTMLVideoElement) {
+      const s = el.querySelector('source')
+      return (s ? s.getAttribute('src') : el.getAttribute('src')) || ''
+    }
+    return el.getAttribute('src') || ''
+  }
+  el.addEventListener('error', () => {
+    if (el.dataset.cldDone) return
+    const c = cur()
+    if (!c.includes('res.cloudinary.com')) return // solo la derivada de Cloudinary
+    tries++
+    if (tries > 4) {
+      el.dataset.cldDone = '1'
+      const orig = original || el.dataset.cmsSrc || ''
+      if (orig && !c.startsWith(orig.split('?')[0])) setSrc(orig)
+      return
+    }
+    // Siempre desde la URL LIMPIA (sin query previa) + un único `?_r=N`: evita
+    // acumular params malformados (`&_r=2?_r=3`) entre reintentos.
+    const bust = c.split('?')[0] + '?_r=' + tries
+    window.setTimeout(() => { if (!el.dataset.cldDone) setSrc(bust) }, 700 * tries)
+  })
+  // Carga OK: resetea el contador y reabre el retry (si más tarde se asigna otro
+  // contenido recién subido al mismo elemento, vuelve a reintentar).
+  const ok = () => { tries = 0; delete el.dataset.cldDone }
+  el.addEventListener('load', ok)
+  el.addEventListener('loadeddata', ok)
+}
+
 // Anchos que acepta el optimizador de Next (deviceSizes + imageSizes por
 // defecto). Pedir uno fuera de la lista devuelve 400.
 const NEXT_IMAGE_WIDTHS = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840]

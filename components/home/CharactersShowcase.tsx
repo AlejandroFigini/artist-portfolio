@@ -354,9 +354,15 @@ export default function CharactersShowcase() {
   // para clonar la pista y el ciclo queda entrecortado. Repetimos los ids
   // reales hasta cubrir el mínimo — el `id` sigue siendo la clave del CMS,
   // la posición repetida sólo se usa para la key de React.
+  //
+  // PERO solo para el VISITANTE: cada panel duplicado reusa la misma clave
+  // `char#<uid>`, así que en modo admin editar/subir contenido en un panel se
+  // refleja en sus copias y parece "se aplica a todas las tarjetas". El admin
+  // ve cada personaje UNA sola vez (edición 1:1); el loop estético con relleno
+  // queda para quien no está editando.
   const MIN_LOOP_ITEMS = 6
   let renderIds = completedIds
-  if (isLoopable) {
+  if (isLoopable && !isAdmin) {
     while (renderIds.length < MIN_LOOP_ITEMS) {
       renderIds = [...renderIds, ...completedIds]
     }

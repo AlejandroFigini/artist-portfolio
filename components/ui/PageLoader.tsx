@@ -22,7 +22,7 @@ import {
   startLoaderGateTimers,
   subscribeLoaderGates,
 } from '@/lib/loader-ready'
-import { optimizedMediaSrc } from '@/lib/utils'
+import { optimizedMediaSrc, attachMediaRetry } from '@/lib/utils'
 
 const FADE_MS = 800
 // Mínimo que la animación de carga se queda en pantalla una vez pintada.
@@ -77,6 +77,9 @@ export default function PageLoader() {
     const v = videoRef.current
     if (!v || !videoSrc) return
     v.muted = true // el atributo se sirve en el HTML; la propiedad es la que evalúa play()
+    // Retry si la derivada de Cloudinary (transcode) todavía no está lista → sin
+    // video negro; fallback al original (videoSrc) si sigue fallando.
+    attachMediaRetry(v, videoSrc)
     const tryPlay = () => { void v.play().catch(() => {}) }
     tryPlay()
     v.addEventListener('loadeddata', tryPlay)

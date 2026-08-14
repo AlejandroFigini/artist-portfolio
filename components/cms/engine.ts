@@ -16,7 +16,7 @@ import {
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
-import { basename, optimizedMediaSrc } from '@/lib/utils'
+import { basename, optimizedMediaSrc, attachMediaRetry } from '@/lib/utils'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
 import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
@@ -350,6 +350,7 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     // El hero es LCP: se carga ya. El resto entra al scrollear.
     if (!img.hasAttribute('loading')) img.loading = el.closest('.hero') ? 'eager' : 'lazy'
     el.dataset.cmsSrc = value
+    attachMediaRetry(img)
     img.src = optimizedMediaSrc(value, renderWidthOf(el))
   } else if (type === 'bg' || type === 'image') {
     if (el.classList.contains('soft-item')) {
@@ -395,6 +396,7 @@ function applyValue(el: HTMLElement, type: string, value: string) {
        hay varios seguidos. */
     if (actual === target) return
 
+    if (value) attachMediaRetry(v)
     if (s) {
       if (value) s.src = optimized
       else s.removeAttribute('src')
@@ -454,6 +456,7 @@ export function applyMedia(key: string, value: string) {
         img.decoding = 'async'
         img.loading = 'lazy'
         img.dataset.cmsSrc = value
+        attachMediaRetry(img)
         img.src = optimizedMediaSrc(value, renderWidthOf(img))
       } else {
         delete img.dataset.cmsSrc
