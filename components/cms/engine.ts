@@ -671,9 +671,22 @@ export function syncWaveGroups() {
 export function computeFields(key: string, el: HTMLElement, meta: Meta): FieldValue[] | null {
   if (!meta.fields) return null
   const cont = meta.container ? el.closest<HTMLElement>(meta.container) : el
+  /* Contenedores de MEDIA (image/video con ficha: proyectos, personajes,
+     animaciones, ilustraciones): sus campos son CMS y viven en `state.items`.
+     NO se cae al DOM — era el bug: al quitar un contenido y agregar otro, `f.get`
+     leía los `data-*` viejos que quedaban pegados en el elemento (o valores que
+     un borrado no alcanzó a limpiar) y los autocompletaba. Con `state.items`
+     como única fuente, un contenedor sin ese campo arranca vacío; reemplazar uno
+     que sí tiene el campo lo conserva.
+     Contenedores de solo-texto con campos (about specs, nombres de software…) no
+     son media: su valor inicial vive en el markup, así que ahí el fallback al DOM
+     sigue siendo la fuente correcta. */
+  const isMedia = meta.kind === 'image' || meta.kind === 'video'
   return meta.fields.map((f) => {
     const compositeKey = key + '::' + f.key
-    const val = state.items[compositeKey] != null ? state.items[compositeKey] : (cont ? f.get(cont) : '')
+    const val = isMedia
+      ? (state.items[compositeKey] || '')
+      : (state.items[compositeKey] != null ? state.items[compositeKey] : (cont ? f.get(cont) : ''))
     return { key: f.key, label: f.label, textarea: !!f.textarea, value: val || '' }
   })
 }
