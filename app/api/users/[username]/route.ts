@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { requireRole, hashPassword, destroyOtherSessions } from '@/lib/auth'
+import { requireRole, hashPassword, verifyPassword, destroyOtherSessions } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,12 +38,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
   const action = body.action
 
-  // Puerta de permisos del admin: solo bloquear/desbloquear y configurar el
-  // auto-bloqueo del usuario demo. Cualquier otra acción es exclusiva del owner.
+  // Puerta de permisos del admin: sobre el usuario DEMO puede bloquear/desbloquear,
+  // matar sesiones y editar credenciales. NO puede tocar políticas automáticas
+  // (demo_lock / ttl) ni operar sobre otros usuarios — eso es exclusivo del owner.
   if (auth.user.role === 'admin') {
-    const adminAllowed = (action === 'block' || action === 'demo_lock') && targetUser.role === 'demo'
+    const adminAllowed = (action === 'block' || action === 'kill_sessions' || action === 'credentials') && targetUser.role === 'demo'
     if (!adminAllowed) {
-      return NextResponse.json({ success: false, error: 'Admins can only manage the demo user lock' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Admins can only block/unblock, kill sessions and edit credentials of the demo user' }, { status: 403 })
     }
   }
 
@@ -174,6 +175,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       if (newPassword) {
         if (newPassword.length < 8) {
           return NextResponse.json({ success: false, error: 'Password must be at least 8 characters long' }, { status: 400 })
+        }
+        // No permitir repetir la contraseña actual.
+        const cur = await pool.query('SELECT password_hash FROM users WHERE id = $1', [targetUser.id])
+        const curHash = cur.rows[0]?.password_hash as string | undefined
+        if (curHash && await verifyPassword(newPassword, curHash)) {
+          return NextResponse.json({ success: false, error: 'The new password must be different from the current one' }, { status: 400 })
         }
         const hashed = await hashPassword(newPassword)
         updates.push(`password_hash = $${idx++}`)

@@ -93,7 +93,7 @@ function applySecurityHeaders(res: NextResponse): void {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://via.placeholder.com https://*.google-analytics.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://via.placeholder.com https://*.google-analytics.com https://www.googletagmanager.com",
     "media-src 'self' blob: https://res.cloudinary.com",
     "connect-src 'self' https://res.cloudinary.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
     "frame-src 'self' https://challenges.cloudflare.com",

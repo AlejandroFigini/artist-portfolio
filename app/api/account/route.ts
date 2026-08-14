@@ -66,15 +66,20 @@ export async function PATCH(req: Request) {
     if (newPassword.length < 8) {
       return NextResponse.json({ success: false, error: 'New password must be at least 8 characters long' }, { status: 400 })
     }
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
+    const curHash = rows[0].password_hash as string
     // Re-auth con la contraseña actual — salvo en el primer setup, donde el
     // usuario todavía no tiene una "actual" propia (entró con la temporal que
     // le puso el owner) y la sesión ya prueba su identidad.
     if (!me.needsSetup) {
-      const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [me.id])
-      const ok = await verifyPassword(String(body.currentPassword || ''), rows[0].password_hash)
+      const ok = await verifyPassword(String(body.currentPassword || ''), curHash)
       if (!ok) {
         return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 401 })
       }
+    }
+    // La nueva no puede ser igual a la anterior (ni a la temporal en el setup).
+    if (await verifyPassword(newPassword, curHash)) {
+      return NextResponse.json({ success: false, error: 'The new password must be different from the current one' }, { status: 400 })
     }
     values.push(await hashPassword(newPassword))
     updates.push(`password_hash = $${values.length}`)

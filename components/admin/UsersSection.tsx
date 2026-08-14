@@ -42,11 +42,12 @@ export default function UsersSection() {
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const [sessionMax, setSessionMax] = useState('0') // minutos; '0' = sin tope
+  const [savedSessionMax, setSavedSessionMax] = useState('0') // último valor guardado (para el dirty del Save)
   const refresh = useCallback(() => { getUsers().then(setUsers) }, [])
   useEffect(() => { refresh() }, [refresh])
   useEffect(() => {
     if (state.role !== 'owner' && state.role !== 'demo') return
-    getSessionPolicy().then((p) => setSessionMax(String(p.maxMinutes ?? 0))).catch(() => {})
+    getSessionPolicy().then((p) => { const v = String(p.maxMinutes ?? 0); setSessionMax(v); setSavedSessionMax(v) }).catch(() => {})
   }, [])
 
   const me = users.find((u) => u.username === state.username)
@@ -173,6 +174,7 @@ export default function UsersSection() {
   const saveSessionPolicy = () => run(async () => {
     const m = parseInt(sessionMax, 10) || 0
     await setSessionPolicy(m > 0 ? m : null)
+    setSavedSessionMax(sessionMax)
     recordAudit({ user: state.username, section: 'Users', label: 'Management', summary: `Set global session max to ${m > 0 ? m + 'm' : 'off'}` })
     toast('Session policy saved')
   })
@@ -331,15 +333,16 @@ export default function UsersSection() {
                       )}
                     </>
                   )}
-                  {/* El admin no ve el engranaje completo, pero sí puede gestionar
-                      el bloqueo del usuario demo (bloquear/desbloquear + auto-lock). */}
+                  {/* El admin no ve el engranaje sobre otros usuarios, pero sí sobre el
+                      demo: bloquear/desbloquear, matar sesiones y editar credenciales
+                      (sin las políticas automáticas de expiración/auto-lock, solo owner). */}
                   {state.role === 'admin' && u.role === 'demo' && (
-                    <button type="button" className="cms-btn" style={{ padding: '0.4rem 0.6rem' }} onClick={() => {
+                    <button type="button" className="cms-btn" style={{ padding: '0.4rem 0.6rem' }} title="Manage demo user" onClick={() => {
                       setActiveUser(u)
-                      setForm(f => ({ ...f, demoLock: String(u.demoLockIntervalMinutes || 0) }))
+                      setForm(f => ({ ...f, username: '', next: '', repeat: '', demoLock: String(u.demoLockIntervalMinutes || 0), sessionTtl: String(u.sessionTtlMinutes || 60) }))
                       setView('manage-user')
                     }}>
-                      <i className="fa-solid fa-user-lock"></i> Demo lock
+                      <i className="fa-solid fa-gear"></i>
                     </button>
                   )}
                 </td>
@@ -364,7 +367,7 @@ export default function UsersSection() {
             <option value="4320">3 days</option>
             <option value="10080">7 days</option>
           </select>
-          <button type="button" className="cms-btn cms-btn--primary cms-btn--sm" disabled={busy} onClick={saveSessionPolicy}>Save</button>
+          <button type="button" className="cms-btn cms-btn--primary cms-btn--sm" disabled={busy || sessionMax === savedSessionMax} onClick={saveSessionPolicy}>Save</button>
           <button type="button" className="cms-btn cms-btn--sm cms-btn--danger-ghost" disabled={busy} onClick={handleResetAll}>
             <i className="fa-solid fa-skull"></i> Reset all sessions now
           </button>
@@ -384,11 +387,38 @@ export default function UsersSection() {
 
               {activeUser.role === 'demo' && (
                 <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
-                  <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}><i className="fa-solid fa-stopwatch"></i> Demo Session Controls</h4>
+                  <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}><i className="fa-solid fa-stopwatch"></i> Demo Controls</h4>
 
-                  {/* Sesión (matar la sesión activa según el contador) — solo owner. */}
+                  {/* Estado de bloqueo — informativo, visible para owner y admin. */}
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+                    {activeUser.isBlocked
+                      ? 'Currently BLOCKED. Unblock to restart the timer.'
+                      : activeUser.demoLockAt
+                        ? `Next auto-lock: ${fmtDate(new Date(activeUser.demoLockAt).getTime())}`
+                        : 'Auto-lock is off.'}
+                  </div>
+
+                  {/* Bloquear/desbloquear manual — owner + admin */}
+                  <button
+                    type="button"
+                    className={activeUser.isBlocked ? 'cms-btn cms-btn--primary' : 'cms-btn cms-btn-danger'}
+                    style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem' }}
+                    disabled={busy}
+                    onClick={() => handleBlockUser(activeUser, !activeUser.isBlocked)}
+                  >
+                    <i className={`fa-solid ${activeUser.isBlocked ? 'fa-unlock' : 'fa-lock'}`}></i> {activeUser.isBlocked ? 'Unblock now' : 'Block now'}
+                  </button>
+
+                  {/* Matar sesiones activas — owner + admin */}
+                  <button type="button" className="cms-btn cms-btn-danger" style={{ width: '100%', justifyContent: 'center' }} disabled={busy} onClick={() => handleKillSessions(activeUser)}>
+                    <i className="fa-solid fa-skull"></i> Kill Active Sessions
+                  </button>
+
+                  {/* Políticas AUTOMÁTICAS (expiración de sesión + auto-bloqueo recurrente)
+                      — SOLO owner. El admin gestiona manualmente, sin configurar políticas. */}
                   {state.role === 'owner' && (
                     <>
+                      <h4 style={{ margin: '1rem 0 0.4rem', fontSize: '0.9rem' }}><i className="fa-solid fa-hourglass-half"></i> Session expiry (auto)</h4>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                         <select value={form.sessionTtl} onChange={e => setForm(f => ({ ...f, sessionTtl: e.target.value }))} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
                           <option value="10">10 Minutes</option>
@@ -397,51 +427,30 @@ export default function UsersSection() {
                           <option value="60">1 Hour</option>
                           <option value="1440">24 Hours</option>
                         </select>
-                        <button type="button" className="cms-btn cms-btn--primary" disabled={busy} onClick={() => handleSetTtl(activeUser)}>
+                        <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.sessionTtl === String(activeUser.sessionTtlMinutes || 60)} onClick={() => handleSetTtl(activeUser)}>
                           Set Expiry
                         </button>
                       </div>
-                      <button type="button" className="cms-btn cms-btn-danger" style={{ width: '100%', justifyContent: 'center', marginBottom: '1rem' }} onClick={() => handleKillSessions(activeUser)}>
-                        <i className="fa-solid fa-skull"></i> Kill Active Sessions
-                      </button>
+                      <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}><i className="fa-solid fa-user-lock"></i> Auto-lock</h4>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select value={form.demoLock} onChange={e => setForm(f => ({ ...f, demoLock: e.target.value }))} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                          <option value="0">Off (never auto-lock)</option>
+                          <option value="60">Every 1 hour</option>
+                          <option value="1440">Every 24 hours</option>
+                          <option value="4320">Every 3 days</option>
+                          <option value="10080">Every 7 days</option>
+                        </select>
+                        <button type="button" className="cms-btn cms-btn--primary" disabled={busy || form.demoLock === String(activeUser.demoLockIntervalMinutes || 0)} onClick={() => handleDemoLock(activeUser)}>
+                          Save
+                        </button>
+                      </div>
                     </>
                   )}
-
-                  {/* Auto-bloqueo recurrente (independiente del TTL de sesión) — owner + admin.
-                      Al vencer el intervalo el demo queda bloqueado; desbloquear reinicia la cuenta. */}
-                  <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}><i className="fa-solid fa-user-lock"></i> Auto-lock</h4>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-                    {activeUser.isBlocked
-                      ? 'Currently BLOCKED. Unblock to restart the timer.'
-                      : activeUser.demoLockAt
-                        ? `Next auto-lock: ${fmtDate(new Date(activeUser.demoLockAt).getTime())}`
-                        : 'Auto-lock is off.'}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <select value={form.demoLock} onChange={e => setForm(f => ({ ...f, demoLock: e.target.value }))} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-                      <option value="0">Off (never auto-lock)</option>
-                      <option value="60">Every 1 hour</option>
-                      <option value="1440">Every 24 hours</option>
-                      <option value="4320">Every 3 days</option>
-                      <option value="10080">Every 7 days</option>
-                    </select>
-                    <button type="button" className="cms-btn cms-btn--primary" disabled={busy} onClick={() => handleDemoLock(activeUser)}>
-                      Save
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className={activeUser.isBlocked ? 'cms-btn cms-btn--primary' : 'cms-btn cms-btn-danger'}
-                    style={{ width: '100%', justifyContent: 'center' }}
-                    disabled={busy}
-                    onClick={() => handleBlockUser(activeUser, !activeUser.isBlocked)}
-                  >
-                    <i className={`fa-solid ${activeUser.isBlocked ? 'fa-unlock' : 'fa-lock'}`}></i> {activeUser.isBlocked ? 'Unblock now' : 'Block now'}
-                  </button>
                 </div>
               )}
 
-              {state.role === 'owner' && (<>
+              {/* Credenciales: owner (cualquier usuario) o admin (solo el demo). */}
+              {(state.role === 'owner' || (state.role === 'admin' && activeUser.role === 'demo')) && (<>
               <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>Directly Change Credentials</h4>
               <label className="cms-field"><span>New Username</span>
                 <input type="text" value={form.username} onChange={set('username')} autoComplete="off" name="cms-edit-user" placeholder={`Leave blank to keep "${activeUser.username}"`} />
@@ -551,7 +560,13 @@ export default function UsersSection() {
                 {me?.totpEnabled ? <><i className="fa-solid fa-shield-halved"></i> Enabled</> : 'Disabled'}
               </div>
             </div>
-            {me?.totpEnabled ? (
+            {/* Demo efímero: no puede activar 2FA (su sesión no persiste ni tiene
+                sentido un segundo factor). Se muestra deshabilitado, sin QR ni guía. */}
+            {state.role === 'demo' ? (
+              <span className="cms-tag" title="2FA is not available for the demo user" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <i className="fa-solid fa-lock"></i> Not available
+              </span>
+            ) : me?.totpEnabled ? (
               <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === '2fa-disable' ? 'menu' : '2fa-disable')}>
                 {view === '2fa-disable' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : 'Disable 2FA'}
               </button>
@@ -562,7 +577,7 @@ export default function UsersSection() {
             )}
           </div>
 
-          {view === '2fa-setup' && qr && (
+          {view === '2fa-setup' && qr && state.role !== 'demo' && (
             <div style={{ padding: '0 1rem 1rem' }}>
               <h4><i className="fa-solid fa-list-check"></i> Setup Guide</h4>
               <ol className="cms-2fa-guide" style={{ margin: '0.8rem 0 1.2rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.6rem' }}>
