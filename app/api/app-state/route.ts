@@ -29,19 +29,34 @@ const DEFAULTS: Record<string, unknown> = {
   container_names: {},
 }
 
-/* GET /api/state → { [key]: value } para TODAS las state keys.
-   Keys sin registro en la DB devuelven su default vacío. No requiere sesión:
-   el sitio público necesita `retired` para mostrar los slots vacíos. */
-export async function GET() {
-  if (!hasDb) return NextResponse.json(DEFAULTS)
+/* Lo único que el sitio PÚBLICO necesita: saber qué contenedores están vacíos.
+   El resto del estado es material de administración — `audit` lleva nombres de
+   usuario y actividad, y used_content/unused/trash/media_meta son el inventario
+   completo de medios. Antes el GET no tenía ningún chequeo y servía todo eso a
+   cualquiera. */
+const PUBLIC_STATE_KEYS: readonly string[] = ['retired']
+
+/* GET /api/state → { [key]: value }.
+   Sin sesión devuelve solo las keys públicas; con sesión, todas.
+   Keys sin registro en la DB devuelven su default vacío. */
+export async function GET(req: Request) {
+  const auth = await requireSession(req)
+  const isAdmin = !('deny' in auth)
+  const allowed = isAdmin ? STATE_KEYS : STATE_KEYS.filter((k) => PUBLIC_STATE_KEYS.includes(k))
+
+  const defaults = isAdmin
+    ? DEFAULTS
+    : Object.fromEntries(Object.entries(DEFAULTS).filter(([k]) => PUBLIC_STATE_KEYS.includes(k)))
+
+  if (!hasDb) return NextResponse.json(defaults)
   try {
     await ensureDb()
     const pool = getPool()!
     const result = await pool.query(
       'SELECT key, value FROM cms_state WHERE key = ANY($1)',
-      [STATE_KEYS],
+      [allowed],
     )
-    const out: Record<string, unknown> = { ...DEFAULTS }
+    const out: Record<string, unknown> = { ...defaults }
     for (const row of result.rows as { key: string; value: unknown }[]) {
       out[row.key] = row.value
     }

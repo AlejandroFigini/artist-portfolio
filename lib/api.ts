@@ -361,17 +361,45 @@ export async function getState(): Promise<CmsStatePayload> {
   }
 }
 
-/* Persiste (parcial) el estado CMS al servidor. Silencioso si falla. */
-export async function saveState(payload: CmsStatePayload): Promise<void> {
+/* Límite de la spec de Fetch para cuerpos con `keepalive`. Pasarse NO da error de
+   red: el navegador rechaza la request con TypeError ANTES de salir a la red.
+   Margen para headers + el resto del request group. */
+const KEEPALIVE_MAX_BYTES = 60 * 1024
+
+/* Persiste (parcial) el estado CMS al servidor.
+   `keepalive` SOLO en el flush de beforeunload y solo si el cuerpo entra en el
+   límite. Antes iba en todas las llamadas: `media_meta` (342 entradas en prod)
+   empujaba el payload de `persistUsed` por encima de 64 KiB, el navegador lo
+   rechazaba y el `catch {}` se lo tragaba → used_content nunca se pudo volver a
+   escribir y quedó vacío en la DB. */
+export async function saveState(payload: CmsStatePayload, opts: { unload?: boolean } = {}): Promise<boolean> {
+  const body = JSON.stringify(payload)
+  const size = new Blob([body]).size
+  const useKeepalive = !!opts.unload && size <= KEEPALIVE_MAX_BYTES
+
+  if (opts.unload && !useKeepalive) {
+    /* Demasiado grande para keepalive. sendBeacon no tiene ese límite duro y
+       sobrevive al unload; si tampoco entra, se pierde — pero se avisa en vez de
+       fingir que se guardó. */
+    const ok = typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function'
+      && navigator.sendBeacon('/api/app-state', new Blob([body], { type: 'application/json' }))
+    if (!ok) console.error('[saveState] payload de', size, 'bytes no se pudo enviar en unload')
+    return ok
+  }
+
   try {
-    await fetch('/api/app-state', {
+    const r = await fetch('/api/app-state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
+      body,
+      ...(useKeepalive ? { keepalive: true } : {}),
     })
-  } catch {
+    if (!r.ok) console.error('[saveState] el servidor rechazó el estado:', r.status)
+    return r.ok
+  } catch (err) {
     // backend no disponible → el estado sigue en localStorage
+    console.error('[saveState] no se pudo persistir el estado:', err)
+    return false
   }
 }
 

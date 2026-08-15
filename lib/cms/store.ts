@@ -240,12 +240,12 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     if (_syncTimer) {
       clearTimeout(_syncTimer)
-      flushSyncToServer()
+      flushSyncToServer({ unload: true })
     }
   })
 }
 
-export function flushSyncToServer(): Promise<void> {
+export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void> {
   if (_syncTimer) {
     clearTimeout(_syncTimer)
     _syncTimer = null
@@ -266,7 +266,13 @@ export function flushSyncToServer(): Promise<void> {
   _pendingKeys.clear()
   const promises: Promise<unknown>[] = []
   if (_flushPromise) promises.push(_flushPromise.catch(() => {}))
-  if (Object.keys(payload).length > 0) promises.push(saveState(payload).catch(() => {}))
+  /* `media_meta` viaja en su PROPIO request. Iba pegado a `used_content` y entre
+     los dos pasaban el límite de keepalive, así que el navegador descartaba el
+     lote entero — incluido el índice de la biblioteca. Separados, `used_content`
+     entra siempre. */
+  const { media_meta, ...rest } = payload
+  if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts).catch(() => {}))
+  if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts).catch(() => {}))
   if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
   
   _flushPromise = Promise.all(promises).then(() => {})
@@ -297,47 +303,27 @@ export function clearDbOverrides(keys: string[]) {
    no hay datos — no que "se conserve lo local". localStorage se actualiza
    como caché para el próximo arranque rápido. */
 export function mergeServerState(server: CmsStatePayload) {
-  // En modo mock, el server devuelve objetos vacíos. Intentar recuperar de localStorage.
+  /* Regla: si el servidor MANDÓ la key, el servidor gana — aunque venga vacía.
+     Vacío significa "no hay datos", no "conservá lo local". localStorage solo se
+     usa cuando la key NO viene en la respuesta (sin sesión el GET público solo
+     devuelve `retired`), que es el único caso en que el servidor no opinó.
+     Antes el fallback saltaba con cualquier colección vacía: la DB nunca podía
+     propagar un vaciado legítimo, y un navegador con caché viejo la repoblaba. */
   const getLoc = <T,>(k: string, def: T): T => {
     try { const v = localStorage.getItem('cms_state_' + k); return v ? JSON.parse(v) as T : def } catch { return def }
   }
-  
-  if ('used_content' in server && Object.keys(server.used_content || {}).length > 0) {
-    state.usedContent = (server.used_content || {}) as typeof state.usedContent
-  } else {
-    state.usedContent = getLoc('used_content', state.usedContent)
-  }
+  const pick = <T,>(key: keyof CmsStatePayload, lsKey: string, current: T): T =>
+    key in server ? ((server[key] ?? current) as T) : getLoc(lsKey, current)
 
-  if ('unused' in server && Array.isArray(server.unused) && server.unused.length > 0) {
-    state.unused = server.unused as typeof state.unused
-  } else {
-    state.unused = getLoc('unused', state.unused)
-  }
-
-  if (['retired', 'trash', 'media_meta', 'audit', 'container_names', 'overrides'].some(k => k in server)) {
-    if ('retired' in server && Array.isArray(server.retired) && server.retired.length > 0) {
-      state.retired = server.retired as typeof state.retired
-    } else { state.retired = getLoc('retired', state.retired) }
-
-    if ('trash' in server && Array.isArray(server.trash) && server.trash.length > 0) {
-      state.trash = server.trash as typeof state.trash
-    } else { state.trash = getLoc('trash', state.trash) }
-
-    if ('media_meta' in server && Object.keys(server.media_meta || {}).length > 0) {
-      state.mediaMeta = (server.media_meta || {}) as typeof state.mediaMeta
-    } else { state.mediaMeta = getLoc('media_meta', state.mediaMeta) }
-
-    if ('audit' in server && Array.isArray(server.audit) && server.audit.length > 0) {
-      state.audit = server.audit as typeof state.audit
-    } else { state.audit = getLoc('audit', state.audit) }
-
-    if ('container_names' in server && Object.keys(server.container_names || {}).length > 0) {
-      state.containerNames = (server.container_names || {}) as typeof state.containerNames
-    } else { state.containerNames = getLoc('container_names', state.containerNames) }
-
-    if ('overrides' in server) {
-      state.items = (server.overrides || {}) as Record<string, string>
-    }
+  state.usedContent = pick('used_content', 'used_content', state.usedContent)
+  state.unused = pick('unused', 'unused', state.unused)
+  state.retired = pick('retired', 'retired', state.retired)
+  state.trash = pick('trash', 'trash', state.trash)
+  state.mediaMeta = pick('media_meta', 'media_meta', state.mediaMeta)
+  state.audit = pick('audit', 'audit', state.audit)
+  state.containerNames = pick('container_names', 'container_names', state.containerNames)
+  if ('overrides' in server) {
+    state.items = (server.overrides || {}) as Record<string, string>
   }
 
   state.serverReady = true
