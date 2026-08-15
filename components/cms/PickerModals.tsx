@@ -213,7 +213,12 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             if (!src) continue
             const nk = dedupKey(src)
             if (seenSrc.has(nk) || trashSrcs.has(nk)) continue // ya está en used/unused
-            if ((r.folder || '').includes('basurero')) continue // papelera fuera
+            /* Papelera fuera. Se mira `r.state` (derivado del tag, con fallback a
+               la carpeta para los assets viejos), NO la carpeta a secas: desde que
+               el estado vive en tags, un asset en basurero puede seguir teniendo
+               `portfolio/en-uso` en su public_id histórico, y filtrar por carpeta
+               lo volvería asignable — o sea, des-borrar contenido borrado. */
+            if (r.state === 'trash') continue
             seenSrc.add(nk)
             const kind: 'image' | 'video' = r.resource_type === 'video' ? 'video' : 'image'
             const srcKey = src.split('?')[0].split('#')[0]

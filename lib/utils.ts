@@ -57,11 +57,25 @@ export function cloudinaryThumb(src: string, video?: boolean): string {
   return t
 }
 
+/* Escalera ÚNICA de anchos de Cloudinary. `uploadBuffer` pre-genera (eager) estos
+   mismos anchos al subir, así que pedir uno de la escalera SIEMPRE da un hit: la
+   derivada ya existe. Pedir un ancho arbitrario (el medido × DPR: 375, 750, 1103…)
+   obliga a Cloudinary a generarla on-the-fly y hasta que termina devuelve 404 → el
+   contenedor queda en negro. Por eso el ancho se redondea HACIA ARRIBA a la
+   escalera y nunca se sirve el número crudo. Cambiar esta lista obliga a cambiar
+   el `eager` de lib/storage.ts. */
+export const CLOUDINARY_WIDTHS = [640, 1200, 1920] as const
+
+/** Ancho de la escalera inmediatamente >= al pedido (el mayor si se pasa). */
+export function snapCloudinaryWidth(width: number): number {
+  return CLOUDINARY_WIDTHS.find((w) => w >= width) ?? CLOUDINARY_WIDTHS[CLOUDINARY_WIDTHS.length - 1]
+}
+
 // Optimización general de imágenes de Cloudinary para el frontend (f_auto, q_auto, ancho máximo)
 export function cloudinaryOptimize(src?: string | null, opts: { width?: number; quality?: string } = {}): string {
   if (!src || typeof src !== 'string' || !src.includes('res.cloudinary.com')) return src || ''
   if (src.includes('f_auto') && src.includes('q_auto')) return src
-  const w = opts.width ? `,w_${opts.width},c_limit` : ''
+  const w = opts.width ? `,w_${snapCloudinaryWidth(opts.width)},c_limit` : ''
   const q = opts.quality || 'auto'
   return src.replace('/upload/', `/upload/f_auto,q_${q}${w}/`)
 }
@@ -99,6 +113,17 @@ export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, origin
     if (el.dataset.cldDone) return
     const c = cur()
     if (!c.includes('res.cloudinary.com')) return // solo la derivada de Cloudinary
+    /* Si lo que falló YA es el original sin transformar, el asset no existe: no hay
+       derivada pendiente que esperar. Reintentar son 4 requests y ~7s de contenedor
+       en negro para terminar cayendo a la misma URL muerta. Se corta acá y se avisa
+       para que el contenedor muestre su estado vacío en vez de quedar negro. */
+    const orig0 = (original || el.dataset.cmsSrc || '').split('?')[0]
+    if (orig0 && c.split('?')[0] === orig0) {
+      el.dataset.cldDone = '1'
+      el.dataset.cldDead = '1'
+      el.dispatchEvent(new CustomEvent('cms:media-dead', { bubbles: true, detail: { src: orig0 } }))
+      return
+    }
     tries++
     if (tries > 4) {
       el.dataset.cldDone = '1'

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { listAllCloudinaryResources, hasCloudinary } from '@/lib/storage'
+import { listAllCloudinaryResources, hasCloudinary, getFolderMode } from '@/lib/storage'
 import { requireSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -23,8 +23,21 @@ export async function GET(req: Request) {
   }
 
   try {
-    const resources = await listAllCloudinaryResources()
-    return NextResponse.json({ resources, count: resources.length })
+    /* `folderMode` decide solo si además se espeja la carpeta visual: el estado
+       del ciclo de vida vive en tags y funciona igual en los dos modos. Se expone
+       para poder verificarlo sin adivinar en qué modo corre el account. */
+    const [resources, folderMode] = await Promise.all([
+      listAllCloudinaryResources(),
+      getFolderMode(),
+    ])
+    const untagged = resources.filter((r) => !r.tags.some((t) => t.startsWith('state:'))).length
+    return NextResponse.json({
+      resources,
+      count: resources.length,
+      folderMode,
+      // Assets que todavía clasifican por carpeta (subidos antes del cambio a tags).
+      untagged,
+    })
   } catch (err) {
     console.error('[cloudinary-sync] error:', err)
     return NextResponse.json({ error: 'Error listing resources' }, { status: 500 })

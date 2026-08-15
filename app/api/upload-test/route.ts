@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { uploadBuffer, folderSlug, UnsupportedMediaError } from '@/lib/storage'
+import { uploadBuffer, UnsupportedMediaError, type MediaState } from '@/lib/storage'
 import { requireRole } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -31,7 +31,8 @@ export async function POST(req: Request) {
 
   const file = form.get('file')
   const originalName = String(form.get('name') || '') || (file instanceof File ? file.name : 'archivo')
-  const section = String(form.get('section') || '')
+  /* `section` ya no se lee: era el primer parámetro de `folderSlug`, que lo
+     ignoraba. El destino lo decide solo el estado. */
   const mediaState = String(form.get('mediaState') || '') as 'used' | 'unused' | 'trash' | ''
 
   if (!(file instanceof File) || file.size === 0) {
@@ -70,8 +71,10 @@ export async function POST(req: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
-    const folder = folderSlug(section, mediaState || undefined)
-    const media = await uploadBuffer(buffer, isVideo ? 'video' : isPdf ? 'raw' : 'image', folder, originalName, file.type)
+    /* El estado inicial va como TAG, no como carpeta: el public_id (y por lo
+       tanto la URL) queda igual para siempre, pase por los estados que pase. */
+    const state: MediaState = mediaState === 'used' || mediaState === 'trash' ? mediaState : 'unused'
+    const media = await uploadBuffer(buffer, isVideo ? 'video' : isPdf ? 'raw' : 'image', state, originalName, file.type)
     return NextResponse.json({
       success: true,
       secure_url: media.url,

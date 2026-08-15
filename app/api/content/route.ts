@@ -68,7 +68,7 @@ export async function POST(req: Request) {
         if (typeof value !== 'string') return [key, String(value)]
         const match = KIND_BY_PREFIX.find(([prefix]) => value.startsWith(prefix))
         if (!match) return [key, value]
-        return [key, (await uploadDataUrl(value, match[1], 'portfolio', key)).url]
+        return [key, (await uploadDataUrl(value, match[1], 'used', key)).url]
       }),
     )
   } catch (err) {

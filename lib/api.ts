@@ -378,12 +378,18 @@ export async function saveState(payload: CmsStatePayload): Promise<void> {
 // ----- Auditoría Cloudinary vs Gestión ----------------------------------------
 
 export type CloudinaryResourceInfo = {
+  asset_id: string
   public_id: string
   secure_url: string
   resource_type: string
   format: string
   bytes: number
+  /* Carpeta: cosmética. NO usarla para decidir el estado del ciclo de vida —
+     para eso está `state`, que sale del tag (con fallback a carpeta para los
+     assets subidos antes del cambio). */
   folder: string
+  tags: string[]
+  state: 'used' | 'unused' | 'trash' | null
   created_at: string
 }
 

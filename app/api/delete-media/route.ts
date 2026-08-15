@@ -23,7 +23,14 @@ export async function POST(req: Request) {
   }
 
   try {
-    await deleteAsset(url)
+    /* Un destroy fallido se reporta. Antes se devolvía `success: true` pasara lo
+       que pasara: el cliente borraba su registro y el objeto quedaba vivo y
+       facturado en Cloudinary sin que nadie lo supiera. */
+    const res = await deleteAsset(url)
+    if (!res.ok) {
+      console.error('[delete-media] destroy falló:', url, res.reason)
+      return NextResponse.json({ error: 'Could not delete the asset' }, { status: 502 })
+    }
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[delete-media] error:', err)

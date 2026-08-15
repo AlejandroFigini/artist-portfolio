@@ -3,6 +3,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import { CLOUDINARY_WIDTHS } from '@/lib/utils'
 
 /* Almacenamiento de media por ENTORNO.
    - Prod (con credenciales Cloudinary) → sube a Cloudinary.
@@ -115,13 +116,12 @@ function uploadStream(buffer: Buffer, options: Record<string, unknown>): Promise
 
 const LOCAL_DIR = path.join(process.cwd(), 'public', 'uploads')
 
-/** Genera la ruta de carpeta Cloudinary según el estado del contenido.
- *  Simplificado a 3 carpetas principales: en-uso, sin-usar, basurero. */
-export function folderSlug(section?: string, mediaState?: 'used' | 'unused' | 'trash'): string {
-  if (mediaState === 'unused') return 'portfolio/sin-usar'
-  if (mediaState === 'trash') return 'portfolio/basurero'
-  return 'portfolio/en-uso'
-}
+/* Prefijo NEUTRO del public_id. Antes acá estaba `folderSlug`, que devolvía
+   `portfolio/<estado>` y ese estado quedaba grabado dentro del public_id — o sea,
+   dentro de la URL. Cambiar de estado obligaba entonces a renombrar. Ahora el
+   public_id no lleva estado nunca: el estado vive en un tag y la carpeta visual
+   en `asset_folder`, ninguno de los dos presente en la URL de entrega. */
+const UPLOAD_PREFIX = 'portfolio'
 
 /** Limpia y normaliza el nombre del archivo para que sea un ID seguro en Cloudinary / storage local. */
 function cleanFilename(name: string): string {
@@ -147,11 +147,11 @@ function cleanFilename(name: string): string {
 /** Sube bytes crudos. Es el camino real de subida: multipart entrega el archivo
     ya binario, sin el +33% ni el string gigante en memoria del base64.
     kind 'raw' = documentos (ej. CV en PDF): se guarda tal cual, sin transformar.
-    folder = carpeta destino en Cloudinary (por sección de la página). */
+    state = estado inicial del ciclo de vida (va como TAG, no como carpeta). */
 export async function uploadBuffer(
   buffer: Buffer,
   kind: MediaKind,
-  folder = 'portfolio',
+  state: MediaState = 'unused',
   originalName?: string,
   mime?: string,
 ): Promise<StoredMedia> {
@@ -162,7 +162,14 @@ export async function uploadBuffer(
   const filename = originalName ? cleanFilename(originalName) : undefined
 
   if (hasCloudinary) {
-    const options: Record<string, unknown> = { folder, asset_folder: folder }
+    /* `folder` fija el prefijo del public_id (neutro, sin estado) y `asset_folder`
+       la carpeta visual (cosmética, cambiable sin tocar la URL). El estado real
+       viaja en `tags`. */
+    const options: Record<string, unknown> = {
+      folder: UPLOAD_PREFIX,
+      asset_folder: folderForState(state),
+      tags: [STATE_TAG[state]],
+    }
     if (filename) {
       const lastDot = filename.lastIndexOf('.')
       const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
@@ -183,16 +190,17 @@ export async function uploadBuffer(
       options.resource_type = 'image'
       options.format = 'webp'
       options.quality = 'auto'
-      /* Pre-genera (eager, sync) las derivadas más comunes que sirve el front, con
-         los MISMOS parámetros que `cloudinaryOptimize`/`cloudinaryThumb` (f_auto,
-         q_auto, anchos típicos + el thumb 150). Así la primera visita NO dispara la
-         generación on-the-fly de Cloudinary (que deja el contenedor en negro un
-         instante). Los anchos no cubiertos caen en el retry del front. Solo imagen:
-         el video NO se transcodea eager (fallaría en archivos grandes por el límite
-         de Cloudinary). */
+      /* Pre-genera (eager, sync) EXACTAMENTE los anchos que el front puede pedir:
+         `snapCloudinaryWidth` redondea el ancho medido a CLOUDINARY_WIDTHS, así que
+         la escalera de acá y la de allá tienen que ser la misma lista. Con eso toda
+         petición del sitio es un hit y la primera visita NUNCA dispara la generación
+         on-the-fly (que devuelve 404 mientras trabaja y deja el contenedor en negro).
+         Antes acá había 640/1200 mientras el front pedía el ancho crudo (375, 750,
+         1103…): casi ninguna petición caía en la escalera y el negro era la regla.
+         Solo imagen: el video NO se transcodea eager (fallaría en archivos grandes
+         por el límite de Cloudinary). */
       options.eager = [
-        { fetch_format: 'auto', quality: 'auto', width: 640, crop: 'limit' },
-        { fetch_format: 'auto', quality: 'auto', width: 1200, crop: 'limit' },
+        ...CLOUDINARY_WIDTHS.map((width) => ({ fetch_format: 'auto', quality: 'auto', width, crop: 'limit' })),
         { fetch_format: 'auto', quality: 'auto', width: 150, height: 150, crop: 'fill' },
       ]
       options.eager_async = false
@@ -224,36 +232,168 @@ export async function uploadBuffer(
 export async function uploadDataUrl(
   dataUrl: string,
   kind: MediaKind,
-  folder = 'portfolio',
+  state: MediaState = 'used',
   originalName?: string,
 ): Promise<StoredMedia> {
   const { buffer, mime } = decodeDataUrl(dataUrl)
-  return uploadBuffer(buffer, kind, folder, originalName, mime)
+  return uploadBuffer(buffer, kind, state, originalName, mime)
 }
 
-/** Extrae resource_type y public_id de una URL de Cloudinary. */
+/* Un segmento de transformación de Cloudinary (`f_auto,q_auto,w_640,c_limit`,
+   `c_fill,w_150,h_150`) siempre es una lista de pares `x_valor` separados por coma. */
+const TRANSFORM_SEGMENT = /^[a-z]{1,3}_[^/]*$/
+
+/** Extrae resource_type y public_id de una URL de Cloudinary.
+ *  Tolera URLs transformadas y con query: el regex anterior usaba un grupo LAZY
+ *  (`(?:[^/]+\/)*?`) que matcheaba CERO segmentos, así que el segmento de
+ *  transformación terminaba adentro del public_id. Con eso `deleteAsset` no
+ *  borraba nada (huérfano permanente) y `verifyAssetExists` devolvía false para
+ *  un asset VIVO — y los callers usaban eso para purgar estado. */
 function parseCloudinaryUrl(url: string): { resourceType: 'image' | 'video' | 'raw'; publicId: string } | null {
-  const match = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
+  const clean = url.split('?')[0].split('#')[0]
+  const match = clean.match(/\/(image|video|raw)\/upload\/(.+)$/)
   if (!match) return null
   const resourceType = match[1] as 'image' | 'video' | 'raw'
-  let rawId = match[2]
+
+  const segments = match[2].split('/')
+  // Descartar transformaciones y la versión; lo que queda es el public_id.
+  while (segments.length > 1 && segments[0].split(',').every((p) => TRANSFORM_SEGMENT.test(p))) segments.shift()
+  if (segments.length > 1 && /^v\d+$/.test(segments[0])) segments.shift()
+
+  let rawId = segments.join('/')
+  if (!rawId) return null
   if (resourceType !== 'raw') rawId = rawId.replace(/\.[a-zA-Z0-9]+$/, '')
   return { resourceType, publicId: decodeURIComponent(rawId) }
 }
 
-/** Borra un asset por su URL (Cloudinary o archivo local). No lanza si no existe. */
-export async function deleteAsset(url: string): Promise<void> {
+/* ----- Modo de carpetas del account (Paso 1) --------------------------------
+   `fixed`  → la carpeta ES parte del public_id; `asset_folder` no existe.
+   `dynamic`→ `asset_folder` es metadato: mover NO toca el public_id ni la URL.
+   Nada del ciclo de vida depende de esto (el estado viaja en TAGS, que funcionan
+   igual en los dos modos); solo decide si además espejamos la carpeta visual. */
+export type FolderMode = 'fixed' | 'dynamic' | 'unknown'
+
+let folderModePromise: Promise<FolderMode> | null = null
+
+/** Una sola llamada Admin API por proceso, memoizada. */
+export function getFolderMode(): Promise<FolderMode> {
+  if (!hasCloudinary) return Promise.resolve('unknown')
+  if (!folderModePromise) {
+    folderModePromise = cloudinary.api
+      .config({ settings: true } as Parameters<typeof cloudinary.api.config>[0])
+      .then((res) => {
+        const mode = (res as { settings?: { folder_mode?: string } })?.settings?.folder_mode
+        return mode === 'dynamic' || mode === 'fixed' ? mode : 'unknown'
+      })
+      .catch((err) => {
+        console.warn('[getFolderMode] no se pudo leer folder_mode:', err)
+        folderModePromise = null // permitir reintento
+        return 'unknown' as FolderMode
+      })
+  }
+  return folderModePromise
+}
+
+/* ----- Estado del ciclo de vida vía TAGS (Paso 2) ---------------------------
+   La carpeta dejó de ser el mecanismo de estado. Un tag no aparece NUNCA en la
+   URL de entrega, funciona en los dos modos de carpeta, y se muta por Upload API
+   (que no tiene rate limit, a diferencia de Admin API: 500/h en el plan free).
+   Consecuencia clave: cambiar de estado ya no renombra el asset, así que la URL
+   guardada en `cms_data` no se invalida nunca. */
+export type MediaState = 'used' | 'unused' | 'trash'
+
+const STATE_TAG: Record<MediaState, string> = {
+  used: 'state:en-uso',
+  unused: 'state:sin-usar',
+  trash: 'state:basurero',
+}
+
+const ALL_STATE_TAGS = Object.values(STATE_TAG)
+
+/** Carpeta VISUAL (solo cosmética, para la Media Library). No afecta la URL. */
+export function folderForState(state: MediaState): string {
+  if (state === 'unused') return 'portfolio/sin-usar'
+  if (state === 'trash') return 'portfolio/basurero'
+  return 'portfolio/en-uso'
+}
+
+/** Estado leído de los tags, con fallback a la carpeta del public_id.
+ *  El fallback es lo que hace que los assets viejos (subidos cuando la carpeta
+ *  ERA el estado) sigan clasificando bien mientras no se los haya tagueado. */
+export function stateFromTags(tags: string[] | undefined, publicIdOrUrl = ''): MediaState | null {
+  const t = tags || []
+  if (t.includes(STATE_TAG.trash)) return 'trash'
+  if (t.includes(STATE_TAG.unused)) return 'unused'
+  if (t.includes(STATE_TAG.used)) return 'used'
+  if (publicIdOrUrl.includes('portfolio/basurero/')) return 'trash'
+  if (publicIdOrUrl.includes('portfolio/sin-usar/')) return 'unused'
+  if (publicIdOrUrl.includes('portfolio/en-uso/')) return 'used'
+  return null
+}
+
+/** Mueve un asset de estado SIN renombrarlo: reemplaza el tag de estado y, si el
+ *  account es dynamic, espeja la carpeta visual. La URL de entrega no cambia.
+ *  Reemplaza a `moveAssetFolder`, que hacía `uploader.rename` — es decir, movía
+ *  la clave primaria de la que la DB tiene una copia. */
+export async function setAssetState(url: string, state: MediaState): Promise<{ ok: boolean; reason?: string }> {
+  if (!hasCloudinary || !url.includes('cloudinary.com')) return { ok: true }
+  const parsed = parseCloudinaryUrl(url)
+  if (!parsed) return { ok: false, reason: 'unparseable url' }
+  const { publicId, resourceType } = parsed
+
+  try {
+    /* remove_tag + add_tag, NO replace_tag: `replace` pisa TODOS los tags del
+       asset, no solo el de estado. Ambos son endpoints de Upload API (sin cuota). */
+    const stale = ALL_STATE_TAGS.filter((t) => t !== STATE_TAG[state])
+    for (const tag of stale) {
+      await cloudinary.uploader.remove_tag(tag, [publicId], { resource_type: resourceType })
+    }
+    await cloudinary.uploader.add_tag(STATE_TAG[state], [publicId], { resource_type: resourceType })
+  } catch (err) {
+    console.error('[setAssetState] no se pudo etiquetar:', publicId, err)
+    return { ok: false, reason: 'tagging failed' }
+  }
+
+  // Carpeta visual: best-effort y solo en dynamic (en fixed el parámetro no existe).
+  if ((await getFolderMode()) === 'dynamic') {
+    await cloudinary.api
+      .update(publicId, { resource_type: resourceType, asset_folder: folderForState(state) })
+      .catch((err) => console.warn('[setAssetState] asset_folder no aplicado:', err))
+  }
+
+  return { ok: true }
+}
+
+/** Borra un asset por su URL (Cloudinary o archivo local).
+ *  Devuelve el resultado en vez de tragárselo: un destroy fallido dejaba un objeto
+ *  vivo y facturado en Cloudinary mientras la fila de la DB ya se había borrado, y
+ *  nadie se enteraba. El caller decide qué hacer con `ok: false`. */
+export async function deleteAsset(url: string): Promise<{ ok: boolean; reason?: string }> {
   try {
     if (url.includes('cloudinary.com')) {
-      if (!hasCloudinary) return
+      if (!hasCloudinary) return { ok: false, reason: 'cloudinary not configured' }
       const parsed = parseCloudinaryUrl(url)
-      if (!parsed) return
-      await cloudinary.uploader.destroy(parsed.publicId, { resource_type: parsed.resourceType })
-    } else if (url.startsWith('/uploads/')) {
-      await unlink(path.join(process.cwd(), 'public', url.replace(/^\//, ''))).catch(() => {})
+      if (!parsed) return { ok: false, reason: 'unparseable url' }
+      /* `invalidate` purga la CDN: sin esto Cloudinary sigue sirviendo el asset
+         borrado desde caché y el borrado no se ve. */
+      const res = await cloudinary.uploader.destroy(parsed.publicId, {
+        resource_type: parsed.resourceType,
+        invalidate: true,
+      }) as { result?: string }
+      // 'not found' cuenta como éxito: el objetivo (que no exista) se cumplió.
+      const ok = res?.result === 'ok' || res?.result === 'not found'
+      return ok ? { ok: true } : { ok: false, reason: res?.result || 'unknown' }
     }
-  } catch {
-    // borrar es best-effort; no romper el flujo si falla
+    if (url.startsWith('/uploads/')) {
+      await unlink(path.join(process.cwd(), 'public', url.replace(/^\//, '')))
+      return { ok: true }
+    }
+    return { ok: false, reason: 'unsupported url' }
+  } catch (err) {
+    const code = (err as { code?: string })?.code
+    if (code === 'ENOENT') return { ok: true } // el archivo local ya no estaba
+    console.error('[deleteAsset] error:', url, err)
+    return { ok: false, reason: err instanceof Error ? err.message : 'error' }
   }
 }
 
@@ -304,63 +444,12 @@ export async function verifyAssetsExist(urls: string[]): Promise<{ url: string; 
   return results
 }
 
-/** Mueve un asset de Cloudinary a una nueva carpeta (vía rename del public_id y update de asset_folder).
- *  Devuelve la nueva URL. Si falla, devuelve la URL original sin romper. */
-export async function moveAssetFolder(url: string, newFolder: string): Promise<string> {
-  if (!hasCloudinary || !url.includes('cloudinary.com')) return url
-  try {
-    const parsed = parseCloudinaryUrl(url)
-    if (!parsed) return url
-    const parts = parsed.publicId.split('/')
-    const filename = parts[parts.length - 1]
-    const newPublicId = `${newFolder}/${filename}`
-
-    // Probar primero el publicId exacto y luego carpetas candidatas por si el CMS ya actualizó su URL localmente
-    const currentFolder = parts.slice(0, -1).join('/')
-    const candidateFolders = Array.from(new Set([currentFolder, 'portfolio/en-uso', 'portfolio/sin-usar', 'portfolio/basurero', 'portfolio']))
-    
-    let successUrl = url
-    let renamed = false
-
-    for (const folder of candidateFolders) {
-      const candidateId = `${folder}/${filename}`
-      if (candidateId === newPublicId && folder === newFolder) {
-        // Ya está en la carpeta destino, solo aseguramos asset_folder
-        await cloudinary.api.update(newPublicId, {
-          resource_type: parsed.resourceType,
-          asset_folder: newFolder,
-        }).catch(() => {})
-        renamed = true
-        break
-      }
-
-      try {
-        const result = await cloudinary.uploader.rename(candidateId, newPublicId, {
-          resource_type: parsed.resourceType,
-          overwrite: true,
-          invalidate: true,
-        })
-        successUrl = result.secure_url || url
-        renamed = true
-        break
-      } catch {
-        // Probar la siguiente carpeta candidata
-      }
-    }
-
-    if (renamed) {
-      await cloudinary.api.update(newPublicId, {
-        resource_type: parsed.resourceType,
-        asset_folder: newFolder,
-      }).catch((e) => console.warn('[moveAssetFolder] no se pudo actualizar asset_folder:', e))
-    }
-
-    return successUrl
-  } catch (err) {
-    console.error('[moveAssetFolder] error:', err)
-    return url
-  }
-}
+/* `moveAssetFolder` fue eliminada. Hacía `uploader.rename` para "mover de carpeta",
+   y como la carpeta vive dentro del public_id, cada movimiento invalidaba la URL
+   que `cms_data` tenía guardada. Además su primer candidato salía de la URL VIEJA,
+   así que cuando la DB decía sin-usar y el destino era sin-usar entraba por la rama
+   "ya está en destino", devolvía la URL muerta y reportaba éxito — por eso el bug
+   de producción era irreparable desde la UI. Su reemplazo es `setAssetState`. */
 
 /** Crea la estructura de carpetas vacías en Cloudinary según la taxonomía del sitio.
  *  Es idempotente: si una carpeta ya existe, no falla. */
@@ -383,83 +472,31 @@ export async function scaffoldFolders(folderPaths: string[]): Promise<{ created:
       }
     }
   }
-  await cleanupLegacyFolders()
   return { created, skipped }
 }
 
-/** Migra recursos de subcarpetas viejas a las 3 carpetas principales y elimina las carpetas vacías. */
-async function cleanupLegacyFolders(): Promise<void> {
-  if (!hasCloudinary) return
-  try {
-    await cleanSubFoldersRecursively('portfolio/en-uso', 'portfolio/en-uso')
-    await cleanSubFoldersRecursively('portfolio/sin-usar', 'portfolio/sin-usar')
-    await cleanSubFoldersRecursively('portfolio/basurero', 'portfolio/basurero')
-
-    const rootSub: { folders?: { name?: string; path: string }[] } | null = await cloudinary.api.sub_folders('portfolio').catch(() => null)
-    if (rootSub && rootSub.folders) {
-      for (const f of rootSub.folders) {
-        const folderName = f.name || f.path.split('/').pop()
-        if (folderName !== 'en-uso' && folderName !== 'sin-usar' && folderName !== 'basurero') {
-          await cleanSubFoldersRecursively(f.path, 'portfolio/en-uso')
-          await cloudinary.api.delete_folder(f.path).catch(() => {})
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[cleanupLegacyFolders] error:', err)
-  }
-}
-
-async function cleanSubFoldersRecursively(parentFolder: string, targetFolder: string): Promise<void> {
-  const subRes: { folders?: { path: string }[] } | null = await cloudinary.api.sub_folders(parentFolder).catch(() => null)
-  if (!subRes || !subRes.folders || subRes.folders.length === 0) return
-
-  for (const f of subRes.folders) {
-    const fPath = f.path
-    await cleanSubFoldersRecursively(fPath, targetFolder)
-
-    try {
-      let cursor: string | undefined = undefined
-      do {
-        const resourcesRes: { resources?: { public_id: string; resource_type?: string }[]; next_cursor?: string } | null = await cloudinary.api.resources({
-          type: 'upload',
-          prefix: `${fPath}/`,
-          max_results: 100,
-          next_cursor: cursor,
-        }).catch(() => null)
-
-        if (resourcesRes && resourcesRes.resources) {
-          for (const r of resourcesRes.resources) {
-            const filename = r.public_id.split('/').pop()
-            const newPublicId = `${targetFolder}/${filename}`
-            if (r.public_id !== newPublicId) {
-              await cloudinary.uploader.rename(r.public_id, newPublicId, {
-                resource_type: r.resource_type || 'image',
-                overwrite: true,
-                invalidate: true,
-              }).catch(() => {})
-            }
-          }
-        }
-        cursor = resourcesRes?.next_cursor
-      } while (cursor)
-
-      await cloudinary.api.delete_folder(fPath).catch(() => {})
-    } catch (e) {
-      console.warn(`[cleanSubFoldersRecursively] error in ${fPath}:`, e)
-    }
-  }
-}
+/* `cleanupLegacyFolders` y `cleanSubFoldersRecursively` fueron eliminadas.
+   Corrían en CADA carga de /admin (AdminDashboard → scaffoldCloudinaryFolders →
+   scaffoldFolders) y renombraban en masa todo recurso que encontraran en una
+   subcarpeta no canónica, con `overwrite: true` — destruyendo el asset ocupante en
+   caso de colisión — sin escribir una sola línea a `cms_data`. Era un generador de
+   desincronización en bulk que se disparaba solo al abrir el panel. Con el estado
+   viviendo en tags, las subcarpetas ya no significan nada y no hay nada que migrar. */
 
 // ----- Listado completo de Cloudinary (para auditoría de sincronización) ------
 
 export type CloudinaryResource = {
+  asset_id: string
   public_id: string
   secure_url: string
   resource_type: string
   format: string
   bytes: number
   folder: string
+  tags: string[]
+  /* Estado del ciclo de vida: del tag, con fallback a la carpeta para los assets
+     subidos antes de que el estado dejara de vivir en la carpeta. */
+  state: MediaState | null
   created_at: string
 }
 
@@ -483,20 +520,25 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
         else if (secure_url.includes('/portfolio/en-uso/')) folder = 'portfolio/en-uso'
         else if (secure_url.includes('/portfolio/')) folder = 'portfolio'
       }
+      const tags = Array.isArray(r.tags) ? (r.tags as string[]) : []
       allMap.set(key, {
+        asset_id: (r.asset_id as string) || '',
         public_id,
         secure_url,
         resource_type: (r.resource_type as string) || 'image',
         format: (r.format as string) || '',
         bytes: (r.bytes as number) || 0,
         folder,
+        tags,
+        state: stateFromTags(tags, public_id || secure_url),
         created_at: (r.created_at as string) || '',
       })
     }
   }
 
-  // Método simplificado: Admin API estándar (api.resources) con type 'upload'
-  const types: ('image' | 'video')[] = ['image', 'video']
+  /* `raw` incluido: el CV en PDF se sube con resource_type 'raw' y sin esto era
+     invisible para toda auditoría — nunca matcheaba ni se reportaba como huérfano. */
+  const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
   let lastError: unknown = null
   
   for (const type of types) {
@@ -510,6 +552,9 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
           max_results: 500,
           next_cursor: cursor,
           type: 'upload',
+          /* Sin `tags: true` la respuesta NO trae los tags y un modelo de estado
+             basado en tags queda ciego. */
+          tags: true,
         } as Parameters<typeof cloudinary.api.resources>[0]) as {
           resources?: Record<string, unknown>[]
           next_cursor?: string
