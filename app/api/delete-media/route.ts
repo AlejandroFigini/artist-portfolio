@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { deleteAsset } from '@/lib/storage'
 import { requireRole } from '@/lib/auth'
+import { getPool, hasDb, ensureDb } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,36 @@ export async function POST(req: Request) {
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+  }
+
+  /* Guarda de referencias EN EL SERVIDOR. Hasta acá el cliente era lo único entre
+     un contenedor vivo y un asset destruido: bastaba una pestaña con estado viejo
+     para borrar los bytes de una imagen que la web sigue mostrando, y el 404 era
+     irreversible. Un asset puede estar referenciado por varios contenedores (en
+     prod hay 56 referencias sobre 44 assets), así que se consulta por el nombre
+     del archivo, que es lo estable entre la URL guardada y la real. */
+  if (hasDb) {
+    try {
+      await ensureDb()
+      const base = url.split('?')[0].split('#')[0].split('/').pop() || ''
+      if (base) {
+        const { rows } = await getPool()!.query(
+          "SELECT key FROM cms_data WHERE value LIKE '%' || $1 || '%' LIMIT 5",
+          [base],
+        )
+        if (rows.length > 0) {
+          const keys = (rows as { key: string }[]).map((r) => r.key)
+          return NextResponse.json(
+            { error: `Still used by ${keys.length} container(s): ${keys.join(', ')}. Remove it from them first.` },
+            { status: 409 },
+          )
+        }
+      }
+    } catch (err) {
+      /* Sin poder verificar no se borra: no hay forma de deshacer un destroy. */
+      console.error('[delete-media] no se pudo verificar referencias:', err)
+      return NextResponse.json({ error: 'Could not verify references; deletion aborted' }, { status: 503 })
+    }
   }
 
   try {

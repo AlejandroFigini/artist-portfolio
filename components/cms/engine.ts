@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer,
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer, markItemsSynced,
   persistTrash, loadTextDefaults, recordTextDefaults
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
@@ -1318,14 +1318,6 @@ export function refreshContainerLabel(key: string) {
 
 // ----- Persistencia al backend -------------------------------------------------------
 
-/** Guarda overrides en localStorage y sincroniza con el Express. Lanza si falla la red. */
-export async function persistOverrides() {
-  persistOverridesLocal()
-  emit()
-  await saveContent(state.items)
-  flushSyncToServer()
-}
-
 /** Igual que persistOverrides pero al backend manda SOLO las claves indicadas.
     Asignar contenido a un contenedor guardaba el estado ENTERO (saveContent(state.items)):
     si un solo ítem del estado hacía fallar /api/content (p.ej. un data URL que la
@@ -1334,11 +1326,15 @@ export async function persistOverrides() {
     asignada, la escritura es inmune al resto del estado (igual que el commit del
     carrusel). El caché local sigue siendo el estado completo. */
 export async function persistOverrideKeys(keys: string[]) {
-  persistOverridesLocal()
   emit()
   const payload: Record<string, string> = {}
   for (const k of keys) payload[k] = state.items[k] ?? ''
   await saveContent(payload)
+  /* Marcar sincronizadas ANTES del flush: si no, el flush volvería a mandarlas
+     dentro del diff y la escritura acotada perdería el sentido. Tampoco se llama
+     ya a persistOverridesLocal() acá — encolaba la sincronización de overrides,
+     así que cada guardado acotado disparaba acto seguido uno completo. */
+  markItemsSynced(keys)
   flushSyncToServer()
 }
 

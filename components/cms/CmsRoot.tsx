@@ -12,7 +12,7 @@ import { CommandContext, type Command } from '@/lib/commands'
 import { useToast } from '@/components/ui/Toast'
 import { getContent, getTranslations, getAccount, logout } from '@/lib/api'
 import { validateFile } from '@/lib/media'
-import { state, loadState, useCmsStore, setAdminFlag, emit, loadLang, loadServerState, cleanOrphanOverrides } from '@/lib/cms/store'
+import { state, loadState, useCmsStore, setAdminFlag, emit, loadLang, loadServerState, cleanOrphanOverrides, markItemsSynced } from '@/lib/cms/store'
 import { readCmsBootstrap } from '@/lib/cms/bootstrap'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { markLoaderGate } from '@/lib/loader-ready'
@@ -130,6 +130,9 @@ export default function CmsRoot() {
     const applyContent = (items: Record<string, string>) => {
       state.items = items
       state.itemsLoaded = true
+      /* Baseline del diff de overrides. Sin esto el baseline arranca vacío y el
+         primer flush mandaría el mapa entero — justo lo que se quiere evitar. */
+      markItemsSynced()
       engine.hydrate()
       engine.refreshRetired()
       emit()

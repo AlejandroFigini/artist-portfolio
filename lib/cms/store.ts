@@ -230,6 +230,37 @@ export function loadState() {
 
 import { saveState, getState, saveContent, type CmsStatePayload, moveMedia, verifyMedia } from '@/lib/api'
 
+/* Última versión de `cms_data` que sabemos que el servidor tiene. La sincronización
+   de overrides manda el DIFF contra esto, no `state.items` entero.
+   Antes mandaba el mapa completo, armado desde el snapshot que se cargó al abrir
+   la página: cualquier pestaña vieja pisaba con datos rancios todo lo que otra
+   hubiera cambiado mientras tanto — incluso resucitando claves borradas. Con el
+   diff, una pestaña solo puede escribir lo que ELLA tocó. */
+let _serverItems: Record<string, string> = {}
+
+/** El servidor y el cliente coinciden en estas claves. */
+export function markItemsSynced(keys?: string[]) {
+  if (!keys) { _serverItems = { ...state.items }; return }
+  for (const k of keys) {
+    const v = state.items[k]
+    if (v === undefined || v === '') delete _serverItems[k]
+    else _serverItems[k] = v
+  }
+}
+
+/** Claves que este cliente cambió respecto de lo que el servidor tiene. */
+function dirtyItems(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(state.items)) {
+    if (typeof v === 'string' && _serverItems[k] !== v) out[k] = v
+  }
+  // Borradas acá pero todavía presentes en el servidor → mandar '' para que se eliminen.
+  for (const k of Object.keys(_serverItems)) {
+    if (state.items[k] === undefined || state.items[k] === '') out[k] = ''
+  }
+  return out
+}
+
 let _syncTimer: NodeJS.Timeout | null = null
 let _flushPromise: Promise<void> | null = null
 const _pendingKeys = new Set<string>()
@@ -277,7 +308,12 @@ export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void
   const { media_meta, ...rest } = payload
   if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts).catch(() => {}))
   if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts).catch(() => {}))
-  if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
+  if (syncOverrides) {
+    const diff = dirtyItems()
+    if (Object.keys(diff).length > 0) {
+      promises.push(saveContent(diff).then(() => markItemsSynced(Object.keys(diff))).catch(() => {}))
+    }
+  }
   
   _flushPromise = Promise.all(promises).then(() => {})
   _flushPromise.finally(() => {
