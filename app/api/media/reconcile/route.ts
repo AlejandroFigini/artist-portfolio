@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
    verdad: eso convertiría un error de lectura en pérdida de datos. */
 
 type Finding = {
-  kind: 'url-stale' | 'state-drift' | 'orphan-cloudinary' | 'missing-cloudinary'
+  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary'
   key?: string
   url?: string
   publicId?: string
@@ -89,20 +89,35 @@ async function reconcile(apply: boolean) {
     }
   }
 
-  // Estado esperado: referenciado ⇒ used. El tag solo decide sin-usar vs basurero
-  // para los NO referenciados, así que a esos no se los toca acá.
+  /* Estado esperado: referenciado ⇒ used. El tag solo decide sin-usar vs basurero
+     para los NO referenciados.
+     `hasStateTag` distingue "tiene tag" de "se dedujo de la carpeta": los assets
+     subidos antes de que el estado viviera en tags no tienen ninguno y hay que
+     escribirles el que corresponde (backfill), aunque su estado deducido ya sea
+     el correcto. Mientras no se haga, conviven los dos mecanismos. */
   const drift: { url: string; state: MediaState }[] = []
   for (const r of resources) {
-    if (!referenced.has(r.public_id)) {
-      if (!r.state) findings.push({ kind: 'orphan-cloudinary', publicId: r.public_id, url: r.secure_url, detail: 'no referenciado y sin tag de estado' })
+    const hasStateTag = r.tags.some((t) => t.startsWith('state:'))
+    const expected: MediaState | null = referenced.has(r.public_id) ? 'used' : r.state
+
+    if (!expected) {
+      findings.push({ kind: 'orphan-cloudinary', publicId: r.public_id, url: r.secure_url, detail: 'no referenciado y sin tag ni carpeta que lo clasifique' })
       continue
     }
-    if (r.state !== 'used') {
+    if (!hasStateTag) {
+      findings.push({
+        kind: 'untagged', publicId: r.public_id, url: r.secure_url,
+        detail: `sin tag de estado; se deduce ${expected} (${referenced.has(r.public_id) ? 'referenciado' : 'por carpeta'})`,
+      })
+      drift.push({ url: r.secure_url, state: expected })
+      continue
+    }
+    if (r.state !== expected) {
       findings.push({
         kind: 'state-drift', publicId: r.public_id, url: r.secure_url,
         detail: `referenciado por un contenedor pero marcado como ${r.state ?? 'sin estado'}`,
       })
-      drift.push({ url: r.secure_url, state: 'used' })
+      drift.push({ url: r.secure_url, state: expected })
     }
   }
 

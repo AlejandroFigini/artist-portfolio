@@ -585,6 +585,15 @@ function buildSyncAuditResult(
     }
   })
 
+  /* La carpeta dejó de ser el estado: ahora el estado sale del tag (`r.state`,
+     que ya trae el fallback a carpeta para los assets viejos). Comparar carpetas
+     a esta altura reportaría como "carpeta equivocada" a todo asset que cambió
+     de estado sin renombrarse — o sea, a todos, para siempre. Se compara estado
+     contra estado y la carpeta queda solo como etiqueta legible. */
+  const FOLDER_BY_STATE: Record<string, string> = {
+    used: 'portfolio/en-uso', unused: 'portfolio/sin-usar', trash: 'portfolio/basurero',
+  }
+
   const matching: SyncAuditResult['matching'] = []
   const folderMismatch: SyncAuditResult['folderMismatch'] = []
   const broken: SyncAuditResult['broken'] = []
@@ -598,10 +607,9 @@ function buildSyncAuditResult(
                      (cmsBase ? cloudinaryByBaseName.get(cmsBase) : undefined)
 
     if (cloudRes) {
-      const actualFolder = cloudRes.folder ||
-        (cloudRes.public_id.includes('portfolio/sin-usar') || cloudRes.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar'
-        : cloudRes.public_id.includes('portfolio/basurero') || cloudRes.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero'
-        : 'portfolio/en-uso')
+      /* Sin estado deducible no se reporta nada: un dato ausente no es un error,
+         y marcarlo como tal es exactamente el falso positivo que se quiere evitar. */
+      const actualFolder = cloudRes.state ? FOLDER_BY_STATE[cloudRes.state] : expectedFolder
 
       if (actualFolder !== expectedFolder) {
         folderMismatch.push({
@@ -745,6 +753,9 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
     const items = cmsList.map(r => {
       const filename = r.url.split('/').pop() || ''
       const expectedFolder = r.state === 'unused' ? 'portfolio/sin-usar' : r.state === 'trash' ? 'portfolio/basurero' : 'portfolio/en-uso'
+      /* Export descriptivo: esta columna dice a qué carpeta apunta la URL guardada,
+         que es un dato histórico. NO es un diagnóstico de estado — para eso está
+         la auditoría, que compara estado contra estado. */
       const actualFolderInUrl = r.url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar' : r.url.includes('/portfolio/basurero/') ? 'portfolio/basurero' : 'portfolio/en-uso'
       return {
         ...r,
