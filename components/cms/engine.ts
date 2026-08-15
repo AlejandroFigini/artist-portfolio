@@ -757,10 +757,16 @@ export function seedUsedContent() {
     changed = true
   })
 
-  // Limpieza de entries huérfanas: si una key en usedContent ya no tiene
-  // contenido en state.items NI tiene elemento DOM, la entrada es un
-  // remanente de un reordenamiento o eliminación → purgarla.
-  Object.keys(state.usedContent).forEach((key) => {
+  /* Limpieza de entries huérfanas: si una key en usedContent ya no tiene
+     contenido en state.items NI tiene elemento DOM, la entrada es un remanente
+     de un reordenamiento o eliminación → purgarla.
+
+     SOLO con el contenido ya cargado. Esta rama es destructiva y `state.items`
+     arranca vacío: corriéndola antes de que llegue `cms_data` borra el índice
+     ENTERO y después `persistUsed()` escribe {} sobre la DB. Es lo que dejó
+     `used_content` vacío en producción mientras el sitio mostraba 56 contenidos.
+     Sembrar (lo de arriba) es aditivo y no necesita el gate. */
+  if (state.itemsLoaded) Object.keys(state.usedContent).forEach((key) => {
     if (!allKeys.has(key)) {
       // Key completamente desconocida (no está en ningún registro)
       delete state.usedContent[key]

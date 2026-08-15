@@ -12,11 +12,10 @@ import { fmtBytes, fmtDate } from '@/lib/utils'
 import {
   state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides,
 } from '@/lib/cms/store'
-import { getAccount, scaffoldCloudinaryFolders, logout } from '@/lib/api'
+import { getAccount, logout } from '@/lib/api'
 import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal, SelectContainerActionModal } from './modals'
-import { seedUsedContent } from '../cms/engine'
 import SiteSettings from './SiteSettings'
 import RealtimeCard from './RealtimeCard'
 import UsersSection from './UsersSection'
@@ -78,9 +77,12 @@ export default function AdminDashboard() {
       cleanOrphanOverrides()
       if (!!account || state.isAdmin) {
         autoCleanTrash()
-        seedUsedContent()
+        /* Ni `seedUsedContent()` ni `scaffoldCloudinaryFolders()` acá.
+           El panel no carga `cms_data`, así que sembraba con `state.items` vacío
+           y su limpieza de huérfanos borraba el índice entero. El dueño del seed
+           es CmsRoot, que sí carga el contenido antes. Y scaffold mutaba storage
+           remoto como efecto de renderizar una página. */
         resolveSizes([...Object.values(state.usedContent), ...state.unused])
-        scaffoldCloudinaryFolders()
       }
     })
   }, [])  

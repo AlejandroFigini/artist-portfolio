@@ -129,6 +129,7 @@ export default function CmsRoot() {
        cae al camino de fetch de siempre. */
     const applyContent = (items: Record<string, string>) => {
       state.items = items
+      state.itemsLoaded = true
       engine.hydrate()
       engine.refreshRetired()
       emit()

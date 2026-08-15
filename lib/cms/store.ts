@@ -98,6 +98,10 @@ export function simpleHash(str: string): number {
 export const state = {
   loaded: false,                              // loadState() ya corrió en este cliente
   serverReady: false,                         // merge con el servidor completado
+  /* `cms_data` YA se cargó en este cliente. Distinto de `serverReady` (que es
+     cms_state). Sin esto no se puede distinguir "no hay contenido" de "el
+     contenido todavía no llegó", y purgar bajo esa ambigüedad borra el índice. */
+  itemsLoaded: false,
   items: {} as Record<string, string>,        // overrides (clave -> valor)
   audit: [] as AuditEntry[],
   mediaMeta: {} as Record<string, { name: string; size: number; type: string; ts: number; label: string; section: string }>,
