@@ -15,7 +15,6 @@
 
 import '@/styles/about-page.css'
 
-import { uiContentCache } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
