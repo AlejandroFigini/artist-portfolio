@@ -3,6 +3,7 @@ import { getAnalyticsClient, getAnalyticsPropertyId } from '@/lib/analytics';
 import { getPool, hasDb, ensureDb } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { emailLayout, escapeHtml, getNotificationEmails, sendMail } from '@/lib/mail';
+// imports removed to avoid Next.js static analysis error
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,44 +12,37 @@ type Metrics = {
   users: number;
   newUsers: number;
   views: number;
-  avgDuration: string;
   topPages: { name: string; views: number }[];
   topCountries: { name: string; users: number }[];
   cvDownloads: number;
   emailClicks: number;
-  socialClicks: number;
+  socialClicks: { network: string; count: number }[];
   contactMessages: number;
+  historicalMapSvg?: string;
 };
-
-function formatDuration(seconds: number): string {
-  if (!seconds || isNaN(seconds)) return '0s';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
 
 /* Fila de la tabla de resumen. El estilo va inline: los clientes de correo
    descartan <style> y hojas externas. */
-function metricRow(label: string, value: string | number, color: string, last = false): string {
+function metricRow(label: string, value: string | number, last = false): string {
   const border = last ? '' : 'border-bottom: 1px solid #e2e8f0;';
   return `
     <tr>
       <td style="padding: 12px 0; ${border}">
-        <strong style="color: #334155; font-size: 16px;">${label}</strong>
+        <strong style="color: #475569; font-size: 15px; font-weight: 500;">${label}</strong>
       </td>
       <td style="padding: 12px 0; ${border} text-align: right;">
-        <span style="font-size: 18px; font-weight: bold; color: ${color};">${value}</span>
+        <span style="font-size: 16px; font-weight: 600; color: #0f172a;">${value}</span>
       </td>
     </tr>
   `;
 }
 
-function eventRow(label: string, value: number, color: string, last = false): string {
+function eventRow(label: string, value: number, last = false): string {
   const border = last ? '' : 'border-bottom: 1px solid #e2e8f0;';
   return `
     <tr>
-      <td style="padding: 10px 16px; ${border}">${label}</td>
-      <td style="padding: 10px 16px; ${border} text-align: right; font-weight: bold; color: ${color};">${value}</td>
+      <td style="padding: 10px 16px; ${border} color: #475569; font-size: 14px;">${label}</td>
+      <td style="padding: 10px 16px; ${border} text-align: right; font-weight: 600; color: #0f172a;">${value}</td>
     </tr>
   `;
 }
@@ -56,47 +50,63 @@ function eventRow(label: string, value: number, color: string, last = false): st
 function buildReportHtml(m: Metrics): string {
   const list = (items: string[]) => `
     <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 14px;">
-      ${items.map((i) => `<li style="margin-bottom: 4px;">${i}</li>`).join('')}
+      ${items.map((i) => `<li style="margin-bottom: 8px;">${i}</li>`).join('')}
     </ul>
   `;
 
+  const socialRows = m.socialClicks.length > 0 
+    ? m.socialClicks.map((s, i) => eventRow(`- ${s.network}`, s.count, i === m.socialClicks.length - 1)).join('')
+    : eventRow('- None', 0, true);
+
   const body = `
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 24px;">
+      <h2 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 16px 0;">Audience Overview</h2>
       <table style="width: 100%; text-align: left; border-collapse: collapse;">
-        ${metricRow('👤 Active users:', m.users, '#8b5cf6')}
-        ${metricRow('✨ New users:', m.newUsers, '#10b981')}
-        ${metricRow('👀 Total views:', m.views, '#8b5cf6')}
-        ${metricRow('⏱️ Average time:', m.avgDuration, '#3b82f6', true)}
+        ${metricRow('Active users', m.users)}
+        ${metricRow('New users', m.newUsers)}
+        ${metricRow('Total views', m.views, true)}
       </table>
     </div>
 
     ${m.topPages.length > 0 ? `
-    <div style="margin-top: 24px;">
-      <h3 style="color: #334155; font-size: 16px; margin-bottom: 12px;">📄 Top pages (most viewed)</h3>
-      ${list(m.topPages.map((p) => `<strong>${escapeHtml(p.name)}</strong>: ${p.views} views`))}
+    <div style="margin-top: 32px;">
+      <h3 style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Top pages (most viewed)</h3>
+      ${list(m.topPages.map((p) => `<span style="color: #0f172a; font-weight: 500;">${escapeHtml(p.name)}</span>: ${p.views} views`))}
     </div>
     ` : ''}
 
     ${m.topCountries.length > 0 ? `
-    <div style="margin-top: 24px;">
-      <h3 style="color: #334155; font-size: 16px; margin-bottom: 12px;">🌍 Top countries</h3>
-      ${list(m.topCountries.map((c) => `<strong>${escapeHtml(c.name)}</strong>: ${c.users} users`))}
+    <div style="margin-top: 32px;">
+      <h3 style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Top countries (this week)</h3>
+      ${list(m.topCountries.map((c) => `<span style="color: #0f172a; font-weight: 500;">${escapeHtml(c.name)}</span>: ${c.users} users`))}
     </div>
     ` : ''}
 
-    <div style="margin-top: 24px;">
-      <h3 style="color: #334155; font-size: 16px; margin-bottom: 12px;">🎯 Key events</h3>
-      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-        ${eventRow('📧 Email clicks', m.emailClicks, '#8b5cf6')}
-        ${eventRow('📥 Messages received (form)', m.contactMessages, '#f59e0b')}
-        ${eventRow('📄 CV downloads', m.cvDownloads, '#10b981')}
-        ${eventRow('🔗 Social network clicks', m.socialClicks, '#3b82f6', true)}
+    ${m.historicalMapSvg ? `
+    <div style="margin-top: 32px;">
+      <h3 style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Historical Global Reach</h3>
+      <div style="background: #f8fafc; border-radius: 6px; padding: 16px; overflow: hidden; text-align: center;">
+        ${m.historicalMapSvg}
+      </div>
+    </div>
+    ` : ''}
+
+    <div style="margin-top: 32px;">
+      <h3 style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Key events</h3>
+      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
+        ${eventRow('Email clicks', m.emailClicks)}
+        ${eventRow('Messages received (form)', m.contactMessages)}
+        ${eventRow('CV downloads', m.cvDownloads)}
+        <tr>
+          <td colspan="2" style="padding: 10px 16px; color: #475569; font-size: 14px; background: #f8fafc; font-weight: 500;">Social network clicks</td>
+        </tr>
+        ${socialRows}
       </table>
     </div>
   `;
 
   return emailLayout({
-    title: 'Your weekly traffic report',
+    title: 'Weekly Traffic Report',
     subtitle: 'Summary of the last 7 days of your portfolio.',
     body,
     footer: 'Automatic report generated by your portfolio. Sign in to the admin panel for more detail.',
@@ -105,21 +115,21 @@ function buildReportHtml(m: Metrics): string {
 
 function buildReportText(m: Metrics): string {
   return [
-    'Your weekly traffic report',
+    'Weekly Traffic Report',
     'Summary of the last 7 days of your portfolio.',
     '',
     `Active users: ${m.users}`,
     `New users: ${m.newUsers}`,
     `Total views: ${m.views}`,
-    `Average time: ${m.avgDuration}`,
     '',
     ...(m.topPages.length ? ['Top pages:', ...m.topPages.map((p) => `  - ${p.name}: ${p.views} views`), ''] : []),
-    ...(m.topCountries.length ? ['Top countries:', ...m.topCountries.map((c) => `  - ${c.name}: ${c.users} users`), ''] : []),
+    ...(m.topCountries.length ? ['Top countries (this week):', ...m.topCountries.map((c) => `  - ${c.name}: ${c.users} users`), ''] : []),
     'Key events:',
     `  Email clicks: ${m.emailClicks}`,
     `  Messages received (form): ${m.contactMessages}`,
     `  CV downloads: ${m.cvDownloads}`,
-    `  Social network clicks: ${m.socialClicks}`,
+    `  Social network clicks:`,
+    ...(m.socialClicks.length ? m.socialClicks.map((s) => `    - ${s.network}: ${s.count}`) : ['    - None']),
     '',
     'Automatic report generated by your portfolio. Sign in to the admin panel for more detail.',
   ].join('\n');
@@ -157,30 +167,28 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Google Analytics is not configured' }, { status: 500 });
   }
 
-  // 3. Obtener datos de Google Analytics (últimos 7 días)
+  // 3. Obtener datos de Google Analytics
   const metricsData: Metrics = {
     users: 0,
     newUsers: 0,
     views: 0,
-    avgDuration: '0s',
     topPages: [],
     topCountries: [],
     cvDownloads: 0,
     emailClicks: 0,
-    socialClicks: 0,
+    socialClicks: [],
     contactMessages: 0,
   };
 
   try {
-    const [overviewRes, pagesRes, countriesRes, eventsRes] = await Promise.all([
+    const [overviewRes, pagesRes, countriesRes, eventsRes, historicalRes] = await Promise.all([
       analyticsClient.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
         metrics: [
           { name: 'activeUsers' },
           { name: 'newUsers' },
-          { name: 'screenPageViews' },
-          { name: 'averageSessionDuration' },
+          { name: 'screenPageViews' }
         ],
       }),
       analyticsClient.runReport({
@@ -202,6 +210,12 @@ export async function GET(req: Request) {
         dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
         dimensions: [{ name: 'eventName' }],
         metrics: [{ name: 'eventCount' }]
+      }),
+      analyticsClient.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: '2020-01-01', endDate: 'yesterday' }],
+        dimensions: [{ name: 'countryId' }],
+        metrics: [{ name: 'activeUsers' }]
       })
     ]);
 
@@ -210,7 +224,6 @@ export async function GET(req: Request) {
       metricsData.users = parseInt(row.metricValues?.[0]?.value || '0', 10);
       metricsData.newUsers = parseInt(row.metricValues?.[1]?.value || '0', 10);
       metricsData.views = parseInt(row.metricValues?.[2]?.value || '0', 10);
-      metricsData.avgDuration = formatDuration(parseFloat(row.metricValues?.[3]?.value || '0'));
     }
 
     if (pagesRes[0].rows) {
@@ -236,16 +249,59 @@ export async function GET(req: Request) {
     }
 
     if (eventsRes[0].rows) {
+      const socialMap = new Map<string, number>();
       eventsRes[0].rows.forEach(r => {
         const eventName = r.dimensionValues?.[0]?.value || '';
         const count = parseInt(r.metricValues?.[0]?.value || '0', 10);
         if (eventName === 'cv_download') metricsData.cvDownloads += count;
         if (eventName === 'email_click') metricsData.emailClicks += count;
-        if (eventName === 'social_click' || eventName.startsWith('social_click_')) {
-          metricsData.socialClicks += count;
+        if (eventName === 'social_click') {
+          // Legacy fallback
+          socialMap.set('Unknown', (socialMap.get('Unknown') || 0) + count);
+        } else if (eventName.startsWith('social_click_')) {
+          const network = eventName.replace('social_click_', '');
+          const formattedNetwork = network.charAt(0).toUpperCase() + network.slice(1);
+          socialMap.set(formattedNetwork, (socialMap.get(formattedNetwork) || 0) + count);
         }
       });
+      metricsData.socialClicks = Array.from(socialMap.entries())
+        .map(([network, count]) => ({ network, count }))
+        .sort((a, b) => b.count - a.count);
     }
+
+    if (historicalRes[0].rows) {
+      const mapData = historicalRes[0].rows
+        .filter(r => r.dimensionValues?.[0]?.value && r.dimensionValues[0].value !== '(not set)')
+        .map(r => ({
+          country: (r.dimensionValues?.[0]?.value || '').toLowerCase(),
+          value: parseInt(r.metricValues?.[0]?.value || '0', 10)
+        }));
+        
+      if (mapData.length > 0) {
+        try {
+          // Use dynamic require to prevent Next.js static analysis from failing the build
+          const React = require('react');
+          const { renderToStaticMarkup } = require('react-dom/server');
+          const WorldMap = require('react-svg-worldmap').default || require('react-svg-worldmap');
+          
+          metricsData.historicalMapSvg = renderToStaticMarkup(
+            React.createElement(WorldMap, {
+              color: '#475569',
+              backgroundColor: 'transparent',
+              borderColor: '#e2e8f0',
+              valueSuffix: 'users',
+              size: 'responsive', // Note: emails don't execute JS for responsive maps, but width=100% helps.
+              data: mapData
+            } as any)
+          );
+          // Patch the rendered SVG string. react-svg-worldmap renders it wrapped in div/figure which have width: 100%. 
+          // We can just keep it as is, standard html should render fine.
+        } catch (err) {
+          console.error('[cron/report] Error rendering WorldMap SVG:', err);
+        }
+      }
+    }
+
   } catch (error) {
     console.error('[cron/report] Error fetching from GA4', error);
     return NextResponse.json({ error: 'Failed to fetch data from GA4' }, { status: 500 });
