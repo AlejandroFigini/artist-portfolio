@@ -18,7 +18,6 @@ type Metrics = {
   contactMessages: number;
   emailClicks: number;
   socialClicks: { network: string; count: number }[];
-  contactMessages: number;
   historicalCountries: { name: string; users: number }[];
 };
 
