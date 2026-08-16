@@ -10,9 +10,9 @@ import { clearAllSite, currentSectionInfo, clearSectionKeys, setLanguage } from 
 import { revealAllNow } from '@/components/home/HomeFx'
 import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
-import { fileToDataURL } from '@/lib/media'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { useToast } from '@/components/ui/Toast'
+import { uploadMedia } from '@/lib/api'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -106,8 +106,16 @@ export default function SettingsPanel() {
     if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
     if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
     setSavingCv(true)
-    const dataUrl = await fileToDataURL(file)
-    await saveSettings({ cvUrl: dataUrl, cvName: file.name }, `CV updated (${file.name})`)
+    try {
+      const res = await uploadMedia(file, file.name, 'settings', 'used')
+      if (res.success) {
+        await saveSettings({ cvUrl: res.secure_url, cvName: file.name }, `CV updated (${file.name})`)
+      } else {
+        toast(res.error || 'Upload failed', 'error')
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Upload failed', 'error')
+    }
     setSavingCv(false)
   }
 
