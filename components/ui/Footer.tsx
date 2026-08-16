@@ -50,6 +50,7 @@ export default function Footer() {
             className="contact-email"
             onClick={(e) => {
               e.preventDefault()
+              sendGAEvent('event', 'email_click')
               window.dispatchEvent(new Event('open-contact'))
             }}
           >

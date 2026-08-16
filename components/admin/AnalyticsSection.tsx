@@ -300,6 +300,22 @@ export default function AnalyticsSection() {
         </div>
 
         <div className="ga-stat-card">
+          <div className="ga-stat-icon" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
+            <i className="fa-solid fa-envelope-open-text"></i>
+          </div>
+          <div className="ga-stat-body">
+            <span className="ga-stat-value">{active.emailClicks}</span>
+            <span className="ga-stat-title">
+              Email Links Clicked <span className="cms-info-tip" tabIndex={0} aria-label="Times a visitor clicked an email link anywhere on the site." style={{ marginLeft: '0.4rem' }}>
+                <i className="fa-solid fa-circle-info"></i>
+                <span className="cms-info-bubble" role="tooltip">Times a visitor clicked an email link anywhere on the site.</span>
+              </span>
+            </span>
+            <span className="ga-stat-desc">Clicks on email links</span>
+          </div>
+        </div>
+
+        <div className="ga-stat-card">
           <div className="ga-stat-icon" style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#a855f7' }}>
             <i className="fa-solid fa-envelope"></i>
           </div>

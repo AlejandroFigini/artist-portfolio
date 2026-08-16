@@ -15,6 +15,8 @@
 
 import '@/styles/about-page.css'
 
+import { uiContentCache } from '@/lib/cms/store'
+import { sendGAEvent } from '@next/third-parties/google'
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 
@@ -254,7 +256,7 @@ export default function AboutPage() {
           Have an animation, character, or 3D project in mind? Drop me a message and let&apos;s talk.
         </p>
         <div className="ab-contact-actions">
-          <a className="ab-cta" href="mailto:hola@luciamontana.com">
+          <a className="ab-cta" href="mailto:hola@luciamontana.com" onClick={() => sendGAEvent('event', 'email_click')}>
             <i className="fa-solid fa-paper-plane" aria-hidden="true" />
             <span data-i18n="ab_get_in_touch">Get in touch</span>
           </a>

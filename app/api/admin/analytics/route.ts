@@ -526,6 +526,7 @@ export async function GET(request: Request) {
     let fullscreenOpens = 0;
     let socialClicks = 0;
     let contactMessages = 0;
+    let emailClicks = 0;
     const socialListRaw: { id: string, count: number }[] = [];
     
     eventsRes[0].rows?.forEach(r => {
@@ -534,6 +535,7 @@ export async function GET(request: Request) {
       if (eventName === 'cv_download') cvDownloads += count;
       if (eventName === 'social_click') socialClicks += count; // Legacy fallback
       if (eventName === 'fullscreen_open') fullscreenOpens += count;
+      if (eventName === 'email_click') emailClicks += count;
       
       // Parse specific social clicks
       if (eventName.startsWith('social_click_')) {
@@ -612,6 +614,7 @@ export async function GET(request: Request) {
         fullscreenOpens,
         socialClicks,
         contactMessages,
+        emailClicks,
         failedLogins,
         socialList, // Desglose de redes detectadas a través de eventos social_click_X
         sections: [],
