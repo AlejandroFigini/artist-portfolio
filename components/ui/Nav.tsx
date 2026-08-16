@@ -17,6 +17,7 @@ import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { sendGAEvent } from '@next/third-parties/google'
+import { useDownloadCv } from '@/hooks/useDownloadCv'
 
 const ContactModal = lazy(() => import('@/components/ui/ContactModal'))
 
@@ -34,6 +35,7 @@ export default function Nav() {
   const ui = useUiText() // re-render al cambiar el idioma global
   const { links } = useSocial()
   const { settings } = useSiteSettings()
+  const { downloadCv, isDownloading } = useDownloadCv(settings.cvUrl, settings.cvName || 'CV.pdf')
   // Con URL configurada se usa esa; sin configurar cae al home genérico de la
   // red (mismo patrón que About) — el menú Portfolio nunca queda vacío.
   const portfolioNets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]) || n.home)
@@ -341,14 +343,13 @@ export default function Nav() {
                   sin ARIA. */}
               {settings.cvUrl ? (
                 <a
-                  className="cv-min-btn"
+                  className={`cv-min-btn${isDownloading ? ' is-disabled' : ''}`}
                   href="/api/cv"
-                  download={settings.cvName || 'CV.pdf'}
+                  onClick={downloadCv}
                   title={ui('download_cv')}
                   aria-label={ui('download_cv')}
-                  onClick={() => sendGAEvent('event', 'cv_download')}
                 >
-                  <i className="fa-solid fa-file-arrow-down"></i><span>{ui('cv')}</span>
+                  <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-file-arrow-down'}`}></i><span>{ui('cv')}</span>
                 </a>
               ) : (
                 <button
@@ -415,14 +416,13 @@ export default function Nav() {
             {/* Siempre presente; sin CV subido queda deshabilitado (sin href). */}
             {settings.cvUrl ? (
               <a
-                className="cv-min-btn" id="cv-download"
+                className={`cv-min-btn${isDownloading ? ' is-disabled' : ''}`} id="cv-download"
                 href="/api/cv"
-                download={settings.cvName || 'CV.pdf'}
+                onClick={downloadCv}
                 title={ui('download_cv')}
                 aria-label={ui('download_cv')}
-                onClick={() => sendGAEvent('event', 'cv_download')}
               >
-                <i className="fa-solid fa-file-arrow-down"></i>
+                <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-file-arrow-down'}`}></i>
                 <span>{ui('cv')}</span>
               </a>
             ) : (

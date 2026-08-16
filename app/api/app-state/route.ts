@@ -94,6 +94,36 @@ export async function POST(req: Request) {
 
   await ensureDb()
   const pool = getPool()!
+
+  /* Guarda anti-vaciado. Un cliente que todavía no cargó su estado manda
+     colecciones vacías, y como cada POST es un reemplazo total del JSONB, eso
+     borra el índice de la biblioteca entero — que es lo que pasó en producción.
+     Vaciar a propósito sigue siendo posible, pero hay que declararlo: el store
+     lo marca con `markIntentionalClear()` en los caminos que de verdad vacían
+     (papelera, purgar sin-usar, borrar todo el sitio). */
+  const allowEmpty = new Set(Array.isArray(body.allowEmpty) ? (body.allowEmpty as string[]) : [])
+  const isEmpty = (v: unknown) =>
+    (Array.isArray(v) && v.length === 0) ||
+    (!!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0)
+
+  const incomingEmpty = STATE_KEYS.filter((k) => k in body && isEmpty(body[k]) && !allowEmpty.has(k))
+  if (incomingEmpty.length > 0) {
+    const { rows } = await pool.query(
+      'SELECT key, value FROM cms_state WHERE key = ANY($1)',
+      [incomingEmpty],
+    )
+    const wouldWipe = (rows as { key: string; value: unknown }[])
+      .filter((r) => !isEmpty(r.value))
+      .map((r) => r.key)
+    if (wouldWipe.length > 0) {
+      console.error('[state POST] vaciado no declarado, rechazado:', wouldWipe.join(', '))
+      return NextResponse.json(
+        { error: `Refusing to empty non-empty state: ${wouldWipe.join(', ')}`, keys: wouldWipe },
+        { status: 409 },
+      )
+    }
+  }
+
   const client = await pool.connect()
   try {
     await client.query('BEGIN')

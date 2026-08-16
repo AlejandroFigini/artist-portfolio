@@ -251,6 +251,7 @@ const resolveLabel = (entry: RegistryEntry, el: Element, i: number) =>
   typeof entry.label === 'function' ? entry.label(el, i) : entry.label
 
 export function indexEditables() {
+  bindMediaDeadListener()
   REGISTRY.forEach((entry) => {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el, i) => {
       let key = el.getAttribute('data-cms-key')
@@ -337,6 +338,26 @@ export function currentSrcOf(el: HTMLElement | null): string {
   return m ? m[1] : ''
 }
 
+/* Sonda para media servida como `background-image`. El elemento no emite `error`,
+   así que se carga la MISMA URL en un <img> desacoplado: si falla, el asset no
+   está y el contenedor debe mostrarse vacío, no negro. Se sondea una sola vez por
+   (elemento, URL) para no repetir la petición en cada rescan. */
+function probeBackground(el: HTMLElement, value: string) {
+  const url = optimizedMediaSrc(value, renderWidthOf(el))
+  if (el.dataset.cmsBgProbed === url) return
+  el.dataset.cmsBgProbed = url
+  const probe = new Image()
+  probe.onerror = () => {
+    // Solo si el contenedor sigue mostrando ESTA imagen (pudo cambiar mientras tanto).
+    if (el.dataset.cmsBgProbed !== url) return
+    const key = el.dataset.cmsKey
+    console.error('[cms] fondo inexistente', key ? `para ${key}` : '', '→ se muestra el contenedor vacío')
+    el.style.backgroundImage = ''
+    if (key) showEmptySlot(key)
+  }
+  probe.src = url
+}
+
 function applyValue(el: HTMLElement, type: string, value: string) {
   if (value == null) return
   if (type === 'text') {
@@ -375,6 +396,12 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     } else {
       el.dataset.cmsSrc = value
       el.style.backgroundImage = `url("${optimizedMediaSrc(value, renderWidthOf(el))}")`
+      /* Un `background-image` no emite `error`: si la URL está muerta el
+         contenedor se queda con el fondo puesto y sin forma de enterarse — toda
+         una clase de media invisible para la verificación desde el DOM. Se sondea
+         con un <img> fuera de pantalla, que sí avisa, y ante 404 se cae al estado
+         vacío en vez de quedar negro. */
+      if (value) probeBackground(el, value)
     }
     if (el.hasAttribute('data-full')) el.setAttribute('data-full', value)
   } else if (type === 'video') {
@@ -939,6 +966,26 @@ function visualHosts(key: string): HTMLElement[] {
   const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
   if (key.includes('::c') && host && host.classList.contains('ch-portrait-wrap')) return []
   return [host]
+}
+
+/* Media que no existe → estado vacío, nunca negro.
+   `attachMediaRetry` (lib/utils.ts) detecta que la URL original de Cloudinary da
+   404 —o sea que el asset no está, no que la derivada se esté generando— y emite
+   `cms:media-dead`. Sin este listener esa información se descartaba y el
+   contenedor quedaba en negro para siempre. Un solo listener delegado en el
+   documento cubre todos los contenedores, presentes y futuros. */
+let mediaDeadBound = false
+
+function bindMediaDeadListener() {
+  if (mediaDeadBound || typeof document === 'undefined') return
+  mediaDeadBound = true
+  document.addEventListener('cms:media-dead', (ev) => {
+    const el = ev.target as HTMLElement | null
+    const key = el?.dataset?.cmsKey || el?.closest<HTMLElement>('[data-cms-key]')?.dataset.cmsKey
+    if (!key) return
+    console.error('[cms] media inexistente para', key, '→ se muestra el contenedor vacío')
+    showEmptySlot(key)
+  })
 }
 
 export function showEmptySlot(key: string) {

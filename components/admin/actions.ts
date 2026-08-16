@@ -9,7 +9,7 @@ import { approxDataUrlBytes } from '@/lib/utils'
 import {
   state, emit, loadJSON, saveJSON, LS, recordAudit, recordMediaMeta,
   persistUsed, persistUnused, persistRetired, persistTrash,
-  archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer,
+  archiveMediaKey, clearItemOverrides, purgeUrlsFromAllState, type UnusedEntry, flushSyncToServer, cloudinaryMove, markIntentionalClear,
 } from '@/lib/cms/store'
 
 export async function deletePermanent(idx: number) {
@@ -66,6 +66,7 @@ export async function emptyTrash() {
     const url = item.src || item.dataUrl
     if (url) urls.push(url)
   })
+  markIntentionalClear('trash')
   state.trash = []
   persistTrash()
   if (urls.length > 0) purgeUrlsFromAllState(urls)
@@ -180,6 +181,10 @@ export function batchMoveUnusedToTrash(indices: number[]): number {
     if (entry) {
       entry.deletedAt = Date.now()
       state.trash.push(entry)
+      /* Faltaba mover el asset en Cloudinary: la versión de a uno
+         (`moveUnusedToTrash`) sí lo hace y esta no, así que el mismo gesto dejaba
+         estados distintos según se hiciera individual o en lote. */
+      cloudinaryMove(entry.src || entry.dataUrl || '', 'portfolio/basurero')
       count++
     }
   })
@@ -216,7 +221,13 @@ export function purgeUnused() {
   const count = state.unused.length
   if (!count) return
   const now = Date.now()
-  state.unused.forEach((e) => { e.deletedAt = now; state.trash.push(e) })
+  state.unused.forEach((e) => {
+    e.deletedAt = now
+    state.trash.push(e)
+    // Misma corrección que en batchMoveUnusedToTrash: acá tampoco se movía el asset.
+    cloudinaryMove(e.src || e.dataUrl || '', 'portfolio/basurero')
+  })
+  markIntentionalClear('unused')
   state.unused = []
   persistUnused(); persistTrash()
   recordAudit({ user: 'superadmin', section: 'Sin usar', label: `${count} items`, summary: 'Moved to trash (empty)' })

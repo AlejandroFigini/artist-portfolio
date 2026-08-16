@@ -211,6 +211,7 @@ export function useCmsStore(): number {
 export function loadState() {
   state.audit = []
   state.mediaMeta = {}
+  markIntentionalClear('used_content', 'unused', 'trash', 'retired', 'media_meta', 'audit', 'container_names')
   state.unused = []
   state.usedContent = {}
   state.retired = []
@@ -261,6 +262,17 @@ function dirtyItems(): Record<string, string> {
   return out
 }
 
+/* Vaciar una colección es legítimo (vaciar papelera, purgar sin-usar, borrar todo
+   el sitio) pero también es exactamente lo que hace un cliente con estado roto.
+   El servidor no puede distinguirlos mirando el payload, así que la intención se
+   declara: solo las claves marcadas acá pueden llegar vacías y pisar datos. */
+const _allowEmpty = new Set<string>()
+
+/** Este vaciado es deliberado, no un cliente sin cargar. */
+export function markIntentionalClear(...keys: string[]) {
+  keys.forEach((k) => _allowEmpty.add(k))
+}
+
 let _syncTimer: NodeJS.Timeout | null = null
 let _flushPromise: Promise<void> | null = null
 const _pendingKeys = new Set<string>()
@@ -305,9 +317,11 @@ export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void
      los dos pasaban el límite de keepalive, así que el navegador descartaba el
      lote entero — incluido el índice de la biblioteca. Separados, `used_content`
      entra siempre. */
+  const allowEmpty = [..._allowEmpty]
+  _allowEmpty.clear()
   const { media_meta, ...rest } = payload
-  if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts).catch(() => {}))
-  if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts).catch(() => {}))
+  if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts, allowEmpty).catch(() => {}))
+  if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts, allowEmpty).catch(() => {}))
   if (syncOverrides) {
     const diff = dirtyItems()
     if (Object.keys(diff).length > 0) {
@@ -604,10 +618,14 @@ import { getCloudinaryFolder } from '@/lib/cms/pages'
 
 /** Mueve un asset en Cloudinary de forma fire-and-forget y actualiza la URL
  *  en todos los arrays del estado donde aparezca. */
-export function cloudinaryMove(oldUrl: string, newFolder: string) {
+export function cloudinaryMove(oldUrl: string, newFolder: string, ignoreKeys: string[] = []) {
   if (!oldUrl || !oldUrl.includes('cloudinary.com')) return
-  moveMedia(oldUrl, newFolder).then(({ newUrl }) => {
-    if (newUrl === oldUrl) return // sin cambios
+  moveMedia(oldUrl, newFolder, ignoreKeys).then(({ newUrl, ok, error }) => {
+    if (!ok) { console.error('[cloudinaryMove] no se aplicó el estado:', error); return }
+    /* Con el estado en tags la URL NO cambia, así que esto es lo normal: no hay
+       nada que reescribir. Solo se sigue para el caso heredado de una URL que sí
+       cambió (assets movidos por el modelo viejo). */
+    if (newUrl === oldUrl) return
     // Actualizar la URL en usedContent
     for (const k of Object.keys(state.usedContent)) {
       if (state.usedContent[k].src === oldUrl) {
@@ -650,8 +668,11 @@ export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'r
         type: entry.kind === 'video' ? 'video/webm' : 'image/webp', ts: Date.now(),
         label: entry.label, section: entry.section, original: entry.original, reason,
       })
-      // Mover en Cloudinary: en-uso → sin-usar
-      if (entry.src) cloudinaryMove(entry.src, 'portfolio/sin-usar')
+      /* Pasar a sin-usar en Cloudinary. Se le informan al servidor los contenedores
+         que este mismo gesto está vaciando (`entry.key` + `ignoreKeys`): su borrado
+         en `cms_data` va con debounce y todavía puede no haber aterrizado, y sin eso
+         el refcount del servidor bloquearía su propia operación legítima. */
+      if (entry.src) cloudinaryMove(entry.src, 'portfolio/sin-usar', [entry.key, ...ignoreKeys])
     }
   }
 }

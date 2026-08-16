@@ -7,6 +7,7 @@ import FooterSocial from './FooterSocial'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
+import { useDownloadCv } from '@/hooks/useDownloadCv'
 
 const EXPLORE_LINKS = [
   { href: '/#presentacion', label: 'About me', i18n: 'nav_about' },
@@ -19,6 +20,7 @@ const EXPLORE_LINKS = [
 
 export default function Footer() {
   const { settings } = useSiteSettings()
+  const { downloadCv, isDownloading } = useDownloadCv(settings.cvUrl, settings.cvName || 'CV.pdf')
   const ui = useUiText()
   return (
     <footer className="main-footer" id="contacto">
@@ -54,15 +56,14 @@ export default function Footer() {
             <i className="fa-solid fa-envelope"></i> lumontana23@gmail.com
           </a>
           <a
-            className={`cv-btn cv-btn-footer${settings.cvUrl ? '' : ' is-disabled'}`}
+            className={`cv-btn cv-btn-footer${!settings.cvUrl || isDownloading ? ' is-disabled' : ''}`}
             id="cv-download-footer"
             href={settings.cvUrl ? '/api/cv' : undefined}
-            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+            onClick={settings.cvUrl ? downloadCv : undefined}
             title={settings.cvUrl ? ui('download_cv') : ui('cv_unavailable')}
             aria-label={ui('download_cv')} aria-disabled={!settings.cvUrl || undefined}
-            onClick={() => sendGAEvent('event', 'cv_download')}
           >
-            <i className="fa-solid fa-file-arrow-down"></i><span>{ui('cv')}</span>
+            <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-file-arrow-down'}`}></i><span>{ui('cv')}</span>
           </a>
         </div>
       </div>

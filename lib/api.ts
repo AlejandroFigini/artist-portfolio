@@ -252,18 +252,25 @@ export async function deleteMedia(url: string): Promise<void> {
 }
 
 /** Mueve un asset de Cloudinary a una nueva carpeta. Devuelve la nueva URL. */
-export async function moveMedia(url: string, newFolder: string): Promise<{ newUrl: string }> {
+export async function moveMedia(url: string, newFolder: string, ignoreKeys: string[] = []): Promise<{ newUrl: string; ok: boolean; error?: string }> {
   try {
     const r = await fetch('/api/move-media', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, newFolder }),
+      body: JSON.stringify({ url, newFolder, ignoreKeys }),
     })
-    if (!r.ok) return { newUrl: url }
+    if (!r.ok) {
+      /* El fallo se propaga. Devolver `{newUrl: url}` a secas hacía que "falló" y
+         "ya estaba bien" fueran el mismo valor para el caller. */
+      const msg = await r.json().then((d) => (d as { error?: string }).error).catch(() => undefined)
+      console.error('[moveMedia] rechazado:', r.status, msg)
+      return { newUrl: url, ok: false, error: msg }
+    }
     const data = await r.json()
-    return { newUrl: (data as { newUrl?: string }).newUrl || url }
-  } catch {
-    return { newUrl: url }
+    return { newUrl: (data as { newUrl?: string }).newUrl || url, ok: true }
+  } catch (err) {
+    console.error('[moveMedia] error de red:', err)
+    return { newUrl: url, ok: false, error: 'network' }
   }
 }
 
@@ -372,8 +379,8 @@ const KEEPALIVE_MAX_BYTES = 60 * 1024
    empujaba el payload de `persistUsed` por encima de 64 KiB, el navegador lo
    rechazaba y el `catch {}` se lo tragaba → used_content nunca se pudo volver a
    escribir y quedó vacío en la DB. */
-export async function saveState(payload: CmsStatePayload, opts: { unload?: boolean } = {}): Promise<boolean> {
-  const body = JSON.stringify(payload)
+export async function saveState(payload: CmsStatePayload, opts: { unload?: boolean } = {}, allowEmpty: string[] = []): Promise<boolean> {
+  const body = JSON.stringify(allowEmpty.length ? { ...payload, allowEmpty } : payload)
   const size = new Blob([body]).size
   const useKeepalive = !!opts.unload && size <= KEEPALIVE_MAX_BYTES
 

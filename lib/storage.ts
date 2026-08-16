@@ -171,12 +171,19 @@ export async function uploadBuffer(
       tags: [STATE_TAG[state]],
     }
     if (filename) {
-      const lastDot = filename.lastIndexOf('.')
-      const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
-      options.public_id = kind === 'raw' ? filename : base
+      /* Nombre legible pero ÚNICO. Antes: `public_id` explícito + `unique_filename:
+         false` + `overwrite: true`. `cleanFilename` normaliza acentos, mayúsculas y
+         separadores, así que "Mi Foto (1).webp", "mi foto 1.webp" y "mi-foto-1.webp"
+         colapsan al mismo public_id — y con overwrite la segunda subida REEMPLAZABA
+         los bytes de la primera. La URL seguía dando 200, así que todo contenedor
+         que apuntaba ahí pasaba a mostrar otra imagen, sin ningún cambio en la DB
+         que lo delatara. Ninguna auditoría basada en URLs puede ver eso.
+         `unique_filename` era inerte mientras `public_id` fuera explícito: Cloudinary
+         lo ignora. Por eso se van los tres juntos. Ahora Cloudinary sufija
+         (`mi-foto-1_a7f3c1`) y cada subida es un asset distinto. */
       options.use_filename = true
-      options.unique_filename = false
-      options.overwrite = true
+      options.unique_filename = true
+      options.overwrite = false
       options.filename_override = filename
     }
     if (kind === 'raw') {
@@ -186,6 +193,16 @@ export async function uploadBuffer(
       // videos medianos por límite de procesamiento de Cloudinary. Se guarda el
       // original; la optimización se aplica en la URL de entrega (f_auto/q_auto).
       options.resource_type = 'video'
+      /* Pero la entrega usa f_auto (obligatorio: Safari/iOS no reproduce webm), y
+         f_auto sobre un video sin derivadas dispara el transcode en la PRIMERA
+         visita — segundos de contenedor negro, peor en mobile. Se pre-generan mp4
+         y webm para que f_auto siempre tenga a qué apuntar.
+         `eager_async: true` es la diferencia con la imagen: en async Cloudinary
+         acepta la subida y transcodea de fondo, así que no reaparece el fallo por
+         límite de procesamiento que documenta el comentario de arriba. Hasta que
+         terminan, `attachMediaRetry` cubre el hueco. */
+      options.eager = [{ format: 'mp4' }, { format: 'webm' }]
+      options.eager_async = true
     } else {
       options.resource_type = 'image'
       options.format = 'webp'
@@ -220,7 +237,10 @@ export async function uploadBuffer(
   if (filename) {
     const lastDot = filename.lastIndexOf('.')
     const base = lastDot > 0 ? filename.slice(0, lastDot) : filename
-    name = `${base}.${ext}`
+    /* Sufijo corto, mismo criterio que Cloudinary arriba: sin él, dos archivos
+       cuyo nombre normaliza igual se pisaban en disco y todo contenedor que
+       apuntara al primero pasaba a mostrar el segundo. */
+    name = `${base}_${randomUUID().slice(0, 6)}.${ext}`
   }
   await mkdir(LOCAL_DIR, { recursive: true })
   await writeFile(path.join(LOCAL_DIR, name), buffer)

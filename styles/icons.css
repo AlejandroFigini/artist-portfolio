@@ -67,7 +67,6 @@
 .fa-box-open::before { content: "\f49e"; }
 .fa-calendar::before { content: "\f133"; }
 .fa-caret-down::before { content: "\f0d7"; }
-.fa-chart-area::before { content: "\f1fe"; }
 .fa-chart-line::before { content: "\f201"; }
 .fa-check::before { content: "\f00c"; }
 .fa-check-double::before { content: "\f560"; }
@@ -98,6 +97,7 @@
 .fa-eraser::before { content: "\f12d"; }
 .fa-expand::before { content: "\f065"; }
 .fa-eye::before { content: "\f06e"; }
+.fa-eye-slash::before { content: "\f070"; }
 .fa-file-arrow-down::before { content: "\f56d"; }
 .fa-file-arrow-up::before { content: "\f574"; }
 .fa-file-export::before { content: "\f56e"; }
@@ -115,6 +115,7 @@
 .fa-gear::before { content: "\f013"; }
 .fa-ghost::before { content: "\f6e2"; }
 .fa-globe::before { content: "\f0ac"; }
+.fa-hourglass-half::before { content: "\f252"; }
 .fa-house::before { content: "\f015"; }
 .fa-image::before { content: "\f03e"; }
 .fa-inbox::before { content: "\f01c"; }
@@ -169,6 +170,7 @@
 .fa-user::before { content: "\f007"; }
 .fa-user-astronaut::before { content: "\f4fb"; }
 .fa-user-gear::before { content: "\f4fe"; }
+.fa-user-lock::before { content: "\f502"; }
 .fa-user-pen::before { content: "\f4ff"; }
 .fa-user-plus::before { content: "\f234"; }
 .fa-user-shield::before { content: "\f505"; }

@@ -14,7 +14,9 @@ import { fileToDataURL } from '@/lib/media'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { useToast } from '@/components/ui/Toast'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
+import { useSocial } from '@/components/ui/SocialProvider'
 import { sendGAEvent } from '@next/third-parties/google'
+import { useDownloadCv } from '@/hooks/useDownloadCv'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -67,6 +69,7 @@ export default function SettingsPanel() {
   const saveSettings = useSaveSettings()
   const toast = useToast()
   const [savingCv, setSavingCv] = useState(false)
+  const { downloadCv, isDownloading } = useDownloadCv(settings.cvUrl, settings.cvName || 'CV.pdf')
   const transFileRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
@@ -248,14 +251,13 @@ export default function SettingsPanel() {
         <div className="setting-item">
           <span>{ui('curriculum_vitae')}</span>
           <a
-            className={`cv-btn cv-btn-settings${settings.cvUrl ? '' : ' is-disabled'}`}
+            className={`cv-btn cv-btn-settings${settings.cvUrl && !isDownloading ? '' : ' is-disabled'}`}
             id="cv-download-settings" href={settings.cvUrl ? '/api/cv' : undefined}
-            download={settings.cvUrl ? settings.cvName || 'CV.pdf' : undefined}
+            onClick={settings.cvUrl ? downloadCv : undefined}
             title={settings.cvUrl ? ui('download_cv_pdf') : ui('cv_unavailable')}
             aria-disabled={!settings.cvUrl || undefined}
-            onClick={() => sendGAEvent('event', 'cv_download')}
           >
-            <i className="fa-solid fa-file-arrow-down"></i>
+            <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-file-arrow-down'}`}></i>
             <span>{ui('cv')}</span>
           </a>
         </div>
