@@ -315,7 +315,7 @@ export async function GET(req: Request) {
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const result = await sendMail({
     to: await getNotificationEmails(),
-    subject: \`[Portfolio] Weekly Traffic Report - \${dateStr}\`,
+    subject: `[Portfolio] Weekly Traffic Report - ${dateStr}`,
     html: htmlContent,
     text: buildReportText(metricsData),
     fromName: 'Portfolio Analytics',
