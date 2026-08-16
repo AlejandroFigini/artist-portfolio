@@ -126,13 +126,23 @@ export function emailLayout({ title, subtitle, body, footer }: {
   footer?: string
 }): string {
   return `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-      <h2 style="color: ${ACCENT}; margin-bottom: 4px;">${escapeHtml(title)}</h2>
-      ${subtitle ? `<p style="color: #64748b; font-size: 14px; margin-top: 0;">${escapeHtml(subtitle)}</p>` : ''}
-      <hr style="border: none; border-top: 2px solid ${ACCENT}; margin: 16px 0 24px;">
-      ${body}
-      ${footer ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">${escapeHtml(footer)}</p>` : ''}
-    </div>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 20px 0;">
+      <tr>
+        <td align="center">
+          <table border="0" cellpadding="0" cellspacing="0" style="font-family: 'Segoe UI', Arial, sans-serif; width: 100%; max-width: 600px; background-color: #ffffff; margin: 0 auto; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <tr>
+              <td>
+                <h2 style="color: ${ACCENT}; margin-bottom: 4px; margin-top: 0;">${escapeHtml(title)}</h2>
+                ${subtitle ? `<p style="color: #64748b; font-size: 14px; margin-top: 0;">${escapeHtml(subtitle)}</p>` : ''}
+                <hr style="border: none; border-top: 2px solid ${ACCENT}; margin: 16px 0 24px;">
+                ${body}
+                ${footer ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 24px; text-align: center;">${escapeHtml(footer)}</p>` : ''}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   `
 }
 

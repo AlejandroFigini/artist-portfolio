@@ -59,7 +59,7 @@ function buildReportHtml(m: Metrics): string {
     : eventRow('- None', 0, true);
 
   const body = `
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 24px;">
+    <div style="margin-bottom: 24px;">
       <h2 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 16px 0;">Audience Overview</h2>
       <table style="width: 100%; text-align: left; border-collapse: collapse;">
         ${metricRow('Active users', m.users)}
@@ -315,7 +315,8 @@ export async function GET(req: Request) {
             metricsData.historicalMapSvg = `<img src="${uploadRes.secure_url}" alt="Historical Map" style="width:100%; max-width:600px; height:auto; display:block; margin:0 auto;" />`;
           } else {
              // Fallback to inline SVG if no cloudinary (will likely be stripped by email clients)
-             metricsData.historicalMapSvg = svgString;
+             // We patch the width/height to prevent it from stretching the container to 1000px
+             metricsData.historicalMapSvg = svgString.replace(/width="1000"/g, 'width="100%"').replace(/height="750"/g, 'height="auto"');
           }
         } catch (err) {
           console.error('[cron/report] Error rendering WorldMap SVG:', err);
