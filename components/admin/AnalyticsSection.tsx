@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import RealtimeCard from './RealtimeCard'
+import WorldMap from "react-svg-worldmap"
+/* El mapa tipa `country` como unión de códigos ISO literales. */
+type CountryIsoCode = React.ComponentProps<typeof WorldMap>['data'][number]['country']
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import type { AnalyticsData, CountryMetric, FailedLogin } from '@/lib/analytics-types'
@@ -347,6 +350,20 @@ export default function AnalyticsSection() {
               </span>
         </div>
         <div className="ga-countries-layout">
+          <div className="ga-map-wrapper">
+            <WorldMap
+              color="#3b82f6"
+              title=""
+              value-suffix="visitors"
+              size="responsive"
+              /* GA manda 'XX' cuando no puede resolver el país: no es un ISO
+                 válido, así que se descarta antes de llegar al mapa. */
+              data={(active.countries || [])
+                .filter((c) => /^[a-z]{2}$/i.test(c.code) && c.code.toUpperCase() !== 'XX')
+                .map((c) => ({ country: c.code.toLowerCase() as CountryIsoCode, value: c.count }))}
+              backgroundColor="transparent"
+            />
+          </div>
           <div className="ga-list ga-list--countries">
             <div className="ga-list-header">
               <span className="ga-header-col">COUNTRY</span>
