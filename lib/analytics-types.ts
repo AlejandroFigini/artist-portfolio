@@ -45,7 +45,7 @@ export type AnalyticsData = {
   cvDownloads: number
   fullscreenOpens: number
   socialClicks: number
-  emailClicks: number
+  contactMessages: number
   failedLogins: number
   socialList: SocialStat[]
   sections: SectionStat[]

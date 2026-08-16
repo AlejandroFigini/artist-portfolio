@@ -15,7 +15,7 @@ type Metrics = {
   topPages: { name: string; views: number }[];
   topCountries: { name: string; users: number; newUsers: number; returningUsers: number }[];
   cvDownloads: number;
-  emailClicks: number;
+  contactMessages: number;
   socialClicks: { network: string; count: number }[];
   contactMessages: number;
   historicalCountries: { name: string; users: number }[];
@@ -92,7 +92,6 @@ function buildReportHtml(m: Metrics): string {
     <div style="margin-top: 32px;">
       <h3 style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Key events</h3>
       <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
-        ${eventRow('Email clicks', m.emailClicks)}
         ${eventRow('Messages received (form)', m.contactMessages)}
         ${eventRow('CV downloads', m.cvDownloads)}
         <tr>
@@ -123,7 +122,6 @@ function buildReportText(m: Metrics): string {
     ...(m.topPages.length ? ['Top pages:', ...m.topPages.map((p) => `  - ${p.name}: ${p.views} views`), ''] : []),
     ...(m.topCountries.length ? ['Top countries (this week):', ...m.topCountries.map((c) => `  - ${c.name}: ${c.users} active (${c.returningUsers} returning, ${c.newUsers} new)`), ''] : []),
     'Key events:',
-    `  Email clicks: ${m.emailClicks}`,
     `  Messages received (form): ${m.contactMessages}`,
     `  CV downloads: ${m.cvDownloads}`,
     `  Social network clicks:`,
@@ -175,9 +173,8 @@ export async function GET(req: Request) {
     topPages: [],
     topCountries: [],
     cvDownloads: 0,
-    emailClicks: 0,
-    socialClicks: [],
     contactMessages: 0,
+    socialClicks: [],
     historicalCountries: [],
   };
 
@@ -262,7 +259,6 @@ export async function GET(req: Request) {
         const eventName = r.dimensionValues?.[0]?.value || '';
         const count = parseInt(r.metricValues?.[0]?.value || '0', 10);
         if (eventName === 'cv_download') metricsData.cvDownloads += count;
-        if (eventName === 'email_click') metricsData.emailClicks += count;
         if (eventName === 'social_click') {
           // Legacy fallback
           socialMap.set('Unknown', (socialMap.get('Unknown') || 0) + count);
@@ -298,7 +294,7 @@ export async function GET(req: Request) {
     try {
       const pool = getPool()!;
       const { rows } = await pool.query(
-        "SELECT COUNT(*)::int as count FROM contact_messages WHERE created_at >= NOW() - INTERVAL '7 days'"
+        "SELECT COUNT(*)::int as count FROM contact_messages WHERE created_at::date >= CURRENT_DATE - 7"
       );
       metricsData.contactMessages = rows[0]?.count || 0;
     } catch (e) {

@@ -523,9 +523,9 @@ export async function GET(request: Request) {
 
     // Process Events
     let cvDownloads = 0;
-    let socialClicks = 0;
     let fullscreenOpens = 0;
-    let emailClicks = 0;
+    let socialClicks = 0;
+    let contactMessages = 0;
     const socialListRaw: { id: string, count: number }[] = [];
     
     eventsRes[0].rows?.forEach(r => {
@@ -534,7 +534,6 @@ export async function GET(request: Request) {
       if (eventName === 'cv_download') cvDownloads += count;
       if (eventName === 'social_click') socialClicks += count; // Legacy fallback
       if (eventName === 'fullscreen_open') fullscreenOpens += count;
-      if (eventName === 'email_click') emailClicks += count;
       
       // Parse specific social clicks
       if (eventName.startsWith('social_click_')) {
@@ -583,6 +582,12 @@ export async function GET(request: Request) {
             [resolveDbDate(startDate), resolveDbDate(endDate)]
           );
           failedLogins = rows[0]?.count || 0;
+
+          const { rows: contactRows } = await pool.query(
+            'SELECT COUNT(*)::int as count FROM contact_messages WHERE created_at::date >= $1::date AND created_at::date <= $2::date',
+            [resolveDbDate(startDate), resolveDbDate(endDate)]
+          );
+          contactMessages = contactRows[0]?.count || 0;
         }
       } catch (err) {
         console.error('Error fetching failed logins from DB:', err);
@@ -606,7 +611,7 @@ export async function GET(request: Request) {
         cvDownloads,
         fullscreenOpens,
         socialClicks,
-        emailClicks,
+        contactMessages,
         failedLogins,
         socialList, // Desglose de redes detectadas a través de eventos social_click_X
         sections: [],

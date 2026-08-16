@@ -304,14 +304,14 @@ export default function AnalyticsSection() {
             <i className="fa-solid fa-envelope"></i>
           </div>
           <div className="ga-stat-body">
-            <span className="ga-stat-value">{active.emailClicks}</span>
+            <span className="ga-stat-value">{active.contactMessages}</span>
             <span className="ga-stat-title">
-              Email Clicks <span className="cms-info-tip" tabIndex={0} aria-label="Times a visitor clicked your email address in the footer to start a direct contact." style={{ marginLeft: '0.4rem' }}>
+              Messages Received <span className="cms-info-tip" tabIndex={0} aria-label="Messages submitted through the contact form." style={{ marginLeft: '0.4rem' }}>
                 <i className="fa-solid fa-circle-info"></i>
-                <span className="cms-info-bubble" role="tooltip">Times a visitor clicked your email address in the footer to start a direct contact.</span>
+                <span className="cms-info-bubble" role="tooltip">Messages submitted through the contact form.</span>
               </span>
             </span>
-            <span className="ga-stat-desc">Contact from footer</span>
+            <span className="ga-stat-desc">From contact form</span>
           </div>
         </div>
 
