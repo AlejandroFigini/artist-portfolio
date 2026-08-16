@@ -283,19 +283,40 @@ export async function GET(req: Request) {
           const React = require('react');
           const { renderToStaticMarkup } = require('react-dom/server');
           const WorldMap = require('react-svg-worldmap').default || require('react-svg-worldmap');
+          const cloudinary = require('cloudinary').v2;
           
-          metricsData.historicalMapSvg = renderToStaticMarkup(
+          const svgString = renderToStaticMarkup(
             React.createElement(WorldMap, {
               color: '#475569',
               backgroundColor: 'transparent',
               borderColor: '#e2e8f0',
               valueSuffix: 'users',
-              size: 'responsive', // Note: emails don't execute JS for responsive maps, but width=100% helps.
+              size: 'lg',
               data: mapData
             } as any)
           );
-          // Patch the rendered SVG string. react-svg-worldmap renders it wrapped in div/figure which have width: 100%. 
-          // We can just keep it as is, standard html should render fine.
+
+          if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+            cloudinary.config({
+              cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+              api_key: process.env.CLOUDINARY_API_KEY,
+              api_secret: process.env.CLOUDINARY_API_SECRET,
+            });
+            const base64Svg = Buffer.from(svgString).toString('base64');
+            const dataUri = `data:image/svg+xml;base64,${base64Svg}`;
+            
+            const uploadRes = await cloudinary.uploader.upload(dataUri, {
+              public_id: 'weekly_report_map',
+              overwrite: true,
+              format: 'png',
+              folder: 'portfolio_system'
+            });
+
+            metricsData.historicalMapSvg = `<img src="${uploadRes.secure_url}" alt="Historical Map" style="width:100%; max-width:600px; height:auto; display:block; margin:0 auto;" />`;
+          } else {
+             // Fallback to inline SVG if no cloudinary (will likely be stripped by email clients)
+             metricsData.historicalMapSvg = svgString;
+          }
         } catch (err) {
           console.error('[cron/report] Error rendering WorldMap SVG:', err);
         }
