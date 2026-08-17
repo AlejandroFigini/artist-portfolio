@@ -170,7 +170,14 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
                   if (isHovered) setActiveSlide(m + 1)
                 }}
               >
-                <CharMedia cmsKey={`${key}::c${m}`} className="ch-concept" onOpen={open} />
+                <CharMedia 
+                  cmsKey={`${key}::c${m}`} 
+                  className="ch-concept" 
+                  onOpen={() => {
+                    setIsHovered(true)
+                    setActiveSlide(m + 1)
+                  }} 
+                />
               </div>
             )
           })}

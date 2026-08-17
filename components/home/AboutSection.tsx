@@ -82,14 +82,14 @@ export default function AboutSection() {
       gsap.set('.about-social', { autoAlpha: 0, y: 10 })
       gsap.set('.about-rail-fill', { scaleY: 0, transformOrigin: 'top center' })
 
-      /* Orden pedido: primero el SUB-TEXTO (lede), después el TÍTULO. Posiciones
+      /* Orden pedido: primero el TÍTULO, después el SUB-TEXTO (lede). Posiciones
          absolutas para que la secuencia sea explícita y no dependa del encadenado
          relativo. La instrumentación (fig/media/portrait/bio/meta) mantiene sus
          tiempos previos. */
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.about-fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.2)
-        .to('.about-title', { autoAlpha: 1, y: 0, duration: 0.9 }, 0.75)
+        .to('.about-title', { autoAlpha: 1, y: 0, duration: 0.9 }, 0.2)
+        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.75)
         .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, 0.1)
         .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, 0.5)
         .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, 0.85)
