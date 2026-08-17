@@ -361,6 +361,11 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   outline-offset: -2px;
 }
 
+.highlight-link {
+  color: var(--accent) !important;
+  font-weight: 500;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cv-btn, .cv-btn i, .cms-navauth-btn::before, .cms-navauth-btn::after { transition: none; }
 }
@@ -538,6 +543,9 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   .nav-links .dropbtn {
     font-size: clamp(0.94rem, 3.8vw, 1.15rem) !important;
     padding: 0.32rem 0 !important;
+  }
+  .nav-menu-scrollable > a.highlight-link {
+    font-weight: normal !important;
   }
   .nav-links .dropdown-content {
     padding: 0.1rem 0 0.3rem 1rem !important;
