@@ -524,7 +524,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   }
   .nav-menu-scrollable {
     justify-content: safe center;
-    gap: 0.15rem !important;
+    gap: 0.35rem !important;
     padding: 0 !important;
   }
 
@@ -537,7 +537,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   .nav-menu-scrollable > a,
   .nav-links .dropbtn {
     font-size: clamp(0.94rem, 3.8vw, 1.15rem) !important;
-    padding: 0.24rem 0 !important;
+    padding: 0.32rem 0 !important;
   }
   .nav-links .dropdown-content {
     padding: 0.1rem 0 0.3rem 1rem !important;
@@ -547,7 +547,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     /* El aire entre sub-opciones se mantiene con padding y no con gap: además
        de separarlas agranda el área táctil, que es lo que se toca al elegir. */
     line-height: 1.5;
-    padding: 0.28rem 0 !important;
+    padding: 0.35rem 0 !important;
   }
 
   /* Las sub-opciones NO se mueven al arrastrar el dedo.
@@ -588,12 +588,11 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
    apelmazadas sin motivo. El umbral va en alto y no en ancho: lo que decide si
    el menú entra es el alto, y un mismo teléfono rotado cae solo al modo
    compacto, que es el que corresponde. --- */
-@media (max-width: 992px) and (min-height: 780px) {
-  /* Más aire ENTRE opciones principales: el `safe center` dejaba ~48px muertos
-     arriba de Feed y debajo de Contact en teléfonos altos (iPhone 13). Subir
-     gap + padding reparte ese espacio como separación real entre opciones sin
-     desbordar (el contenido sigue entrando; si algún día no entra, `safe
-     center` cae a scroll). */
+@media (max-width: 992px) and (min-height: 680px) {
+  /* Más aire ENTRE opciones principales. Umbral bajado a 680px para que la
+     mayoría de teléfonos modernos (iPhone 12/13/14/15, Pixel, Galaxy S) caigan
+     aquí incluso con barras del sistema activas. `safe center` sigue como
+     fallback si algún dispositivo no entra. */
   .nav-menu-scrollable { gap: 0.85rem !important; }
   .nav-links > a,
   .nav-menu-scrollable > a,
