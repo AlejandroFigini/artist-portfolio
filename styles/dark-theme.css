@@ -440,6 +440,91 @@ body {
   background: rgba(147, 133, 166, 0.08);
 }
 
+/* --- 21. CONTACT PAGE (/contact) --------------------------------- */
+
+[data-theme="dark"] .ct-main {
+  background: var(--bg-primary);
+}
+
+[data-theme="dark"] .ct-grid-bg {
+  background-image:
+    linear-gradient(rgba(147, 133, 166, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(147, 133, 166, 0.025) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .ct-aurora--a {
+  background: radial-gradient(circle, rgba(147, 133, 166, 0.25), rgba(124, 58, 237, 0.08) 60%, transparent 75%);
+}
+[data-theme="dark"] .ct-aurora--b {
+  background: radial-gradient(circle, rgba(91, 33, 182, 0.2), rgba(59, 7, 100, 0.08) 55%, transparent 70%);
+}
+[data-theme="dark"] .ct-aurora--c {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.05) 55%, transparent 70%);
+}
+
+[data-theme="dark"] .ct-hero__file {
+  border-color: rgba(147, 133, 166, 0.2);
+  background: rgba(147, 133, 166, 0.04);
+}
+
+[data-theme="dark"] .ct-info-card {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .ct-info-card:hover {
+  border-color: rgba(147, 133, 166, 0.3);
+  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .ct-info-card__icon {
+  background: rgba(147, 133, 166, 0.08);
+  border-color: rgba(147, 133, 166, 0.15);
+}
+[data-theme="dark"] .ct-info-card:hover .ct-info-card__icon {
+  background: var(--accent);
+}
+
+[data-theme="dark"] .ct-form-wrap {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .ct-form-wrap__fig {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .ct-social-card {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .ct-social-card:hover {
+  border-color: rgba(147, 133, 166, 0.3);
+  background: rgba(147, 133, 166, 0.06);
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .ct-cv-card {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .ct-cv-card__icon-wrap {
+  background: rgba(147, 133, 166, 0.08);
+  border-color: rgba(147, 133, 166, 0.15);
+}
+
+[data-theme="dark"] .ct-cv-card__btn {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .ct-info-card .bp-corner,
+[data-theme="dark"] .ct-form-wrap .bp-corner,
+[data-theme="dark"] .ct-social-card .bp-corner,
+[data-theme="dark"] .ct-cv-card .bp-corner {
+  border-color: rgba(147, 133, 166, 0.18);
+}
+
+[data-theme="dark"] .ct-form-success__icon {
+  background: rgba(147, 133, 166, 0.08);
+}
+
 @media (max-width: 992px) {
   [data-theme="dark"] .nav-menu-scrollable::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.08);

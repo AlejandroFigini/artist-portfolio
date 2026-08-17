@@ -284,7 +284,7 @@
 .ch-counter b { color: #7c3aed; }
 .ch-name { position: relative; z-index: 1; font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 200; letter-spacing: -0.02em; line-height: 1.05; color: #1e1e24; margin: 0 0 0.35rem; }
 .ch-role { position: relative; z-index: 1; font-family: var(--font-mono), monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed; margin-bottom: 0.9rem; }
-.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; width: 100%; }
+.ch-desc { position: relative; z-index: 1; font-size: 0.95rem; line-height: 1.65; color: #64748b; width: 100%; overflow-wrap: break-word; word-break: break-word; }
 
 /* --- Empty (sin personajes) --- */
 
@@ -341,19 +341,15 @@
 @media (max-width: 880px) {
   .ch-showcase__rail { display: none; }
   .ch-panel { grid-template-columns: 1fr; max-height: none; }
-  /* 1/1 y no 4/5: el retrato es lo que marca el alto de la tarjeta y a 375px
-     se iba a 308px. Cuadrado baja a ~247px sin tocar el ancho ni el resto de
-     las proporciones del panel. */
-  .ch-portrait-wrap { aspect-ratio: 1 / 1; max-height: 380px; }
+  /* 21/9 (panorámico) para achicar aún más el retrato y maximizar el área para el texto */
+  .ch-portrait-wrap { aspect-ratio: 21 / 9; max-height: 180px; }
   .ch-panel__info { padding-top: 0.5rem; }
 
   /* El bloque de texto ocupaba de más y estiraba la tarjeta a lo alto.
      El `min-height` de 520px está pensado para el panel de 2 columnas de
      escritorio (retrato al lado del texto); apilado en una sola columna era
      un piso artificial que estiraba el info a 146px cuando su contenido pedía
-     97px. Sin él la tarjeta mide lo que mide su contenido. El interlineado de
-     la descripción baja de 1.65 a 1.55 — el cuerpo NO se toca: probado a
-     0.9rem, ahorraba 5px y dejaba el texto en 12.6px. */
+     97px. Sin él la tarjeta mide lo que mide su contenido. */
   .ch-panel { min-height: 0; }
   .ch-counter { margin-bottom: 0.3rem; }
   .ch-name { margin-bottom: 0.2rem; }

@@ -94,6 +94,7 @@
 .fa-earth-americas::before { content: "\f57d"; }
 .fa-ellipsis-vertical::before { content: "\f142"; }
 .fa-envelope::before { content: "\f0e0"; }
+.fa-envelope-open-text::before { content: "\f658"; }
 .fa-eraser::before { content: "\f12d"; }
 .fa-expand::before { content: "\f065"; }
 .fa-eye::before { content: "\f06e"; }

@@ -27,6 +27,10 @@
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
 @import "./motion-pending.css"; /* estado inicial de los reveals mientras baja el chunk de GSAP */
+/* contact-page.css NO se importa acá: solo lo usa la ruta /contact, así que lo
+   importa components/contact/ContactPage.tsx y no viaja en la hoja que bloquea
+   el render del resto del sitio. */
+@import "./dark-theme.css"; /* overrides [data-theme="dark"] — va después de todo para ganar en cascada */
 
 /* ============================================================
    RITMO VERTICAL EN MÓVIL — regla transversal a las secciones.

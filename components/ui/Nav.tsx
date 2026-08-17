@@ -319,7 +319,7 @@ export default function Nav() {
                 </div>
               </div>
               <Link href="/about" onClick={closeNav} style={{ color: 'var(--accent)', fontWeight: 500 }}>{ui('nav_about')}</Link>
-              <Link href="/#contacto" onClick={closeNav} style={{ color: 'var(--accent)', fontWeight: 500 }}>{ui('nav_contact')}</Link>
+              <Link href="/contact" onClick={closeNav} style={{ color: 'var(--accent)', fontWeight: 500 }}>{ui('nav_contact')}</Link>
               {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
               {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}
               <span className="nav-viewfinder" ref={viewfinderRef} aria-hidden="true"></span>

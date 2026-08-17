@@ -16,6 +16,7 @@ const EXPLORE_LINKS = [
   { href: '/characters', label: 'Characters', i18n: 'nav_characters' },
   { href: '/models-3d', label: '3D Models', i18n: 'nav_3d' },
   { href: '/multimedia', label: 'Multimedia', i18n: 'nav_multimedia' },
+  { href: '/contact', label: 'Contact', i18n: 'nav_contact' },
 ]
 
 export default function Footer() {

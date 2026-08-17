@@ -182,6 +182,25 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   mm_title: { en: 'Multimedia & Mixed Media', es: 'Multimedia y técnicas mixtas', pt: 'Multimídia e técnicas mistas', fr: 'Multimédia et techniques mixtes' },
   mm_body: { en: "Everything that doesn't fit a single box: interactive web shaders, experimental video loops, and generative design feeds. Currently undergoing synchronization.", es: 'Todo lo que no entra en una sola casilla: shaders web interactivos, loops de video experimentales y feeds de diseño generativo. En proceso de sincronización.', pt: 'Tudo o que não cabe em uma única caixa: shaders web interativos, loops de vídeo experimentais e feeds de design generativo. Em processo de sincronização.', fr: "Tout ce qui n'entre pas dans une seule case : shaders web interactifs, boucles vidéo expérimentales et flux de design génératif. Synchronisation en cours." },
   mm_status: { en: 'STATUS: CONSTRUCTING VIEWPORT', es: 'ESTADO: CONSTRUYENDO VISTA', pt: 'ESTADO: CONSTRUINDO VISUALIZAÇÃO', fr: 'STATUT : CONSTRUCTION DE LA VUE' },
+
+  // Contact page (/contact)
+  ct_file: { en: 'FILE 08 — CONTACT / LUCÍA MONTAÑA', es: 'ARCHIVO 08 — CONTACTO / LUCÍA MONTAÑA', pt: 'ARQUIVO 08 — CONTATO / LUCÍA MONTAÑA', fr: 'FICHIER 08 — CONTACT / LUCÍA MONTAÑA' },
+  ct_title: { en: 'Get in touch', es: 'Ponete en contacto', pt: 'Entre em contato', fr: 'Prenez contact' },
+  ct_lede: { en: 'Have a project in mind or just want to say hello? I\'d love to hear from you. Reach out through any of the channels below.', es: '¿Tenés un proyecto en mente o simplemente querés saludar? Me encantaría saber de vos. Escribime por cualquiera de los canales de abajo.', pt: 'Tem um projeto em mente ou quer apenas dizer olá? Adoraria ouvir de você. Entre em contato por qualquer um dos canais abaixo.', fr: 'Un projet en tête ou juste envie de dire bonjour ? J\'adorerais avoir de vos nouvelles. Contactez-moi via l\'un des canaux ci-dessous.' },
+  ct_info_title: { en: '// INFO', es: '// INFO', pt: '// INFO', fr: '// INFO' },
+  ct_info_h2: { en: 'Contact details', es: 'Datos de contacto', pt: 'Dados de contato', fr: 'Coordonnées' },
+  ct_email_label: { en: 'EMAIL', es: 'EMAIL', pt: 'EMAIL', fr: 'EMAIL' },
+  ct_location_label: { en: 'LOCATION', es: 'UBICACIÓN', pt: 'LOCALIZAÇÃO', fr: 'LOCALISATION' },
+  ct_status_label: { en: 'STATUS', es: 'ESTADO', pt: 'STATUS', fr: 'STATUT' },
+  ct_available: { en: 'Available for projects', es: 'Disponible para proyectos', pt: 'Disponível para projetos', fr: 'Disponible pour des projets' },
+  ct_form_title: { en: '// MESSAGE', es: '// MENSAJE', pt: '// MENSAGEM', fr: '// MESSAGE' },
+  ct_form_h2: { en: 'Send me a message', es: 'Enviame un mensaje', pt: 'Envie-me uma mensagem', fr: 'Envoyez-moi un message' },
+  ct_form_fig: { en: 'FIG. 08a — Message', es: 'FIG. 08a — Mensaje', pt: 'FIG. 08a — Mensagem', fr: 'FIG. 08a — Message' },
+  ct_social_title: { en: '// SOCIAL', es: '// REDES', pt: '// REDES', fr: '// RÉSEAUX' },
+  ct_social_h2: { en: 'Find me online', es: 'Encontrame online', pt: 'Me encontre online', fr: 'Retrouvez-moi en ligne' },
+  ct_cv_title: { en: '// CURRICULUM', es: '// CURRÍCULUM', pt: '// CURRÍCULO', fr: '// CURRICULUM' },
+  ct_cv_h2: { en: 'Download my CV', es: 'Descargá mi CV', pt: 'Baixe meu CV', fr: 'Téléchargez mon CV' },
+  ct_cv_desc: { en: 'Get a detailed overview of my experience, skills, and education in PDF format.', es: 'Obtené un resumen detallado de mi experiencia, habilidades y formación en formato PDF.', pt: 'Obtenha uma visão detalhada da minha experiência, habilidades e formação em formato PDF.', fr: 'Obtenez un aperçu détaillé de mon expérience, de mes compétences et de ma formation en PDF.' },
 }
 
 /** Traducción de una clave estática. Cae al inglés si falta el idioma.

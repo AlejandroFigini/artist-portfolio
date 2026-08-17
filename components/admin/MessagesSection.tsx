@@ -51,6 +51,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   const [resending, setResending] = useState<number | null>(null)
   const [autoDeleteDays, setAutoDeleteDays] = useState('0')
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [isSelectingMode, setIsSelectingMode] = useState(false)
   const { confirm } = useModal()
   const toast = useToast()
 
@@ -273,12 +274,12 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     if (ids.length === 0) return
     const permanent = activeTab === 'trash'
     const run = async () => {
-      if (state.role === 'demo') { demoUpdate((ms) => ms.filter((m) => !selected.has(m.id))); setSelected(new Set()); toast(permanent ? 'Messages deleted' : 'Moved to trash'); return }
+      if (state.role === 'demo') { demoUpdate((ms) => ms.filter((m) => !selected.has(m.id))); setSelected(new Set()); setIsSelectingMode(false); toast(permanent ? 'Messages deleted' : 'Moved to trash'); return }
       try {
         const r = permanent
           ? await fetch('/api/messages', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) })
           : await fetch('/api/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, is_trashed: true }) })
-        if (r.ok) { toast(permanent ? 'Messages deleted' : `${ids.length} moved to trash`); setSelected(new Set()); load() }
+        if (r.ok) { toast(permanent ? 'Messages deleted' : `${ids.length} moved to trash`); setSelected(new Set()); setIsSelectingMode(false); load() }
       } catch { toast('Failed to delete messages', 'error') }
     }
     if (permanent) confirm('Delete messages', `Permanently delete ${ids.length} selected message(s)? This action cannot be undone.`, run)
@@ -322,6 +323,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
     setSelected(new Set())
+    setIsSelectingMode(false)
     load(newPage, activeTab)
   }
 
@@ -329,6 +331,7 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     setActiveTab(tab)
     setPage(1)
     setSelected(new Set())
+    setIsSelectingMode(false)
     load(1, tab)
   }
 
@@ -508,19 +511,41 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
         <>
         {/* Barra de selección múltiple */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.6rem 0.2rem', flexWrap: 'wrap' }}>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={data.messages.every((m) => selected.has(m.id))}
-              onChange={toggleSelectAllOnPage}
-              style={{ width: 16, height: 16, cursor: 'pointer' }}
-            />
-            Select all on page
-          </label>
-          {selected.size > 0 && (
-            <button type="button" className="cms-btn cms-btn--sm" onClick={deleteSelected} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
-              <i className={`fa-solid ${activeTab === 'trash' ? 'fa-eraser' : 'fa-trash'}`}></i> {activeTab === 'trash' ? 'Delete' : 'Move to trash'} ({selected.size})
+          {!isSelectingMode ? (
+            <button
+              type="button"
+              className="cms-btn cms-btn--sm"
+              onClick={() => setIsSelectingMode(true)}
+            >
+              <i className="fa-solid fa-list-check"></i> Select multiple
             </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="cms-btn cms-btn--sm"
+                onClick={() => {
+                  setIsSelectingMode(false)
+                  setSelected(new Set())
+                }}
+              >
+                Cancel
+              </button>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={data.messages.every((m) => selected.has(m.id))}
+                  onChange={toggleSelectAllOnPage}
+                  style={{ width: 16, height: 16, cursor: 'pointer' }}
+                />
+                Select all on page
+              </label>
+              {selected.size > 0 && (
+                <button type="button" className="cms-btn cms-btn--sm" onClick={deleteSelected} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+                  <i className={`fa-solid ${activeTab === 'trash' ? 'fa-eraser' : 'fa-trash'}`}></i> {activeTab === 'trash' ? 'Delete' : 'Move to trash'} ({selected.size})
+                </button>
+              )}
+            </>
           )}
         </div>
         <div className="msg-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -544,13 +569,15 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
             >
               {/* Header row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(msg.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => toggleSelect(msg.id)}
-                  style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
-                />
+                {isSelectingMode && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(msg.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => toggleSelect(msg.id)}
+                    style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
+                  />
+                )}
                 {msg.is_starred && (
                   <i className="fa-solid fa-star" style={{ color: '#fbbf24', fontSize: '0.9rem' }} title="Favorito"></i>
                 )}
