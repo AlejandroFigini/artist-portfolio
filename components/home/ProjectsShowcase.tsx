@@ -337,6 +337,7 @@ export default function ProjectsShowcase() {
               opts={{
                 align: 'start',
                 loop: true,
+                dragFree: true,
               }}
               plugins={prefersReducedMotion() ? [] : [
                 Autoplay({
