@@ -264,7 +264,7 @@ export default function ProjectsShowcase() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.proj-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
         .to('.proj-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
-        .to('.project-item', { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'transform' }, '-=0.3')
+        .to('.project-item', { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'transform' }, 1.0)
 
       let played = false
       const io = new IntersectionObserver((entries) => {

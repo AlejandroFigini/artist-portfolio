@@ -312,7 +312,7 @@ export default function CharactersShowcase() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.ch-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
         .to('.ch-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.35)
-        .to('.ch-panel', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' }, '-=0.3')
+        .to('.ch-panel', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' }, 1.0)
       let played = false
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
