@@ -415,7 +415,7 @@ export default function CharactersShowcase() {
             <Carousel
               key={`${ids.length}-${signature}`}
               setApi={setApi}
-              opts={{ align: 'center', loop: isLoopable, dragFree: true, watchDrag: true }}
+              opts={{ align: 'start', loop: isLoopable, dragFree: true, watchDrag: true }}
               plugins={isLoopable && !prefersReducedMotion() ? [
                 AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: false }),
               ] : []}
