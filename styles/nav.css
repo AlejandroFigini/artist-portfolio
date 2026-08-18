@@ -363,7 +363,16 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
 
 .highlight-link {
   color: var(--accent) !important;
-  font-weight: 600;
+  font-weight: 400 !important;
+  text-decoration: none !important;
+}
+.highlight-link:hover,
+.highlight-link:focus,
+.highlight-link:active {
+  text-decoration: none !important;
+}
+.highlight-link::after {
+  display: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -545,7 +554,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     padding: 0.12rem 0 !important;
   }
   .nav-menu-scrollable > a.highlight-link {
-    font-weight: normal !important;
+    font-weight: 400 !important;
   }
   .nav-links .dropdown-content {
     padding: 0.05rem 0 0.1rem 1rem !important;

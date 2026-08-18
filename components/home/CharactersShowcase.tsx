@@ -312,7 +312,7 @@ export default function CharactersShowcase() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.ch-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
         .to('.ch-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.35)
-        .to('.ch-panel', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' }, 1.0)
+        .to('.ch-panel', { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power3.out', clearProps: 'transform' }, 0.4)
       let played = false
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
@@ -326,7 +326,7 @@ export default function CharactersShowcase() {
             if (descEl) descTw = wordRevealLoop(descEl, 8)
           }
         }
-      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
+      }, { rootMargin: '0px 0px -25% 0px', threshold: 0.15 })
       io.observe(sec)
 
 
