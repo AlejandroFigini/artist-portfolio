@@ -363,7 +363,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
 
 .highlight-link {
   color: var(--accent) !important;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

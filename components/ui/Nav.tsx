@@ -166,6 +166,8 @@ export default function Nav() {
     const activeEl = (): HTMLElement | null => {
       if (pathname === '/') return links.querySelector<HTMLElement>('a[href="/"]')
       if (GALLERY_LINKS.some((l) => l.href === pathname)) return links.querySelector<HTMLElement>('#gallery-label')
+      if (pathname === '/about') return links.querySelector<HTMLElement>('a[href="/about"]')
+      if (pathname === '/contact') return links.querySelector<HTMLElement>('a[href="/contact"]')
       return null
     }
 
@@ -179,7 +181,7 @@ export default function Nav() {
       // padre: el marco "contiene" la rama abierta y no se escapa a Feed
       const dd = target.closest<HTMLElement>('.nav-links .dropdown')
       if (dd) { place(dd.querySelector<HTMLElement>('.dropbtn')); return }
-      const t = target.closest<HTMLElement>('.nav-links > a')
+      const t = target.closest<HTMLElement>('.nav-menu-scrollable > a')
       if (t) place(t)
     }
     const onLeave = () => {
