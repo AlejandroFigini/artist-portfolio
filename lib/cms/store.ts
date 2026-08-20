@@ -211,7 +211,6 @@ export function useCmsStore(): number {
 export function loadState() {
   state.audit = []
   state.mediaMeta = {}
-  markIntentionalClear('used_content', 'unused', 'trash', 'retired', 'media_meta', 'audit', 'container_names')
   state.unused = []
   state.usedContent = {}
   state.retired = []
@@ -268,6 +267,11 @@ function dirtyItems(): Record<string, string> {
    declara: solo las claves marcadas acá pueden llegar vacías y pisar datos. */
 const _allowEmpty = new Set<string>()
 
+/* Claves que el servidor devolvió en el último GET. Solo esas se pueden escribir:
+   una clave que el servidor no mandó (porque la sesión no alcanza) se está
+   pintando desde localStorage y no es fuente de verdad de nada. */
+const _serverAuthoritative = new Set<string>()
+
 /** Este vaciado es deliberado, no un cliente sin cargar. */
 export function markIntentionalClear(...keys: string[]) {
   keys.forEach((k) => _allowEmpty.add(k))
@@ -298,9 +302,23 @@ export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void
     _syncTimer = null
   }
   if (!state.isAdmin || _pendingKeys.size === 0) return _flushPromise || Promise.resolve()
+
+  /* No escribir estado antes de haberlo LEÍDO. `loadState()` deja las colecciones
+     vacías y el merge con el servidor llega después; un flush en esa ventana manda
+     `{}` y pisa la DB. Es la misma clase de bug que vació `used_content` en
+     producción, y la guarda anti-vaciado del servidor lo estaba atajando con 409.
+     Las claves NO se descartan: quedan pendientes para el próximo flush. */
+  if (!state.serverReady) {
+    scheduleSyncToServer()
+    return _flushPromise || Promise.resolve()
+  }
   const payload: CmsStatePayload = {}
   let syncOverrides = false
   for (const k of _pendingKeys) {
+    /* Nunca escribir una clave que el servidor no nos dio: sería devolverle el
+       caché local como si fuera dato bueno. `overrides` va por otro camino
+       (cms_data, con su propio diff) y no aplica. */
+    if (k !== 'overrides' && !_serverAuthoritative.has(k)) continue
     if (k === 'used_content') { payload.used_content = state.usedContent; try { localStorage.setItem('cms_state_used_content', JSON.stringify(state.usedContent)) } catch {} }
     if (k === 'unused') { payload.unused = state.unused; try { localStorage.setItem('cms_state_unused', JSON.stringify(state.unused)) } catch {} }
     if (k === 'retired') { payload.retired = state.retired; try { localStorage.setItem('cms_state_retired', JSON.stringify(state.retired)) } catch {} }
@@ -317,11 +335,17 @@ export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void
      los dos pasaban el límite de keepalive, así que el navegador descartaba el
      lote entero — incluido el índice de la biblioteca. Separados, `used_content`
      entra siempre. */
-  const allowEmpty = [..._allowEmpty]
-  _allowEmpty.clear()
+  /* La autorización se gasta SOLO en las claves que viajan en este payload. Si se
+     mandaba entera, un flush que no lleva `trash` consumía el permiso de vaciar
+     `trash` y el flush siguiente —el que sí lo llevaba— se comía un 409. */
+  const spend = (keys: string[]) => {
+    const used = keys.filter((k) => _allowEmpty.has(k))
+    used.forEach((k) => _allowEmpty.delete(k))
+    return used
+  }
   const { media_meta, ...rest } = payload
-  if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts, allowEmpty).catch(() => {}))
-  if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts, allowEmpty).catch(() => {}))
+  if (Object.keys(rest).length > 0) promises.push(saveState(rest, opts, spend(Object.keys(rest))).catch(() => {}))
+  if (media_meta !== undefined) promises.push(saveState({ media_meta }, opts, spend(['media_meta'])).catch(() => {}))
   if (syncOverrides) {
     const diff = dirtyItems()
     if (Object.keys(diff).length > 0) {
@@ -366,8 +390,21 @@ export function mergeServerState(server: CmsStatePayload) {
   const getLoc = <T,>(k: string, def: T): T => {
     try { const v = localStorage.getItem('cms_state_' + k); return v ? JSON.parse(v) as T : def } catch { return def }
   }
-  const pick = <T,>(key: keyof CmsStatePayload, lsKey: string, current: T): T =>
-    key in server ? ((server[key] ?? current) as T) : getLoc(lsKey, current)
+  /* Claves sobre las que el servidor SÍ opinó en esta sesión. Sin sesión el GET
+     solo devuelve `retired`, así que el resto se pinta desde localStorage — pero
+     ese caché puede estar viejo, y escribirlo de vuelta pisa la DB con datos
+     incompletos. Pasó de verdad: `media_meta` bajó de 117 a 52 entradas porque un
+     cliente sin sesión rellenó desde caché y después, ya con sesión, lo flusheó.
+     La guarda anti-vaciado no lo atrapa: 52 no es vacío. */
+  _serverAuthoritative.clear()
+
+  const pick = <T,>(key: keyof CmsStatePayload, lsKey: string, current: T): T => {
+    if (key in server) {
+      _serverAuthoritative.add(key as string)
+      return (server[key] ?? current) as T
+    }
+    return getLoc(lsKey, current)
+  }
 
   state.usedContent = pick('used_content', 'used_content', state.usedContent)
   state.unused = pick('unused', 'unused', state.unused)

@@ -243,12 +243,25 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-export async function deleteMedia(url: string): Promise<void> {
-  await fetch('/api/delete-media', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
-  })
+/* Devuelve el resultado en vez de descartarlo. El servidor puede rechazar el
+   borrado (409: el asset sigue referenciado por un contenedor; 502: el destroy
+   falló). Tragarse eso deja al cliente creyendo que borró: purga su registro y el
+   asset queda vivo y facturado, o peor, el contenedor sigue apuntando a él. */
+export async function deleteMedia(url: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const r = await fetch('/api/delete-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    })
+    if (r.ok) return { ok: true }
+    const msg = await r.json().then((d) => (d as { error?: string }).error).catch(() => undefined)
+    console.error('[deleteMedia] rechazado:', r.status, msg)
+    return { ok: false, error: msg || `HTTP ${r.status}` }
+  } catch (err) {
+    console.error('[deleteMedia] error de red:', err)
+    return { ok: false, error: 'network' }
+  }
 }
 
 /** Mueve un asset de Cloudinary a una nueva carpeta. Devuelve la nueva URL. */

@@ -32,10 +32,14 @@ export async function POST(req: Request) {
   if (hasDb) {
     try {
       await ensureDb()
-      const base = url.split('?')[0].split('#')[0].split('/').pop() || ''
+      /* `_` y `%` son comodines de LIKE. Desde `unique_filename: true` TODO nombre
+         nuevo lleva un `_` (foto_a7f3c1.webp), así que sin escapar el patrón
+         matchearía nombres que no son. */
+      const raw = url.split('?')[0].split('#')[0].split('/').pop() || ''
+      const base = raw.replace(/([%_!])/g, '!$1')
       if (base) {
         const { rows } = await getPool()!.query(
-          "SELECT key FROM cms_data WHERE value LIKE '%' || $1 || '%' LIMIT 5",
+          "SELECT key FROM cms_data WHERE value LIKE '%' || $1 || '%' ESCAPE '!' LIMIT 5",
           [base],
         )
         if (rows.length > 0) {

@@ -21,6 +21,13 @@ const eslintConfig = defineConfig([
             "uploader.rename() cambia el public_id y por lo tanto la URL de entrega, invalidando toda referencia guardada en cms_data. El estado del ciclo de vida va en TAGS: usá setAssetState() (lib/storage.ts).",
         },
         {
+          // Forma de asignación: `options.overwrite = true` — la que usa storage.ts.
+          selector: "AssignmentExpression[left.property.name='overwrite'][right.value=true]",
+          message:
+            "overwrite: true permite que una subida reemplace los bytes de un asset existente con el mismo public_id, sin ningún cambio en la DB que lo delate. Usá unique_filename: true.",
+        },
+        {
+          // Forma literal: `{ overwrite: true }`.
           selector: "Property[key.name='overwrite'][value.value=true]",
           message:
             "overwrite: true permite que una subida reemplace los bytes de un asset existente con el mismo public_id, sin ningún cambio en la DB que lo delate. Usá unique_filename: true.",

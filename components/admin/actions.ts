@@ -20,7 +20,8 @@ export async function deletePermanent(idx: number) {
   persistTrash()
   if (url) purgeUrlsFromAllState([url])
   if (url && url.includes('cloudinary.com')) {
-    await deleteMedia(url).catch(() => {})
+    const del = await deleteMedia(url)
+    if (!del.ok) console.error('[actions] el servidor rechazó el borrado:', url, del.error)
     recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Eliminado de Cloudinary' })
   } else {
     recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Permanently deleted (local)' })
@@ -44,7 +45,9 @@ export function autoCleanTrash() {
       const url = item.src || item.dataUrl
       if (url) {
         urlsToDelete.push(url)
-        if (url.includes('cloudinary.com')) deleteMedia(url).catch(() => {})
+        if (url.includes('cloudinary.com')) {
+          void deleteMedia(url).then((d) => { if (!d.ok) console.error('[actions] borrado rechazado:', url, d.error) })
+        }
       }
     } else {
       kept.push(item)
@@ -73,7 +76,8 @@ export async function emptyTrash() {
   emit()
   await Promise.all(items.map((item) => {
     const url = item.src || item.dataUrl
-    return url && url.includes('cloudinary.com') ? deleteMedia(url).catch(() => {}) : Promise.resolve()
+    if (!url || !url.includes('cloudinary.com')) return Promise.resolve()
+    return deleteMedia(url).then((d) => { if (!d.ok) console.error('[actions] borrado rechazado:', url, d.error) })
   }))
   flushSyncToServer()
 }
@@ -208,7 +212,12 @@ export async function batchDeletePermanent(indices: number[]): Promise<number> {
   persistTrash()
   if (urls.length > 0) purgeUrlsFromAllState(urls)
   emit()
-  await Promise.all(urls.map((u) => u && u.includes('cloudinary.com') ? deleteMedia(u).catch(() => {}) : Promise.resolve()))
+  const res = await Promise.all(urls.map((u) =>
+    u && u.includes('cloudinary.com')
+      ? deleteMedia(u).then((d) => ({ u, ok: d.ok, error: d.error }))
+      : Promise.resolve({ u, ok: true as boolean, error: undefined as string | undefined })))
+  const fallidos = res.filter((r) => !r.ok)
+  if (fallidos.length) console.error('[actions] el servidor rechazó', fallidos.length, 'borrado(s):', fallidos.map((f) => f.error).join('; '))
   recordAudit({ user: 'superadmin', section: 'Lote', label: `${count} items`, summary: 'Permanently deleted (batch)' })
   flushSyncToServer()
   return count

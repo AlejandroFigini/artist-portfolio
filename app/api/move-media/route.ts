@@ -49,17 +49,29 @@ export async function POST(req: Request) {
   if (state !== 'used' && hasDb) {
     try {
       await ensureDb()
-      const base = url.split('?')[0].split('#')[0].split('/').pop() || ''
+      /* `_` y `%` son comodines de LIKE. Desde `unique_filename: true` TODO nombre
+         nuevo lleva un `_` (foto_a7f3c1.webp), así que sin escapar el patrón
+         matchearía nombres que no son. */
+      const raw = url.split('?')[0].split('#')[0].split('/').pop() || ''
+      const base = raw.replace(/([%_!])/g, '!$1')
       if (base) {
         /* `ignoreKeys` = contenedores que el cliente está vaciando en este mismo
            gesto. Su borrado en `cms_data` va con debounce y puede no haber
            aterrizado todavía, así que sin esta exclusión el guard bloquearía el
            flujo legítimo "se quita de contenedor -> sin usar". */
-        const ignore = Array.isArray(body.ignoreKeys) ? body.ignoreKeys.filter((k) => typeof k === 'string') : []
-        const { rows } = await getPool()!.query(
-          "SELECT key FROM cms_data WHERE value LIKE '%' || $1 || '%' AND NOT (key = ANY($2::varchar[])) LIMIT 5",
-          [base, ignore],
+        const claimed = Array.isArray(body.ignoreKeys) ? body.ignoreKeys.filter((k) => typeof k === 'string') : []
+        /* Solo se honra una `ignoreKey` que HOY referencia este asset. Sin este
+           filtro la exclusión es una llave maestra: mandar la lista de claves
+           correcta desarma el refcount por completo. Acotada así, a lo sumo
+           excluye contenedores que de verdad están apuntando acá, que es
+           exactamente lo que el gesto está por vaciar. */
+        const { rows: refs } = await getPool()!.query(
+          "SELECT key FROM cms_data WHERE value LIKE '%' || $1 || '%' ESCAPE '!'",
+          [base],
         )
+        const refKeys = (refs as { key: string }[]).map((r) => r.key)
+        const ignore = claimed.filter((k) => refKeys.includes(k))
+        const rows = refKeys.filter((k) => !ignore.includes(k)).slice(0, 5).map((key) => ({ key }))
         if (rows.length > 0) {
           const keys = (rows as { key: string }[]).map((r) => r.key)
           return NextResponse.json(

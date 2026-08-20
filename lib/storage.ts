@@ -201,7 +201,13 @@ export async function uploadBuffer(
          acepta la subida y transcodea de fondo, así que no reaparece el fallo por
          límite de procesamiento que documenta el comentario de arriba. Hasta que
          terminan, `attachMediaRetry` cubre el hueco. */
-      options.eager = [{ format: 'mp4' }, { format: 'webm' }]
+      /* La transformación del eager tiene que ser LA MISMA que la de entrega, si no
+         genera una derivada distinta y no pre-calienta nada. La entrega usa
+         `optimizedMediaSrc(value)` sin ancho → `f_auto,q_auto` (ver
+         cloudinaryOptimize en lib/utils.ts). Pedir `{format:'mp4'}` producía
+         `/video/upload/v1/name.mp4`, otra URL, y el transcode on-the-fly seguía
+         pasando igual — encima pagando dos transcodes por subida. */
+      options.eager = [{ fetch_format: 'auto', quality: 'auto' }]
       options.eager_async = true
     } else {
       options.resource_type = 'image'

@@ -11,7 +11,7 @@ import type { Dispatch } from '@/lib/commands'
 import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
-  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer, markItemsSynced,
+  persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer, markItemsSynced, markIntentionalClear,
   persistTrash, loadTextDefaults, recordTextDefaults
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
@@ -194,6 +194,9 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — About me` },
   { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
   { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
+  { base: 'contact.hero.bg', sel: '.ct-hero__bg', kind: 'image', accept: 'webp,jpg,png', mount: 'self', section: 'Contact', label: 'Background Image — Contact' },
+  { base: 'contact.hero.title', sel: 'h1[data-i18n="ct_title"]', kind: 'text', mount: 'self', section: 'Contact', label: 'Title — Contact' },
+  { base: 'contact.hero.lede', sel: 'p[data-i18n="ct_lede"]', kind: 'text', mount: 'self', section: 'Contact', label: 'Subtitle — Contact' },
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')
     const h = sec && sec.querySelector<HTMLElement>('.section-typewriter')
@@ -344,6 +347,16 @@ export function currentSrcOf(el: HTMLElement | null): string {
    (elemento, URL) para no repetir la petición en cada rescan. */
 function probeBackground(el: HTMLElement, value: string) {
   const url = optimizedMediaSrc(value, renderWidthOf(el))
+  /* Ya se sabe que ESTA url no existe. `applyValue` repinta el fondo en cada
+     re-hidratación (cambio de ruta, rescan), así que hay que volver a limpiarlo:
+     con solo el guard de "ya sondeado" el contenedor terminaba con el fondo muerto
+     repintado Y el overlay vacío encima. */
+  if (el.dataset.cmsBgDeadUrl === url) {
+    el.style.backgroundImage = ''
+    const k = el.dataset.cmsKey
+    if (k) showEmptySlot(k)
+    return
+  }
   if (el.dataset.cmsBgProbed === url) return
   el.dataset.cmsBgProbed = url
   const probe = new Image()
@@ -352,6 +365,8 @@ function probeBackground(el: HTMLElement, value: string) {
     if (el.dataset.cmsBgProbed !== url) return
     const key = el.dataset.cmsKey
     console.error('[cms] fondo inexistente', key ? `para ${key}` : '', '→ se muestra el contenedor vacío')
+    el.dataset.cmsBgDead = '1'
+    el.dataset.cmsBgDeadUrl = url
     el.style.backgroundImage = ''
     if (key) showEmptySlot(key)
   }
@@ -1023,6 +1038,18 @@ export function refreshRetired() {
   document.querySelectorAll('.cms-empty-slot').forEach((e) => e.classList.remove('cms-empty-slot'))
   document.querySelectorAll('.cms-empty-overlay').forEach((e) => e.remove())
 
+  /* Contenedores cuya media resultó inexistente. Esta función arranca borrando
+     TODO estado vacío y después lo re-pinta solo para claves retiradas o sin
+     contenido — y una clave con URL muerta tiene contenido y no está retirada, así
+     que su estado vacío se perdía en el primer rescan o cambio de ruta y el
+     contenedor volvía a quedar negro. Corre en cada cambio de ruta, así que el
+     fallback duraba nada. */
+  const dead = new Set<string>()
+  document.querySelectorAll<HTMLElement>('[data-cld-dead="1"], [data-cms-bg-dead="1"]').forEach((el) => {
+    const k = el.dataset.cmsKey || el.closest<HTMLElement>('[data-cms-key]')?.dataset.cmsKey
+    if (k) dead.add(k)
+  })
+
   /* Reconciliar: una clave CON contenido no puede estar "retirada". Al asignar,
      `performAssign` saca la clave de `retired` y lo persiste, pero ese borrado y
      el guardado del contenido son syncs separados: si el de `retired` no aterriza
@@ -1050,6 +1077,9 @@ export function refreshRetired() {
       showEmptySlot(key)
     }
   })
+
+  // Re-pintar los que tienen contenido pero cuyo archivo no existe.
+  dead.forEach((key) => showEmptySlot(key))
 }
 
 // Mueve un contenido usado a "no usados" desde el sitio (port moveToUnused)
@@ -1192,6 +1222,11 @@ function allMediaKeys(): Set<string> {
 // Limpia TODO el contenido de media del sitio → lo mueve a "no usados", dejando
 // solo los contenedores vacíos. Cubre media indexada, carruseles y burbujas wave.
 export function clearAllSite() {
+  /* Vaciado deliberado: se declara para que la guarda anti-vaciado del servidor
+     lo acepte. Antes esto estaba en `loadState()`, que corre en CADA carga de
+     página — o sea que la guarda quedaba desarmada justo para el cliente recién
+     cargado y con el estado vacío, que es exactamente contra el que existe. */
+  markIntentionalClear('used_content', 'unused', 'trash', 'retired', 'media_meta', 'audit', 'container_names')
   if (!state.isAdmin) return
   // Fuerza el reset de los carruseles de portada aunque no tengan contenido CMS
   // (ej. el fondo mostrando los DEFAULT_SLIDES) → "limpiar todo" siempre los vacía.

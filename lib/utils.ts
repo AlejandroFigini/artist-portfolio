@@ -109,26 +109,39 @@ export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, origin
     }
     return el.getAttribute('src') || ''
   }
+  const declareDead = (src: string) => {
+    el.dataset.cldDone = '1'
+    el.dataset.cldDead = '1'
+    el.dispatchEvent(new CustomEvent('cms:media-dead', { bubbles: true, detail: { src } }))
+  }
+
   el.addEventListener('error', () => {
-    if (el.dataset.cldDone) return
+    if (el.dataset.cldDead) return
     const c = cur()
     if (!c.includes('res.cloudinary.com')) return // solo la derivada de Cloudinary
+    /* Ya se había caído a la URL original y ESA también falla → el asset no existe.
+       Sin esta rama el evento casi nunca salía: la URL que falla primero es la
+       transformada (f_auto,w_640…), nunca igual a la original, así que se agotaban
+       los reintentos, se caía al original, y `cldDone` bloqueaba el error siguiente
+       — el contenedor quedaba negro igual. */
+    if (el.dataset.cldFellBack) return declareDead(c.split('?')[0])
+    if (el.dataset.cldDone) return
     /* Si lo que falló YA es el original sin transformar, el asset no existe: no hay
        derivada pendiente que esperar. Reintentar son 4 requests y ~7s de contenedor
        en negro para terminar cayendo a la misma URL muerta. Se corta acá y se avisa
        para que el contenedor muestre su estado vacío en vez de quedar negro. */
     const orig0 = (original || el.dataset.cmsSrc || '').split('?')[0]
-    if (orig0 && c.split('?')[0] === orig0) {
-      el.dataset.cldDone = '1'
-      el.dataset.cldDead = '1'
-      el.dispatchEvent(new CustomEvent('cms:media-dead', { bubbles: true, detail: { src: orig0 } }))
-      return
-    }
+    if (orig0 && c.split('?')[0] === orig0) return declareDead(orig0)
     tries++
     if (tries > 4) {
-      el.dataset.cldDone = '1'
       const orig = original || el.dataset.cmsSrc || ''
-      if (orig && !c.startsWith(orig.split('?')[0])) setSrc(orig)
+      if (orig && !c.startsWith(orig.split('?')[0])) {
+        // NO se marca cldDone: si el original también falla hay que poder enterarse.
+        el.dataset.cldFellBack = '1'
+        setSrc(orig)
+      } else {
+        declareDead(c.split('?')[0])
+      }
       return
     }
     // Siempre desde la URL LIMPIA (sin query previa) + un único `?_r=N`: evita
@@ -138,7 +151,7 @@ export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, origin
   })
   // Carga OK: resetea el contador y reabre el retry (si más tarde se asigna otro
   // contenido recién subido al mismo elemento, vuelve a reintentar).
-  const ok = () => { tries = 0; delete el.dataset.cldDone }
+  const ok = () => { tries = 0; delete el.dataset.cldDone; delete el.dataset.cldFellBack; delete el.dataset.cldDead }
   el.addEventListener('load', ok)
   el.addEventListener('loadeddata', ok)
 }
