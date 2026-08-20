@@ -9,7 +9,7 @@
 import { Fragment, useRef, useState, useEffect } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb } from '@/lib/utils'
+import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb, isGalleryAsset } from '@/lib/utils'
 import {
   state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState, isDeferredMediaKey,
 } from '@/lib/cms/store'
@@ -208,10 +208,20 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
            no está configurado o falla, el picker sigue con lo de cms_state. */
         try {
           const { resources } = await listCloudinaryResources()
+          /* Los archivos que referencian los AJUSTES del sitio (CV, favicon, icono
+             de buscador) no son contenido de galería: no se pueden asignar a un
+             contenedor y no tienen por qué ofrecerse como "sin usar". */
+          const settingsSrcs = new Set(
+            Object.entries(state.items)
+              .filter(([k, v]) => k.startsWith('settings.') && typeof v === 'string' && v)
+              .map(([, v]) => dedupKey(v as string)),
+          )
           for (const r of resources) {
             const src = r.secure_url
             if (!src) continue
+            if (!isGalleryAsset(r)) continue // documentos y assets de ajustes fuera
             const nk = dedupKey(src)
+            if (settingsSrcs.has(nk)) continue
             if (seenSrc.has(nk) || trashSrcs.has(nk)) continue // ya está en used/unused
             /* Papelera fuera. Se mira `r.state` (derivado del tag, con fallback a
                la carpeta para los assets viejos), NO la carpeta a secas: desde que

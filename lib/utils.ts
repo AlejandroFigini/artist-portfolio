@@ -64,6 +64,19 @@ export function cloudinaryThumb(src: string, video?: boolean): string {
    contenedor queda en negro. Por eso el ancho se redondea HACIA ARRIBA a la
    escalera y nunca se sirve el número crudo. Cambiar esta lista obliga a cambiar
    el `eager` de lib/storage.ts. */
+/* Un asset de Cloudinary NO es contenido de galería si es un documento o si es un
+   archivo de configuración del sitio. El picker lista todo lo que existe en la
+   cuenta para no perderse contenido subido; sin este filtro entraban también el CV
+   en PDF y los iconos del sitio, que no son asignables a ningún contenedor.
+   El reconciliador y la auditoría NO usan este filtro a propósito: ellos tienen que
+   ver la cuenta entera. */
+export function isGalleryAsset(r: { resource_type?: string; public_id?: string }): boolean {
+  if (r.resource_type === 'raw') return false // documentos (CV en PDF)
+  // Assets heredados que se subieron con el nombre de la clave de ajustes.
+  const base = (r.public_id || '').split('/').pop() || ''
+  return !base.toLowerCase().startsWith('settings.')
+}
+
 export const CLOUDINARY_WIDTHS = [640, 1200, 1920] as const
 
 /** Ancho de la escalera inmediatamente >= al pedido (el mayor si se pasa). */
