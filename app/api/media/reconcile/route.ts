@@ -16,13 +16,30 @@ export const dynamic = 'force-dynamic'
    verdad: eso convertiría un error de lectura en pérdida de datos. */
 
 type Finding = {
-  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary'
+  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary' | 'index-drift'
   key?: string
   url?: string
   publicId?: string
   detail: string
   fixedTo?: string
 }
+
+/** Identidad de una URL para comparar: sin query ni fragmento. */
+function srcKey(v: string): string {
+  return (v || '').split('?')[0].split('#')[0]
+}
+
+/** Un valor de `cms_data` que apunta a un archivo (no texto, no color, no fecha). */
+function isMediaValue(v: unknown): v is string {
+  return typeof v === 'string' && (v.includes('res.cloudinary.com') || v.startsWith('/uploads/'))
+}
+
+type UsedEntry = {
+  key: string; label: string; section: string; kind: 'image' | 'video' | 'text'
+  src: string; name: string; size: number | null; original: boolean; ts?: number; type?: string
+}
+type LooseEntry = { key?: string; src?: string; dataUrl?: string; [k: string]: unknown }
+type MediaMetaRow = { name?: string; size?: number; type?: string; ts?: number; label?: string; section?: string }
 
 /** Nombre de archivo del public_id, sin carpeta ni extensión. Es lo único estable
  *  entre una URL vieja (con la carpeta adentro) y el asset ya movido. */
@@ -121,6 +138,85 @@ async function reconcile(apply: boolean) {
     }
   }
 
+  /* ---- Índice del CMS (cms_state) ----------------------------------------
+     La regla adoptada: un asset referenciado por al menos un valor de `cms_data`
+     está EN USO, punto. Si además figura en `unused`/`trash`, el índice se
+     contradice a sí mismo: el panel lo ofrece como descartable mientras un
+     contenedor lo está mostrando, y vaciar la papelera después destruiría los
+     bytes. El tag de Cloudinary ya se alinea arriba; acá se alinea el índice.
+     Se toma la URL FINAL (después de la reparación de `url-stale`), si no se
+     compararía contra una URL que este mismo run está por reescribir. */
+  const fixedByKey = new Map(repairs.map((r) => [r.key, r.url]))
+  const referencedSrcs = new Set<string>()
+  const refByKey = new Map<string, string>()
+  for (const r of rows as { key: string; value: string }[]) {
+    if (!isMediaValue(r.value)) continue
+    const url = fixedByKey.get(r.key) || r.value
+    /* Los archivos de AJUSTES (CV, favicon, icono de buscador) cuentan como
+       referenciados —no se pueden descartar— pero NO son contenido de galería:
+       no van al índice de la biblioteca. Sin esta distinción esta reparación
+       metía el CV en `used_content`, que es justo lo que el picker excluye. */
+    referencedSrcs.add(srcKey(url))
+    if (r.key.startsWith('settings.')) continue
+    refByKey.set(r.key, url)
+  }
+
+  const { rows: stateRows } = await pool.query(
+    "SELECT key, value FROM cms_state WHERE key IN ('used_content','unused','trash','media_meta')",
+  )
+  const stateByKey: Record<string, unknown> = {}
+  for (const r of stateRows as { key: string; value: unknown }[]) stateByKey[r.key] = r.value
+
+  const usedContent = (stateByKey.used_content || {}) as Record<string, UsedEntry>
+  const unusedList = (Array.isArray(stateByKey.unused) ? stateByKey.unused : []) as LooseEntry[]
+  const trashList = (Array.isArray(stateByKey.trash) ? stateByKey.trash : []) as LooseEntry[]
+  const mediaMeta = (stateByKey.media_meta || {}) as Record<string, MediaMetaRow>
+
+  const entrySrc = (e: LooseEntry) => srcKey((e.src || e.dataUrl || '') as string)
+
+  // 1) Lo referenciado no puede estar en sin-usar ni en papelera.
+  const nextUnused = unusedList.filter((e) => !referencedSrcs.has(entrySrc(e)))
+  const nextTrash = trashList.filter((e) => !referencedSrcs.has(entrySrc(e)))
+  for (const e of [...unusedList, ...trashList]) {
+    if (!referencedSrcs.has(entrySrc(e))) continue
+    findings.push({
+      kind: 'index-drift', url: entrySrc(e),
+      detail: 'figura como descartable en el índice pero un contenedor lo está usando',
+    })
+  }
+
+  /* 2) Lo referenciado tiene que estar en `used_content`, si no desaparece del
+        panel. Sacarlo de `unused` sin agregarlo acá lo volvería invisible. */
+  const nextUsed: Record<string, UsedEntry> = { ...usedContent }
+  for (const [key, url] of refByKey) {
+    if (nextUsed[key] && srcKey(nextUsed[key].src) === srcKey(url)) continue
+    const mm = mediaMeta[srcKey(url)] || mediaMeta[url] || {}
+    const fileName = decodeURIComponent(srcKey(url).split('/').pop() || '')
+    const isVideo = /\.(webm|mp4|mov|m4v)$/i.test(fileName) || url.includes('/video/upload/')
+    findings.push({
+      kind: 'index-drift', key, url,
+      detail: nextUsed[key] ? 'el índice apunta a otra URL que el contenedor' : 'un contenedor lo usa pero no figura en el índice',
+    })
+    nextUsed[key] = {
+      key,
+      label: mm.label || nextUsed[key]?.label || fileName,
+      section: mm.section || nextUsed[key]?.section || '',
+      kind: isVideo ? 'video' : 'image',
+      src: url,
+      name: mm.name || fileName,
+      size: mm.size ?? nextUsed[key]?.size ?? null,
+      original: nextUsed[key]?.original ?? false,
+      ts: mm.ts ?? nextUsed[key]?.ts,
+      type: mm.type ?? nextUsed[key]?.type,
+    }
+  }
+
+  const indexChanged =
+    nextUnused.length !== unusedList.length ||
+    nextTrash.length !== trashList.length ||
+    Object.keys(nextUsed).length !== Object.keys(usedContent).length ||
+    Object.entries(nextUsed).some(([k, v]) => srcKey(usedContent[k]?.src || '') !== srcKey(v.src))
+
   let applied = 0
   if (apply) {
     if (repairs.length) {
@@ -146,6 +242,42 @@ async function reconcile(apply: boolean) {
     for (const d of drift) {
       const res = await setAssetState(d.url, d.state)
       if (res.ok) applied++
+    }
+
+    if (indexChanged) {
+      /* Guarda: esta reparación SACA entradas de sin-usar/papelera. Si el cálculo
+         estuviera mal, el peor caso sería vaciar el índice — el mismo daño que ya
+         pasó en producción. Una reparación legítima nunca vacía una colección que
+         tenía contenido, así que si eso ocurre se aborta en vez de escribir. */
+      const vaciaria =
+        (unusedList.length > 0 && nextUnused.length === 0 && referencedSrcs.size === 0) ||
+        (Object.keys(usedContent).length > 0 && Object.keys(nextUsed).length === 0)
+      if (vaciaria) {
+        throw new Error('la reparación del índice vaciaría una colección con datos: se aborta')
+      }
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        for (const [k, v] of [
+          ['used_content', nextUsed] as const,
+          ['unused', nextUnused] as const,
+          ['trash', nextTrash] as const,
+        ]) {
+          await client.query(
+            `INSERT INTO cms_state (key, value, updated_at)
+             VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
+             ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = CURRENT_TIMESTAMP`,
+            [k, JSON.stringify(v)],
+          )
+        }
+        await client.query('COMMIT')
+        applied += findings.filter((f) => f.kind === 'index-drift').length
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {})
+        throw err
+      } finally {
+        client.release()
+      }
     }
   }
 
