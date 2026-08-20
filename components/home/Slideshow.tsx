@@ -79,9 +79,11 @@ export default function HeroSlideshow() {
         return
       }
       const next = (current + 1) % els.length
-      // Separamos la animación de fade in y la de zoom para que el zoom sea constante y lentísimo
+      /* Solo crossfade de opacidad. El zoom lentísimo (scale 1 → 1.03) obligaba
+         a re-rasterizar la slide en cada frame ahora que el desenfoque vive en
+         ella (styles/legacy/style.css → .carousel-slide). Un 3% de zoom bajo
+         blur(8px) y un velo blanco al 70% no se percibe; el costo sí. */
       gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 3, ease: 'power1.inOut' })
-      gsap.fromTo(els[next], { scale: 1 }, { scale: 1.03, duration: (intervalMs / 1000) + 3, ease: 'none' })
       gsap.to(els[current], { opacity: 0, duration: 3, ease: 'power1.inOut' })
       current = next
     }, intervalMs)

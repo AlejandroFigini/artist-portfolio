@@ -259,7 +259,6 @@ header.scrolled {
     position: absolute;
     background-color: var(--header-bg);
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     min-width: 220px;
     /* Ajustado para texto mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s pequeÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±o */
@@ -2149,7 +2148,6 @@ input:checked+.slider:before {
     height: 100%;
     background: rgba(4, 4, 10, 0.94);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     z-index: 9999;
     display: none;
     opacity: 0;
@@ -2261,7 +2259,6 @@ input:checked+.slider:before {
     padding: 2rem;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     color: #fff;
@@ -2422,12 +2419,22 @@ body.lightbox-open { overflow: hidden; }
 /* 1. backdrop-filter (blur de cristal) es de lo mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s costoso en GPUs
       dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©biles. Se elimina por completo; los paneles siguen siendo
       translÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºcidos por su background rgba. */
+/* SIN la linea -webkit-. Escribir las dos hacía que Lightning CSS (el
+   minificador de Next 16) colapsara el par y emitiera SOLO
+   `-webkit-backdrop-filter: none !important` — y Chrome moderno ya no reconoce
+   ese alias (`CSS.supports('-webkit-backdrop-filter','blur(1px)')` es false),
+   asi que esta regla no neutralizaba nada: el modo ligero venia pagando todos
+   los backdrop-filter del sitio. Con la propiedad sin prefijo sola, el
+   minificador la conserva y agrega el prefijo él mismo si el target lo pide.
+   REGLA GENERAL para toda hoja de este proyecto: escribir SOLO
+   `backdrop-filter`. Agregarle al lado la version -webkit- no da compatibilidad,
+   la quita — el par se colapsa a la prefijada y el efecto queda inerte en
+   Chrome. Habia 14 declaraciones asi en styles/ y ninguna se estaba viendo. */
 html.perf-lite,
 html.perf-lite *,
 html.perf-lite *::before,
 html.perf-lite *::after {
     backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
 }
 
 /* 2. Las nebulosas/auroras/blobs combinan filter: blur(100-160px) con
@@ -2436,6 +2443,27 @@ html.perf-lite *::after {
       mantiene el aspecto atmosfÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rico de fondo. */
 html.perf-lite .aurora {
     animation: none !important;
+}
+
+/* 2b. Mismo criterio que .aurora, para los dos casos que quedaban sueltos:
+      - .about-media-blob: filter: blur(60px) + animacion infinita.
+      - .wave-item: ~44 burbujas con dos box-shadow bobeando ADEMAS del
+        desplazamiento de la cinta (.wave-track sigue corriendo: el movimiento
+        continuo de la seccion se conserva, lo que se apaga es el bob de cada
+        burbuja, que es imperceptible mientras la cinta avanza).
+      El blur/las sombras se componen UNA vez y el elemento queda quieto. */
+html.perf-lite .about-media-blob,
+html.perf-lite .wave-item {
+    animation: none !important;
+}
+
+/* 2c. El desenfoque del fondo de portada se mudo de un backdrop-filter sobre
+      .carousel-overlay (viewport entero, re-desenfocado en cada frame) a un
+      filter en .carousel-slide. La regla 1 solo neutraliza backdrop-filter, asi
+      que el modo ligero tiene que descartar este blur explicitamente — si no,
+      movil estrenaria un desenfoque que hasta ahora no pagaba. */
+html.perf-lite .carousel-slide {
+    filter: none !important;
 }
 
 /* 3. cosmic-drift se aplica (inline desde JS) a CADA item de la galerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a.
@@ -2520,7 +2548,6 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     font-size: 1.5rem;
     cursor: pointer;
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -2802,7 +2829,6 @@ body.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate
     inset: 0;
     background: rgba(10, 1, 24, 0.6); /* Color mÃƒÆ’Ã‚Â¡s gris/translÃƒÆ’Ã‚Âºcido segÃƒÆ’Ã‚Âºn preferencia */
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -3020,7 +3046,6 @@ body.nav-open .nav-backdrop {
         min-width: 0;
         padding: 0.25rem 0 0.75rem 1rem;
         backdrop-filter: none;
-        -webkit-backdrop-filter: none;
     }
 
     .nav-links .dropdown-content a {
@@ -3800,7 +3825,6 @@ html.motion-off #animBlobCanvas {
         rgba(255, 255, 255, 0) 100%
     );
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     
     /* Sombra suave para darle un poquito de aire extra al texto */
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -3962,14 +3986,20 @@ html.motion-off #animBlobCanvas {
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0;
+    /* PERF: el desenfoque vive ACA y no en un backdrop-filter sobre el overlay.
+       El overlay cubre el 100% de .hero-bg-carousel, que es `fixed` y mide
+       100vw x 100vh: con backdrop-filter el navegador tenia que re-desenfocar el
+       viewport ENTERO en cada frame del crossfade, para siempre y en todo el
+       scroll de la portada. Aplicado a la slide, la textura se desenfoca una
+       sola vez y despues solo se compone (opacidad). */
+    filter: blur(8px);
 }
 .carousel-overlay {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    /* El blur se movio a .carousel-slide (ver comentario ahi). */
     z-index: 1;
 }
 
@@ -4110,10 +4140,13 @@ html.motion-off #animBlobCanvas {
     width: max-content;
     height: 56px;
     border-radius: 28px;
-    background: rgba(255, 255, 255, 0.65);
+    /* PERF: sin backdrop-filter. Son ~48 burbujas, cada una desenfocando lo que
+       tiene detras, DENTRO de .wave-track, que se traslada sin parar
+       (waveMarquee 55s infinite): el blur se recalculaba 48 veces por frame
+       mientras la cinta corre. El relleno sube de 0.65 a 0.78 para que siga
+       leyendose como vidrio esmerilado sin costo de GPU. */
+    background: rgba(255, 255, 255, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.09), 0 2px 8px -2px rgba(124, 58, 237, 0.07);
     display: flex;
     align-items: center;

@@ -498,7 +498,6 @@ body.is-admin .cms-hero-gear {
     padding: 1.5rem;
     background: rgba(4, 4, 12, 0.6);
     backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
     opacity: 0;
     transition: opacity 0.25s ease;
 }
@@ -812,7 +811,6 @@ body.cms-modal-open { overflow: hidden; }
     padding: 2rem;
     background: rgba(4, 4, 12, 0.7);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     opacity: 0;
     transition: opacity 0.25s ease;
 }

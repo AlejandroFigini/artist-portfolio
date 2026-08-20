@@ -265,7 +265,6 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
   right: 0;
   background-color: color-mix(in srgb, var(--bg-primary) 97%, transparent);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
   border-radius: 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -534,11 +533,20 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      quedaba cortado en pantallas cortas (iPhone SE). */
   .nav-links {
     padding-top: calc(var(--nav-pad-y) + 44px) !important;
-    padding-bottom: 0 !important;
+    /* El pie de acciones terminaba exactamente en el borde inferior de la
+       pantalla — encima del home indicator en los iPhone con notch. */
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
   }
+  /* Ritmo del menú: separación FIJA entre filas y el bloque centrado en el
+     espacio libre. Con `space-between` todo el sobrante se repartía entre las
+     filas: en una pantalla de 812px eran ~66px de aire entre opción y opción
+     contra ~4px entre las sub-opciones de un desplegable, y el menú se leía
+     desarmado. Ahora todas las filas respiran lo mismo y el conjunto queda
+     centrado; `safe center` cae a flex-start si el alto no alcanza, así ninguna
+     opción termina fuera de vista. */
   .nav-menu-scrollable {
-    justify-content: space-between !important;
-    gap: 0 !important;
+    justify-content: safe center !important;
+    gap: clamp(0.3rem, 1.4vh, 0.75rem) !important;
     padding: 0 !important;
   }
 
@@ -608,7 +616,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      mayoría de teléfonos modernos (iPhone 12/13/14/15, Pixel, Galaxy S) caigan
      aquí incluso con barras del sistema activas. `safe center` sigue como
      fallback si algún dispositivo no entra. */
-  .nav-menu-scrollable { gap: 0.15rem !important; }
+  .nav-menu-scrollable { gap: clamp(0.45rem, 2vh, 1.05rem) !important; }
   .nav-links > a,
   .nav-menu-scrollable > a,
   .nav-links .dropbtn {

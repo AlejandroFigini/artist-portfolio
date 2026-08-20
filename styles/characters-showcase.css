@@ -295,7 +295,6 @@
   padding: clamp(1rem, 4vw, 3rem);
   background: rgba(4, 4, 12, 0.82);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   animation: ch-lb-in 0.25s ease;
 }
 @keyframes ch-lb-in { from { opacity: 0 } to { opacity: 1 } }
@@ -325,7 +324,6 @@
   width: min(38vw, 380px); text-align: left; color: #fff;
   background: rgba(15, 15, 20, 0.85);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 1.75rem;

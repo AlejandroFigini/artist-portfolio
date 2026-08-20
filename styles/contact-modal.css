@@ -31,7 +31,6 @@ html.perf-lite .contact-modal-overlay-custom,
 .contact-modal-overlay-custom {
   background: rgba(6, 7, 14, 0.82) !important;
   backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
 }
 
 /* Congelamos todas las animaciones CSS de fondo mientras el modal de contacto o CMS está abierto */

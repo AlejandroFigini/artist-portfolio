@@ -155,7 +155,6 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--bg-primary) 50%, transparent);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
