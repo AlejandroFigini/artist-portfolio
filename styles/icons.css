@@ -152,6 +152,7 @@
 .fa-shield::before { content: "\f132"; }
 .fa-shield-cat::before { content: "\e572"; }
 .fa-shield-halved::before { content: "\f3ed"; }
+.fa-signal::before { content: "\f012"; }
 .fa-signature::before { content: "\f5b7"; }
 .fa-skull::before { content: "\f54c"; }
 .fa-sliders::before { content: "\f1de"; }

@@ -37,6 +37,7 @@ export default function ContactPage() {
   const mainRef = useRef<HTMLElement>(null)
 
   const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
+  const socialNets = SOCIAL_NETWORKS.filter((n) => n.type !== 'email' && socialHref(n, links[n.id])).slice(0, 6)
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -161,10 +162,13 @@ export default function ContactPage() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="ct-hero" aria-labelledby="ct-title">
+        <div className="ct-hero__bg cms-media" data-cms-key="contact.hero.bg" aria-hidden="true" />
         <div className="ct-container">
-          <span className="ct-hero__file" data-i18n="ct_file">{ui('ct_file')}</span>
-          <h1 id="ct-title" className="ct-hero__title" data-i18n="ct_title">{ui('ct_title')}</h1>
-          <p className="ct-hero__lede" data-i18n="ct_lede">{ui('ct_lede')}</p>
+          <div className="ct-hero-wrap">
+            <Corners />
+            <h1 id="ct-title" className="ct-hero__title" data-i18n="ct_title">{ui('ct_title')}</h1>
+            <p className="ct-hero__lede" data-i18n="ct_lede">{ui('ct_lede')}</p>
+          </div>
         </div>
       </section>
 
@@ -222,6 +226,43 @@ export default function ContactPage() {
         </div>
       </section>
 
+      {/* ── Social ───────────────────────────────────────────── */}
+      {socialNets.length > 0 && (
+        <section className="ct-social-section" aria-labelledby="ct-social-h2">
+          <div className="ct-container">
+            <div className="ct-section__head">
+              <span className="ct-section__fig">{ui('ct_social_title')}</span>
+              <h2 id="ct-social-h2" className="ct-section__h2" data-i18n="ct_social_h2">{ui('ct_social_h2')}</h2>
+            </div>
+            <div className="ct-social-layout">
+              <div className="ct-social-grid">
+                {socialNets.map((n) => (
+                  <a
+                    key={n.id}
+                    href={socialHref(n, links[n.id])}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ct-social-card"
+                    onClick={() => sendGAEvent('event', `social_click_${n.id}`)}
+                  >
+                    <Corners />
+                    <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon} ct-social-card__icon`} />
+                    <span className="ct-social-card__name">{n.label}</span>
+                    <i className="fa-solid fa-arrow-up-right-from-square ct-social-card__arrow" />
+                  </a>
+                ))}
+              </div>
+              <div className="ct-social-anim-container">
+                <Corners />
+                <div className="ct-social-anim-placeholder">
+                  <span>Animation Container</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── Contact Form ─────────────────────────────────────── */}
       <section className="ct-form-section" id="ct-form-anchor" aria-labelledby="ct-form-h2">
         <div className="ct-container">
@@ -236,43 +277,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      {/* ── Social ───────────────────────────────────────────── */}
-      {nets.length > 0 && (
-        <section className="ct-social-section" aria-labelledby="ct-social-h2">
-          <div className="ct-container">
-            <div className="ct-section__head">
-              <span className="ct-section__fig">{ui('ct_social_title')}</span>
-              <h2 id="ct-social-h2" className="ct-section__h2" data-i18n="ct_social_h2">{ui('ct_social_h2')}</h2>
-            </div>
-            <div className="ct-social-grid">
-              {nets.map((n) => (
-                <a
-                  key={n.id}
-                  href={n.type === 'email' ? '#ct-form-anchor' : socialHref(n, links[n.id])}
-                  target={n.type === 'email' ? undefined : '_blank'}
-                  rel="noopener noreferrer"
-                  className="ct-social-card"
-                  onClick={(e) => {
-                    if (n.type === 'email') {
-                      e.preventDefault()
-                      sendGAEvent('event', 'email_click')
-                      document.getElementById('ct-form-anchor')?.scrollIntoView({ behavior: 'smooth' })
-                    } else {
-                      sendGAEvent('event', `social_click_${n.id}`)
-                    }
-                  }}
-                >
-                  <Corners />
-                  <i className={`${n.brand ? 'fa-brands' : 'fa-solid'} ${n.icon} ct-social-card__icon`} />
-                  <span className="ct-social-card__name">{n.label}</span>
-                  <i className="fa-solid fa-arrow-up-right-from-square ct-social-card__arrow" />
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── CV Download ──────────────────────────────────────── */}
       <section className="ct-cv-section" aria-labelledby="ct-cv-h2">

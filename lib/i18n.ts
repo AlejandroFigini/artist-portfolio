@@ -197,7 +197,7 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   ct_form_h2: { en: 'Send me a message', es: 'Enviame un mensaje', pt: 'Envie-me uma mensagem', fr: 'Envoyez-moi un message' },
   ct_form_fig: { en: 'FIG. 08a — Message', es: 'FIG. 08a — Mensaje', pt: 'FIG. 08a — Mensagem', fr: 'FIG. 08a — Message' },
   ct_social_title: { en: '// SOCIAL', es: '// REDES', pt: '// REDES', fr: '// RÉSEAUX' },
-  ct_social_h2: { en: 'Find me online', es: 'Encontrame online', pt: 'Me encontre online', fr: 'Retrouvez-moi en ligne' },
+  ct_social_h2: { en: 'Social networks', es: 'Redes sociales', pt: 'Redes sociais', fr: 'Réseaux sociaux' },
   ct_cv_title: { en: '// CURRICULUM', es: '// CURRÍCULUM', pt: '// CURRÍCULO', fr: '// CURRICULUM' },
   ct_cv_h2: { en: 'Download my CV', es: 'Descargá mi CV', pt: 'Baixe meu CV', fr: 'Téléchargez mon CV' },
   ct_cv_desc: { en: 'Get a detailed overview of my experience, skills, and education in PDF format.', es: 'Obtené un resumen detallado de mi experiencia, habilidades y formación en formato PDF.', pt: 'Obtenha uma visão detalhada da minha experiência, habilidades e formação em formato PDF.', fr: 'Obtenez un aperçu détaillé de mon expérience, de mes compétences et de ma formation en PDF.' },
