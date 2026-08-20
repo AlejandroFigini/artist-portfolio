@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { listAllCloudinaryResources, hasCloudinary, setAssetState, type MediaState } from '@/lib/storage'
 import { requireRole } from '@/lib/auth'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,7 +18,7 @@ export const dynamic = 'force-dynamic'
    verdad: eso convertiría un error de lectura en pérdida de datos. */
 
 type Finding = {
-  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary' | 'index-drift'
+  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary' | 'index-drift' | 'ghost'
   key?: string
   url?: string
   publicId?: string
@@ -211,11 +213,75 @@ async function reconcile(apply: boolean) {
     }
   }
 
+  /* ---- 3) Fantasmas: lo que la web muestra y no existe en ningun lado ------
+     El requisito es que la web y Cloudinary coincidan. Una entrada del indice o
+     una referencia de `cms_data` que apunta a bytes inexistentes rompe eso: el
+     panel la cuenta como contenido real y no hay archivo detras.
+     En produccion el almacenamiento ES Cloudinary, asi que una ruta `/uploads/`
+     (resto de desarrollo local) no existe. En local se verifica contra el disco.
+     Este bloque es la razon por la que el panel decia 102 y Cloudinary 89: el
+     reconciliador solo miraba valores con `res.cloudinary.com`, asi que las
+     rutas locales no se examinaban nunca. */
+  const assetExists = (raw: string): boolean => {
+    const clean = srcKey(raw)
+    if (!clean) return false
+    if (clean.includes('res.cloudinary.com')) {
+      if (byUrl.has(clean)) return true
+      return (byBasename.get(basenameOf(clean)) || []).length === 1
+    }
+    if (clean.startsWith('/uploads/')) {
+      // Con Cloudinary configurado el disco local no es el almacenamiento.
+      if (hasCloudinary) return false
+      return existsSync(path.join(process.cwd(), 'public', clean))
+    }
+    // Ni URL de Cloudinary ni ruta de subida: no es un archivo.
+    return false
+  }
+
+  // 3a) Referencias de `cms_data` a media inexistente. Solo valores que SON media:
+  //     un texto suelto no es una referencia rota, es contenido.
+  const ghostKeys: string[] = []
+  for (const r of rows as { key: string; value: string }[]) {
+    if (!isMediaValue(r.value)) continue
+    if (fixedByKey.has(r.key)) continue // este run ya lo repara a una URL viva
+    if (assetExists(r.value)) continue
+    if (r.value.includes('res.cloudinary.com')) continue // ya sale como missing-cloudinary
+    ghostKeys.push(r.key)
+    findings.push({
+      kind: 'ghost', key: r.key, url: r.value,
+      detail: 'el contenedor apunta a un archivo que no existe en el almacenamiento',
+    })
+  }
+
+  // 3b) Entradas del indice sin archivo detras. Son entradas de MEDIA: si su src
+  //     no resuelve, no representan nada.
+  const ghostEntry = (e: LooseEntry) => {
+    const src = entrySrc(e)
+    return !!src && !assetExists(src)
+  }
+  const ghostsInIndex: string[] = []
+  for (const e of [...Object.values(nextUsed) as LooseEntry[], ...nextUnused, ...nextTrash]) {
+    if (!ghostEntry(e)) continue
+    ghostsInIndex.push(entrySrc(e))
+    findings.push({
+      kind: 'ghost', url: entrySrc(e),
+      detail: 'figura en el indice del panel pero no hay archivo detras',
+    })
+  }
+
+  const cleanUnused = nextUnused.filter((e) => !ghostEntry(e))
+  const cleanTrash = nextTrash.filter((e) => !ghostEntry(e))
+  const cleanUsed: Record<string, UsedEntry> = {}
+  for (const [k, v] of Object.entries(nextUsed)) {
+    if (ghostEntry(v as LooseEntry)) continue
+    cleanUsed[k] = v
+  }
+
   const indexChanged =
-    nextUnused.length !== unusedList.length ||
-    nextTrash.length !== trashList.length ||
-    Object.keys(nextUsed).length !== Object.keys(usedContent).length ||
-    Object.entries(nextUsed).some(([k, v]) => srcKey(usedContent[k]?.src || '') !== srcKey(v.src))
+    cleanUnused.length !== unusedList.length ||
+    cleanTrash.length !== trashList.length ||
+    Object.keys(cleanUsed).length !== Object.keys(usedContent).length ||
+    Object.entries(cleanUsed).some(([k, v]) => srcKey(usedContent[k]?.src || '') !== srcKey(v.src))
 
   let applied = 0
   if (apply) {
@@ -244,14 +310,46 @@ async function reconcile(apply: boolean) {
       if (res.ok) applied++
     }
 
+    if (ghostKeys.length) {
+      /* Guarda de cordura: si CASI TODO diera fantasma, lo que falló es la
+         lectura del almacenamiento, no los datos. Vaciar los contenedores ahí
+         sería convertir un error de lectura en pérdida de contenido. */
+      const totalMedia = (rows as { value: string }[]).filter((r) => isMediaValue(r.value)).length
+      if (totalMedia > 0 && ghostKeys.length > totalMedia * 0.5) {
+        throw new Error(
+          `${ghostKeys.length}/${totalMedia} referencias darían fantasma: lectura no concluyente, se aborta`,
+        )
+      }
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        /* El contenedor queda vacío, que es lo que el visitante YA ve: la URL da
+           404 y el fallback pinta el estado vacío. Esto hace que la base diga lo
+           mismo que la pantalla. No se borra la fila: la clave sigue existiendo
+           para que el contenedor se pueda volver a llenar. */
+        await client.query(
+          `UPDATE cms_data SET value = '', updated_at = CURRENT_TIMESTAMP
+           WHERE key = ANY($1::varchar[])`,
+          [ghostKeys],
+        )
+        await client.query('COMMIT')
+        applied += ghostKeys.length
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {})
+        throw err
+      } finally {
+        client.release()
+      }
+    }
+
     if (indexChanged) {
       /* Guarda: esta reparación SACA entradas de sin-usar/papelera. Si el cálculo
          estuviera mal, el peor caso sería vaciar el índice — el mismo daño que ya
          pasó en producción. Una reparación legítima nunca vacía una colección que
          tenía contenido, así que si eso ocurre se aborta en vez de escribir. */
       const vaciaria =
-        (unusedList.length > 0 && nextUnused.length === 0 && referencedSrcs.size === 0) ||
-        (Object.keys(usedContent).length > 0 && Object.keys(nextUsed).length === 0)
+        (unusedList.length > 0 && cleanUnused.length === 0 && referencedSrcs.size === 0) ||
+        (Object.keys(usedContent).length > 0 && Object.keys(cleanUsed).length === 0)
       if (vaciaria) {
         throw new Error('la reparación del índice vaciaría una colección con datos: se aborta')
       }
@@ -259,9 +357,9 @@ async function reconcile(apply: boolean) {
       try {
         await client.query('BEGIN')
         for (const [k, v] of [
-          ['used_content', nextUsed] as const,
-          ['unused', nextUnused] as const,
-          ['trash', nextTrash] as const,
+          ['used_content', cleanUsed] as const,
+          ['unused', cleanUnused] as const,
+          ['trash', cleanTrash] as const,
         ]) {
           await client.query(
             `INSERT INTO cms_state (key, value, updated_at)
