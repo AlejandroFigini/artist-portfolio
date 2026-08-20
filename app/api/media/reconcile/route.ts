@@ -253,9 +253,14 @@ async function reconcile(apply: boolean) {
     })
   }
 
-  // 3b) Entradas del indice sin archivo detras. Son entradas de MEDIA: si su src
-  //     no resuelve, no representan nada.
+  // 3b) Entradas del indice sin archivo detras. SOLO aplica a entradas de MEDIA:
+  //     `used_content` también guarda campos de TEXTO (kind:'text') de contenedores
+  //     con `fields` — char#xxx::name, proj#xxx::title, ::start_date — donde `.src`
+  //     es el propio texto (un nombre, una fecha), no una URL. Sin este chequeo el
+  //     detector marcaba "asd" (un nombre de personaje sin completar) como fantasma
+  //     y `apply` lo habría BORRADO: texto real del sitio, no una referencia rota.
   const ghostEntry = (e: LooseEntry) => {
+    if ((e as { kind?: string }).kind === 'text') return false
     const src = entrySrc(e)
     return !!src && !assetExists(src)
   }
