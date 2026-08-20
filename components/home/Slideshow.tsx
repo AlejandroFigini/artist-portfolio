@@ -7,7 +7,7 @@
    Sin imágenes → fondo blanco (sin portadas estáticas). 1 imagen → fija,
    sin rotación. Con prefers-reduced-motion queda la primera slide fija. */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useCmsStore } from '@/lib/cms/store'
@@ -35,6 +35,11 @@ function backdropWidth(): number {
 
 export default function HeroSlideshow() {
   const motion = useMotionReady() // GSAP llega en su propio chunk
+  const carouselRef = useRef<HTMLDivElement>(null)
+  /* El fondo es `fixed` y de viewport completo, asi que nunca "sale de
+     pantalla" por si solo: quien decide si se ve es el hero. Fuera de el, todas
+     las secciones son opacas y lo tapan por completo. */
+  const parkedRef = useRef(false)
   useCmsStore()
   const serverReady = state.serverReady
   // Solo las slides con imagen real. Vacío → [] → fondo blanco.
@@ -63,6 +68,24 @@ export default function HeroSlideshow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- slidesKey es la firma estable de `slides`
   }, [slidesKey, serverReady])
 
+  /* Aparcar el fondo cuando el hero no esta en pantalla: deja de ser una capa
+     viva durante los ~8500px restantes de scroll. El margen del 10% lo devuelve
+     antes de que el borde del hero vuelva a asomar. */
+  useEffect(() => {
+    const el = carouselRef.current
+    const hero = document.querySelector('.hero')
+    if (!el || !hero) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        parkedRef.current = !entry.isIntersecting
+        el.classList.toggle('is-parked', parkedRef.current)
+      },
+      { rootMargin: '10% 0px' },
+    )
+    io.observe(hero)
+    return () => { io.disconnect(); el.classList.remove('is-parked') }
+  }, [])
+
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
@@ -75,6 +98,8 @@ export default function HeroSlideshow() {
     if (els.length < 2) return
 
     const timer = setInterval(() => {
+      // Aparcado: nadie lo esta viendo, no hay por que tejer un crossfade.
+      if (parkedRef.current) return
       if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
         return
       }
@@ -100,7 +125,7 @@ export default function HeroSlideshow() {
 
   return (
     <>
-      <div className="hero-bg-carousel">
+      <div className="hero-bg-carousel" ref={carouselRef}>
         {slides.map((src, i) => (
           <div
             key={`${i}-${src}`}

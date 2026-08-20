@@ -2466,6 +2466,65 @@ html.perf-lite .carousel-slide {
     filter: none !important;
 }
 
+/* 2d. `about-video-breathe` es un `scale()` sobre un <video> EN REPRODUCCION:
+      cada frame obliga a recomponer el frame de video con un transform nuevo.
+      Es la unica animacion del sitio que escala contenido de video. */
+html.perf-lite .about-video {
+    animation: none !important;
+}
+
+/* 4. Capas de GPU retenidas sin motivo.
+      `will-change` promueve el elemento a capa propia y la MANTIENE mientras la
+      declaracion siga aplicada, no solo mientras dura la animacion. En una GPU
+      de telefono ese presupuesto se agota y empieza el thrashing de capas — se
+      siente como tirones generalizados, sin un culpable visible.
+      Los de esta lista no animan nada en modo ligero: o su animacion ya quedo
+      apagada en las reglas de arriba (.aurora, .about-media-blob), o el
+      `will-change` estaba anticipando un hover que en tactil no existe
+      (.anim-card, .m3d-slide), o un reveal de entrada que ya termino
+      (.animations-grid, .model-visual-grid-wrapper, .about-bio).
+      Quedan FUERA a proposito: .m3d-gallery__track (carrusel real, se traslada)
+      y .about-portrait (sigue flotando). */
+html.perf-lite .aurora,
+html.perf-lite .about-media-blob,
+html.perf-lite .about-bio,
+html.perf-lite .anim-card,
+html.perf-lite .animations-grid,
+html.perf-lite .model-visual-grid-wrapper,
+html.perf-lite .m3d-slide {
+    will-change: auto !important;
+}
+
+/* 5. content-visibility: el navegador saltea layout Y paint de las secciones
+      que no estan cerca del viewport. La home mide ~8500px (mas de 10 pantallas)
+      con 1548 nodos y 102 elementos con box-shadow, y hoy pinta las 8 secciones
+      siempre. Estas tres suman 4432px: el 52% del alto.
+
+      Solo <=992px. En desktop el ahorro no compensa el riesgo, y ademas
+      `renderWidthOf` (components/cms/engine.ts) cae al ancho del viewport
+      cuando el contenedor todavia no tiene layout: en movil ese fallback es
+      justo el ancho correcto, en desktop pediria imagenes mas chicas.
+
+      Quedan FUERA las cuatro secciones con carrusel (anim / proj / ch / m3d):
+      Embla mide el ancho de sus slides al inicializar y dentro de un subarbol
+      salteado ese ancho es 0. Las tres elegidas se verificaron sin nada que
+      desborde su caja (el paint containment recortaria lo que sobresalga).
+
+      `contain-intrinsic-size: auto <alto>` da la estimacion de la primera
+      pasada; despues el navegador recuerda el alto real y la barra de scroll
+      deja de moverse. */
+@media (max-width: 992px) {
+    /* Estos valores son el CONTENT BOX, no el alto total: el padding vertical de
+       la seccion se suma encima. Medidos a 375px de ancho (alto real menos
+       padding: 1263-112, 2178-112, 991-92). Ponerle el alto total hacia crecer
+       la pagina 631px de golpe en la primera pasada. El `auto` de adelante
+       hace que el navegador reemplace la estimacion por el alto real apenas
+       pinta cada seccion una vez. */
+    .about-section { content-visibility: auto; contain-intrinsic-size: auto 1151px; }
+    .illu-showcase { content-visibility: auto; contain-intrinsic-size: auto 2066px; }
+    .main-footer   { content-visibility: auto; contain-intrinsic-size: auto 899px; }
+}
+
 /* 3. cosmic-drift se aplica (inline desde JS) a CADA item de la galerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a.
       En modo ligero se desactiva para no animar decenas de wrappers. */
 
@@ -3977,6 +4036,14 @@ html.motion-off #animBlobCanvas {
     z-index: -1;
     overflow: hidden;
     background: #fff; /* sin imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ fondo blanco (las slides lo cubren si hay) */
+}
+/* Aparcado. El fondo solo se ve en el tramo del hero: de los 812px para abajo
+   TODAS las secciones son opacas (#fff / #f8f9fa / #12141c). Pero al ser
+   `fixed` seguia siendo una capa viva de viewport completo durante los ~8500px
+   de scroll. Slideshow.tsx pone esta clase cuando el hero sale de viewport: sin
+   pintado, sin capa, y de paso el crossfade se pausa. */
+.hero-bg-carousel.is-parked {
+    visibility: hidden;
 }
 .carousel-slide {
     position: absolute;

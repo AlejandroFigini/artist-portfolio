@@ -146,7 +146,9 @@ export default function Hero() {
     if (!lines.length) return
 
     let intervalId: ReturnType<typeof setInterval> | undefined
+    let hintTimer: ReturnType<typeof setTimeout> | undefined
     let charIndex = 0
+    let chars: HTMLElement[] = []
 
     const splitLine = (line: HTMLElement): HTMLElement[] => {
       const text = line.textContent || ''
@@ -157,10 +159,18 @@ export default function Hero() {
         s.style.animationDelay = `${charIndex++ * 0.045}s`
         s.textContent = ch === ' ' ? ' ' : ch
         s.style.display = 'inline-block'
-        s.style.willChange = 'opacity, filter, transform'
         line.appendChild(s)
         return s
       })
+    }
+
+    /* `will-change` promueve cada letra a su propia capa de GPU y la MANTIENE
+       mientras la declaracion siga puesta — no solo mientras dura la animacion.
+       Fijarlo en el split eran ~12 capas retenidas toda la sesion para un reveal
+       de medio segundo que ademas, en movil (`liteOnce`), corre una sola vez.
+       Se pone justo antes del reveal y se saca al terminar la ultima letra. */
+    const setHint = (on: boolean) => {
+      chars.forEach((c) => { c.style.willChange = on ? 'opacity, filter, transform' : 'auto' })
     }
 
     // replay: quita la clase, fuerza reflow y la re-agrega → reinicia el CSS anim
@@ -168,9 +178,13 @@ export default function Hero() {
       if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
         return
       }
+      setHint(true)
       title.classList.remove('anim-in')
       void (title as HTMLElement).offsetWidth
       title.classList.add('anim-in')
+      // delay acumulado de la ultima letra (0.045s c/u) + duracion del keyframe
+      clearTimeout(hintTimer)
+      hintTimer = setTimeout(() => setHint(false), chars.length * 45 + 650)
     }
 
     // En móvil / equipos ligeros el shimmer del título corre UNA vez (entrada) y
@@ -180,13 +194,14 @@ export default function Hero() {
     const start = setTimeout(() => {
       const fulls = lines.map((l) => l.textContent || '')
       if (fulls.every((f) => !f)) return
-      lines.forEach(splitLine)
+      chars = lines.flatMap(splitLine)
       replay()
       if (!liteOnce) intervalId = setInterval(replay, 9000)
     }, 3200)
 
     return () => {
       clearTimeout(start)
+      clearTimeout(hintTimer)
       if (intervalId) clearInterval(intervalId)
     }
   }, [])
