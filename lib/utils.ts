@@ -131,7 +131,13 @@ export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, origin
   el.addEventListener('error', () => {
     if (el.dataset.cldDead) return
     const c = cur()
-    if (!c.includes('res.cloudinary.com')) return // solo la derivada de Cloudinary
+    /* También se cubre la media que NO es de Cloudinary (rutas `/uploads/` que
+       quedaron en el índice, restos de desarrollo local). Antes se salía acá y el
+       contenedor se quedaba roto para siempre: no había derivada que esperar, pero
+       tampoco fallback. La diferencia es el presupuesto de reintentos — en
+       Cloudinary un 404 puede ser una derivada generándose, acá no puede ser otra
+       cosa que un archivo que no está. */
+    const isCloudinary = c.includes('res.cloudinary.com')
     /* Ya se había caído a la URL original y ESA también falla → el asset no existe.
        Sin esta rama el evento casi nunca salía: la URL que falla primero es la
        transformada (f_auto,w_640…), nunca igual a la original, así que se agotaban
@@ -146,7 +152,7 @@ export function attachMediaRetry(el: HTMLImageElement | HTMLVideoElement, origin
     const orig0 = (original || el.dataset.cmsSrc || '').split('?')[0]
     if (orig0 && c.split('?')[0] === orig0) return declareDead(orig0)
     tries++
-    if (tries > 4) {
+    if (tries > (isCloudinary ? 4 : 1)) {
       const orig = original || el.dataset.cmsSrc || ''
       if (orig && !c.startsWith(orig.split('?')[0])) {
         // NO se marca cldDone: si el original también falla hay que poder enterarse.
