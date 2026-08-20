@@ -369,7 +369,13 @@ async function reconcile(apply: boolean) {
           )
         }
         await client.query('COMMIT')
-        applied += findings.filter((f) => f.kind === 'index-drift').length
+        /* Cuenta TODO lo que este bloque escribió: los index-drift (contenedores
+           reclasificados) y los ghost de índice (entradas sin archivo detrás que
+           cleanUsed/cleanUnused/cleanTrash ya excluyeron). Antes solo sumaba
+           index-drift, así que el COMMIT limpiaba los fantasmas de índice pero el
+           endpoint reportaba `applied` de menos — la escritura era correcta, el
+           número no. */
+        applied += findings.filter((f) => f.kind === 'index-drift' || (f.kind === 'ghost' && !f.key)).length
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {})
         throw err
