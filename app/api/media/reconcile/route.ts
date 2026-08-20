@@ -264,7 +264,12 @@ async function reconcile(apply: boolean) {
     if (!ghostEntry(e)) continue
     ghostsInIndex.push(entrySrc(e))
     findings.push({
-      kind: 'ghost', url: entrySrc(e),
+      kind: 'ghost', url: entrySrc(e), key: (e as { key?: string }).key,
+      /* `key` solo existe para entradas de `used_content` (ahí es la clave del
+         contenedor); `unused`/`trash` no tienen container asociado. Sin esto es
+         imposible saber CUÁL contenedor sostiene el valor basura, y por lo tanto
+         si algo (una pestaña abierta, el propio sitio) lo va a volver a escribir
+         apenas sincronice su estado local. */
       detail: 'figura en el indice del panel pero no hay archivo detras',
     })
   }
