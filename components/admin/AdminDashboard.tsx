@@ -135,7 +135,13 @@ export default function AdminDashboard() {
     return () => document.removeEventListener('mouseover', handleMouseOver)
   }, [isAjustes, section])
 
-  const usedArr: AnyEntry[] = Object.values(state.usedContent)
+  /* `used_content` es el registro genérico del engine: junto con imágenes y
+     videos también lleva campos de TEXTO de contenedores con `fields`
+     (char#xxx::name, proj#xxx::title…) para su propio bookkeeping. Esta
+     biblioteca es de MEDIA — contarlos/mostrarlos acá es lo que hacía que
+     "Total Repository" no coincidiera con Cloudinary y que nombres/fechas sin
+     completar aparecieran como tarjetas de media rotas. */
+  const usedArr: AnyEntry[] = Object.values(state.usedContent).filter((e) => e.kind !== 'text')
   const uniqueUsedArr = deduplicateMedia(usedArr)
   const repeatedUsedCount = usedArr.length - uniqueUsedArr.length
   const unusedArr: AnyEntry[] = state.unused.map((e, i) => ({ ...e, _idx: i }))
