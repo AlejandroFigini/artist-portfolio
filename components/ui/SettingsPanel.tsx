@@ -375,7 +375,8 @@ export default function SettingsPanel() {
                 <button
                   type="button"
                   onClick={() => {
-                    clearSectionKeys(sectionClear.keys)
+                    clearSectionKeys(sectionClear.keys).catch((e) =>
+                      toast(e instanceof Error ? e.message : 'Error clearing the section', 'error'))
                     setSectionClear(null)
                     setAdminOpen(false)
                   }}
@@ -400,7 +401,8 @@ export default function SettingsPanel() {
               <button
                 type="button"
                 onClick={() => {
-                  clearAllSite()
+                  clearAllSite().catch((e) =>
+                    toast(e instanceof Error ? e.message : 'Error clearing the content', 'error'))
                   setShowClearConfirm(false)
                   setAdminOpen(false)
                 }}

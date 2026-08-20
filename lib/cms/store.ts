@@ -247,6 +247,9 @@ export function flushSyncToServer(): Promise<void> {
   _pendingKeys.clear()
   const promises: Promise<unknown>[] = []
   if (_flushPromise) promises.push(_flushPromise.catch(() => {}))
+  /* Sync de fondo (debounced): degrada en silencio a propósito. No hay acción
+     del usuario colgando de este flush — el guardado que él dispara va por
+     saveContent directo (persistOverrides, los gestores) y ese sí reporta. */
   if (Object.keys(payload).length > 0) promises.push(saveState(payload).catch(() => {}))
   if (syncOverrides) promises.push(saveContent(state.items).catch(() => {}))
   
@@ -724,7 +727,10 @@ export function clearItemOverrides(keys: string[]) {
   compactList('proj', projDeleted, cleared)
 
   persistOverridesLocal()
-  // Persist removal to DB (DB first strategy)
+  /* Persist removal to DB (DB first strategy). Silencioso a propósito: es un
+     helper sincrónico usado desde media docena de flujos internos y no tiene
+     forma de avisar (el toast es un hook de React). El borrado queda en local y
+     el próximo sync lo reintenta. */
   saveContent(cleared).catch(() => {})
 }
 
@@ -837,6 +843,7 @@ export function cleanOrphanOverrides() {
       s.count = 4
       state.items['proj.settings'] = JSON.stringify(s)
       clearItemOverrides(['proj#4', 'proj#5', 'proj#4::title', 'proj#4::summary', 'proj#4::start_date', 'proj#5::title', 'proj#5::summary', 'proj#5::start_date'])
+      // Normalización de datos viejos, no una acción del usuario → silenciosa.
       saveContent({ 'proj.settings': state.items['proj.settings'], 'proj#4': '', 'proj#5': '' }).catch(() => {})
       emit()
     }

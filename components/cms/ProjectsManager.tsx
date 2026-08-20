@@ -55,6 +55,11 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
 
   const dirty = projects.length !== original.length || projects.some((s, i) => s !== original[i])
 
+  // saveContent rechaza si no hay red o el servidor falla: sin esto el gestor
+  // se quedaría mostrando cambios que nunca se guardaron.
+  const onSaveError = (e: unknown) =>
+    toast(e instanceof Error ? e.message : 'Error saving changes', 'error')
+
   const status = dirty
     ? { color: '#2563eb', icon: 'fa-circle-info', label: 'Save changes', title: 'Save project order/list to apply updates' }
     : projects.length === 0
@@ -75,7 +80,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
       const hasPending = projects.some(k => k.startsWith('proj#new_')) && currentPending.some(k => k.startsWith('proj#new_'))
       
       if (add.length > 0 || hasPending) {
-        saveGraph(add.length > 0 ? [...projects, ...add] : projects)
+        saveGraph(add.length > 0 ? [...projects, ...add] : projects).catch(onSaveError)
       }
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
@@ -198,14 +203,14 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
     setSaving(true)
     saveGraph(projects)
       .then(() => { toast('Changes saved successfully'); setSaving(false) })
-      .catch(() => { toast('Error saving changes', 'error'); setSaving(false) })
+      .catch((e) => { onSaveError(e); setSaving(false) })
   }
 
   const move = (idx: number, dir: -1 | 1) => {
     const next = projects.slice()
     ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
     setProjects(next)
-    saveGraph(next)
+    saveGraph(next).catch(onSaveError)
   }
 
   // Permite forzar el render después de interactuar con el UploadModal
@@ -288,7 +293,9 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('proj#new_')) {
-                        await saveGraph(projects)
+                        // Si el guardado falla, el reindexado a proj#N no vale:
+                        // abortar en vez de editar la key equivocada.
+                        try { await saveGraph(projects) } catch (e) { onSaveError(e); return }
                         const idx = projects.indexOf(vKey)
                         if (idx !== -1) targetKey = `proj#${idx}`
                       }
@@ -306,7 +313,9 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('proj#new_')) {
-                        await saveGraph(projects)
+                        // Si el guardado falla, el reindexado a proj#N no vale:
+                        // abortar en vez de editar la key equivocada.
+                        try { await saveGraph(projects) } catch (e) { onSaveError(e); return }
                         const idx = projects.indexOf(vKey)
                         if (idx !== -1) targetKey = `proj#${idx}`
                       }
@@ -336,7 +345,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                         onClick={async () => {
                           let targetKey = cKey
                           if (dirty || vKey.startsWith('proj#new_')) {
-                            await saveGraph(projects)
+                            try { await saveGraph(projects) } catch (e) { onSaveError(e); return }
                             const idx = projects.indexOf(vKey)
                             if (idx !== -1) targetKey = `proj#${idx}::c${m}`
                           }
@@ -361,7 +370,7 @@ export default function ProjectsManager({ show = true, onClose, onPickImage, onE
                   <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === projects.length - 1} onClick={() => move(i, 1)}>
                     <i className="fa-solid fa-chevron-down"></i>
                   </button>
-                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => { const next = projects.filter((_, j) => j !== i); setProjects(next); saveGraph(next); }}>
+                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete project" aria-label="Delete project" onClick={() => { const next = projects.filter((_, j) => j !== i); setProjects(next); saveGraph(next).catch(onSaveError); }}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </div>

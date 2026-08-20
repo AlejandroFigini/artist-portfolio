@@ -63,6 +63,11 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
 
   const dirty = characters.length !== original.length || characters.some((s, i) => s !== original[i])
 
+  // saveContent rechaza si no hay red o el servidor falla: sin esto el gestor
+  // se quedaría mostrando cambios que nunca se guardaron.
+  const onSaveError = (e: unknown) =>
+    toast(e instanceof Error ? e.message : 'Error saving changes', 'error')
+
   const status = dirty
     ? { color: '#2563eb', icon: 'fa-circle-info', label: 'Save changes', title: 'Save character order/list to apply updates' }
     : characters.length === 0
@@ -84,7 +89,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
       const hasPending = characters.some(k => k.startsWith('char#new_')) && currentPending.some(k => k.startsWith('char#new_'))
       
       if (add.length > 0 || hasPending) {
-        saveGraph(add.length > 0 ? [...characters, ...add] : characters)
+        saveGraph(add.length > 0 ? [...characters, ...add] : characters).catch(onSaveError)
       }
       setNextNewId((n) => {
         const ids = pendingNew().map((k) => Number(k.split('_')[1]))
@@ -182,14 +187,14 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
     setSaving(true)
     saveGraph(characters)
       .then(() => { toast('Changes saved successfully'); setSaving(false) })
-      .catch(() => { toast('Error saving changes', 'error'); setSaving(false) })
+      .catch((e) => { onSaveError(e); setSaving(false) })
   }
 
   const move = (idx: number, dir: -1 | 1) => {
     const next = characters.slice()
     ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
     setCharacters(next)
-    saveGraph(next)
+    saveGraph(next).catch(onSaveError)
   }
 
   const pick = (key: string) => {
@@ -275,7 +280,9 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('char#new_')) {
-                        await saveGraph(characters)
+                        // Si el guardado falla, el reindexado a char#N no vale:
+                        // abortar en vez de editar la key equivocada.
+                        try { await saveGraph(characters) } catch (e) { onSaveError(e); return }
                         const idx = characters.indexOf(vKey)
                         if (idx !== -1) targetKey = `char#${idx}`
                       }
@@ -292,7 +299,9 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                     onClick={async () => {
                       let targetKey = vKey
                       if (dirty || vKey.startsWith('char#new_')) {
-                        await saveGraph(characters)
+                        // Si el guardado falla, el reindexado a char#N no vale:
+                        // abortar en vez de editar la key equivocada.
+                        try { await saveGraph(characters) } catch (e) { onSaveError(e); return }
                         const idx = characters.indexOf(vKey)
                         if (idx !== -1) targetKey = `char#${idx}`
                       }
@@ -322,7 +331,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                         onClick={async () => {
                           let targetKey = cKey
                           if (dirty || vKey.startsWith('char#new_')) {
-                            await saveGraph(characters)
+                            try { await saveGraph(characters) } catch (e) { onSaveError(e); return }
                             const idx = characters.indexOf(vKey)
                             if (idx !== -1) targetKey = `char#${idx}::c${m}`
                           }
@@ -346,7 +355,7 @@ export default function CharactersManager({ show = true, onClose, onPickImage, o
                   <button type="button" className="cms-icon-btn" title="Move down" aria-label="Move down" disabled={i === characters.length - 1} onClick={() => move(i, 1)}>
                     <i className="fa-solid fa-chevron-down"></i>
                   </button>
-                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => { const next = characters.filter((_, j) => j !== i); setCharacters(next); saveGraph(next); }}>
+                  <button type="button" className="cms-icon-btn cms-icon-btn--danger" title="Delete character" aria-label="Delete character" onClick={() => { const next = characters.filter((_, j) => j !== i); setCharacters(next); saveGraph(next).catch(onSaveError); }}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </div>

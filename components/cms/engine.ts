@@ -1088,7 +1088,8 @@ export async function deleteProjectSite(key: string) {
   persistUnused(); persistUsed(); persistRetired()
   emit()
   setTimeout(() => rescan(), 100)
-  await saveContent(payload).catch(() => {})
+  // El fallo se propaga: TextModals ya avisa al usuario si el borrado no llegó.
+  await saveContent(payload)
 }
 
 
@@ -1097,7 +1098,7 @@ export async function deleteProjectSite(key: string) {
 // compartido por "Clear All" y "Clear current section". El texto NO se toca.
 // Claves borradas → se envían a la DB como '' (POST /api/content es upsert, no
 // borra) para que el contenido no reaparezca al recargar / en otro navegador.
-function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
+function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []): Promise<void> {
   const cleared: Record<string, string> = {}
   const carouselPrefixes = new Set<string>(forceCarousels)
 
@@ -1160,7 +1161,9 @@ function clearKeys(keys: Iterable<string>, forceCarousels: string[] = []) {
   })
   persistUsed(); persistUnused(); persistRetired(); persistOverridesLocal()
   emit()
-  if (Object.keys(cleared).length) saveContent(cleared).catch(() => {})
+  // Devuelve la promesa: limpiar es destructivo y lo dispara el usuario, así que
+  // el panel que abrió el confirm tiene que poder avisar si no se persistió.
+  return Object.keys(cleared).length ? saveContent(cleared) : Promise.resolve()
 }
 
 // Reúne todas las media keys con contenido (state, usados, o src en el DOM).
@@ -1174,11 +1177,11 @@ function allMediaKeys(): Set<string> {
 
 // Limpia TODO el contenido de media del sitio → lo mueve a "no usados", dejando
 // solo los contenedores vacíos. Cubre media indexada, carruseles y burbujas wave.
-export function clearAllSite() {
-  if (!state.isAdmin) return
+export function clearAllSite(): Promise<void> {
+  if (!state.isAdmin) return Promise.resolve()
   // Fuerza el reset de los carruseles de portada aunque no tengan contenido CMS
   // (ej. el fondo mostrando los DEFAULT_SLIDES) → "limpiar todo" siempre los vacía.
-  clearKeys(allMediaKeys(), ['hero', 'hero-main', 'hero-sub', 'about-carousel'])
+  return clearKeys(allMediaKeys(), ['hero', 'hero-main', 'hero-sub', 'about-carousel'])
 }
 
 // ----- Limpieza por sección (sección en viewport) --------------------------------
@@ -1230,9 +1233,9 @@ export function currentSectionInfo(): { label: string; keys: string[]; count: nu
 }
 
 // Limpia las keys dadas (capturadas en currentSectionInfo al abrir el confirm).
-export function clearSectionKeys(keys: string[]) {
-  if (!state.isAdmin || !keys.length) return
-  clearKeys(keys)
+export function clearSectionKeys(keys: string[]): Promise<void> {
+  if (!state.isAdmin || !keys.length) return Promise.resolve()
+  return clearKeys(keys)
 }
 
 // ----- Overlay de edición (tuercas/lápices) -----------------------------------------

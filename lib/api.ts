@@ -40,19 +40,18 @@ export async function saveContent(items: ContentItems): Promise<void> {
       body: JSON.stringify({ items }),
     })
   } catch {
-    // Backend Express no disponible → persistencia solo local (el caller ya
-    // guardó en localStorage). No bloquea el CMS en desarrollo sin backend.
-    return
+    // Sin red o servidor caído. Se propaga: quien llama decide si avisa al
+    // usuario o degrada en silencio. Antes resolvía OK y el CMS confirmaba
+    // "guardado" sin que el contenido hubiera llegado nunca a la base.
+    throw new Error('Could not reach the server. Your changes were not saved.')
   }
   if (r.ok) return
-  // 5xx = backend caído o sin DB. El contenido ya quedó en localStorage,
-  // así que degradamos en silencio en vez de bloquear el CMS.
-  if (r.status >= 500) return
-  // 4xx con error legible (ej. payload inválido) sí se reporta.
+  // Todo !ok falla, incluidos los 5xx. Correr sin DATABASE_URL no entra acá:
+  // POST /api/content responde 200 en modo mock.
   const text = await r.text().catch(() => '')
   let msg = ''
-  try { msg = (JSON.parse(text) as { error?: string }).error || '' } catch { /* sin JSON → degradar */ }
-  if (msg) throw new Error(msg)
+  try { msg = (JSON.parse(text) as { error?: string }).error || '' } catch { /* respuesta sin JSON */ }
+  throw new Error(msg || `Could not save your changes (HTTP ${r.status}).`)
 }
 
 export async function login(user: string, pass: string, code: string | null): Promise<LoginResponse> {
