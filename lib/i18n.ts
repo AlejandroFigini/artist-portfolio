@@ -185,8 +185,9 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Contact page (/contact)
   ct_file: { en: 'FILE 08 — CONTACT / LUCÍA MONTAÑA', es: 'ARCHIVO 08 — CONTACTO / LUCÍA MONTAÑA', pt: 'ARQUIVO 08 — CONTATO / LUCÍA MONTAÑA', fr: 'FICHIER 08 — CONTACT / LUCÍA MONTAÑA' },
-  ct_title: { en: 'Get in touch', es: 'Ponete en contacto', pt: 'Entre em contato', fr: 'Prenez contact' },
-  ct_lede: { en: 'Have a project in mind or just want to say hello? I\'d love to hear from you. Reach out through any of the channels below.', es: '¿Tenés un proyecto en mente o simplemente querés saludar? Me encantaría saber de vos. Escribime por cualquiera de los canales de abajo.', pt: 'Tem um projeto em mente ou quer apenas dizer olá? Adoraria ouvir de você. Entre em contato por qualquer um dos canais abaixo.', fr: 'Un projet en tête ou juste envie de dire bonjour ? J\'adorerais avoir de vos nouvelles. Contactez-moi via l\'un des canaux ci-dessous.' },
+  ct_email_fallback: { en: 'Send a message', es: 'Enviar un mensaje', pt: 'Enviar uma mensagem', fr: 'Envoyer un message' },
+  ct_location_value: { en: 'Montevideo, Uruguay', es: 'Montevideo, Uruguay', pt: 'Montevidéu, Uruguai', fr: 'Montevideo, Uruguay' },
+  ct_cv_name: { en: 'Curriculum Vitae', es: 'Curriculum Vitae', pt: 'Curriculum Vitae', fr: 'Curriculum Vitae' },
   ct_info_title: { en: '// INFO', es: '// INFO', pt: '// INFO', fr: '// INFO' },
   ct_info_h2: { en: 'Contact details', es: 'Datos de contacto', pt: 'Dados de contato', fr: 'Coordonnées' },
   ct_email_label: { en: 'EMAIL', es: 'EMAIL', pt: 'EMAIL', fr: 'EMAIL' },

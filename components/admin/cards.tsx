@@ -104,13 +104,21 @@ type MediaCardProps = {
   cardType: CardType
   tags?: React.ReactNode
   actions: MenuAction[]
+  /* Contenedores que usan este archivo EN ESTA página. Sin este dato la
+     tarjeta escanea todo `usedContent` y un archivo compartido entre dos
+     páginas listaba también los contenedores de la otra. */
+  occurrences?: UsedEntry[]
   multiSelect?: boolean
   selected?: boolean
+  /* Identidad de la tarjeta para la selección por arrastre: MarqueeSelect la lee
+     del DOM, así que tiene que coincidir con la que usa `onToggleSelect`. */
+  selType?: string
+  selKey?: string
   onToggleSelect?: (checked: boolean) => void
   onView: () => void
 }
 
-export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, onToggleSelect, onView }: MediaCardProps) {
+export function MediaCard({ e, cardType, tags, actions, occurrences, multiSelect, selected, selType, selKey, onToggleSelect, onView }: MediaCardProps) {
   
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
@@ -128,7 +136,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
   const title = stripExt(e.name || mm?.name) || e.label || '—'
   // contenedor al que pertenece; si es una subida directa reciente → "Recién subido"
-  const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
+  const occs = occurrences ?? (e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : [])
   const occCount = cardType === 'used' ? occs.length : (e.src ? Object.values(state.usedContent).filter(u => u.src === e.src).length : 0)
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : (occCount > 1 && cardType === 'used' ? 'Containers:' : 'Container:')
@@ -141,6 +149,8 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
     <div
       className="cms-mlib-item"
       data-card-type={cardType}
+      data-sel-type={multiSelect ? selType : undefined}
+      data-sel-key={multiSelect ? selKey : undefined}
       onClick={(ev) => {
         const t = ev.target as HTMLElement
         if (t.closest('.cms-mlib-actions') || t.closest('.cms-multi-check') || t.closest('.cms-info-tip')) return
@@ -184,7 +194,7 @@ export function MediaCard({ e, cardType, tags, actions, multiSelect, selected, o
                 <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)', cursor: 'pointer' }}></i>
                 <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '180px', maxWidth: '240px' }}>
                   <strong style={{ display: 'block', marginBottom: '0.3rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
-                    Contenedores en uso ({occList.length}):
+                    Containers in use ({occList.length}):
                   </strong>
                   {occList.map((cName, idx) => (
                     <div key={idx} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>

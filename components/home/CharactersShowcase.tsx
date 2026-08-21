@@ -20,7 +20,7 @@ import AutoScroll from 'embla-carousel-auto-scroll'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useInViewRef } from '@/hooks/useInView'
-import { optimizedMediaSrc } from '@/lib/utils'
+import { canHover, optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -120,7 +120,13 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
 
   const open = (src: string) => onOpen({ src, name: name || `Character ${num}`, role, desc })
 
+  /* El ciclo de concepts es una interacción de puntero fino. En táctil el
+     navegador dispara mouseenter de compatibilidad al tocar/arrastrar pero
+     nunca el mouseleave: `isHoveringRef` quedaba en true para siempre y, como
+     es el freno del auto-scroll, el carrusel no volvía a moverse después de
+     mover las tarjetas con el dedo. Sin hover real, no se entra al estado. */
   const handleMouseEnter = () => {
+    if (!canHover()) return
     setIsHovered(true)
     // Siempre arranca mostrando la imagen principal y deja que el ciclo avance a las subimágenes
     setActiveSlide(0)
@@ -128,6 +134,7 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
   }
 
   const handleMouseLeave = () => {
+    if (!canHover()) return
     setIsHovered(false)
     setActiveSlide(0) // vuelve a la imagen principal en el contenedor grande y quita el destacado
     if (isHoveringRef) isHoveringRef.current = false
@@ -167,7 +174,7 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
                 className={`ch-concept-cell transition-all duration-300 ${isFeatured ? 'ring-1 ring-violet-400/30 z-10 opacity-100' : isHovered ? 'opacity-65' : 'opacity-100'}`}
                 key={m}
                 onMouseEnter={() => {
-                  if (isHovered) setActiveSlide(m + 1)
+                  if (isHovered && canHover()) setActiveSlide(m + 1)
                 }}
               >
                 <CharMedia 

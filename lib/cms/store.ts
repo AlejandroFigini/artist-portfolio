@@ -546,6 +546,11 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' }> = {
   'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
   'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
+  'settings.appleIconUrl': { section: 'Site Configuration', label: () => 'Search Engine Icon', kind: 'image' },
+  'contact.hero.bg': { section: 'Contact', label: () => 'Background Image — Contact', kind: 'image' },
+  'contact.hero.title': { section: 'Contact', label: () => 'Title — Contact', kind: 'text' },
+  'contact.hero.lede': { section: 'Contact', label: () => 'Subtitle — Contact', kind: 'text' },
+  'contact.social.anim': { section: 'Contact', label: () => 'Video / Animation — Contact', kind: 'video' },
   'hero.wave': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'hero.marquee': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'soft.hero': { section: 'Hero', label: (n) => `Hero Stack Logo #${n}`, kind: 'image' },
@@ -627,6 +632,9 @@ export function getAllKnownContainerKeys(): string[] {
   const standard: string[] = [
     'loader.gallop',
     'settings.faviconUrl',
+    'settings.appleIconUrl',
+    'contact.hero.bg',
+    'contact.social.anim',
     'anim.bg',
     'about.video',
     ...fixedSlotKeys(),

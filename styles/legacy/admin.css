@@ -2512,3 +2512,20 @@ select.ga-metric-select option {
   cursor: not-allowed;
   transform: none;
 }
+/* --- Seleccion por arrastre (marquee) en las grillas de Contenidos ---
+   Solo se dibuja mientras se arrastra con el modo de seleccion multiple
+   activo. El realce de la tarjeta ya lo da :has(.cms-multi-check:checked). */
+.cms-marquee {
+    position: absolute;
+    z-index: 200;
+    pointer-events: none;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+/* Sin esto el arrastre selecciona el texto de las tarjetas que va tocando. */
+body.cms-marquee-active,
+body.cms-marquee-active * {
+    user-select: none;
+    -webkit-user-select: none;
+}

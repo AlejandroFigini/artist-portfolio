@@ -4,10 +4,10 @@
    renameContainerModal, openAssociateContainerModal, editInfo y la
    subida directa a Cloudinary (sección "Subir contenido"). */
 
-import { useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { uploadMedia, type UploadResponse } from '@/lib/api'
+import { fetchAssetId, uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
@@ -16,6 +16,7 @@ import {
   moveUsedToUnused, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
+import { cloudinaryAssetUrl, cloudinarySearchUrl } from '@/lib/cloudinary-console'
 import { Thumb, type AnyEntry } from './cards'
 
 type CloseProp = { onClose: () => void }
@@ -336,9 +337,33 @@ export function SelectContainerActionModal({
   )
 }
 
+/** Nombre del archivo dentro del public_id de una URL de Cloudinary — lo que
+ *  se escribe en el buscador de la consola cuando no hay `asset_id`. */
+function publicIdOf(url: string): string {
+  const m = url.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
+  return m ? m[2].replace(/\.[a-zA-Z0-9]+$/, '') : ''
+}
+
 export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
-  const src = e.src || e.dataUrl
-  if (!src || src === 'null' || src === 'undefined') return null
+  const raw = e.src || e.dataUrl
+  const src = !raw || raw === 'null' || raw === 'undefined' ? '' : raw
+
+  /* "Manage asset" tiene que abrir la FICHA del archivo, no el buscador. La
+     consola solo direcciona por `asset_id`, que no viaja en la URL del archivo:
+     se pide al servidor al abrir la vista previa. Mientras no llega (o si el
+     asset no es de Cloudinary) el enlace cae al buscador por nombre, que es lo
+     que había antes. Los hooks van ANTES del early return: no pueden quedar
+     detrás de una condición. */
+  const [resolved, setResolved] = useState<{ url: string; id: string } | null>(null)
+  useEffect(() => {
+    if (!src.includes('cloudinary.com') || state.role === 'demo') return
+    let alive = true
+    fetchAssetId(src).then((id) => { if (alive && id) setResolved({ url: src, id }) })
+    return () => { alive = false }
+  }, [src])
+  const assetId = resolved?.url === src ? resolved.id : null
+
+  if (!src) return null
   const vid = isVideo(e.type || (e as { kind?: string }).kind, e.name)
   const ts = cardType === 'trash' || (cardType === 'repo' && e._state === 'trash') ? e.deletedAt : e.ts
   const occs = e.src && cardType === 'used' ? Object.values(state.usedContent).filter(u => u.src === e.src) : []
@@ -346,6 +371,10 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
   const containerBase = e.key ? getContainerMeta(e.key).label : ''
   const isUnusedOrTrash = cardType === 'unused' || cardType === 'trash' || e._state === 'unused' || e._state === 'trash'
   const containerLabel = isUnusedOrTrash ? 'Previous container:' : 'Container:'
+
+  const consoleHref = assetId
+    ? cloudinaryAssetUrl(assetId)
+    : cloudinarySearchUrl(publicIdOf(src) || (e.name ? getFileBasename(e.name) : ''))
 
   return (
     <CmsModal
@@ -379,14 +408,11 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               <div>
                 <strong>Cloudinary console:</strong>{' '}
-                <a 
-                  href={`https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search?q=${encodeURIComponent(
-                    src.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)
-                      ? src.match(/\/(image|video|raw)\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/)![2].replace(/\.[a-zA-Z0-9]+$/, '')
-                      : (e.name ? getFileBasename(e.name) : '')
-                  )}`}
-                  target="_blank" rel="noopener noreferrer" 
+                <a
+                  href={consoleHref}
+                  target="_blank" rel="noopener noreferrer"
                   style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+                  title={assetId ? 'Open this asset in Cloudinary' : 'Open Cloudinary and search for this file'}
                 >
                   Manage asset <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.8em', marginLeft: '2px' }}></i>
                 </a>
@@ -415,7 +441,7 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
                     <i className="fa-solid fa-circle-info" style={{ color: 'var(--accent)', cursor: 'pointer' }}></i>
                     <span className="cms-info-bubble" role="tooltip" style={{ minWidth: '220px' }}>
                       <strong style={{ display: 'block', marginBottom: '0.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem', color: 'var(--accent)' }}>
-                        Resumen de contenedores:
+                        Container summary:
                       </strong>
                       {occs.map((u, i) => (
                         <div key={i} style={{ fontSize: '0.78rem', margin: '0.2rem 0', color: 'var(--text-primary)' }}>

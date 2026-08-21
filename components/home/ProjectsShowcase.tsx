@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/carousel'
 import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay'
 import { useInViewRef } from '@/hooks/useInView'
-import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
+import { canHover, mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
 
 // Shared hook for carousel reinitialization
@@ -348,10 +348,12 @@ export default function ProjectsShowcase() {
               ]}
               className="w-full"
               onMouseEnter={() => {
+                if (!canHover()) return
                 const autoplay = carouselApi?.plugins()?.autoplay as AutoplayType | undefined
                 if (autoplay) autoplay.stop()
               }}
               onMouseLeave={() => {
+                if (!canHover()) return
                 const autoplay = carouselApi?.plugins()?.autoplay as AutoplayType | undefined
                 if (autoplay) autoplay.play()
               }}

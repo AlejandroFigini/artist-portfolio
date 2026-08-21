@@ -9,13 +9,20 @@ import '@/styles/contact-page.css'
 
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
-import { useUiText } from '@/lib/cms/store'
+import { t, useUiText } from '@/lib/cms/store'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
 import { sendGAEvent } from '@next/third-parties/google'
 import ContactForm from './ContactForm'
+
+/* Texto base de los contenedores CMS del hero. `t()` devuelve esto mientras el
+   admin no lo edite; una vez editado manda cms_data (y sus traducciones). */
+const CT_TITLE = 'Get in touch'
+const CT_LEDE =
+  "Have a project in mind or just want to say hello? I'd love to hear from you. " +
+  'Reach out through any of the channels below.'
 
 function Corners() {
   return (
@@ -36,8 +43,11 @@ export default function ContactPage() {
   const { downloadCv, isDownloading } = useDownloadCv(settings.cvUrl, settings.cvName || 'CV.pdf')
   const mainRef = useRef<HTMLElement>(null)
 
-  const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
+  /* Los 6 cuadros de redes son solo enlaces externos: el email tiene su propia
+     tarjeta de info y el formulario, así que no duplica lugar en la grilla. */
   const socialNets = SOCIAL_NETWORKS.filter((n) => n.type !== 'email' && socialHref(n, links[n.id])).slice(0, 6)
+  // Dirección visible = la que el admin configuró en Gestión (fuente única).
+  const emailAddress = (links.email || '').split(',')[0].trim()
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -162,12 +172,19 @@ export default function ContactPage() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="ct-hero" aria-labelledby="ct-title">
-        <div className="ct-hero__bg cms-media" data-cms-key="contact.hero.bg" aria-hidden="true" />
+        {/* El engine monta el estado vacío sobre el PADRE del contenedor. Sin este
+            envoltorio ese padre sería <section class="ct-hero"> entera y el
+            neutralizador global de `.cms-empty-slot` apagaría el fondo, las
+            sombras y las animaciones de todo el hero. */}
+        <div className="ct-hero__bg-slot" aria-hidden="true">
+          <div className="ct-hero__bg cms-media" data-cms-key="contact.hero.bg" />
+        </div>
         <div className="ct-container">
           <div className="ct-hero-wrap">
             <Corners />
-            <h1 id="ct-title" className="ct-hero__title" data-i18n="ct_title">{ui('ct_title')}</h1>
-            <p className="ct-hero__lede" data-i18n="ct_lede">{ui('ct_lede')}</p>
+            <span className="ct-hero__file ct-section__fig" data-i18n="ct_file">{ui('ct_file')}</span>
+            <h1 id="ct-title" className="ct-hero__title">{t('contact.hero.title', CT_TITLE)}</h1>
+            <p className="ct-hero__lede">{t('contact.hero.lede', CT_LEDE)}</p>
           </div>
         </div>
       </section>
@@ -196,7 +213,7 @@ export default function ContactPage() {
                   document.getElementById('ct-form-anchor')?.scrollIntoView({ behavior: 'smooth' })
                 }}
               >
-                lumontana23@gmail.com
+                {emailAddress || ui('ct_email_fallback')}
               </a>
             </div>
 
@@ -207,7 +224,7 @@ export default function ContactPage() {
                 <i className="fa-solid fa-location-dot" />
               </div>
               <span className="ct-info-card__label" data-i18n="ct_location_label">{ui('ct_location_label')}</span>
-              <span className="ct-info-card__value">Montevideo, Uruguay</span>
+              <span className="ct-info-card__value" data-i18n="ct_location_value">{ui('ct_location_value')}</span>
             </div>
 
             {/* Status card */}
@@ -252,11 +269,12 @@ export default function ContactPage() {
                   </a>
                 ))}
               </div>
+              {/* Contenedor primero, contenido después: el engine indexa el <video>
+                  por `.ct-social-anim` y pinta el estado vacío estándar (marco
+                  punteado + nube + nombre) sobre el padre mientras no haya media. */}
               <div className="ct-social-anim-container">
                 <Corners />
-                <div className="ct-social-anim-placeholder">
-                  <span>Animation Container</span>
-                </div>
+                <video className="ct-social-anim" autoPlay muted loop playsInline preload="metadata" />
               </div>
             </div>
           </div>
@@ -292,7 +310,7 @@ export default function ContactPage() {
                 <i className="fa-solid fa-file-pdf" />
               </div>
               <div className="ct-cv-card__text">
-                <p className="ct-cv-card__title">Curriculum Vitae</p>
+                <p className="ct-cv-card__title" data-i18n="ct_cv_name">{ui('ct_cv_name')}</p>
                 <p className="ct-cv-card__desc" data-i18n="ct_cv_desc">{ui('ct_cv_desc')}</p>
               </div>
               <a

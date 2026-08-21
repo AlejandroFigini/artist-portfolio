@@ -195,8 +195,9 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
   { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
   { base: 'contact.hero.bg', sel: '.ct-hero__bg', kind: 'image', accept: 'webp,jpg,png', mount: 'self', section: 'Contact', label: 'Background Image — Contact' },
-  { base: 'contact.hero.title', sel: 'h1[data-i18n="ct_title"]', kind: 'text', mount: 'self', section: 'Contact', label: 'Title — Contact' },
-  { base: 'contact.hero.lede', sel: 'p[data-i18n="ct_lede"]', kind: 'text', mount: 'self', section: 'Contact', label: 'Subtitle — Contact' },
+  { base: 'contact.hero.title', sel: '.ct-hero__title', kind: 'text', mount: 'self', section: 'Contact', label: 'Title — Contact' },
+  { base: 'contact.hero.lede', sel: '.ct-hero__lede', kind: 'text', mount: 'self', section: 'Contact', label: 'Subtitle — Contact' },
+  { base: 'contact.social.anim', sel: '.ct-social-anim', kind: 'video', accept: 'webm', mount: 'parent', section: 'Contact', label: 'Video / Animation — Contact' },
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')
     const h = sec && sec.querySelector<HTMLElement>('.section-typewriter')
@@ -883,67 +884,50 @@ export function cleanTemporaryKeys(keys: string[]) {
   if (changed) { persistUsed(); emit() }
 }
 
-export function syncSettingsUsedContent(settings: { loaderVideo?: string; faviconUrl?: string }) {
-  let changed = false
-  if (settings.loaderVideo !== undefined) {
-    const src = settings.loaderVideo
-    const prev = state.usedContent['loader.gallop']
-    if (src && prev?.src !== src) {
-      if (prev && prev.src) {
-        retireUsedEntryToUnused(prev, 'replaced', ['loader.gallop'])
-      }
-      const idx = state.unused.findIndex(u => u.src === src)
-      if (idx !== -1) {
-        state.unused.splice(idx, 1)
-        persistUnused()
-      }
-      state.usedContent['loader.gallop'] = {
-        key: 'loader.gallop',
-        label: 'Loading Screen',
-        section: 'Site Configuration',
-        kind: 'video',
-        src,
-        name: resolveMediaName(src, 'loader.gallop'),
-        size: null,
-        original: true,
-      }
-      changed = true
-    } else if (!src && prev) {
-      retireUsedEntryToUnused(prev, 'retired', ['loader.gallop'])
-      delete state.usedContent['loader.gallop']
-      changed = true
-    }
-  }
+/* Ajustes globales que además son media: se reflejan en "Contenido en uso"
+   como un contenedor más. Va como tabla porque el bloque era idéntico por
+   ajuste y el tercero (Search Engine Icon) directamente faltaba: sin entrada
+   acá, su archivo no aparecía nunca en Site Configuration. */
+const SETTINGS_MEDIA = [
+  { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen', kind: 'video' },
+  { field: 'faviconUrl', key: 'settings.faviconUrl', label: 'Favicon', kind: 'image' },
+  { field: 'appleIconUrl', key: 'settings.appleIconUrl', label: 'Search Engine Icon', kind: 'image' },
+] as const
 
-  if (settings.faviconUrl !== undefined) {
-    const src = settings.faviconUrl
-    const prev = state.usedContent['settings.faviconUrl']
+type SettingsMediaPatch = Partial<Record<(typeof SETTINGS_MEDIA)[number]['field'], string>>
+
+export function syncSettingsUsedContent(settings: SettingsMediaPatch) {
+  let changed = false
+
+  SETTINGS_MEDIA.forEach(({ field, key, label, kind }) => {
+    const src = settings[field]
+    if (src === undefined) return
+    const prev = state.usedContent[key]
+
     if (src && prev?.src !== src) {
-      if (prev && prev.src) {
-        retireUsedEntryToUnused(prev, 'replaced', ['settings.faviconUrl'])
-      }
-      const idx = state.unused.findIndex(u => u.src === src)
+      if (prev && prev.src) retireUsedEntryToUnused(prev, 'replaced', [key])
+      const idx = state.unused.findIndex((u) => u.src === src)
       if (idx !== -1) {
         state.unused.splice(idx, 1)
         persistUnused()
       }
-      state.usedContent['settings.faviconUrl'] = {
-        key: 'settings.faviconUrl',
-        label: 'Favicon',
+      state.usedContent[key] = {
+        key,
+        label,
         section: 'Site Configuration',
-        kind: 'image',
+        kind,
         src,
-        name: resolveMediaName(src, 'settings.faviconUrl'),
+        name: resolveMediaName(src, key),
         size: null,
         original: true,
       }
       changed = true
     } else if (!src && prev) {
-      retireUsedEntryToUnused(prev, 'retired', ['settings.faviconUrl'])
-      delete state.usedContent['settings.faviconUrl']
+      retireUsedEntryToUnused(prev, 'retired', [key])
+      delete state.usedContent[key]
       changed = true
     }
-  }
+  })
 
   if (changed) {
     persistUsed()

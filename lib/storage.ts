@@ -423,6 +423,25 @@ export async function deleteAsset(url: string): Promise<{ ok: boolean; reason?: 
   }
 }
 
+/** `asset_id` de Cloudinary para una URL. Es el único identificador que acepta
+ *  la ficha de la consola (el public_id no sirve) y no se puede derivar de la
+ *  URL, así que hay que preguntárselo a la Admin API. `null` = no resoluble
+ *  (asset local, Cloudinary sin configurar, o no existe). */
+export async function resolveAssetId(url: string): Promise<string | null> {
+  if (!url || !url.includes('cloudinary.com') || !hasCloudinary) return null
+  const parsed = parseCloudinaryUrl(url)
+  if (!parsed) return null
+  try {
+    const res = await cloudinary.api.resource(parsed.publicId, {
+      resource_type: parsed.resourceType,
+    }) as { asset_id?: string }
+    return res?.asset_id || null
+  } catch (err) {
+    console.error('[resolveAssetId] no se pudo resolver:', parsed.publicId, err)
+    return null
+  }
+}
+
 /** Verifica si un asset de Cloudinary existe. Devuelve true si existe, false si no.
  *  Para URLs no-Cloudinary (locales), devuelve true siempre. */
 export async function verifyAssetExists(url: string): Promise<boolean> {

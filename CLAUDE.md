@@ -308,6 +308,39 @@ Todo contenedor **sin contenido** debe verse EXACTAMENTE así (estilo único, no
 </MediaBlock>
 ```
 
+### Un archivo en varios contenedores — "Contenido en uso"
+
+> Regla de agrupación de la tab **Contenido en uso** (Gestión → Contenidos). El
+> mismo archivo puede ocupar más de un contenedor; cómo se muestra depende de en
+> cuántas **páginas** vive, no de cuántos contenedores.
+
+- **Repetido dentro de UNA página** → aparece **una sola vez** en esa página, y la
+  tarjeta enumera **todos** los contenedores que lo usan (`Containers: X (+n)`, con
+  el detalle en el tooltip y en la vista previa).
+- **Repetido en DOS o más páginas** (p. ej. Feed y Contact) → aparece **en cada
+  página**, dentro de su sección colapsable, y en cada una enumera **solo los
+  contenedores de esa página**. No se colapsa a una sola aparición global: el admin
+  tiene que poder ver el archivo desde la página en la que lo está buscando.
+
+De ahí que la deduplicación sea por **(página, archivo)** y no global
+(`buildPageTree`, `lib/cms/pages.ts`). Consecuencias a respetar:
+
+- El contador de la cabecera cuenta archivos **únicos de todo el sitio**, así que
+  la suma de los contadores por página puede ser mayor. Es correcto: un archivo
+  compartido se cuenta una vez arriba y una vez en cada página.
+- `(+n reused)` por página = contenedores de esa página − archivos de esa página.
+- La tarjeta recibe sus contenedores por prop (`occurrences`). Si se omite,
+  `MediaCard` escanea `state.usedContent` entero y vuelve a mezclar los
+  contenedores de otras páginas.
+- Las acciones del menú (mover / quitar / renombrar) siguen operando sobre el
+  archivo completo: es **un solo asset**, no una copia por página.
+
+**Al crear una página nueva con contenedores propios**: agregar su entrada a
+`SITE_PAGES` (`lib/cms/pages.ts`) con las `sections` del REGISTRY que le
+corresponden y sus `keys` fijas, y registrar cada contenedor en `CONTAINER_BASES`
+(`lib/cms/store.ts`) para que tenga sección y nombre fuera del DOM de esa ruta.
+Sin eso, el contenido de la página nueva cae en el catch-all del Feed.
+
 ## Setup para colaboradores
 
 Para trabajar en este proyecto instalar gstack:

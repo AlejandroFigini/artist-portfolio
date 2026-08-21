@@ -9,6 +9,16 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs))
 }
 
+/* ¿El dispositivo tiene un puntero que puede "posarse" sobre algo?
+   En táctil el navegador emite mouseenter/mouseover de compatibilidad al tocar,
+   pero NO el mouseleave correspondiente: cualquier estado abierto en el enter
+   queda pegado hasta que se toque otro elemento. Las interacciones de hover
+   se condicionan a esto en vez de a un ancho de pantalla. */
+export function canHover(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+}
+
 export function fmtBytes(n?: number | null): string {
   if (n == null) return '—'
   if (n < 1024) return n + ' B'

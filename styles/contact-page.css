@@ -158,13 +158,19 @@
   overflow: hidden;
 }
 
-.ct-hero__bg {
+.ct-hero__bg-slot {
   position: absolute;
   inset: 0;
   z-index: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ct-hero__bg {
+  position: absolute;
+  inset: 0;
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
   opacity: 0.8;
 }
 
@@ -174,6 +180,12 @@
   align-items: center;
 }
 
+
+.ct-hero__file {
+  position: relative;
+  z-index: 1;
+  margin-bottom: clamp(0.75rem, 2vw, 1.25rem);
+}
 
 .ct-hero__title {
   position: relative;
@@ -445,18 +457,28 @@
   border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--border));
   border-radius: 4px;
   background: color-mix(in srgb, var(--accent) 2%, var(--bg-primary));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   min-height: 250px;
 }
 
-.ct-social-anim-placeholder {
-  font-family: var(--font-mono), monospace;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+/* Vacío: manda el marco punteado del overlay. El borde propio del contenedor se
+   apaga para no dibujar dos marcos concéntricos (el neutralizador global de
+   `.cms-empty-slot` cubre fondo y sombras, no el borde de esta sección). */
+.ct-social-anim-container.cms-empty-slot {
+  border-color: transparent;
+}
+.ct-social-anim-container.cms-empty-slot .bp-corner {
+  display: none;
+}
+
+/* El contenido se adapta al contenedor, nunca al revés: el video llena el
+   marco y recorta; el estado vacío lo pinta el engine (.cms-empty-overlay). */
+.ct-social-anim {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
 }
 
 .ct-social-card {

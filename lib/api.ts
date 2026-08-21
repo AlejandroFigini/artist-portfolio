@@ -460,3 +460,16 @@ export async function listCloudinaryResources(): Promise<{ resources: Cloudinary
     return { resources: [], complete: false, error: message || 'Network error' }
   }
 }
+
+/** `asset_id` de Cloudinary para una URL, resuelto por el servidor.
+ *  `null` = no resoluble (asset local, sin credenciales o inexistente). */
+export async function fetchAssetId(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(`/api/cloudinary-asset?url=${encodeURIComponent(url)}`, { cache: 'no-store' })
+    if (!r.ok) return null
+    const data = await r.json().catch(() => ({}))
+    return (data.assetId as string) || null
+  } catch {
+    return null
+  }
+}

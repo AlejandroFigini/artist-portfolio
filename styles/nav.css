@@ -526,7 +526,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     box-shadow: none !important;
   }
 
-  /* --- Drawer: el menú entra completo en cualquier alto ---
+  /* --- Drawer: el menú ocupa TODO el alto disponible ---
      El logo es absolute: el padding-top debe despejarlo o tapa la 1ª opción.
      `safe center` centra cuando entra y cae a flex-start cuando desborda —
      con `center` a secas el overflow superior es inalcanzable y "Feed"
@@ -537,40 +537,62 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
        pantalla — encima del home indicator en los iPhone con notch. */
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
   }
-  /* Ritmo del menú: separación FIJA entre filas y el bloque centrado en el
-     espacio libre. Con `space-between` todo el sobrante se repartía entre las
-     filas: en una pantalla de 812px eran ~66px de aire entre opción y opción
-     contra ~4px entre las sub-opciones de un desplegable, y el menú se leía
-     desarmado. Ahora todas las filas respiran lo mismo y el conjunto queda
-     centrado; `safe center` cae a flex-start si el alto no alcanza, así ninguna
-     opción termina fuera de vista. */
-  .nav-menu-scrollable {
-    justify-content: safe center !important;
-    gap: clamp(0.3rem, 1.4vh, 0.75rem) !important;
-    padding: 0 !important;
+
+  /* Un solo nivel de filas: los desplegables desaparecen como caja
+     (`display: contents`) y sus opciones pasan a ser hermanas de las
+     principales. Antes el `gap` del menú solo separaba los 5 bloques de primer
+     nivel y las sub-opciones quedaban apelmazadas adentro de su contenedor —
+     por eso el menú se leía desarmado y no había forma de repartir el alto
+     libre de forma pareja. Ahora las ~16 filas comparten un único ritmo.
+     La sangría de las sub-opciones se muda al propio enlace, que es el único
+     que sigue generando caja. */
+  .nav-links .dropdown,
+  .nav-links .dropdown-content {
+    display: contents !important;
+  }
+  .nav-links .dropdown-content a {
+    padding-left: 1rem !important;
   }
 
-  /* Tipografía del drawer. El tamaño sigue escalando con vw (a 320px el texto
-     tiene que achicarse o no entra a lo ancho), pero el RITMO VERTICAL es fijo:
-     con svh, las 16 filas del menú medían 601px contra 538px disponibles en un
-     iPhone SE y "Contact" caía fuera de vista. En valores fijos el bloque mide
-     ~500px y entra completo, idéntico en cualquier teléfono. */
+  /* Ritmo del menú: el `gap` se calcula para CONSUMIR el alto sobrante.
+     `6.6dvh - 30px` es la parte del viewport que no ocupan ni el encabezado del
+     drawer, ni el pie de acciones, ni las propias filas, repartida entre los
+     ~15 huecos. Antes había DOS ritmos —uno compacto y otro más aireado detrás
+     de `@media (min-height: 680px)`— y qué teléfono caía en cuál dependía de
+     cuánto alto reportaba cada navegador con sus barras: el MISMO iPhone se
+     veía apretado en Chrome y holgado en Safari. Con una escala continua los
+     dos convergen. El piso mantiene el menú entero en un iPhone SE y el techo
+     evita que en una tablet las opciones queden desperdigadas.
+     `dvh` no oscila mientras el menú está abierto: con `body.nav-open` el
+     scroll del sitio queda bloqueado, así que las barras no se colapsan.
+     `.nav-menu-scrollable` conserva su `overflow-y: auto` y `safe center`, de
+     modo que si aun así no entrara se llega a todo scrolleando: ninguna opción
+     queda tapada. */
+  .nav-menu-scrollable {
+    justify-content: safe center !important;
+    gap: clamp(0.3rem, calc(6.4dvh - 31px), 1.75rem) !important;
+    padding: clamp(0.35rem, 1.5dvh, 1.1rem) 0 !important;
+  }
+
+  /* Tipografía del drawer: el tamaño escala con vw (a 320px el texto tiene que
+     achicarse o no entra a lo ancho) y el ritmo vertical con dvh. Las
+     sub-opciones quedan cerca de la opción principal, no dos escalones abajo:
+     son destinos de navegación, no notas al pie. */
   .nav-links > a,
   .nav-menu-scrollable > a,
   .nav-links .dropbtn {
-    font-size: clamp(0.85rem, 3.5vw, 1rem) !important;
-    padding: 0.12rem 0 !important;
+    font-size: clamp(0.95rem, 4vw, 1.2rem) !important;
+    line-height: 1.35;
+    padding: 0 !important;
   }
   .nav-menu-scrollable > a.highlight-link {
     font-weight: 400 !important;
   }
-  .nav-links .dropdown-content {
-    padding: 0.05rem 0 0.1rem 1rem !important;
-  }
   .nav-links .dropdown-content a {
-    font-size: clamp(0.78rem, 3.25vw, 0.92rem) !important;
-    line-height: 1.3;
-    padding: 0.1rem 0 !important;
+    font-size: clamp(0.88rem, 3.7vw, 1.08rem) !important;
+    line-height: 1.35;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   /* Las sub-opciones NO se mueven al arrastrar el dedo.
@@ -602,32 +624,6 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     bottom: calc(100% + 8px);
     right: 0;
     left: auto;
-  }
-}
-
-/* --- Teléfonos altos: el menú respira ---
-   El ritmo compacto de arriba existe para que las 16 filas entren en un SE
-   (667px de alto). De 780px para arriba sobran ~200px y las opciones quedaban
-   apelmazadas sin motivo. El umbral va en alto y no en ancho: lo que decide si
-   el menú entra es el alto, y un mismo teléfono rotado cae solo al modo
-   compacto, que es el que corresponde. --- */
-@media (max-width: 992px) and (min-height: 680px) {
-  /* Más aire ENTRE opciones principales. Umbral bajado a 680px para que la
-     mayoría de teléfonos modernos (iPhone 12/13/14/15, Pixel, Galaxy S) caigan
-     aquí incluso con barras del sistema activas. `safe center` sigue como
-     fallback si algún dispositivo no entra. */
-  .nav-menu-scrollable { gap: clamp(0.45rem, 2vh, 1.05rem) !important; }
-  .nav-links > a,
-  .nav-menu-scrollable > a,
-  .nav-links .dropbtn {
-    padding: 0.3rem 0 !important;
-  }
-  .nav-links .dropdown-content {
-    padding: 0.1rem 0 0.2rem 1rem !important;
-  }
-  .nav-links .dropdown-content a {
-    line-height: 1.4;
-    padding: 0.2rem 0 !important;
   }
 }
 

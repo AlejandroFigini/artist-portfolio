@@ -9,15 +9,13 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
+import { cloudinaryAssetUrl } from '@/lib/cloudinary-console'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, isDeferredMediaKey, type FieldValue,
 } from '@/lib/cms/store'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
 } from './engine'
-
-const CLOUDINARY_CONSOLE =
-  'https://console.cloudinary.com/app/c-a240be86a764a00eb530a9f52db056/assets/media_library/search/asset'
 
 type Props = { cmsKey: string; file: File; onClose: (success?: boolean) => void }
 
@@ -295,7 +293,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
               {result.asset_id && (
                 <li>
                   <a
-                    href={`${CLOUDINARY_CONSOLE}/${encodeURIComponent(result.asset_id)}/manage/summary?q=&view_mode=mosaic&context=manage`}
+                    href={cloudinaryAssetUrl(result.asset_id)}
                     target="_blank" rel="noopener noreferrer"
                     style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '0.78rem' }}
                   >

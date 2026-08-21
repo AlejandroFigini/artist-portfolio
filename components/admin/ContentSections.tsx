@@ -19,6 +19,7 @@ import {
   batchMoveUsedToUnused, batchMoveUnusedToTrash, batchDeletePermanent,
 } from './actions'
 import { MediaCard, type AnyEntry, type MenuAction } from './cards'
+import MarqueeSelect, { type SelPick } from './MarqueeSelect'
 import { SyncAuditModal, type SyncAuditResult } from './modals'
 
 export type AdminModal =
@@ -44,7 +45,21 @@ function useSelection() {
   const toggle = (type: string, val: string, on: boolean) =>
     setSelected((s) => (on ? [...s, { type, val }] : s.filter((x) => !(x.type === type && x.val === val))))
   const toggleMulti = () => { setMultiSelect((m) => !m); setSelected([]) }
-  return { multiSelect, selected, setSelected, isSel, toggle, toggleMulti }
+
+  /* Arrastre: la selección previa se congela al empezar y el rectángulo SUMA
+     sobre ella. Sin la foto, achicar el rectángulo no podría desmarcar lo que
+     acababa de marcar (quedaría todo lo que tocó alguna vez). */
+  const marqueeBase = useRef<Sel[]>([])
+  const beginMarquee = () => { marqueeBase.current = selected }
+  const applyMarquee = (picks: SelPick[]) => {
+    const merged = [...marqueeBase.current]
+    picks.forEach((p) => {
+      if (!merged.some((x) => x.type === p.type && x.val === p.val)) merged.push(p)
+    })
+    setSelected(merged)
+  }
+
+  return { multiSelect, selected, setSelected, isSel, toggle, toggleMulti, beginMarquee, applyMarquee }
 }
 
 function MultiToggleBtn({ multiSelect, onClick }: { multiSelect: boolean; onClick: () => void }) {
@@ -233,33 +248,34 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
   const sel = useSelection()
   const { confirm } = useModal()
   const { usedMenu } = useMenus({ openModal })
-  const deduplicatedArr = useMemo(() => {
-    const map = new Map<string, AnyEntry>()
-    for (const e of usedArr) {
-      const src = e.src || e.dataUrl || (e as { key?: string }).key || ''
-      if (!map.has(src)) {
-        map.set(src, e)
-      }
-    }
-    return Array.from(map.values())
-  }, [usedArr])
-
 
   const count = sel.selected.length
   const [openPages, setOpenPages] = useState<Set<string>>(() => new Set())
-  const tree = buildPageTree(deduplicatedArr)
+  /* El árbol agrupa por (página, archivo): un archivo repetido dentro de una
+     página da UNA tarjeta con sus contenedores; repartido entre dos páginas
+     aparece en las dos, cada una con los suyos. */
+  const tree = useMemo(() => buildPageTree(usedArr), [usedArr])
+
+  /* Cabecera: archivos únicos de TODO el sitio. La suma de las páginas puede
+     ser mayor si un archivo vive en más de una. */
+  const uniqueCount = useMemo(
+    () => new Set(usedArr.map((e) => e.src || e.dataUrl || e.key || '')).size,
+    [usedArr],
+  )
 
   const getItemSelKey = (it: AnyEntry) => it.src || (it as { key?: string }).key || ''
 
-  const renderCard = (e: AnyEntry) => {
-    const selKey = getItemSelKey(e)
+  const renderCard = ({ item, occs }: { item: AnyEntry; occs: AnyEntry[] }) => {
+    const selKey = getItemSelKey(item)
     return (
       <MediaCard
-        key={selKey} e={e} cardType="used" actions={usedMenu(e)}
+        key={selKey} e={item} cardType="used" actions={usedMenu(item)}
+        occurrences={occs as UsedEntry[]}
         multiSelect={sel.multiSelect}
         selected={sel.isSel('used', selKey)}
+        selType="used" selKey={selKey}
         onToggleSelect={(on) => sel.toggle('used', selKey, on)}
-        onView={() => openModal({ kind: 'view', e, cardType: 'used', menu: toViewMenu(usedMenu(e)) })}
+        onView={() => openModal({ kind: 'view', e: item, cardType: 'used', menu: toViewMenu(usedMenu(item)) })}
       />
     )
   }
@@ -274,7 +290,7 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
-      <ContentStats count={deduplicatedArr.length} reusedCount={usedArr.length - deduplicatedArr.length} size={sumSizes(deduplicatedArr)} />
+      <ContentStats count={uniqueCount} reusedCount={usedArr.length - uniqueCount} size={sumSizes(deduplicateMedia(usedArr))} />
       {sel.multiSelect && (
         <BatchBar
           count={count} actionLabel="Move to Unused"
@@ -296,22 +312,17 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
           }}
         />
       )}
-      <div className="admin-tree">
+      <MarqueeSelect
+        active={sel.multiSelect} onStart={sel.beginMarquee} onChange={sel.applyMarquee}
+        className="admin-tree"
+      >
         {tree.map((page) => {
           const pOpen = openPages.has(page.id)
           const pageKeys = page.items.map(getItemSelKey)
           const pageAllSelected = pageKeys.length > 0 && pageKeys.every((k) => sel.isSel('used', k))
           const closePage = () => toggleInSet(setOpenPages, page.id)
           
-          let pageReusedCount = 0
-          page.items.forEach(item => {
-            const src = item.src || item.dataUrl || item.key || ''
-            // In the page context, reused is total usages - 1
-            const allOccurrences = usedArr.filter(u => (u.src || u.dataUrl || u.key || '') === src)
-            if (allOccurrences.length > 1) {
-              pageReusedCount += (allOccurrences.length - 1)
-            }
-          })
+          const pageReusedCount = page.reused
 
           return (
             <div className="admin-tree-page" key={page.id}>
@@ -354,14 +365,14 @@ export function SectionUsado({ usedArr, openModal }: Ctx) {
                   <div className="admin-tree-content" style={{ marginTop: '0.5rem' }}>
                     {page.count === 0
                       ? <p className="cms-admin-sub admin-tree-empty">No content in this page.</p>
-                      : <div className="cms-mlib-grid">{page.items.map(renderCard)}</div>}
+                      : <div className="cms-mlib-grid">{page.entries.map(renderCard)}</div>}
                   </div>
                 </div>
               )}
             </div>
           )
         })}
-      </div>
+      </MarqueeSelect>
     </div>
   )
 }
@@ -424,18 +435,22 @@ export function SectionNoUsado({ unusedArr, openModal }: Ctx) {
           }}
         />
       )}
-      <div className="cms-mlib-grid">
+      <MarqueeSelect
+        active={sel.multiSelect} onStart={sel.beginMarquee} onChange={sel.applyMarquee}
+        className="cms-mlib-grid"
+      >
         {unusedArr.map((e) => (
           <MediaCard
             key={e._idx} e={e} cardType="unused" actions={unusedMenu(e)} tags={getUnusedTag(e)}
 
             multiSelect={sel.multiSelect}
             selected={sel.isSel('unused', String(e._idx))}
+            selType="unused" selKey={String(e._idx)}
             onToggleSelect={(on) => sel.toggle('unused', String(e._idx), on)}
             onView={() => openModal({ kind: 'view', e, cardType: 'unused', menu: toViewMenu(unusedMenu(e)) })}
           />
         ))}
-      </div>
+      </MarqueeSelect>
     </div>
   )
 }
@@ -505,18 +520,22 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
           }}
         />
       )}
-      <div className="cms-mlib-grid">
+      <MarqueeSelect
+        active={sel.multiSelect} onStart={sel.beginMarquee} onChange={sel.applyMarquee}
+        className="cms-mlib-grid"
+      >
         {trashArr.map((e) => (
           <MediaCard
             key={e._idx} e={e} cardType="trash" actions={trashMenu(e)}
 
             multiSelect={sel.multiSelect}
             selected={sel.isSel('trash', String(e._idx))}
+            selType="trash" selKey={String(e._idx)}
             onToggleSelect={(on) => sel.toggle('trash', String(e._idx), on)}
             onView={() => openModal({ kind: 'view', e, cardType: 'trash', menu: toViewMenu(trashMenu(e)) })}
           />
         ))}
-      </div>
+      </MarqueeSelect>
     </div>
   )
 }
@@ -804,7 +823,10 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
           onAction={runBatch}
         />
       )}
-      <div className="cms-mlib-grid">
+      <MarqueeSelect
+        active={sel.multiSelect} onStart={sel.beginMarquee} onChange={sel.applyMarquee}
+        className="cms-mlib-grid"
+      >
         {filtered.map((e, i) => {
           const st = e._state as string
           const val = repoSelVal(e)
@@ -815,12 +837,13 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
               tags={stateTag(e._state)}
               multiSelect={sel.multiSelect}
               selected={sel.isSel(st, val)}
+              selType={st} selKey={val}
               onToggleSelect={(on) => sel.toggle(st, val, on)}
               onView={() => openModal({ kind: 'view', e, cardType: 'repo', menu: toViewMenu(actions) })}
             />
           )
         })}
-      </div>
+      </MarqueeSelect>
     </div>
     {syncAudit && <SyncAuditModal result={syncAudit} onClose={() => setSyncAudit(null)} />}
     </>
