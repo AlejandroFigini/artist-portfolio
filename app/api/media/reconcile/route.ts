@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
-import { listAllCloudinaryResources, hasCloudinary, setAssetState, type MediaState } from '@/lib/storage'
+import { listAllCloudinaryResources, hasCloudinary, setAssetState } from '@/lib/storage'
+import { auditMedia, isMediaValue, IncompleteListingError, type CmsIndex, type CmsRow } from '@/lib/media-audit'
 import { requireRole } from '@/lib/auth'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -11,157 +12,34 @@ export const dynamic = 'force-dynamic'
 /* Reconciliador DB ↔ Cloudinary.
    La DB manda: `cms_data` dice qué contenedor apunta a qué URL, y eso NO se
    deduce de Cloudinary. Cloudinary solo aporta qué bytes existen y con qué tag.
-   Por eso `apply` únicamente:
+   La clasificación vive en `lib/media-audit` (pura, testeable); acá queda la
+   lectura, la escritura y las guardas de seguridad.
+
+   `apply` únicamente:
      - reescribe la URL de un contenedor cuyo asset se movió de lugar (`url-stale`)
      - alinea el tag de estado del asset con lo que la DB implica (`state-drift`)
-   Nunca borra nada, y nunca escribe estado de la DB tomando a Cloudinary como
-   verdad: eso convertiría un error de lectura en pérdida de datos. */
+     - vacía contenedores cuyo archivo local ya no existe (`ghost`)
+   Nunca borra bytes de Cloudinary, y nunca escribe estado de la DB tomando a
+   Cloudinary como verdad: eso convertiría un error de lectura en pérdida de datos.
 
-type Finding = {
-  kind: 'url-stale' | 'state-drift' | 'untagged' | 'orphan-cloudinary' | 'missing-cloudinary' | 'index-drift' | 'ghost'
-  key?: string
-  url?: string
-  publicId?: string
-  detail: string
-  fixedTo?: string
-}
+   `purge` agrega lo destructivo y por eso es opt-in explícito: vacía también los
+   contenedores cuya URL de Cloudinary ya no tiene asset detrás, y levanta las
+   guardas de proporción. Sólo tiene sentido cuando se aceptó que el sitio quedó
+   apuntando a archivos borrados a mano en Cloudinary. */
 
-/** Identidad de una URL para comparar: sin query ni fragmento. */
-function srcKey(v: string): string {
-  return (v || '').split('?')[0].split('#')[0]
-}
+/** Con Cloudinary configurado el almacenamiento ES Cloudinary: una ruta
+ *  `/uploads/` (resto de desarrollo local) no existe. En local se mira el disco. */
+const localAssetExists = (relPath: string): boolean =>
+  hasCloudinary ? false : existsSync(path.join(process.cwd(), 'public', relPath))
 
-/** Un valor de `cms_data` que apunta a un archivo (no texto, no color, no fecha). */
-function isMediaValue(v: unknown): v is string {
-  return typeof v === 'string' && (v.includes('res.cloudinary.com') || v.startsWith('/uploads/'))
-}
-
-type UsedEntry = {
-  key: string; label: string; section: string; kind: 'image' | 'video' | 'text'
-  src: string; name: string; size: number | null; original: boolean; ts?: number; type?: string
-}
-type LooseEntry = { key?: string; src?: string; dataUrl?: string; [k: string]: unknown }
-type MediaMetaRow = { name?: string; size?: number; type?: string; ts?: number; label?: string; section?: string }
-
-/** Nombre de archivo del public_id, sin carpeta ni extensión. Es lo único estable
- *  entre una URL vieja (con la carpeta adentro) y el asset ya movido. */
-function basenameOf(publicIdOrUrl: string): string {
-  const noQuery = publicIdOrUrl.split('?')[0].split('#')[0]
-  const last = noQuery.split('/').pop() || ''
-  return last.replace(/\.[a-zA-Z0-9]+$/, '').toLowerCase()
-}
-
-async function reconcile(apply: boolean) {
+async function reconcile(apply: boolean, purge: boolean) {
   await ensureDb()
   const pool = getPool()!
 
   const { rows } = await pool.query('SELECT key, value FROM cms_data')
-  const refs = (rows as { key: string; value: string }[])
-    .filter((r) => typeof r.value === 'string' && r.value.includes('res.cloudinary.com'))
+  const cmsRows = rows as CmsRow[]
 
-  const resources = await listAllCloudinaryResources()
-  /* Lectura no concluyente → abortar. Clasificar contra una lista vacía marcaría
-     TODO el contenido como roto, y con `apply` eso sería destructivo. */
-  if (resources.length === 0) {
-    throw new Error('Cloudinary devolvió 0 recursos: lectura no concluyente, se aborta')
-  }
-
-  const byUrl = new Map(resources.map((r) => [r.secure_url.split('?')[0], r]))
-  const byBasename = new Map<string, typeof resources>()
-  for (const r of resources) {
-    const b = basenameOf(r.public_id)
-    if (!byBasename.has(b)) byBasename.set(b, [])
-    byBasename.get(b)!.push(r)
-  }
-
-  const findings: Finding[] = []
-  // Un asset puede estar referenciado por varios contenedores (refcount).
-  const referenced = new Set<string>()
-  const repairs: { key: string; url: string }[] = []
-
-  for (const { key, value } of refs) {
-    const clean = value.split('?')[0]
-    const hit = byUrl.get(clean)
-    if (hit) {
-      referenced.add(hit.public_id)
-      continue
-    }
-    /* La URL guardada no existe en Cloudinary. Buscar el mismo archivo en otra
-       carpeta: es exactamente el daño que dejaba el rename al mover de estado. */
-    const candidates = byBasename.get(basenameOf(clean)) || []
-    if (candidates.length === 1) {
-      const target = candidates[0]
-      referenced.add(target.public_id)
-      findings.push({
-        kind: 'url-stale', key, url: value, publicId: target.public_id,
-        detail: `el asset existe en ${target.public_id}, la DB apunta a una URL muerta`,
-        fixedTo: target.secure_url,
-      })
-      repairs.push({ key, url: target.secure_url })
-    } else {
-      findings.push({
-        kind: 'missing-cloudinary', key, url: value,
-        detail: candidates.length === 0
-          ? 'no existe ningún asset con ese nombre en Cloudinary'
-          : `${candidates.length} candidatos con el mismo nombre: ambiguo, requiere decisión manual`,
-      })
-    }
-  }
-
-  /* Estado esperado: referenciado ⇒ used. El tag solo decide sin-usar vs basurero
-     para los NO referenciados.
-     `hasStateTag` distingue "tiene tag" de "se dedujo de la carpeta": los assets
-     subidos antes de que el estado viviera en tags no tienen ninguno y hay que
-     escribirles el que corresponde (backfill), aunque su estado deducido ya sea
-     el correcto. Mientras no se haga, conviven los dos mecanismos. */
-  const drift: { url: string; state: MediaState }[] = []
-  for (const r of resources) {
-    const hasStateTag = r.tags.some((t) => t.startsWith('state:'))
-    const expected: MediaState | null = referenced.has(r.public_id) ? 'used' : r.state
-
-    if (!expected) {
-      findings.push({ kind: 'orphan-cloudinary', publicId: r.public_id, url: r.secure_url, detail: 'no referenciado y sin tag ni carpeta que lo clasifique' })
-      continue
-    }
-    if (!hasStateTag) {
-      findings.push({
-        kind: 'untagged', publicId: r.public_id, url: r.secure_url,
-        detail: `sin tag de estado; se deduce ${expected} (${referenced.has(r.public_id) ? 'referenciado' : 'por carpeta'})`,
-      })
-      drift.push({ url: r.secure_url, state: expected })
-      continue
-    }
-    if (r.state !== expected) {
-      findings.push({
-        kind: 'state-drift', publicId: r.public_id, url: r.secure_url,
-        detail: `referenciado por un contenedor pero marcado como ${r.state ?? 'sin estado'}`,
-      })
-      drift.push({ url: r.secure_url, state: expected })
-    }
-  }
-
-  /* ---- Índice del CMS (cms_state) ----------------------------------------
-     La regla adoptada: un asset referenciado por al menos un valor de `cms_data`
-     está EN USO, punto. Si además figura en `unused`/`trash`, el índice se
-     contradice a sí mismo: el panel lo ofrece como descartable mientras un
-     contenedor lo está mostrando, y vaciar la papelera después destruiría los
-     bytes. El tag de Cloudinary ya se alinea arriba; acá se alinea el índice.
-     Se toma la URL FINAL (después de la reparación de `url-stale`), si no se
-     compararía contra una URL que este mismo run está por reescribir. */
-  const fixedByKey = new Map(repairs.map((r) => [r.key, r.url]))
-  const referencedSrcs = new Set<string>()
-  const refByKey = new Map<string, string>()
-  for (const r of rows as { key: string; value: string }[]) {
-    if (!isMediaValue(r.value)) continue
-    const url = fixedByKey.get(r.key) || r.value
-    /* Los archivos de AJUSTES (CV, favicon, icono de buscador) cuentan como
-       referenciados —no se pueden descartar— pero NO son contenido de galería:
-       no van al índice de la biblioteca. Sin esta distinción esta reparación
-       metía el CV en `used_content`, que es justo lo que el picker excluye. */
-    referencedSrcs.add(srcKey(url))
-    if (r.key.startsWith('settings.')) continue
-    refByKey.set(r.key, url)
-  }
+  const listing = await listAllCloudinaryResources()
 
   const { rows: stateRows } = await pool.query(
     "SELECT key, value FROM cms_state WHERE key IN ('used_content','unused','trash','media_meta')",
@@ -169,133 +47,19 @@ async function reconcile(apply: boolean) {
   const stateByKey: Record<string, unknown> = {}
   for (const r of stateRows as { key: string; value: unknown }[]) stateByKey[r.key] = r.value
 
-  const usedContent = (stateByKey.used_content || {}) as Record<string, UsedEntry>
-  const unusedList = (Array.isArray(stateByKey.unused) ? stateByKey.unused : []) as LooseEntry[]
-  const trashList = (Array.isArray(stateByKey.trash) ? stateByKey.trash : []) as LooseEntry[]
-  const mediaMeta = (stateByKey.media_meta || {}) as Record<string, MediaMetaRow>
-
-  const entrySrc = (e: LooseEntry) => srcKey((e.src || e.dataUrl || '') as string)
-
-  // 1) Lo referenciado no puede estar en sin-usar ni en papelera.
-  const nextUnused = unusedList.filter((e) => !referencedSrcs.has(entrySrc(e)))
-  const nextTrash = trashList.filter((e) => !referencedSrcs.has(entrySrc(e)))
-  for (const e of [...unusedList, ...trashList]) {
-    if (!referencedSrcs.has(entrySrc(e))) continue
-    findings.push({
-      kind: 'index-drift', url: entrySrc(e),
-      detail: 'figura como descartable en el índice pero un contenedor lo está usando',
-    })
+  const index: CmsIndex = {
+    usedContent: (stateByKey.used_content || {}) as CmsIndex['usedContent'],
+    unused: (Array.isArray(stateByKey.unused) ? stateByKey.unused : []) as CmsIndex['unused'],
+    trash: (Array.isArray(stateByKey.trash) ? stateByKey.trash : []) as CmsIndex['trash'],
+    mediaMeta: (stateByKey.media_meta || {}) as CmsIndex['mediaMeta'],
   }
 
-  /* 2) Lo referenciado tiene que estar en `used_content`, si no desaparece del
-        panel. Sacarlo de `unused` sin agregarlo acá lo volvería invisible. */
-  const nextUsed: Record<string, UsedEntry> = { ...usedContent }
-  for (const [key, url] of refByKey) {
-    if (nextUsed[key] && srcKey(nextUsed[key].src) === srcKey(url)) continue
-    const mm = mediaMeta[srcKey(url)] || mediaMeta[url] || {}
-    const fileName = decodeURIComponent(srcKey(url).split('/').pop() || '')
-    const isVideo = /\.(webm|mp4|mov|m4v)$/i.test(fileName) || url.includes('/video/upload/')
-    findings.push({
-      kind: 'index-drift', key, url,
-      detail: nextUsed[key] ? 'el índice apunta a otra URL que el contenedor' : 'un contenedor lo usa pero no figura en el índice',
-    })
-    nextUsed[key] = {
-      key,
-      label: mm.label || nextUsed[key]?.label || fileName,
-      section: mm.section || nextUsed[key]?.section || '',
-      kind: isVideo ? 'video' : 'image',
-      src: url,
-      name: mm.name || fileName,
-      size: mm.size ?? nextUsed[key]?.size ?? null,
-      original: nextUsed[key]?.original ?? false,
-      ts: mm.ts ?? nextUsed[key]?.ts,
-      type: mm.type ?? nextUsed[key]?.type,
-    }
-  }
-
-  /* ---- 3) Fantasmas: lo que la web muestra y no existe en ningun lado ------
-     El requisito es que la web y Cloudinary coincidan. Una entrada del indice o
-     una referencia de `cms_data` que apunta a bytes inexistentes rompe eso: el
-     panel la cuenta como contenido real y no hay archivo detras.
-     En produccion el almacenamiento ES Cloudinary, asi que una ruta `/uploads/`
-     (resto de desarrollo local) no existe. En local se verifica contra el disco.
-     Este bloque es la razon por la que el panel decia 102 y Cloudinary 89: el
-     reconciliador solo miraba valores con `res.cloudinary.com`, asi que las
-     rutas locales no se examinaban nunca. */
-  const assetExists = (raw: string): boolean => {
-    const clean = srcKey(raw)
-    if (!clean) return false
-    if (clean.includes('res.cloudinary.com')) {
-      if (byUrl.has(clean)) return true
-      return (byBasename.get(basenameOf(clean)) || []).length === 1
-    }
-    if (clean.startsWith('/uploads/')) {
-      // Con Cloudinary configurado el disco local no es el almacenamiento.
-      if (hasCloudinary) return false
-      return existsSync(path.join(process.cwd(), 'public', clean))
-    }
-    // Ni URL de Cloudinary ni ruta de subida: no es un archivo.
-    return false
-  }
-
-  // 3a) Referencias de `cms_data` a media inexistente. Solo valores que SON media:
-  //     un texto suelto no es una referencia rota, es contenido.
-  const ghostKeys: string[] = []
-  for (const r of rows as { key: string; value: string }[]) {
-    if (!isMediaValue(r.value)) continue
-    if (fixedByKey.has(r.key)) continue // este run ya lo repara a una URL viva
-    if (assetExists(r.value)) continue
-    if (r.value.includes('res.cloudinary.com')) continue // ya sale como missing-cloudinary
-    ghostKeys.push(r.key)
-    findings.push({
-      kind: 'ghost', key: r.key, url: r.value,
-      detail: 'el contenedor apunta a un archivo que no existe en el almacenamiento',
-    })
-  }
-
-  // 3b) Entradas del indice sin archivo detras. SOLO aplica a entradas de MEDIA:
-  //     `used_content` también guarda campos de TEXTO (kind:'text') de contenedores
-  //     con `fields` — char#xxx::name, proj#xxx::title, ::start_date — donde `.src`
-  //     es el propio texto (un nombre, una fecha), no una URL. Sin este chequeo el
-  //     detector marcaba "asd" (un nombre de personaje sin completar) como fantasma
-  //     y `apply` lo habría BORRADO: texto real del sitio, no una referencia rota.
-  const ghostEntry = (e: LooseEntry) => {
-    if ((e as { kind?: string }).kind === 'text') return false
-    const src = entrySrc(e)
-    return !!src && !assetExists(src)
-  }
-  const ghostsInIndex: string[] = []
-  for (const e of [...Object.values(nextUsed) as LooseEntry[], ...nextUnused, ...nextTrash]) {
-    if (!ghostEntry(e)) continue
-    ghostsInIndex.push(entrySrc(e))
-    findings.push({
-      kind: 'ghost', url: entrySrc(e), key: (e as { key?: string }).key,
-      /* `key` solo existe para entradas de `used_content` (ahí es la clave del
-         contenedor); `unused`/`trash` no tienen container asociado. Sin esto es
-         imposible saber CUÁL contenedor sostiene el valor basura, y por lo tanto
-         si algo (una pestaña abierta, el propio sitio) lo va a volver a escribir
-         apenas sincronice su estado local. */
-      detail: 'figura en el indice del panel pero no hay archivo detras',
-    })
-  }
-
-  const cleanUnused = nextUnused.filter((e) => !ghostEntry(e))
-  const cleanTrash = nextTrash.filter((e) => !ghostEntry(e))
-  const cleanUsed: Record<string, UsedEntry> = {}
-  for (const [k, v] of Object.entries(nextUsed)) {
-    if (ghostEntry(v as LooseEntry)) continue
-    cleanUsed[k] = v
-  }
-
-  const indexChanged =
-    cleanUnused.length !== unusedList.length ||
-    cleanTrash.length !== trashList.length ||
-    Object.keys(cleanUsed).length !== Object.keys(usedContent).length ||
-    Object.entries(cleanUsed).some(([k, v]) => srcKey(usedContent[k]?.src || '') !== srcKey(v.src))
+  // Lanza IncompleteListingError si el listado de Cloudinary vino truncado.
+  const report = auditMedia({ rows: cmsRows, listing, index, localAssetExists })
 
   let applied = 0
   if (apply) {
-    if (repairs.length) {
+    if (report.repairs.length) {
       const client = await pool.connect()
       try {
         await client.query('BEGIN')
@@ -304,10 +68,10 @@ async function reconcile(apply: boolean) {
           `UPDATE cms_data AS c SET value = v.url, updated_at = CURRENT_TIMESTAMP
            FROM (SELECT * FROM UNNEST($1::varchar[], $2::text[]) AS t(key, url)) AS v
            WHERE c.key = v.key`,
-          [repairs.map((r) => r.key), repairs.map((r) => r.url)],
+          [report.repairs.map((r) => r.key), report.repairs.map((r) => r.url)],
         )
         await client.query('COMMIT')
-        applied += repairs.length
+        applied += report.repairs.length
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {})
         throw err
@@ -315,19 +79,24 @@ async function reconcile(apply: boolean) {
         client.release()
       }
     }
-    for (const d of drift) {
+    for (const d of report.drift) {
       const res = await setAssetState(d.url, d.state)
       if (res.ok) applied++
     }
 
-    if (ghostKeys.length) {
-      /* Guarda de cordura: si CASI TODO diera fantasma, lo que falló es la
-         lectura del almacenamiento, no los datos. Vaciar los contenedores ahí
-         sería convertir un error de lectura en pérdida de contenido. */
-      const totalMedia = (rows as { value: string }[]).filter((r) => isMediaValue(r.value)).length
-      if (totalMedia > 0 && ghostKeys.length > totalMedia * 0.5) {
+    /* Los contenedores a vaciar. Sin `purge` sólo los de ruta local muerta, que
+       es el comportamiento histórico; con `purge` también los que apuntan a una
+       URL de Cloudinary sin asset detrás. */
+    const toBlank = purge ? [...report.ghostKeys, ...report.deadKeys] : report.ghostKeys
+    if (toBlank.length) {
+      /* Guarda de cordura: si CASI TODO diera fantasma, lo esperable es que haya
+         fallado la lectura del almacenamiento, no que los datos estén mal. Con
+         `purge` se acepta explícitamente que sí están mal (Cloudinary vaciado a
+         mano), y la guarda cedería a una decisión ya tomada. */
+      const totalMedia = cmsRows.filter((r) => isMediaValue(r.value)).length
+      if (!purge && totalMedia > 0 && toBlank.length > totalMedia * 0.5) {
         throw new Error(
-          `${ghostKeys.length}/${totalMedia} referencias darían fantasma: lectura no concluyente, se aborta`,
+          `${toBlank.length}/${totalMedia} referencias darían fantasma: lectura no concluyente, se aborta`,
         )
       }
       const client = await pool.connect()
@@ -340,10 +109,10 @@ async function reconcile(apply: boolean) {
         await client.query(
           `UPDATE cms_data SET value = '', updated_at = CURRENT_TIMESTAMP
            WHERE key = ANY($1::varchar[])`,
-          [ghostKeys],
+          [toBlank],
         )
         await client.query('COMMIT')
-        applied += ghostKeys.length
+        applied += toBlank.length
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {})
         throw err
@@ -352,24 +121,29 @@ async function reconcile(apply: boolean) {
       }
     }
 
-    if (indexChanged) {
+    /* Con `purge` el índice tiene que perder también las entradas que apuntan a
+       los contenedores recién vaciados; `auditMedia` ya las excluyó de
+       `nextUsed/nextUnused/nextTrash` por ser fantasmas. */
+    if (report.indexChanged) {
       /* Guarda: esta reparación SACA entradas de sin-usar/papelera. Si el cálculo
          estuviera mal, el peor caso sería vaciar el índice — el mismo daño que ya
          pasó en producción. Una reparación legítima nunca vacía una colección que
-         tenía contenido, así que si eso ocurre se aborta en vez de escribir. */
+         tenía contenido, así que si eso ocurre se aborta en vez de escribir.
+         Con `purge` sí puede vaciarla: es exactamente lo que se pidió cuando ya
+         no queda un solo byte en Cloudinary. */
       const vaciaria =
-        (unusedList.length > 0 && cleanUnused.length === 0 && referencedSrcs.size === 0) ||
-        (Object.keys(usedContent).length > 0 && Object.keys(cleanUsed).length === 0)
-      if (vaciaria) {
+        (index.unused.length > 0 && report.nextUnused.length === 0 && report.referencedSrcCount === 0) ||
+        (Object.keys(index.usedContent).length > 0 && Object.keys(report.nextUsed).length === 0)
+      if (!purge && vaciaria) {
         throw new Error('la reparación del índice vaciaría una colección con datos: se aborta')
       }
       const client = await pool.connect()
       try {
         await client.query('BEGIN')
         for (const [k, v] of [
-          ['used_content', cleanUsed] as const,
-          ['unused', cleanUnused] as const,
-          ['trash', cleanTrash] as const,
+          ['used_content', report.nextUsed] as const,
+          ['unused', report.nextUnused] as const,
+          ['trash', report.nextTrash] as const,
         ]) {
           await client.query(
             `INSERT INTO cms_state (key, value, updated_at)
@@ -381,11 +155,8 @@ async function reconcile(apply: boolean) {
         await client.query('COMMIT')
         /* Cuenta TODO lo que este bloque escribió: los index-drift (contenedores
            reclasificados) y los ghost de índice (entradas sin archivo detrás que
-           cleanUsed/cleanUnused/cleanTrash ya excluyeron). Antes solo sumaba
-           index-drift, así que el COMMIT limpiaba los fantasmas de índice pero el
-           endpoint reportaba `applied` de menos — la escritura era correcta, el
-           número no. */
-        applied += findings.filter((f) => f.kind === 'index-drift' || (f.kind === 'ghost' && !f.key)).length
+           nextUsed/nextUnused/nextTrash ya excluyeron). */
+        applied += report.findings.filter((f) => f.kind === 'index-drift' || (f.kind === 'ghost' && !f.key)).length
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {})
         throw err
@@ -396,12 +167,35 @@ async function reconcile(apply: boolean) {
   }
 
   return {
-    checked: refs.length,
-    cloudinaryAssets: resources.length,
-    findings,
-    counts: findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.kind]: (a[f.kind] || 0) + 1 }), {}),
+    checked: report.checked,
+    cloudinaryAssets: report.cloudinaryAssets,
+    findings: report.findings,
+    counts: report.counts,
+    // Vistas para el panel de auditoría.
+    matching: report.matching,
+    stale: report.stale,
+    missing: report.missing,
+    orphaned: report.orphaned,
+    stateDrift: report.stateDrift,
+    // Cuánto podría reparar / vaciar un apply, para poder avisar antes de hacerlo.
+    repairable: report.repairs.length + report.drift.length,
+    purgeable: report.ghostKeys.length + report.deadKeys.length,
     applied,
   }
+}
+
+/** El listado truncado es la única condición no clasificable, y no es un bug del
+ *  servidor: es Cloudinary sin responder. 503 y un mensaje que lo diga. */
+function handleError(err: unknown, tag: string) {
+  if (err instanceof IncompleteListingError) {
+    console.error(`[${tag}]`, err.message)
+    return NextResponse.json(
+      { error: 'Could not read the full Cloudinary listing. Comparison aborted to avoid acting on partial data.' },
+      { status: 503 },
+    )
+  }
+  console.error(`[${tag}] error:`, err)
+  return NextResponse.json({ error: 'Reconciliation failed' }, { status: 500 })
 }
 
 /* GET → diagnóstico, no toca nada. */
@@ -411,24 +205,25 @@ export async function GET(req: Request) {
   if (!hasCloudinary) return NextResponse.json({ error: 'Cloudinary is not configured in this environment.' }, { status: 409 })
   if (!hasDb) return NextResponse.json({ error: 'No database in this environment.' }, { status: 409 })
   try {
-    return NextResponse.json(await reconcile(false))
+    return NextResponse.json(await reconcile(false, false))
   } catch (err) {
-    console.error('[reconcile GET] error:', err)
-    return NextResponse.json({ error: 'Reconciliation failed' }, { status: 500 })
+    return handleError(err, 'reconcile GET')
   }
 }
 
-/* POST → aplica las reparaciones. Solo owner/admin: el demo no escribe. */
+/* POST → aplica las reparaciones. Solo owner/admin: el demo no escribe.
+   `{ purge: true }` habilita además el vaciado de contenedores sin archivo. */
 export async function POST(req: Request) {
   const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
   if (auth.user.role === 'demo') return NextResponse.json({ applied: 0, findings: [], counts: {} })
   if (!hasCloudinary) return NextResponse.json({ error: 'Cloudinary is not configured in this environment.' }, { status: 409 })
   if (!hasDb) return NextResponse.json({ error: 'No database in this environment.' }, { status: 409 })
+  const body = await req.json().catch(() => ({}))
+  const purge = (body as { purge?: unknown }).purge === true
   try {
-    return NextResponse.json(await reconcile(true))
+    return NextResponse.json(await reconcile(true, purge))
   } catch (err) {
-    console.error('[reconcile POST] error:', err)
-    return NextResponse.json({ error: 'Reconciliation failed' }, { status: 500 })
+    return handleError(err, 'reconcile POST')
   }
 }

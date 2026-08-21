@@ -443,16 +443,20 @@ export type CloudinaryResourceInfo = {
 
 /** Lista todos los recursos de Cloudinary bajo portfolio/.
  *  Silencioso si el backend no responde (devuelve array vacío). */
-export async function listCloudinaryResources(): Promise<{ resources: CloudinaryResourceInfo[]; error?: string }> {
+export async function listCloudinaryResources(): Promise<{ resources: CloudinaryResourceInfo[]; complete: boolean; error?: string }> {
   try {
     const r = await fetch('/api/cloudinary-sync', { cache: 'no-store' })
     const data = await r.json().catch(() => ({}))
     if (!r.ok) {
-      return { resources: [], error: data.error || `HTTP ${r.status}` }
+      return { resources: [], complete: false, error: data.error || `HTTP ${r.status}` }
     }
-    return { resources: (data.resources as CloudinaryResourceInfo[]) || [], error: data.error }
+    return {
+      resources: (data.resources as CloudinaryResourceInfo[]) || [],
+      complete: data.complete === true,
+      error: data.error,
+    }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    return { resources: [], error: message || 'Network error' }
+    return { resources: [], complete: false, error: message || 'Network error' }
   }
 }

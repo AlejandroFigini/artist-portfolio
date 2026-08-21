@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     /* `folderMode` decide solo si además se espeja la carpeta visual: el estado
        del ciclo de vida vive en tags y funciona igual en los dos modos. Se expone
        para poder verificarlo sin adivinar en qué modo corre el account. */
-    const [resources, folderMode] = await Promise.all([
+    const [{ resources, complete }, folderMode] = await Promise.all([
       listAllCloudinaryResources(),
       getFolderMode(),
     ])
@@ -34,6 +34,9 @@ export async function GET(req: Request) {
     return NextResponse.json({
       resources,
       count: resources.length,
+      /* Un listado truncado no puede pasar por total: quien compare necesita
+         saber que 0 recursos puede significar "falló la lectura". */
+      complete,
       folderMode,
       // Assets que todavía clasifican por carpeta (subidos antes del cambio a tags).
       untagged,

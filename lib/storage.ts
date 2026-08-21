@@ -526,10 +526,17 @@ export type CloudinaryResource = {
   created_at: string
 }
 
+/* `complete: false` = alguna página o algún resource_type falló, así que la lista
+   está TRUNCADA. Un listado truncado no se puede distinguir de uno vacío por el
+   tamaño, y de esa distinción depende si clasificar es un diagnóstico o una
+   pérdida de datos: antes el error se tragaba y la lista parcial se presentaba
+   como total. */
+export type CloudinaryListing = { resources: CloudinaryResource[]; complete: boolean }
+
 /** Lista TODOS los recursos de Cloudinary.
  *  Intenta primero Search API y luego cae en Admin API si fuera necesario. */
-export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]> {
-  if (!hasCloudinary) return []
+export async function listAllCloudinaryResources(): Promise<CloudinaryListing> {
+  if (!hasCloudinary) return { resources: [], complete: false }
   const allMap = new Map<string, CloudinaryResource>()
 
   const addResource = (r: Record<string, unknown>, defaultFolder = '') => {
@@ -565,8 +572,8 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
   /* `raw` incluido: el CV en PDF se sube con resource_type 'raw' y sin esto era
      invisible para toda auditoría — nunca matcheaba ni se reportaba como huérfano. */
   const types: ('image' | 'video' | 'raw')[] = ['image', 'video', 'raw']
-  let lastError: unknown = null
-  
+  let complete = true
+
   for (const type of types) {
     let cursor: string | undefined = undefined
     do {
@@ -591,15 +598,15 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryResource[]
         }
         cursor = res?.next_cursor
       } catch (err) {
-        lastError = err
+        /* Se sigue con los otros tipos —media parcial es mejor que nada para
+           mirar—, pero la lista queda marcada como truncada: quien clasifique
+           tiene que poder negarse. */
+        console.error(`[listAllCloudinaryResources] falló el listado de '${type}':`, err)
+        complete = false
         cursor = undefined
       }
     } while (cursor)
   }
 
-  if (allMap.size === 0 && lastError) {
-    throw lastError
-  }
-
-  return Array.from(allMap.values())
+  return { resources: Array.from(allMap.values()), complete }
 }

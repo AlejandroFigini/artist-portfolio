@@ -13,7 +13,7 @@ import {
   state, getFormat, getContainerMeta, kindOf, recordAudit, emit,
   performRenameContainer, associateUnusedToContainer, associateUsedToContainer,
   loadJSON, saveJSON, LS, persistUsed, persistUnused, recordMediaMeta, getAllKnownContainerKeys,
-  moveUsedToUnused, cloudinaryMove, type UsedEntry,
+  moveUsedToUnused, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { Thumb, type AnyEntry } from './cards'
@@ -681,8 +681,15 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
 export type SyncAuditResult = {
   matching: { url: string; name: string; state: string; cloudinaryId: string }[]
   orphaned: { url: string; publicId: string; resourceType: string; format: string; bytes: number; folder: string }[]
+  /** Contenedores que apuntan a un archivo que no existe en ningún lado. */
   broken: { url: string; name: string; state: string; section: string }[]
+  /** El asset existe pero su estado en Cloudinary no es el que la DB implica. */
   folderMismatch: { url: string; name: string; state: string; section: string; cloudinaryId: string; actualFolder: string; expectedFolder: string }[]
+  /** El archivo existe con otro public_id: la URL guardada quedó muerta. */
+  stale: { url: string; name: string; state: string; section: string; cloudinaryId: string; fixedTo: string }[]
+  /** Cuánto arregla un "Apply repairs" y cuánto vacía un "Purge". */
+  repairable: number
+  purgeable: number
 }
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
@@ -698,22 +705,53 @@ function downloadCsv(filename: string, headers: string[], rows: string[][]) {
 
 export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAuditResult }) {
   const toast = useToast()
-  const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken' | 'folderMismatch'>('folderMismatch')
+  const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken' | 'folderMismatch' | 'stale'>('stale')
   const [localResult, setLocalResult] = useState<SyncAuditResult>(result)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isFixing, setIsFixing] = useState(false)
 
   const downloadReport = () => {
     const rows: string[][] = []
     localResult.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, 'Synced']))
     localResult.orphaned.forEach((r) => rows.push([r.publicId, r.url, 'N/A', r.publicId, 'Orphaned in Cloudinary']))
-    localResult.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from Cloudinary']))
-    localResult.folderMismatch.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `Folder mismatch: expected ${r.expectedFolder}, found in ${r.actualFolder}`]))
+    localResult.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from storage']))
+    localResult.stale.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `Stale URL: the file now lives at ${r.fixedTo}`]))
+    localResult.folderMismatch.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `State mismatch: expected ${r.expectedFolder}, tagged as ${r.actualFolder}`]))
     downloadCsv(
       `sync-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Name', 'URL', 'CMS State', 'Cloudinary ID', 'Status'],
       rows,
     )
   }
+
+  /* Reparar y vaciar son la MISMA operación del servidor con distinto alcance:
+     `purge` agrega el vaciado de contenedores sin archivo detrás. Se resuelve
+     entero en el backend porque es el único lado que ve `cms_data`; el panel
+     sólo dispara y vuelve a pedir el diagnóstico. */
+  const runReconcile = async (purge: boolean) => {
+    setIsFixing(true)
+    try {
+      const res = await fetch('/api/media/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purge }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      toast(`${data.applied || 0} fixes applied. Reload the panel to see the result.`, 'success')
+      onClose()
+    } catch (err) {
+      toast(`Repair failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error')
+    } finally {
+      setIsFixing(false)
+    }
+  }
+
+  const repairBtnStyle = (bg: string): React.CSSProperties => ({
+    background: isFixing ? '#94a3b8' : bg, color: '#fff', border: 'none',
+    padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600,
+    cursor: isFixing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
+  })
 
   const handleDeleteOrphan = async (url: string, publicId: string) => {
     if (!confirm('Are you sure you want to permanently delete this orphaned file from Cloudinary?')) return
@@ -770,17 +808,25 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#eab308' }}>{localResult.broken.length}</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Missing</div>
         </div>
+        <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#a855f7' }}>{localResult.stale.length}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Stale URLs</div>
+        </div>
         <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>{localResult.folderMismatch.length}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Wrong Folder</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Wrong State</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button type="button" style={tabStyle('stale')} onClick={() => setTab('stale')}>
+          <i className="fa-solid fa-link" style={{ marginRight: '0.4rem', color: '#a855f7' }}></i>
+          Stale URLs ({localResult.stale.length})
+        </button>
         <button type="button" style={tabStyle('folderMismatch')} onClick={() => setTab('folderMismatch')}>
           <i className="fa-solid fa-folder-tree" style={{ marginRight: '0.4rem', color: '#3b82f6' }}></i>
-          Wrong Folder ({localResult.folderMismatch.length})
+          Wrong State ({localResult.folderMismatch.length})
         </button>
         <button type="button" style={tabStyle('orphaned')} onClick={() => setTab('orphaned')}>
           <i className="fa-solid fa-ghost" style={{ marginRight: '0.4rem', color: '#ef4444' }}></i>
@@ -798,38 +844,58 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
 
       {/* Tab content */}
       <div style={{ maxHeight: '40vh', overflow: 'auto' }}>
-        {tab === 'folderMismatch' && (
-          localResult.folderMismatch.length === 0
+        {tab === 'stale' && (
+          localResult.stale.length === 0
             ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
-                No folder mismatches. All files are in their correct Cloudinary folders.
+                No stale URLs. Every container points at the file&apos;s current address.
               </p>
             : <div>
-                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    These files exist in Cloudinary but are in a different folder than expected by the CMS state.
+                    The file still exists in Cloudinary under a different public ID, so the saved URL is dead. Repairing rewrites the URL in the database — nothing is deleted.
                   </span>
-                  <button
-                    type="button"
-                    className="cms-btn"
-                    style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    onClick={async () => {
-                      toast('Synchronizing mismatched folders in Cloudinary...', 'info')
-                      localResult.folderMismatch.forEach(item => {
-                        const target = item.expectedFolder.split(' OR ')[0]
-                        if (target) cloudinaryMove(item.url, target)
-                      })
-                      toast(`Triggered folder moves for ${localResult.folderMismatch.length} items.`, 'success')
-                      onClose()
-                    }}
-                  >
-                    <i className="fa-solid fa-folder-arrow-up"></i>
-                    Move {localResult.folderMismatch.length} files to correct folders
+                  <button type="button" className="cms-btn" disabled={isFixing} style={repairBtnStyle('#a855f7')} onClick={() => runReconcile(false)}>
+                    <i className={`fa-solid ${isFixing ? 'fa-spinner fa-spin' : 'fa-wrench'}`}></i>
+                    Apply {localResult.repairable} repairs
                   </button>
                 </div>
                 <div className="cms-audit-table-wrap">
                   <table className="cms-audit-table">
-                    <thead><tr><th>Name</th><th>Expected Folder</th><th>Actual Folder (Cloudinary)</th><th>CMS Section</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Section</th><th>Saved URL (dead)</th><th>Actual Public ID</th></tr></thead>
+                    <tbody>
+                      {localResult.stale.map((r, i) => (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 600 }}>{r.name}</td>
+                          <td>{r.section || '—'}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', maxWidth: 300, color: '#ef4444' }}>{r.url}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all', color: '#22c55e' }}>{r.cloudinaryId}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+        )}
+        {tab === 'folderMismatch' && (
+          localResult.folderMismatch.length === 0
+            ? <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
+                <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
+                No state mismatches. Every file is tagged with the state the CMS implies.
+              </p>
+            : <div>
+                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    These files exist in Cloudinary but carry a lifecycle tag that contradicts the CMS. Repairing rewrites the tag — the delivery URL never changes.
+                  </span>
+                  <button type="button" className="cms-btn" disabled={isFixing} style={repairBtnStyle('#3b82f6')} onClick={() => runReconcile(false)}>
+                    <i className={`fa-solid ${isFixing ? 'fa-spinner fa-spin' : 'fa-wrench'}`}></i>
+                    Apply {localResult.repairable} repairs
+                  </button>
+                </div>
+                <div className="cms-audit-table-wrap">
+                  <table className="cms-audit-table">
+                    <thead><tr><th>Name</th><th>Expected State</th><th>Tagged As (Cloudinary)</th><th>CMS Section</th></tr></thead>
                     <tbody>
                       {localResult.folderMismatch.map((r, i) => (
                         <tr key={i}>
@@ -926,7 +992,26 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                 <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginRight: '0.5rem' }}></i>
                 No broken references. All CMS content exists in Cloudinary.
               </p>
-            : <div className="cms-audit-table-wrap">
+            : <div>
+              <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  These containers point at files that no longer exist. Purging empties them so the database matches what visitors already see. The containers stay in place and can be refilled.
+                </span>
+                <button
+                  type="button"
+                  className="cms-btn"
+                  disabled={isFixing || localResult.purgeable === 0}
+                  style={repairBtnStyle('#ef4444')}
+                  onClick={() => {
+                    if (!confirm(`Empty ${localResult.purgeable} containers whose file is gone? This rewrites the database and cannot be undone.`)) return
+                    runReconcile(true)
+                  }}
+                >
+                  <i className={`fa-solid ${isFixing ? 'fa-spinner fa-spin' : 'fa-broom'}`}></i>
+                  Purge {localResult.purgeable} dead references
+                </button>
+              </div>
+              <div className="cms-audit-table-wrap">
                 <table className="cms-audit-table">
                   <thead><tr><th>Name</th><th>State</th><th>Section</th><th>URL</th></tr></thead>
                   <tbody>
@@ -945,6 +1030,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
                   </tbody>
                 </table>
               </div>
+            </div>
         )}
         {tab === 'matching' && (
           localResult.matching.length === 0

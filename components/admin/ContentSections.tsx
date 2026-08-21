@@ -13,7 +13,7 @@ import {
   performRestore, loadJSON, saveJSON, LS, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree } from '@/lib/cms/pages'
-import { listCloudinaryResources, type CloudinaryResourceInfo } from '@/lib/api'
+import { listCloudinaryResources } from '@/lib/api'
 import {
   deletePermanent, emptyTrash, purgeUnused, autoCleanTrash,
   batchMoveUsedToUnused, batchMoveUnusedToTrash, batchDeletePermanent,
@@ -564,101 +564,11 @@ function collectCmsCloudinaryUrls(): { url: string; name: string; state: string;
   return entries
 }
 
-/** Extrae el nombre base del archivo sin extensión ni parámetros para comparación flexible. */
-function getBaseFilename(url: string): string {
-  if (!url) return ''
-  const filenameWithExt = url.split('?')[0].split('#')[0].split('/').pop() || ''
-  return filenameWithExt.replace(/\.[a-zA-Z0-9]+$/, '').toLowerCase()
-}
-
-/** Compara la lista de Cloudinary con la del CMS y genera el resultado de auditoría. */
-function buildSyncAuditResult(
-  cloudinaryList: CloudinaryResourceInfo[],
-  cmsList: { url: string; name: string; state: string; section: string }[],
-): SyncAuditResult {
-  // Mapear recursos de Cloudinary por nombre base (sin extensión ni versión)
-  const cloudinaryByBaseName = new Map<string, CloudinaryResourceInfo>()
-  cloudinaryList.forEach(cr => {
-    const base = getBaseFilename(cr.secure_url) || getBaseFilename(cr.public_id)
-    if (base && !cloudinaryByBaseName.has(base)) {
-      cloudinaryByBaseName.set(base, cr)
-    }
-  })
-
-  /* La carpeta dejó de ser el estado: ahora el estado sale del tag (`r.state`,
-     que ya trae el fallback a carpeta para los assets viejos). Comparar carpetas
-     a esta altura reportaría como "carpeta equivocada" a todo asset que cambió
-     de estado sin renombrarse — o sea, a todos, para siempre. Se compara estado
-     contra estado y la carpeta queda solo como etiqueta legible. */
-  const FOLDER_BY_STATE: Record<string, string> = {
-    used: 'portfolio/en-uso', unused: 'portfolio/sin-usar', trash: 'portfolio/basurero',
-  }
-
-  const matching: SyncAuditResult['matching'] = []
-  const folderMismatch: SyncAuditResult['folderMismatch'] = []
-  const broken: SyncAuditResult['broken'] = []
-
-  cmsList.forEach((cms) => {
-    const cmsBase = getBaseFilename(cms.url)
-    const expectedFolder = cms.state === 'unused' ? 'portfolio/sin-usar' : cms.state === 'trash' ? 'portfolio/basurero' : 'portfolio/en-uso'
-    
-    // Buscar el archivo en Cloudinary (por URL exacta, por public_id o por nombre base sin extensión)
-    const cloudRes = cloudinaryList.find((c) => c.secure_url === cms.url) ||
-                     (cmsBase ? cloudinaryByBaseName.get(cmsBase) : undefined)
-
-    if (cloudRes) {
-      /* Sin estado deducible no se reporta nada: un dato ausente no es un error,
-         y marcarlo como tal es exactamente el falso positivo que se quiere evitar. */
-      const actualFolder = cloudRes.state ? FOLDER_BY_STATE[cloudRes.state] : expectedFolder
-
-      if (actualFolder !== expectedFolder) {
-        folderMismatch.push({
-          url: cms.url,
-          name: cms.name,
-          state: cms.state,
-          section: cms.section,
-          cloudinaryId: cloudRes.public_id,
-          actualFolder,
-          expectedFolder,
-        })
-      } else {
-        matching.push({
-          url: cms.url,
-          name: cms.name,
-          state: cms.state,
-          cloudinaryId: cloudRes.public_id,
-        })
-      }
-    } else {
-      broken.push({ url: cms.url, name: cms.name, state: cms.state, section: cms.section })
-    }
-  })
-
-  // Identificar huérfanos verdaderos
-  const matchedCloudinaryIds = new Set<string>()
-  matching.forEach(m => matchedCloudinaryIds.add(m.cloudinaryId))
-  folderMismatch.forEach(m => matchedCloudinaryIds.add(m.cloudinaryId))
-
-  const orphaned: SyncAuditResult['orphaned'] = []
-  cloudinaryList.forEach((cr) => {
-    if (!matchedCloudinaryIds.has(cr.public_id)) {
-      const folder = cr.folder ||
-        (cr.public_id.includes('portfolio/sin-usar') || cr.secure_url.includes('/portfolio/sin-usar/') ? 'portfolio/sin-usar'
-        : cr.public_id.includes('portfolio/basurero') || cr.secure_url.includes('/portfolio/basurero/') ? 'portfolio/basurero'
-        : 'portfolio/en-uso')
-      orphaned.push({
-        url: cr.secure_url,
-        publicId: cr.public_id,
-        resourceType: cr.resource_type,
-        format: cr.format,
-        bytes: cr.bytes,
-        folder,
-      })
-    }
-  })
-
-  return { matching, orphaned, broken, folderMismatch }
-}
+/* La comparación NO se hace acá. Vive en `/api/media/reconcile`, que compara
+   contra `cms_data` —lo que el sitio realmente pinta— en lugar del índice que
+   tenga cargado este navegador. Comparar contra el índice dejaba fuera a todo
+   contenedor que la web mostraba sin figurar en `used_content`, que es de dónde
+   salía la diferencia entre lo que decía el panel y lo que había en Cloudinary. */
 
 export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const sel = useSelection()
@@ -718,9 +628,20 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const exportCloudinary = async (close: () => void) => {
     close()
     toast('Fetching Cloudinary resources...', 'info')
-    const { resources, error } = await listCloudinaryResources()
-    if (error || resources.length === 0) {
-      toast(error ? `Cloudinary Error: ${error}` : 'No resources found in Cloudinary (or Cloudinary not configured).', 'error')
+    const { resources, complete, error } = await listCloudinaryResources()
+    if (error) {
+      toast(`Cloudinary Error: ${error}`, 'error')
+      return
+    }
+    /* "Vacío" y "no se pudo leer entero" son diagnósticos distintos y llevan a
+       acciones distintas. Confundirlos era lo que mandaba a revisar credenciales
+       que estaban bien. */
+    if (!complete) {
+      toast('Could not read the full Cloudinary listing. Nothing exported.', 'error')
+      return
+    }
+    if (resources.length === 0) {
+      toast('Cloudinary is empty: there is nothing to export.', 'error')
       return
     }
 
@@ -780,30 +701,28 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
     setSyncing(true)
     toast('Comparing Cloudinary vs Management... This may take a few seconds.', 'info')
     try {
-      const [cloudinaryRes, cmsList] = await Promise.all([
-        listCloudinaryResources(),
-        Promise.resolve(collectCmsCloudinaryUrls()),
-      ])
-      const cloudinaryList = cloudinaryRes.resources || []
-      if (cloudinaryRes.error) {
-        toast(`Cloudinary API Error: ${cloudinaryRes.error}`, 'error')
-        setSyncing(false)
-        return
+      const res = await fetch('/api/media/reconcile', { cache: 'no-store' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+
+      /* Cloudinary vacío NO aborta la auditoría: es el resultado —todo roto— y
+         hay que poder verlo. Lo único que aborta es una lectura truncada, y de
+         eso se encarga el servidor devolviendo 503. */
+      const result: SyncAuditResult = {
+        matching: data.matching || [],
+        orphaned: data.orphaned || [],
+        broken: data.missing || [],
+        folderMismatch: data.stateDrift || [],
+        stale: data.stale || [],
+        repairable: data.repairable || 0,
+        purgeable: data.purgeable || 0,
       }
-      if (cloudinaryList.length === 0 && cmsList.length === 0) {
-        toast('No content to compare.', 'error')
-        setSyncing(false)
-        return
-      }
-      if (cloudinaryList.length === 0 && cmsList.length > 0) {
-        toast('Cloudinary API returned 0 resources (Check Cloudinary settings).', 'error')
-        setSyncing(false)
-        return
-      }
-      const result = buildSyncAuditResult(cloudinaryList, cmsList)
       setSyncAudit(result)
-      const hasErrors = result.orphaned.length + result.broken.length + result.folderMismatch.length > 0
-      toast(`Audit complete: ${result.matching.length} synced, ${result.folderMismatch.length} wrong folder, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`, hasErrors ? 'error' : 'success')
+      const problems = result.orphaned.length + result.broken.length + result.folderMismatch.length + result.stale.length
+      toast(
+        `Audit complete: ${result.matching.length} synced, ${result.stale.length} stale URLs, ${result.folderMismatch.length} wrong state, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`,
+        problems ? 'error' : 'success',
+      )
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e)
       toast(`Error comparing: ${message}`, 'error')
