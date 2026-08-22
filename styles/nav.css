@@ -379,6 +379,13 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
 }
 
 /* ============================================================
+   ANIMACIÓN DECORATIVA DEL DRAWER (settings.navAnimUrl)
+   Solo existe en el menú desplegable (≤992). En la barra de escritorio
+   `.nav-links` es una fila horizontal y el elemento no aplica.
+   ============================================================ */
+.nav-anim-slot { display: none; }
+
+/* ============================================================
    MÓVIL / TABLET (≤992) — barra superior + drawer.
    Objetivo: misma lectura en 320px que en 430px que en iPad.
    El ritmo vertical del drawer escala con svh (no valores fijos)
@@ -585,8 +592,11 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     line-height: 1.35;
     padding: 0 !important;
   }
+  /* Mismo peso que las demás opciones del drawer (200): con 400 se leían en
+     negrita al lado de Feed / Gallery / Portfolio. El acento de color sigue
+     distinguiéndolas. */
   .nav-menu-scrollable > a.highlight-link {
-    font-weight: 400 !important;
+    font-weight: 200 !important;
   }
   .nav-links .dropdown-content a {
     font-size: clamp(0.88rem, 3.7vw, 1.08rem) !important;
@@ -625,6 +635,62 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
     right: 0;
     left: auto;
   }
+
+  /* Decorado del flanco derecho, a la altura de "About me" y subiendo sobre el
+     bloque de redes. Es un overlay `absolute`: el drawer ya reparte todo su
+     alto entre el menú y el pie de acciones, así que cualquier caja en el
+     flujo empujaría las opciones. Al salirse del flujo el ritmo vertical queda
+     intacto.
+     Ref. visual: firma animada en el menú de lusion.co. */
+  .nav-anim-slot {
+    display: block;
+    position: absolute;
+    right: 0;
+    /* El borde inferior entra en la franja del pie de acciones, por debajo de
+       la línea divisoria. Se mide desde el fondo del drawer y suma el
+       safe-area, que en iPhone con notch corre el pie hacia arriba. Las
+       pastillas del pie se pintan por encima (z-index 1). */
+    bottom: calc(2.7rem + env(safe-area-inset-bottom, 0px));
+    /* Rectángulo vertical sobre el flanco derecho, subiendo desde el pie hasta
+       el bloque de redes. Los enlaces se pintan por encima (z-index 1), así
+       que el texto sigue legible y clickeable. Sin máscara ni atenuación —
+       el archivo trae su propio fondo y lo que importa es que se lea el
+       contenido. */
+    width: clamp(102px, 50%, 164px);
+    aspect-ratio: 5 / 8;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    /* Recorta la franja negra del borde inferior: con un alto fraccionario
+       (aspect-ratio sobre un ancho en %) Chrome deja asomar la caja intrínseca
+       del <video>, que pinta negro. El media se estira 3px de más y el
+       sobrante queda fuera del clip. */
+    overflow: hidden;
+  }
+  .nav-anim-media {
+    display: block;
+    width: 100%;
+    height: calc(100% + 3px);
+    background: transparent;
+    /* `cover`: el archivo se adapta al contenedor, nunca al revés. Con un
+       webm apaisado, `contain` lo dejaba diminuto en el centro de una caja
+       vertical; `cover` lo escala hasta llenarla y recorta los laterales (que
+       en estos assets son fondo vacío). Anclado abajo: si algún archivo llega
+       más alto que la caja, lo que sobra se recorta arriba y el borde inferior
+       del dibujo queda pegado a la línea del pie. */
+    object-fit: cover;
+    object-position: center bottom;
+  }
+  /* El contenido del drawer se pinta por encima del decorado. */
+  .nav-menu-scrollable,
+  .mobile-drawer-actions {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Entrada: hereda la cascada de `.nav-links > *` (opacidad + slide con
+     transition-delay por posición), así que aparece después del menú y con la
+     misma voz que el resto del drawer. */
 }
 
 /* --- Reduced motion / pausa del sitio --- */

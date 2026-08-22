@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAjustes) return
-    const ids = ['ajustes-loader', 'ajustes-favicon', 'ajustes-apple-icon', 'ajustes-social', 'ajustes-cv', 'ajustes-traducciones']
+    const ids = ['ajustes-loader', 'ajustes-favicon', 'ajustes-apple-icon', 'ajustes-nav-anim', 'ajustes-social', 'ajustes-cv', 'ajustes-traducciones']
     
     const handleMouseOver = (e: MouseEvent) => {
       let el = e.target as HTMLElement | null
@@ -255,6 +255,9 @@ export default function AdminDashboard() {
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'ajustes-apple-icon' ? ' active' : ''}`} onClick={() => goto('ajustes-apple-icon')}>
                   <i className="fa-solid fa-magnifying-glass"></i><span>Search Engine icon</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-nav-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-nav-anim')}>
+                  <i className="fa-solid fa-wand-magic-sparkles"></i><span>Menu animation</span>
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'ajustes-social' ? ' active' : ''}`} onClick={() => goto('ajustes-social')}>
                   <i className="fa-solid fa-share-nodes"></i><span>Social media</span>

@@ -35,8 +35,33 @@ function toItems(patch: Partial<SiteSettings>): Record<string, string> {
   if (patch.cvName !== undefined) items[SETTINGS_KEYS.cvName] = patch.cvName
   if (patch.faviconUrl !== undefined) items[SETTINGS_KEYS.faviconUrl] = patch.faviconUrl
   if (patch.appleIconUrl !== undefined) items[SETTINGS_KEYS.appleIconUrl] = patch.appleIconUrl
+  if (patch.navAnimUrl !== undefined) items[SETTINGS_KEYS.navAnimUrl] = patch.navAnimUrl
   return items
 }
+
+/* Ajustes que ADEMÁS son media: al guardar hay que reflejar el archivo en
+   "Contenido en uso". El bloque era idéntico por ajuste (loader, favicon,
+   icono de búsqueda) y con la animación del menú serían cuatro copias, así
+   que la variación vive en la tabla y el cuerpo es uno solo.
+   `imageAware`: el loader acepta imagen o video — el tipo real del archivo
+   manda sobre el de la tabla. */
+type SettingsMediaSync = {
+  field: keyof SiteSettings
+  key: string
+  label: string
+  name: string
+  kind: 'image' | 'video'
+  type: string
+  imageAware?: boolean
+  imageName?: string
+}
+
+const SETTINGS_MEDIA_SYNC: SettingsMediaSync[] = [
+  { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', name: 'video', kind: 'video', type: 'video/webm', imageAware: true, imageName: 'loader-image' },
+  { field: 'faviconUrl', key: SETTINGS_KEYS.faviconUrl, label: 'Favicon (.favicon-preview-img)', name: 'favicon', kind: 'image', type: 'image/webp' },
+  { field: 'appleIconUrl', key: SETTINGS_KEYS.appleIconUrl, label: 'Apple Touch Icon (.apple-icon-preview-img)', name: 'apple-icon', kind: 'image', type: 'image/webp' },
+  { field: 'navAnimUrl', key: SETTINGS_KEYS.navAnimUrl, label: 'Menu Animation (.nav-anim-preview)', name: 'menu-animation', kind: 'video', type: 'video/webm' },
+]
 
 /* Persiste un patch de ajustes: POST /api/content (sube dataURLs → URLs),
    canonicaliza desde /api/site (para no dejar base64 en localStorage) y
@@ -81,6 +106,7 @@ export function useSaveSettings() {
       cvName: pick('cvName'),
       faviconUrl: pick('faviconUrl'),
       appleIconUrl: pick('appleIconUrl'),
+      navAnimUrl: pick('navAnimUrl'),
     }
     setSettings(final)
     if (typeof window !== 'undefined') {
@@ -88,81 +114,56 @@ export function useSaveSettings() {
     }
     // persistir valores finales (URLs, no base64) en el store home + localStorage
     Object.assign(state.items, toItems(final))
-    if (final.loaderVideo !== undefined) {
-      applyMedia('loader.gallop', final.loaderVideo)
-      if (final.loaderVideo !== '') {
-        const prev = state.usedContent['loader.gallop']
-        if (prev && prev.src !== final.loaderVideo) {
-          retireUsedEntryToUnused(prev, 'replaced', ['loader.gallop'])
-        }
-        const mm = state.mediaMeta['loader.gallop'] || state.mediaMeta[final.loaderVideo]
-        const isImage = mm?.type?.startsWith('image/') || final.loaderVideo.match(/\.(png|jpe?g|webp|gif|svg)$/i)
-        state.usedContent['loader.gallop'] = {
-          key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', section: 'Site Configuration', kind: isImage ? 'image' : 'video',
-          src: final.loaderVideo, name: mm?.name || (isImage ? 'loader-image' : 'video'), size: mm?.size ?? null, original: false,
-          ts: Date.now(), type: mm?.type || (isImage ? 'image/webp' : 'video/webm'),
-        }
-        const idx = state.unused.findIndex(u => u.src === final.loaderVideo)
-        if (idx !== -1) state.unused.splice(idx, 1)
-      } else {
-        const prev = state.usedContent['loader.gallop']
+    SETTINGS_MEDIA_SYNC.forEach((m) => {
+      const src = final[m.field]
+      if (src === undefined) return
+      applyMedia(m.key, src)
+      const prev = state.usedContent[m.key]
+      if (!src) {
         if (prev) {
-          retireUsedEntryToUnused(prev, 'retired', ['loader.gallop'])
-          delete state.usedContent['loader.gallop']
+          retireUsedEntryToUnused(prev, 'retired', [m.key])
+          delete state.usedContent[m.key]
         }
+        return
       }
-    }
-    if (final.faviconUrl !== undefined) {
-      applyMedia('settings.faviconUrl', final.faviconUrl)
-      if (final.faviconUrl !== '') {
-        const prev = state.usedContent['settings.faviconUrl']
-        if (prev && prev.src !== final.faviconUrl) {
-          retireUsedEntryToUnused(prev, 'replaced', ['settings.faviconUrl'])
-        }
-        const mm = state.mediaMeta['settings.faviconUrl'] || state.mediaMeta[final.faviconUrl]
-        state.usedContent['settings.faviconUrl'] = {
-          key: 'settings.faviconUrl', label: 'Favicon (.favicon-preview-img)', section: 'Site Configuration', kind: 'image',
-          src: final.faviconUrl, name: mm?.name || 'favicon', size: mm?.size ?? null, original: false,
-          ts: Date.now(), type: mm?.type || 'image/webp',
-        }
-        const idx = state.unused.findIndex(u => u.src === final.faviconUrl)
-        if (idx !== -1) state.unused.splice(idx, 1)
-      } else {
-        const prev = state.usedContent['settings.faviconUrl']
-        if (prev) {
-          retireUsedEntryToUnused(prev, 'retired', ['settings.faviconUrl'])
-          delete state.usedContent['settings.faviconUrl']
-        }
+      if (prev && prev.src !== src) retireUsedEntryToUnused(prev, 'replaced', [m.key])
+      const mm = state.mediaMeta[m.key] || state.mediaMeta[src]
+      const asImage = !!m.imageAware && (mm?.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(src))
+      state.usedContent[m.key] = {
+        key: m.key, label: m.label, section: 'Site Configuration', kind: asImage ? 'image' : m.kind,
+        src, name: mm?.name || (asImage ? m.imageName! : m.name), size: mm?.size ?? null, original: false,
+        ts: Date.now(), type: mm?.type || (asImage ? 'image/webp' : m.type),
       }
-    }
-    if (final.appleIconUrl !== undefined) {
-      applyMedia('settings.appleIconUrl', final.appleIconUrl)
-      if (final.appleIconUrl !== '') {
-        const prev = state.usedContent['settings.appleIconUrl']
-        if (prev && prev.src !== final.appleIconUrl) {
-          retireUsedEntryToUnused(prev, 'replaced', ['settings.appleIconUrl'])
-        }
-        const mm = state.mediaMeta['settings.appleIconUrl'] || state.mediaMeta[final.appleIconUrl]
-        state.usedContent['settings.appleIconUrl'] = {
-          key: 'settings.appleIconUrl', label: 'Apple Touch Icon (.apple-icon-preview-img)', section: 'Site Configuration', kind: 'image',
-          src: final.appleIconUrl, name: mm?.name || 'apple-icon', size: mm?.size ?? null, original: false,
-          ts: Date.now(), type: mm?.type || 'image/webp',
-        }
-        const idx = state.unused.findIndex(u => u.src === final.appleIconUrl)
-        if (idx !== -1) state.unused.splice(idx, 1)
-      } else {
-        const prev = state.usedContent['settings.appleIconUrl']
-        if (prev) {
-          retireUsedEntryToUnused(prev, 'retired', ['settings.appleIconUrl'])
-          delete state.usedContent['settings.appleIconUrl']
-        }
-      }
-    }
+      const idx = state.unused.findIndex((u) => u.src === src)
+      if (idx !== -1) state.unused.splice(idx, 1)
+    })
     persistUsed(); persistUnused()
     persistOverridesLocal()
     recordAudit({ section: 'Site Settings', label: 'Settings', summary })
     toast('Saved')
     return final
+  }
+}
+
+/* Vista previa en hover de las tarjetas con video. `pause()` mientras el
+   `play()` anterior sigue pendiente aborta esa promesa y el navegador lo
+   reporta como error ("The play() request was interrupted by a call to
+   pause()"): por eso la pausa se encadena a la promesa en vuelo. */
+function useVideoPreview(ref: React.RefObject<HTMLVideoElement | null>) {
+  const pending = useRef<Promise<void> | null>(null)
+  return {
+    onMouseEnter: () => {
+      const v = ref.current
+      if (v) pending.current = v.play().catch(() => {})
+    },
+    onMouseLeave: () => {
+      const v = ref.current
+      if (!v) return
+      void Promise.resolve(pending.current).then(() => {
+        v.pause()
+        v.currentTime = 0
+      })
+    },
   }
 }
 
@@ -177,6 +178,7 @@ export function LoaderSettings() {
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const preview = useVideoPreview(videoRef)
   const [duration, setDuration] = useState(() => settings.loaderDuration || DEFAULT_DURATION)
   const [saving, setSaving] = useState(false)
 
@@ -238,13 +240,7 @@ export function LoaderSettings() {
             cursor: 'pointer',
           }}
           onClick={() => triggerContentPicker('loader.gallop')}
-          onMouseEnter={() => videoRef.current?.play()}
-          onMouseLeave={() => {
-            if (videoRef.current) {
-              videoRef.current.pause()
-              videoRef.current.currentTime = 0
-            }
-          }}
+          {...preview}
         >
           <video
             ref={videoRef}
@@ -335,9 +331,9 @@ export function FaviconSettings() {
     <div className="admin-card" id="ajustes-favicon">
       <div className="admin-card-head">
         <h2><i className="fa-solid fa-compass"></i> Favicon
-          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon displayed in browser tabs.">
+          <span className="cms-info-tip" tabIndex={0} aria-label="Icon shown in browser tabs. Upload a transparent design; without one the site falls back to /favicon.ico.">
             <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip">Customize the icon displayed in browser tabs.</span>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Icon shown in browser tabs. Upload a transparent design; without one the site falls back to /favicon.ico.</span>
           </span>
         </h2>
       </div>
@@ -370,15 +366,6 @@ export function FaviconSettings() {
           />
         </div>
         <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-              Favicon (Navegador)
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
-              Se muestra en las pestañas. Utiliza un diseño transparente. {currentFavicon ? '' : '(Por defecto /favicon.ico)'}
-            </div>
-          </div>
-          
           <div>
             <button
               type="button"
@@ -431,9 +418,9 @@ export function AppleIconSettings() {
     <div className="admin-card" id="ajustes-apple-icon">
       <div className="admin-card-head">
         <h2><i className="fa-solid fa-magnifying-glass"></i> Search Engine Icon
-          <span className="cms-info-tip" tabIndex={0} aria-label="Customize the icon for Google Search and mobile bookmarks.">
+          <span className="cms-info-tip" tabIndex={0} aria-label="Icon shown in Google Search results and mobile bookmarks. Upload a solid square image; without one the Favicon is used.">
             <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip">Customize the icon for Google Search and mobile bookmarks.</span>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Icon shown in Google Search results and mobile bookmarks. Upload a solid square image; without one the Favicon is used.</span>
           </span>
         </h2>
       </div>
@@ -467,15 +454,6 @@ export function AppleIconSettings() {
         </div>
         <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-              Ícono para Google Search y Móviles
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.25rem', maxWidth: '300px' }}>
-              Se muestra en los resultados de búsqueda. Sube un cuadrado sólido. Si no subes ninguno, se usa el Favicon.
-            </div>
-          </div>
-          
-          <div>
             <button
               type="button"
               className="cms-btn cms-btn--primary"
@@ -483,6 +461,97 @@ export function AppleIconSettings() {
               disabled={!isChanged || saving}
             >
               <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save icon'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ----- Animación del menú (drawer móvil) -------------------------------------
+
+export function NavAnimSettings() {
+  useCmsStore()
+  const { settings } = useSiteSettings()
+  const save = useSaveSettings()
+  const [saving, setSaving] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const preview = useVideoPreview(videoRef)
+
+  const currentAnim = state.items[SETTINGS_KEYS.navAnimUrl] !== undefined
+    ? state.items[SETTINGS_KEYS.navAnimUrl]
+    : (settings.navAnimUrl || '')
+  const isChanged = currentAnim !== (settings.navAnimUrl || '')
+
+  useEffect(() => {
+    indexEditables()
+    attachEditControls()
+    if (!currentAnim) {
+      showEmptySlot(SETTINGS_KEYS.navAnimUrl)
+    } else {
+      const parent = elementsByKey[SETTINGS_KEYS.navAnimUrl]?.parentElement
+      if (parent) {
+        parent.classList.remove('cms-empty-slot')
+        parent.querySelector('.cms-empty-overlay')?.remove()
+      }
+      refreshTools(SETTINGS_KEYS.navAnimUrl)
+    }
+  }, [currentAnim])
+
+  const onSaveConfiguration = async () => {
+    setSaving(true)
+    await save({ navAnimUrl: currentAnim }, 'Menu animation updated')
+    setSaving(false)
+  }
+
+  return (
+    <div className="admin-card" id="ajustes-nav-anim">
+      <div className="admin-card-head">
+        <h2><i className="fa-solid fa-wand-magic-sparkles"></i> Menu Animation
+          <span className="cms-info-tip" tabIndex={0} aria-label="Decorative WebM video with a transparent background. It sits in the bottom-right corner of the mobile menu, plays once every time the menu opens, and never moves the menu options.">
+            <i className="fa-solid fa-circle-info"></i>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Decorative WebM video with a transparent background. It sits in the bottom-right corner of the mobile menu, plays once every time the menu opens, and never moves the menu options.</span>
+          </span>
+        </h2>
+      </div>
+      <p className="cms-admin-sub">Mobile menu decorative animation</p>
+      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+        <div
+          className="site-setting-media"
+          style={{
+            position: 'relative',
+            width: 'clamp(160px, 24vw, 200px)',
+            aspectRatio: '1 / 1',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: currentAnim ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+            cursor: 'pointer',
+          }}
+          onClick={() => triggerContentPicker(SETTINGS_KEYS.navAnimUrl)}
+          {...preview}
+        >
+          <video
+            ref={videoRef}
+            data-cms-key={SETTINGS_KEYS.navAnimUrl}
+            className="nav-anim-preview"
+            src={currentAnim || undefined}
+            loop
+            muted
+            playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: currentAnim ? 'block' : 'none', pointerEvents: 'none' }}
+          />
+        </div>
+        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <button
+              type="button"
+              className="cms-btn cms-btn--primary"
+              onClick={onSaveConfiguration}
+              disabled={!isChanged || saving}
+            >
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save animation'}
             </button>
           </div>
         </div>
@@ -642,6 +711,7 @@ export default function SiteSettings() {
       <LoaderSettings />
       <FaviconSettings />
       <AppleIconSettings />
+      <NavAnimSettings />
       <SocialSettings />
       <CvSettings />
       <TranslationSettings />

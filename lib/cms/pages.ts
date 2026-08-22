@@ -30,7 +30,7 @@ export const SITE_PAGES: PageDef[] = [
       'Ajustes del sitio', 'Icono de la página', 'Favicon',
       'Site Settings', 'Configuración del sitio', 'Site Configuration',
     ],
-    keys: ['loader.gallop', 'settings.faviconUrl', 'settings.appleIconUrl'],
+    keys: ['loader.gallop', 'settings.faviconUrl', 'settings.appleIconUrl', 'settings.navAnimUrl'],
   },
   {
     id: 'contact', label: 'Contact', route: '/contact', icon: 'fa-envelope',

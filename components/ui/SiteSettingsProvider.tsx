@@ -29,6 +29,7 @@ function fromLocalOverrides(): Partial<SiteSettings> {
     if (ov[SETTINGS_KEYS.cvName]) res.cvName = ov[SETTINGS_KEYS.cvName]
     if (ov[SETTINGS_KEYS.faviconUrl]) res.faviconUrl = ov[SETTINGS_KEYS.faviconUrl]
     if (ov[SETTINGS_KEYS.appleIconUrl]) res.appleIconUrl = ov[SETTINGS_KEYS.appleIconUrl]
+    if (ov[SETTINGS_KEYS.navAnimUrl]) res.navAnimUrl = ov[SETTINGS_KEYS.navAnimUrl]
     return res
   } catch {
     return {}
@@ -96,6 +97,7 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
             cvName: d.cvName || '',
             faviconUrl: d.faviconUrl || '',
             appleIconUrl: d.appleIconUrl || '',
+            navAnimUrl: d.navAnimUrl || '',
           })
         } else {
           const local = fromLocalOverrides()
@@ -111,7 +113,7 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
   useEffect(() => {
     syncSettingsUsedContent(settings)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when these specific fields change
-  }, [settings.loaderVideo, settings.faviconUrl, settings.appleIconUrl])
+  }, [settings.loaderVideo, settings.faviconUrl, settings.appleIconUrl, settings.navAnimUrl])
 
   useEffect(() => {
     applyFaviconToDOM(settings.faviconUrl || '', false)

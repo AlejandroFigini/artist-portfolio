@@ -19,6 +19,7 @@ export async function getSiteSettingsServer(): Promise<SiteSettings> {
       cvName: byKey[SETTINGS_KEYS.cvName] || '',
       faviconUrl: byKey[SETTINGS_KEYS.faviconUrl] || '',
       appleIconUrl: byKey[SETTINGS_KEYS.appleIconUrl] || '',
+      navAnimUrl: byKey[SETTINGS_KEYS.navAnimUrl] || '',
     }
   } catch (err) {
     console.error('[site-server] error:', err)

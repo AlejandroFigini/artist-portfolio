@@ -57,11 +57,29 @@ export default function Nav() {
   const linksRef = useRef<HTMLElement>(null)
   const viewfinderRef = useRef<HTMLSpanElement>(null)
   const progressRef = useRef<HTMLSpanElement>(null)
+  const navAnimRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     document.body.classList.toggle('nav-open', navOpen)
     return () => document.body.classList.remove('nav-open')
   }, [navOpen])
+
+  /* Animación decorativa del drawer: corre en loop mientras el menú está
+     abierto y se rebobina al cerrar, así la próxima apertura arranca desde
+     cero. Con `prefers-reduced-motion` no se dispara: el contenedor queda en
+     su fotograma inicial.
+     La pausa se encadena a la promesa de `play()`: cortarla en vuelo aborta esa
+     promesa y el navegador lo reporta como error en consola. */
+  useEffect(() => {
+    const v = navAnimRef.current
+    if (!v || !navOpen || prefersReducedMotion()) return
+    v.currentTime = 0
+    // El autoplay puede rechazarse (política del navegador): es decorativo, se ignora.
+    const playing = v.play().catch(() => {})
+    return () => {
+      void playing.then(() => { v.pause(); v.currentTime = 0 })
+    }
+  }, [navOpen, settings.navAnimUrl])
 
   useEffect(() => {
     const handler = () => { setContactOpen(true); setNavOpen(false); setDropdown(null); }
@@ -403,6 +421,24 @@ export default function Nav() {
                 </div>
               </div>
             </div>
+
+            {/* Contenedor primero, contenido después: el marco vive en
+                `.nav-anim-slot` (styles/nav.css) y el archivo se asigna desde
+                Gestión → Menu Animation. Overlay absoluto: no ocupa lugar en el
+                flujo, así que ninguna opción del menú se corre. */}
+            {settings.navAnimUrl && (
+              <div className="nav-anim-slot" aria-hidden="true">
+                <video
+                  ref={navAnimRef}
+                  className="nav-anim-media"
+                  src={settings.navAnimUrl}
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              </div>
+            )}
           </nav>
           <div className="nav-actions">
             <button

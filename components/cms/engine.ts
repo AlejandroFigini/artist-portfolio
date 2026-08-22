@@ -185,6 +185,7 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Loading Screen' },
   { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Page Favicon' },
   { base: 'settings.appleIconUrl', sel: '.apple-icon-preview-img', kind: 'image', accept: 'png,ico,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Search Engine Icon' },
+  { base: 'settings.navAnimUrl', sel: '.nav-anim-preview', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Menu Animation' },
   { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Hero', fields: WAVE_FIELDS, label: (el, i) => `Wave Tool #${(i % 11) + 1}` },
   { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Hero', label: 'Subtitle (below title) — Hero' },
   { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animations', label: (el, i) => `Animation Stack Logo #${i + 1}` },
@@ -907,6 +908,7 @@ const SETTINGS_MEDIA = [
   { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen', kind: 'video' },
   { field: 'faviconUrl', key: 'settings.faviconUrl', label: 'Favicon', kind: 'image' },
   { field: 'appleIconUrl', key: 'settings.appleIconUrl', label: 'Search Engine Icon', kind: 'image' },
+  { field: 'navAnimUrl', key: 'settings.navAnimUrl', label: 'Menu Animation', kind: 'video' },
 ] as const
 
 type SettingsMediaPatch = Partial<Record<(typeof SETTINGS_MEDIA)[number]['field'], string>>

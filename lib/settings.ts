@@ -10,6 +10,7 @@ export const SETTINGS_KEYS = {
   cvName: 'settings.cvName',
   faviconUrl: 'settings.faviconUrl',
   appleIconUrl: 'settings.appleIconUrl',
+  navAnimUrl: 'settings.navAnimUrl',
 } as const
 
 export type SiteSettings = {
@@ -20,9 +21,10 @@ export type SiteSettings = {
   cvName: string
   faviconUrl: string
   appleIconUrl: string
+  navAnimUrl: string
 }
 
-export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '', appleIconUrl: '' }
+export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '', appleIconUrl: '', navAnimUrl: '' }
 
 /* Media que además es AJUSTE. Se comporta distinto que un contenedor común:
    1) asignarle contenido NO lo persiste — el valor queda en `state.items` como
@@ -37,6 +39,7 @@ export const SETTINGS_MEDIA_CARDS: Record<string, string> = {
   'loader.gallop': '#ajustes-loader',
   [SETTINGS_KEYS.faviconUrl]: '#ajustes-favicon',
   [SETTINGS_KEYS.appleIconUrl]: '#ajustes-apple-icon',
+  [SETTINGS_KEYS.navAnimUrl]: '#ajustes-nav-anim',
 }
 
 /** Media de ajustes: guardado diferido al botón de su tarjeta, no al asignar. */
