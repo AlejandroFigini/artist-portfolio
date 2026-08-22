@@ -30,8 +30,6 @@ const SECTIONS: RailSection[] = [
 const ACTIVE_LINE = 0.45
 // A partir de acá el riel entra (techo de About cruzando el 40% de pantalla)
 const ENTER_LINE = 0.4
-// Cuánto dura en pantalla el nombre de la sección en la barra inferior
-const FLASH_MS = 1000
 // El footer asomando esto de pantalla saca el riel
 const EXIT_LINE = 0.9
 
@@ -43,13 +41,7 @@ export default function SectionRail() {
   const ui = useUiText()
   const [visible, setVisible] = useState(false)
   const [active, setActive] = useState(0)
-  /* En la barra inferior (móvil/tablet) no entran los labels: el nombre de la
-     sección aparece al entrar en ella y se retira solo. `seq` fuerza el
-     remontaje para que la animación vuelva a correr al repetir sección. */
-  const [flash, setFlash] = useState<{ seq: number; i: number } | null>(null)
   const frame = useRef(0)
-  const flashSeq = useRef(0)
-  const lastFlashed = useRef(-1)
   const railRef = useRef<HTMLElement>(null)
   const lastProgress = useRef(-1)
 
@@ -107,16 +99,6 @@ export default function SectionRail() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!visible) { lastFlashed.current = -1; setFlash(null); return }
-    if (lastFlashed.current === active) return
-    lastFlashed.current = active
-    flashSeq.current += 1
-    setFlash({ seq: flashSeq.current, i: active })
-    const t = window.setTimeout(() => setFlash(null), FLASH_MS)
-    return () => clearTimeout(t)
-  }, [active, visible])
-
   const goTo = useCallback((selector: string) => {
     const el = document.querySelector(selector)
     if (el) scrollToElement(el, isReduced())
@@ -135,11 +117,12 @@ export default function SectionRail() {
       aria-label={ui('rail_sections', 'Sections')}
       aria-hidden={!visible}
     >
-      {flash && (
-        <span key={flash.seq} className="srail__flash" aria-hidden="true">
-          {ui(SECTIONS[flash.i].i18n, SECTIONS[flash.i].label)}
-        </span>
-      )}
+      {/* Nombre de la sección en curso — solo se ve en la barra inferior
+          (móvil/tablet), donde las opciones no llevan label. `key` lo remonta
+          al cambiar de sección para que la animación de relevo vuelva a correr. */}
+      <span key={active} className="srail__flash" aria-hidden="true">
+        {ui(SECTIONS[active].i18n, SECTIONS[active].label)}
+      </span>
       <span className="srail__cap srail__cap--start" aria-hidden="true" />
       <ul className="srail__list">
         {SECTIONS.map((s, i) => (
