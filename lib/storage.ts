@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { CLOUDINARY_WIDTHS } from '@/lib/utils'
+import { CLOUDINARY_WIDTHS, VIDEO_POSTER_WIDTH } from '@/lib/utils'
 
 /* Almacenamiento de media por ENTORNO.
    - Prod (con credenciales Cloudinary) → sube a Cloudinary.
@@ -207,7 +207,14 @@ export async function uploadBuffer(
          cloudinaryOptimize en lib/utils.ts). Pedir `{format:'mp4'}` producía
          `/video/upload/v1/name.mp4`, otra URL, y el transcode on-the-fly seguía
          pasando igual — encima pagando dos transcodes por subida. */
-      options.eager = [{ fetch_format: 'auto', quality: 'auto' }]
+      /* Y el póster (primer frame) por el mismo motivo: sin él el contenedor
+         pinta negro hasta que decodifica el primer frame. Misma transformación
+         que arma `videoPosterSrc` (lib/utils.ts) — si divergen, el derivado que
+         se pre-genera no es el que pide el sitio y no pre-calienta nada. */
+      options.eager = [
+        { fetch_format: 'auto', quality: 'auto' },
+        { fetch_format: 'auto', quality: 'auto', width: VIDEO_POSTER_WIDTH, crop: 'limit', start_offset: 0, format: 'jpg' },
+      ]
       options.eager_async = true
     } else {
       options.resource_type = 'image'
@@ -388,6 +395,45 @@ export async function setAssetState(url: string, state: MediaState): Promise<{ o
   }
 
   return { ok: true }
+}
+
+/* ----- Nombre visible del asset (display_name) ------------------------------
+   Renombrar de verdad (`uploader.rename`) cambia el public_id, o sea la URL, o
+   sea la clave de la que `cms_data` guarda copia — exactamente lo que el modelo
+   de estado por tags evita desde arriba. `display_name` es el nombre que la
+   Media Library de Cloudinary muestra y NO forma parte de la URL de entrega:
+   permite editar el nombre en los dos lados sin invalidar una sola referencia.
+
+   Solo existe en cuentas con folder_mode `dynamic`. En `fixed` se devuelve el
+   motivo en vez de responder OK a algo que no pasó. */
+export type DisplayNameResult = { ok: true; applied: 'cloudinary' | 'local' } | { ok: false; reason: string }
+
+export async function setAssetDisplayName(url: string, displayName: string): Promise<DisplayNameResult> {
+  /* Archivos servidos desde public/uploads (entorno local): no hay metadato
+     remoto que actualizar, el nombre vive solo en el CMS. */
+  if (!url.includes('cloudinary.com')) return { ok: true, applied: 'local' }
+  if (!hasCloudinary) return { ok: false, reason: 'cloudinary not configured' }
+
+  const parsed = parseCloudinaryUrl(url)
+  if (!parsed) return { ok: false, reason: 'unparseable url' }
+
+  if ((await getFolderMode()) !== 'dynamic') {
+    return { ok: false, reason: 'display names require a Cloudinary account in dynamic folder mode' }
+  }
+
+  try {
+    /* Admin API (500/h en el plan free), a diferencia del tageo de estado que va
+       por Upload API. Es un gesto manual y puntual del admin, no un batch. */
+    await cloudinary.api.update(parsed.publicId, {
+      resource_type: parsed.resourceType,
+      display_name: displayName,
+    })
+  } catch (err) {
+    console.error('[setAssetDisplayName] no se pudo actualizar:', parsed.publicId, err)
+    return { ok: false, reason: 'cloudinary rejected the update' }
+  }
+
+  return { ok: true, applied: 'cloudinary' }
 }
 
 /** Borra un asset por su URL (Cloudinary o archivo local).

@@ -196,8 +196,8 @@
 .ch-panel {
   position: relative;
   width: 100%;
-  max-width: 460px;
-  min-height: clamp(520px, 60vh, 660px);
+  max-width: 415px;
+  min-height: clamp(455px, 52vh, 570px);
   margin: 0 auto !important;
   display: flex;
   flex-direction: column;
@@ -234,7 +234,7 @@
   overflow: hidden;
   flex: none;
   width: 100%;
-  max-height: 250px;
+  max-height: 215px;
 }
 .ch-portrait, .ch-concept-slide { position: absolute; inset: 0; border-radius: 10px; background-size: cover; background-position: center; cursor: default; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .ch-portrait.has-media, .ch-concept-slide.has-media { cursor: zoom-in; }

@@ -66,6 +66,10 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   nav_about: { en: 'About me', es: 'Sobre mí', pt: 'Sobre mim', fr: 'À propos' },
   nav_contact: { en: 'Contact', es: 'Contacto', pt: 'Contato', fr: 'Contact' },
 
+  // Riel lateral de secciones de la portada (SectionRail)
+  rail_sections: { en: 'Sections', es: 'Secciones', pt: 'Seções', fr: 'Sections' },
+  rail_projects: { en: 'Projects', es: 'Proyectos', pt: 'Projetos', fr: 'Projets' },
+
   // Footer
   footer_exploration: { en: 'Exploration', es: 'Exploración', pt: 'Exploração', fr: 'Exploration' },
   footer_connect: { en: 'Connect', es: 'Conectar', pt: 'Conectar', fr: 'Contact' },

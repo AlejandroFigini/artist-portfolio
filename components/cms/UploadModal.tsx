@@ -13,6 +13,7 @@ import { cloudinaryAssetUrl } from '@/lib/cloudinary-console'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, isDeferredMediaKey, type FieldValue,
 } from '@/lib/cms/store'
+import { isSettingsMediaKey } from '@/lib/settings'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields, syncWaveGroups, refreshTools, seedUsedContent
 } from './engine'
@@ -119,12 +120,14 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         if (isDeferredMediaKey(cmsKey)) {
           // Colección con manager abierto: preview local; persiste en el commit (Save).
           emit()
-        } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+        } else if (!isSettingsMediaKey(cmsKey)) {
           // Guardado ACOTADO: la clave asignada + sus campos. Inmune a un ítem
           // problemático del estado que tumbaría el POST completo.
           persistOverrideKeys([cmsKey, ...fieldValues.map(({ f }) => `${cmsKey}::${f.key}`)])
             .catch(() => toast('Network error while syncing with server', 'error'))
         } else {
+          // Media de ajustes: vista previa local; persiste con el botón Guardar
+          // de su tarjeta (SETTINGS_MEDIA_CARDS, lib/settings.ts).
           emit()
         }
 
@@ -138,7 +141,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
         state.usedContent[cmsKey] = entry
         persistUsed()
         
-        if (cmsKey === 'loader.gallop' || cmsKey === 'settings.faviconUrl') {
+        if (isSettingsMediaKey(cmsKey)) {
           // Remove from unused if it was there
           const idx = state.unused.findIndex(u => u.src === data.secure_url)
           if (idx !== -1) {

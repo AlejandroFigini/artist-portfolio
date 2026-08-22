@@ -18,6 +18,7 @@ import {
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { cloudinaryAssetUrl, cloudinarySearchUrl } from '@/lib/cloudinary-console'
 import { Thumb, type AnyEntry } from './cards'
+import { useMediaRename, MediaRenameEditor, MediaRenamePencil } from './RenameMedia'
 
 type CloseProp = { onClose: () => void }
 
@@ -81,7 +82,7 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
 
   return (
     <CmsModal title="Associate with container" wide onClose={onClose} actions={[{ label: 'Cancel', onClick: () => {} }]}>
-      <div className="cms-upload" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+      <div className="cms-upload" style={{ maxHeight: '60vh', overflowY: 'auto' }} data-lenis-prevent>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem', padding: '0.6rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
           <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <Thumb e={item} />
@@ -263,7 +264,7 @@ export function SelectContainerActionModal({
         <p style={{ margin: '0 0 1rem 0', fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           This file is currently used in <strong>{occs.length} containers</strong>. Select which container you want to {action === 'editInfo' ? 'edit details for' : action === 'rename' ? 'rename' : 'remove this content from'}:
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '55vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '55vh', overflowY: 'auto' }} data-lenis-prevent>
           {occs.map((u) => {
             const info = getPageAndSectionInfo(u)
             const label = u.label || (u.key ? getContainerMeta(u.key).label : '') || u.key
@@ -363,6 +364,11 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
   }, [src])
   const assetId = resolved?.url === src ? resolved.id : null
 
+  /* Renombrar el archivo: solo cuando la vista previa se abre desde el
+     Repositorio, igual que el lápiz de la tarjeta. */
+  const rename = useMediaRename(e)
+  const canEditName = cardType === 'repo'
+
   if (!src) return null
   const vid = isVideo(e.type || (e as { kind?: string }).kind, e.name)
   const ts = cardType === 'trash' || (cardType === 'repo' && e._state === 'trash') ? e.deletedAt : e.ts
@@ -394,9 +400,20 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
           <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '40vh', borderRadius: 8, display: 'block', margin: '0 auto' }} />
         )}
         <div style={{ marginTop: '1.5rem', textAlign: 'left', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-          <h4 style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>{getFileBasename(e.name || e.label || 'Untitled')}</h4>
+          <h4 className="cms-rename-file-title" style={{ marginBottom: '0.5rem', color: 'var(--accent)', fontWeight: 700 }}>
+            {canEditName && rename.editing ? (
+              <MediaRenameEditor rename={rename} />
+            ) : (
+              <>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '0 1 auto', minWidth: 0 }}>
+                  {getFileBasename(rename.name || e.label || 'Untitled')}
+                </span>
+                {canEditName && <MediaRenamePencil rename={rename} />}
+              </>
+            )}
+          </h4>
           <div className="cms-mlib-meta" style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-            <div><strong>File name:</strong> {e.name || '—'}</div>
+            <div><strong>File name:</strong> {rename.name || '—'}</div>
             <div><strong>Format:</strong> {getFormat(e)}</div>
             <div><strong>Size:</strong> {fmtBytes(e.size)}</div>
             {/* Demo: se oculta info sensible (fecha/hora de subida y el enlace/URL
@@ -609,7 +626,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                   <i className="fa-solid fa-layer-group" style={{ color: 'var(--accent)', marginRight: '0.4rem' }}></i>
                   {files.length} files selected for upload:
                 </label>
-                <div style={{ maxHeight: '350px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <div style={{ maxHeight: '350px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }} data-lenis-prevent>
                   {files.map((f, i) => {
                     const isDup = duplicates[i]
                     const ext = getFileExtension(f.name)
@@ -669,7 +686,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
         </div>
       )}
       {phase === 'done' && results.length > 0 && (
-        <div style={{ padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', maxHeight: '65vh', overflowY: 'auto' }}>
+        <div style={{ padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', maxHeight: '65vh', overflowY: 'auto' }} data-lenis-prevent>
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <i className="fa-solid fa-cloud-arrow-up" style={{ color: 'var(--accent)' }}></i>{' '}
             {results.length > 1 ? `${results.length} files uploaded successfully` : 'Upload successful'}

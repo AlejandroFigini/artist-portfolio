@@ -10,6 +10,7 @@ import { isVideo } from '@/lib/utils'
 import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
 import { COLLECTIONS, collectionOf, fixedSlotKeys } from '@/lib/cms/collections'
 import { readSettings, allKeysOf } from '@/lib/cms/collection'
+import type { MediaFacts } from '@/lib/cms/media-filter'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -516,6 +517,56 @@ export function getFormat(e: { type?: string; src?: string; dataUrl?: string; na
   return e.type && e.type !== 'image' && e.type !== 'video' ? e.type : '—'
 }
 
+export type MediaLike = {
+  name?: string
+  label?: string
+  section?: string
+  size?: number | null
+  ts?: number
+  type?: string
+  kind?: string
+  src?: string
+  dataUrl?: string
+  key?: string
+  deletedAt?: number
+}
+
+/* Cloudinary incrusta la versión (epoch) en la URL de entrega. Es el último
+   recurso para fechar un asset que llegó sin `ts` ni entrada en mediaMeta. */
+const CLOUDINARY_VERSION_TS = /\/upload\/v(\d{10,})\//
+
+/** Resuelve los datos de un medio con la MISMA cadena de fallbacks que usa la
+ *  tarjeta para mostrarlos (entry → mediaMeta → versión de la URL). Si la
+ *  tarjeta muestra una fecha, ordenar por fecha tiene que usar esa misma. */
+export function mediaFacts(e: MediaLike, useDeletedAt = false): MediaFacts {
+  const src = e.src || e.dataUrl || ''
+  const srcKey = src ? src.split('?')[0].split('#')[0] : ''
+  const mm = (srcKey ? state.mediaMeta[srcKey] || state.mediaMeta[src] : undefined)
+    || (e.key ? state.mediaMeta[e.key] : undefined)
+
+  let ts = useDeletedAt ? e.deletedAt : (e.ts ?? mm?.ts)
+  if (!ts && src) {
+    const m = src.match(CLOUDINARY_VERSION_TS)
+    if (m) ts = parseInt(m[1], 10) * 1000
+  }
+
+  return {
+    /* Estrictamente el nombre de ARCHIVO: sin fallback a la etiqueta del
+       contenedor. El buscador dice "by file name" y el editor de nombre no debe
+       precargar algo que no es un nombre de archivo. */
+    name: e.name || mm?.name || '',
+    ts: ts || 0,
+    size: e.size ?? mm?.size ?? 0,
+    /* `kind` primero y el sniff después: una entrada puede traer
+       `type: 'image'` genérico y `kind: 'video'`, y ahí la miniatura pinta un
+       video. Lo que se filtra como "animación" tiene que ser exactamente lo que
+       se ve como video. No se consulta el contenedor (a diferencia de `kindOf`):
+       en "sin usar" el `key` apunta al contenedor ANTERIOR, que hoy puede tener
+       otra cosa. */
+    isVideo: e.kind === 'video' || isVideo(e.type, e.name),
+  }
+}
+
 export const sumSizes = (arr: { size?: number | null; src?: string; dataUrl?: string; url?: string; key?: string }[]) => {
   const seen = new Set<string>()
   return arr.reduce((s, e) => {
@@ -956,6 +1007,62 @@ export function performRenameContainer(key: string, newLabel: string) {
     label: newLabel,
     summary: `Container renamed (previously: ${oldLabel || key})`,
   })
+}
+
+/* Renombra un ARCHIVO en todo el estado local. No confundir con
+   `performRenameContainer`, que renombra el CONTENEDOR: acá el contenedor no se
+   toca, cambia el nombre del asset.
+
+   Se busca por `src` normalizado y se actualizan TODAS las apariciones porque un
+   mismo archivo puede estar en varios contenedores a la vez ("Contenido en uso"
+   lo lista reusado): es un solo asset, así que un solo nombre.
+
+   El nombre en Cloudinary (display_name) lo aplica `POST /api/rename-media`; esta
+   función corre DESPUÉS de que ese endpoint confirmó, nunca antes — si se
+   invirtiera el orden, un fallo de red dejaría los dos lados con nombres
+   distintos y nada que lo delatara. */
+export function renameMediaEverywhere(src: string, newName: string) {
+  const norm = (u?: string) => (u ? u.split('?')[0].split('#')[0] : '')
+  const target = norm(src)
+  if (!target || !newName) return
+
+  let touchedUsed = false
+  let touchedUnused = false
+  let touchedTrash = false
+
+  /* Claves de contenedor que HOY apuntan a este archivo. mediaMeta está indexado
+     por URL y por clave de contenedor; las entradas "sin usar"/"basurero" guardan
+     su contenedor ANTERIOR, que puede estar mostrando otra cosa, así que esas no
+     se tocan por clave. */
+  const containerKeys = new Set<string>()
+
+  Object.entries(state.usedContent).forEach(([k, u]) => {
+    if (norm(u.src) !== target) return
+    u.name = newName
+    containerKeys.add(k)
+    touchedUsed = true
+  })
+  state.unused.forEach((u) => {
+    if (norm(u.src) !== target && norm(u.dataUrl) !== target) return
+    u.name = newName
+    touchedUnused = true
+  })
+  state.trash.forEach((t) => {
+    if (norm(t.src) !== target && norm(t.dataUrl) !== target) return
+    t.name = newName
+    touchedTrash = true
+  })
+
+  Object.keys(state.mediaMeta).forEach((k) => {
+    if (norm(k) === target || containerKeys.has(k)) state.mediaMeta[k].name = newName
+  })
+
+  if (touchedUsed) persistUsed()
+  if (touchedUnused) persistUnused()
+  if (touchedTrash) persistTrash()
+  if (!touchedUsed && !touchedUnused) persistMediaMeta()
+
+  emit()
 }
 
 function occupyTarget(targetKey: string) {

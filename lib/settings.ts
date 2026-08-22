@@ -24,6 +24,24 @@ export type SiteSettings = {
 
 export const EMPTY_SETTINGS: SiteSettings = { loaderVideo: '', loaderImage: '', loaderDuration: '', cvUrl: '', cvName: '', faviconUrl: '', appleIconUrl: '' }
 
+/* Media que además es AJUSTE. Se comporta distinto que un contenedor común:
+   1) asignarle contenido NO lo persiste — el valor queda en `state.items` como
+      vista previa y viaja a la DB recién con el botón Guardar de su tarjeta;
+   2) su marco vacío y sus herramientas solo se pintan DENTRO de esa tarjeta (el
+      mismo data-cms-key existe también en el sitio, p.ej. el <video> del loader,
+      y ahí no corresponde ninguna de las dos cosas).
+   El valor de cada entrada es el id de la tarjeta que la contiene.
+   `settings.appleIconUrl` faltaba en los siete puntos que consultaban esto a
+   mano: se persistía sola al subir, salteándose su propio botón Guardar. */
+export const SETTINGS_MEDIA_CARDS: Record<string, string> = {
+  'loader.gallop': '#ajustes-loader',
+  [SETTINGS_KEYS.faviconUrl]: '#ajustes-favicon',
+  [SETTINGS_KEYS.appleIconUrl]: '#ajustes-apple-icon',
+}
+
+/** Media de ajustes: guardado diferido al botón de su tarjeta, no al asignar. */
+export const isSettingsMediaKey = (key: string): boolean => key in SETTINGS_MEDIA_CARDS
+
 /* Piso estético del loader en ms, con clamp defensivo (0.5s–15s).
    El piso es tiempo en el que la portada ya está pintada pero tapada: entra
    entero en el LCP. 1.2s alcanza para que la animación se lea sin volverse el

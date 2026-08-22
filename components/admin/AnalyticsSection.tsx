@@ -523,7 +523,7 @@ export default function AnalyticsSection() {
           {loadingLogins ? (
             <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>Loading data...</div>
           ) : (
-            <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}>
+            <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }} data-lenis-prevent>
               <table className="cms-table" style={{ minWidth: '600px', width: '100%' }}>
                 <thead>
                   <tr>

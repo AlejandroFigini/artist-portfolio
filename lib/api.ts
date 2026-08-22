@@ -287,6 +287,29 @@ export async function moveMedia(url: string, newFolder: string, ignoreKeys: stri
   }
 }
 
+/** Cambia el nombre visible del asset (display_name en Cloudinary). No toca la
+ *  URL. Devuelve el nombre ya saneado por el servidor, que es el que hay que
+ *  escribir en el estado local. */
+export async function renameMedia(url: string, name: string): Promise<{ ok: boolean; name?: string; error?: string }> {
+  try {
+    const r = await fetch('/api/rename-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, name }),
+    })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) {
+      const msg = (data as { error?: string }).error
+      console.error('[renameMedia] rechazado:', r.status, msg)
+      return { ok: false, error: msg || `HTTP ${r.status}` }
+    }
+    return { ok: true, name: (data as { name?: string }).name || name }
+  } catch (err) {
+    console.error('[renameMedia] error de red:', err)
+    return { ok: false, error: 'network' }
+  }
+}
+
 /** Crea la estructura de carpetas vacías en Cloudinary según la taxonomía del sitio. */
 export async function scaffoldCloudinaryFolders(): Promise<void> {
   try {

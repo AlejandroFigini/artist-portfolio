@@ -26,11 +26,18 @@
 @import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
+@import "./section-rail.css"; /* riel lateral de secciones de la portada (.srail) */
 @import "./motion-pending.css"; /* estado inicial de los reveals mientras baja el chunk de GSAP */
 /* contact-page.css NO se importa acá: solo lo usa la ruta /contact, así que lo
    importa components/contact/ContactPage.tsx y no viaja en la hoja que bloquea
    el render del resto del sitio. */
 @import "./dark-theme.css"; /* overrides [data-theme="dark"] — va después de todo para ganar en cascada */
+
+/* Con Lenis montado (components/ui/SmoothScroll) la inercia la maneja la
+   librería: el `scroll-behavior: smooth` nativo de `html` duplicaría la
+   animación en los saltos por anchor. La clase la pone Lenis al arrancar, así
+   que sin JS o con reduced-motion el smooth nativo sigue vigente. */
+html.lenis { scroll-behavior: auto; }
 
 /* ============================================================
    RITMO VERTICAL EN MÓVIL — regla transversal a las secciones.

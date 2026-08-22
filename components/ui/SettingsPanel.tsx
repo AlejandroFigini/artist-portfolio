@@ -21,10 +21,6 @@ import { useDownloadCv } from '@/hooks/useDownloadCv'
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
 
-/* Debe coincidir con el media query de `.settings-gear.is-away` en
-   styles/legacy/style.css: el retiro de la tuerca es solo de móvil. */
-const GEAR_AWAY_MQ = '(max-width: 768px)'
-
 /* Fracción de pantalla que "About me" tiene que haber invadido para que la
    tuerca entre. Con 1 (el borde inferior exacto) aparecería ya en la portada,
    porque el hero mide 100svh y el tope de About coincide con el pliegue. */
@@ -166,43 +162,28 @@ export default function SettingsPanel() {
     return () => document.removeEventListener('click', onClick)
   }, [open, adminOpen])
 
-  // Elevación dinámica de la tuerca al hacer scroll hasta el footer + retiro de
-  // la tuerca mientras se está en la portada (móvil, ver `gearAway`).
+  // Retiro de la tuerca sobre la portada y sobre el footer (ver `gearAway`).
   useEffect(() => {
     let ticking = false
     const onScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
           const footer = document.querySelector('footer.main-footer')
-          if (footer) {
-            const footerRect = footer.getBoundingClientRect()
-            if (footerRect.top < window.innerHeight) {
-              const overlap = window.innerHeight - footerRect.top
-              document.documentElement.style.setProperty('--settings-bottom', `${30 + overlap}px`)
-            } else {
-              document.documentElement.style.setProperty('--settings-bottom', '30px')
-            }
-          }
+          const footerTop = footer ? footer.getBoundingClientRect().top : Infinity
           /* La tuerca entra al ENTRAR en "About me": hasta ahí sobra sobre la
              portada. Se mide contra el borde superior de la sección y no
              contra el inferior — con el inferior había que recorrer los 1300px
-             de About enteros antes de que apareciera. Es un comportamiento
-             SOLO de móvil, así que el media query se evalúa acá y no solo en
-             CSS: si no, en escritorio el cierre forzado de los paneles de
-             abajo se disparaba con cualquier scroll sobre la portada. El
-             breakpoint acompaña al de la regla `.is-away`
-             (legacy/style.css). Se consulta el DOM en cada tick porque la
-             sección solo existe en la home: en el resto de las rutas no hay
-             nada que esperar y la tuerca queda visible desde el arranque. */
-          const isMobile = window.matchMedia(GEAR_AWAY_MQ).matches
-          const about = isMobile ? document.querySelector('.about-section') : null
+             de About enteros antes de que apareciera. Se consulta el DOM en
+             cada tick porque la sección solo existe en la home: en el resto de
+             las rutas no hay nada que esperar y la tuerca queda visible desde
+             el arranque. */
+          const about = document.querySelector('.about-section')
           const beforeAbout = !!about
             && about.getBoundingClientRect().top > window.innerHeight * GEAR_AWAY_ENTER_RATIO
           /* El footer cierra el recorrido: ahí la tuerca ya no tiene contenido
              debajo al que aplicar y se superpone al bloque de contacto, así
              que se retira igual que sobre la portada. */
-          const atFooter = isMobile && !!footer
-            && footer.getBoundingClientRect().top < window.innerHeight
+          const atFooter = footerTop < window.innerHeight
           const away = beforeAbout || atFooter
           setGearAway(away)
           // si se retira con un panel abierto, el panel se va con ella
@@ -215,10 +196,28 @@ export default function SettingsPanel() {
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll, { passive: true })
     onScroll() // check inicial
+
+    /* "About me" baja por next/dynamic: en el primer chequeo todavía no está en
+       el DOM y la tuerca se quedaría visible sobre la portada hasta el primer
+       scroll. Se re-evalúa en cuanto monta. En las rutas donde la sección no
+       existe el observer nunca dispara y lo corta el failsafe. */
+    let mo: MutationObserver | null = null
+    let failsafe = 0
+    if (!document.querySelector('.about-section')) {
+      mo = new MutationObserver(() => {
+        if (!document.querySelector('.about-section')) return
+        mo?.disconnect(); mo = null
+        onScroll()
+      })
+      mo.observe(document.body, { childList: true, subtree: true })
+      failsafe = window.setTimeout(() => { mo?.disconnect(); mo = null }, 5000)
+    }
+
     return () => {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
-      document.documentElement.style.removeProperty('--settings-bottom')
+      mo?.disconnect()
+      if (failsafe) clearTimeout(failsafe)
     }
   }, [])
 

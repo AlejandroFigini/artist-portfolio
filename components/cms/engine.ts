@@ -16,7 +16,8 @@ import {
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
-import { basename, optimizedMediaSrc, attachMediaRetry } from '@/lib/utils'
+import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
+import { SETTINGS_MEDIA_CARDS, isSettingsMediaKey } from '@/lib/settings'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
 import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
@@ -433,13 +434,27 @@ function applyValue(el: HTMLElement, type: string, value: string) {
     const target = optimized || null
     const actual = s ? s.getAttribute('src') : v.getAttribute('src')
 
+    /* Póster ANTES del corte por fuente sin cambios: es un atributo aparte y en
+       un rescan la fuente ya coincide, así que dentro del `if` de abajo nunca
+       llegaría a ponerse. Sin póster el contenedor pinta NEGRO hasta decodificar
+       el primer frame — y estos <video> arrancan en `preload="none"`, así que ni
+       siquiera piden bytes hasta acercarse al viewport. */
+    const poster = value ? videoPosterSrc(value) : ''
+    if (poster) { if (v.getAttribute('poster') !== poster) v.setAttribute('poster', poster) }
+    else if (v.hasAttribute('poster')) v.removeAttribute('poster')
+
     /* Salir si la fuente ya es la que corresponde. `load()` reinicia el video
        desde cero, así que llamarlo cuando no cambió nada lo hace parpadear:
        applyValue corre en cada rescan/emit del store, y durante el arranque
        hay varios seguidos. */
     if (actual === target) return
 
-    if (value) attachMediaRetry(v)
+    if (value) {
+      attachMediaRetry(v)
+      /* Todo <video> del CMS es decorativo y va en silencio. El atributo tiene
+         que estar en el DOM o iOS deniega el autoplay (ver keepVideoMuted). */
+      keepVideoMuted(v)
+    }
     if (s) {
       if (value) s.src = optimized
       else s.removeAttribute('src')
@@ -987,9 +1002,17 @@ function bindMediaDeadListener() {
   })
 }
 
+/* La media de ajustes (loader + iconos) solo se pinta dentro de su tarjeta del
+   panel: el mismo data-cms-key existe también en el sitio —el <video> del
+   loader— y ahí no corresponde ni marco vacío ni herramientas. */
+function outsideSettingsCard(key: string, el: HTMLElement): boolean {
+  const card = SETTINGS_MEDIA_CARDS[key]
+  return !!card && !el.closest(card)
+}
+
 export function showEmptySlot(key: string) {
   visualHosts(key).forEach((h) => {
-    if ((key === 'loader.gallop' && !h.closest('#ajustes-loader')) || (key === 'settings.faviconUrl' && !h.closest('#ajustes-favicon'))) return
+    if (outsideSettingsCard(key, h)) return
     h.classList.add('cms-empty-slot')
     h.classList.remove('wave-has-content')
     if (!h.querySelector('.cms-empty-overlay')) {
@@ -1092,7 +1115,7 @@ export function moveToUnusedSite(key: string) {
       if (fieldSetters[k]) fieldSetters[k]('')
     }
   })
-  if (key === 'loader.gallop' || key === 'settings.faviconUrl') {
+  if (isSettingsMediaKey(key)) {
     state.items[key] = ''
     persistOverridesLocal()
     emit()
@@ -1314,7 +1337,7 @@ export function attachEditControls() {
     document.querySelectorAll<HTMLElement>(entry.sel).forEach((el) => {
       const key = el.getAttribute('data-cms-key')
       if (!key) return
-      if ((entry.base === 'loader.gallop' && !el.closest('#ajustes-loader')) || (entry.base === 'settings.faviconUrl' && !el.closest('#ajustes-favicon'))) return
+      if (outsideSettingsCard(key, el)) return
       
       // Ensure empty wave slots always get the upload button overlay
       if (key.startsWith('hero.marquee#') && !state.items[key]) {
@@ -1359,7 +1382,7 @@ export function refreshTools(key: string) {
         return [meta.mount === 'parent' && el.parentElement ? el.parentElement : el]
       })()
   hosts.forEach((host) => {
-    if ((key === 'loader.gallop' && !host.closest('#ajustes-loader')) || (key === 'settings.faviconUrl' && !host.closest('#ajustes-favicon'))) return
+    if (outsideSettingsCard(key, host)) return
     host.querySelector(':scope > .cms-tools')?.remove()
     host.classList.add('cms-mount')
     ensurePositioned(host)

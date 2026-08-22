@@ -261,55 +261,6 @@ body.is-admin .cms-tool-move { background: rgba(180, 83, 9, 0.95); }
     padding: 2rem;
     font-size: 0.9rem;
 }
-.cms-repo-filter-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.8rem;
-    flex-wrap: wrap;
-}
-.cms-repo-filter-bar span {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-.cms-repo-filter-bar select {
-    padding: 0.3rem 0.6rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    font-family: var(--font-raleway), sans-serif;
-}
-
-/* ---- Repo Filter Buttons (styled like GestiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n tabs) ---- */
-.cms-repo-filter-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.9rem;
-    border-radius: 20px;
-    border: 1.5px solid var(--border);
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 600;
-    font-family: var(--font-raleway), sans-serif;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.cms-repo-filter-btn:not(.active):hover { border-color: var(--accent); color: var(--text-primary); }
-.cms-repo-filter-btn.active,
-.cms-repo-filter-btn.active:hover { color: #fff !important; }
-.cms-filter-repo.active,
-.cms-filter-repo.active:hover { background: var(--accent); border-color: var(--accent); }
-.cms-filter-used.active,
-.cms-filter-used.active:hover { background: rgba(16, 185, 129, 0.9); border-color: rgba(16, 185, 129, 0.9); }
-.cms-filter-unused.active,
-.cms-filter-unused.active:hover { background: rgba(180, 83, 9, 0.9); border-color: rgba(180, 83, 9, 0.9); }
-.cms-repo-filter-btn i { font-size: 0.75rem; }
-
 /* ---- Global Hero Carousel Gear ---- */
 .cms-hero-gear {
     position: absolute;
@@ -2528,4 +2479,261 @@ body.cms-marquee-active,
 body.cms-marquee-active * {
     user-select: none;
     -webkit-user-select: none;
+}
+
+/* ===== Barra de busqueda / filtro / orden de medios =========================
+   Compartida por el Repositorio del panel y por el selector "Choose from
+   repository" del sitio (componente MediaFilterBar). */
+.cms-repo-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+    /* Dentro del modal del picker la barra vive en un contenedor flex en
+       columna: sin esto la comprime el scroll de la grilla. */
+    flex-shrink: 0;
+}
+.cms-repo-tools--compact { margin-bottom: 0.8rem; }
+
+.cms-repo-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    /* Ocupa el sobrante pero nunca baja de ~14rem: en 320px pasa a su propia
+       fila en vez de quedar como una ranura de dos caracteres. */
+    flex: 1 1 14rem;
+    min-width: 12rem;
+}
+.cms-repo-search > i {
+    position: absolute;
+    left: 0.7rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+.cms-repo-search-input {
+    width: 100%;
+    padding: 0.42rem 2rem 0.42rem 2rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: var(--font-raleway), sans-serif;
+    transition: border-color 0.2s ease;
+}
+.cms-repo-search-input::placeholder { color: var(--text-secondary); opacity: 0.85; }
+.cms-repo-search-input:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.cms-repo-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.cms-repo-search-clear {
+    position: absolute;
+    right: 0.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.cms-repo-search-clear:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+/* Dos grupos de chips (estado y tipo) separados por una linea. En el mismo
+   renglon mientras entren; al envolver, el separador desaparece. */
+.cms-repo-groups {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+.cms-repo-chips { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.cms-repo-divider {
+    width: 1px;
+    align-self: stretch;
+    min-height: 1.6rem;
+    background: var(--border);
+}
+.cms-repo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-raleway), sans-serif;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.cms-repo-chip i { font-size: 0.75rem; }
+.cms-repo-chip:not(.active):hover { border-color: var(--accent); color: var(--text-primary); }
+.cms-repo-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+/* Mismos colores que los tags de las tarjetas: el chip activo y el estado que
+   filtra tienen que leerse como lo mismo. */
+.cms-repo-chip--used.active { background: rgba(16, 185, 129, 0.9); border-color: rgba(16, 185, 129, 0.9); }
+.cms-repo-chip--unused.active { background: rgba(180, 83, 9, 0.9); border-color: rgba(180, 83, 9, 0.9); }
+.cms-repo-chip--trash.active { background: rgba(220, 38, 38, 0.9); border-color: rgba(220, 38, 38, 0.9); }
+
+.cms-repo-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+.cms-repo-sort-field { display: inline-flex; align-items: center; gap: 0.4rem; }
+.cms-repo-sort .admin-select { margin: 0; }
+.cms-repo-sort-dir {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--accent);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cms-repo-sort-dir:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+}
+
+/* Vacio de la grilla del panel: sin esto, filtrar hasta cero resultados deja un
+   hueco en blanco que se lee como "se rompio". */
+.cms-mlib-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+.cms-mlib-empty i { font-size: 2rem; color: var(--accent); }
+
+/* ===== Renombrar archivo (lapiz inline) ==================================== */
+.cms-mlib-label { align-items: center; gap: 0.35rem; }
+.cms-rename-file-title { display: flex; align-items: center; gap: 0.4rem; }
+
+.cms-rename-file-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.78rem;
+    cursor: pointer;
+    /* En la tarjeta aparece al hacer hover; en la vista previa esta siempre. */
+    opacity: 1;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+.cms-rename-file-btn:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.cms-mlib-item .cms-rename-file-btn { opacity: 0; }
+.cms-mlib-item:hover .cms-rename-file-btn,
+.cms-mlib-item:focus-within .cms-rename-file-btn { opacity: 1; }
+/* Sin hover (tactil) el lapiz seria inalcanzable. */
+@media (hover: none) {
+    .cms-mlib-item .cms-rename-file-btn { opacity: 1; }
+}
+
+/* Con el editor abierto sobra el hueco que la etiqueta reserva para el menu
+   de la tarjeta: en 320px era la diferencia entre un input usable y uno de
+   16px. Si aun asi no entra, los botones bajan a una segunda linea. */
+.cms-mlib-label:has(.cms-rename-file) { padding-right: 0; }
+.cms-rename-file {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    row-gap: 0.3rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.cms-rename-file-input {
+    flex: 1 1 auto;
+    min-width: 5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    border: 1.5px solid var(--accent);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: var(--font-raleway), sans-serif;
+}
+.cms-rename-file-input:focus { outline: none; }
+.cms-rename-file-input:disabled { opacity: 0.6; }
+.cms-rename-file-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.55rem;
+    height: 1.55rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cms-rename-file-action:disabled { cursor: not-allowed; opacity: 0.6; }
+.cms-rename-file-action--ok { color: #10b981; }
+.cms-rename-file-action--ok:not(:disabled):hover { background: rgba(16, 185, 129, 0.14); border-color: #10b981; }
+.cms-rename-file-action--cancel { color: #ef4444; }
+.cms-rename-file-action--cancel:not(:disabled):hover { background: rgba(239, 68, 68, 0.14); border-color: #ef4444; }
+
+@media (max-width: 640px) {
+    /* La barra ya envolvio: el orden deja de estar empujado al margen derecho. */
+    .cms-repo-sort { margin-left: 0; }
+}
+@media (max-width: 560px) {
+    /* Siete chips con texto (cuatro de estado + tres de tipo) apilan la barra en
+       cuatro renglones. Con solo el icono entran los dos grupos en uno; el
+       title y el aria-label siguen nombrando cada boton, y el separador es lo
+       unico que distingue un grupo del otro, asi que ahi NO se oculta. */
+    .cms-repo-chip span { display: none; }
+    .cms-repo-chip { padding: 0.4rem 0.55rem; }
+    .cms-repo-sort-text { display: none; }
+    .cms-repo-sort .admin-select { max-width: 9.5rem; }
+}
+@media (max-width: 380px) {
+    /* En 320px los siete chips mas el separador se pasan por unos pocos px y el
+       grupo de tipo cae a un renglon propio. Se recorta el aire, no el
+       separador: sin el son siete iconos seguidos sin agrupacion visible. */
+    .cms-repo-chip { padding: 0.4rem 0.45rem; }
+    .cms-repo-chips { gap: 0.3rem; }
+    .cms-repo-groups { gap: 0.4rem; }
 }

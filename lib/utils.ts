@@ -214,6 +214,44 @@ export function optimizedMediaSrc(src?: string | null, width?: number): string {
   return `/_next/image?url=${encodeURIComponent(path)}&w=${w}&q=75`
 }
 
+/* React trata `muted` como PROPIEDAD, no como atributo: el HTML del server sale
+   con `muted=""` pero al hidratar el atributo desaparece del DOM (medido:
+   `hasAttribute('muted')` false, `.muted` true). WebKit/iOS evalúa la
+   elegibilidad de autoplay contra el atributo del elemento, así que sin él el
+   primer `play()` se deniega — y nadie lo reintenta, el video queda pausado
+   hasta que el visitante toca el botón.
+   `defaultMuted` es la propiedad que SÍ refleja al atributo; se escribe también
+   `muted` porque es la que mira la política en el momento del play. */
+export function keepVideoMuted(el: HTMLVideoElement | null | undefined): void {
+  if (!el) return
+  el.muted = true
+  el.defaultMuted = true
+  if (!el.hasAttribute('muted')) el.setAttribute('muted', '')
+}
+
+/* Ancho ÚNICO del póster. Un solo derivado por video (no una escalera): el
+   póster es un placeholder que se pisa en cuanto llega el primer frame, así que
+   640 alcanza para cualquier contenedor del sitio con `object-fit: cover`. */
+export const VIDEO_POSTER_WIDTH = 640
+
+/* Primer frame del video, como imagen.
+   Un <video> sin `poster` y sin frame decodificado pinta NEGRO — ese es el
+   contenedor negro que aparece "por un segundo" antes de la animación, y pasa
+   SIEMPRE, no solo la primera visita: los videos de la portada arrancan en
+   `preload="none"` (no piden un byte hasta acercarse al viewport) y el del
+   loader recibe su `src` recién al hidratar. El póster es una imagen chica que
+   se pinta enseguida y el video la reemplaza sin salto.
+   Solo Cloudinary: la subida local (public/uploads) no extrae frames.
+   La transformación tiene que ser LA MISMA que el `eager` de lib/storage.ts o
+   se genera on-the-fly (404 mientras trabaja → sin póster). */
+export function videoPosterSrc(src?: string | null): string {
+  if (!src || typeof src !== 'string') return ''
+  if (!src.includes('res.cloudinary.com') || !src.includes('/video/upload/')) return ''
+  const clean = src.split('?')[0].split('#')[0]
+  const jpg = /\.[a-z0-9]{2,5}$/i.test(clean) ? clean.replace(/\.[a-z0-9]{2,5}$/i, '.jpg') : `${clean}.jpg`
+  return jpg.replace('/video/upload/', `/video/upload/f_auto,q_auto,w_${VIDEO_POSTER_WIDTH},c_limit,so_0/`)
+}
+
 /* srcSet para que el navegador elija el ancho según viewport y DPR.
    SSR-safe: no mira `window`, a diferencia de calcular el ancho a mano. */
 export function mediaSrcSet(src?: string | null, widths: number[] = [640, 828, 1200, 1920]): string | undefined {

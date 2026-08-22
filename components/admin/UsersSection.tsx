@@ -383,7 +383,7 @@ export default function UsersSection() {
                 <i className="fa-solid fa-xmark"></i> Close
               </button>
             </div>
-            <div className="cms-login-form" style={{ padding: '1.5rem', overflowY: 'auto' }}>
+            <div className="cms-login-form" style={{ padding: '1.5rem', overflowY: 'auto' }} data-lenis-prevent>
 
               {activeUser.role === 'demo' && (
                 <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>

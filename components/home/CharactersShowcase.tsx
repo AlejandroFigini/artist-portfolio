@@ -430,7 +430,7 @@ export default function CharactersShowcase() {
             >
               <CarouselContent className="-ml-3 md:-ml-4">
                 {renderIds.map((id, i) => (
-                  <CarouselItem key={`${id}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[360px] md:basis-[400px] lg:basis-[440px] xl:basis-[480px] flex">
+                  <CarouselItem key={`${id}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[340px] md:basis-[370px] lg:basis-[395px] xl:basis-[415px] flex">
                     <CharacterPanel id={id} index={i % completedIds.length} total={completedIds.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
                   </CarouselItem>
                 ))}

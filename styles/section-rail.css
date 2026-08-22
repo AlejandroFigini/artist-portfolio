@@ -1,0 +1,385 @@
+/* ============================================================
+   SECTION RAIL — índice de secciones de la portada (.srail).
+   Ref. visual: rail de secciones de gigabyte.com/PC-Case/GB-AC601G-GLOBAL.
+
+   Mismo DOM y mismos instrumentos en los dos formatos; solo cambia el eje:
+   - Teléfono/tablet: barra horizontal abajo. Sin labels — el nombre de la
+     sección asoma 1s al entrar en ella (.srail__flash).
+   - Desde 1024px: riel vertical a la derecha con labels fijos.
+
+   En ambos, cada opción trae el tramo de línea que la une con la anterior y
+   ese tramo se pinta con el scroll (violeta → cian, como la regla de progreso
+   del nav). Los remates de las puntas se pintan igual que los tramos: el de
+   arranque apenas el riel entra, el de cierre al llegar a la última sección.
+
+   Coreografía: remate de arranque → opción → su tramo → opción → su tramo …
+   → remate de cierre. Al salir, el orden se invierte.
+   ============================================================ */
+
+.srail {
+  /* Ritmo de la cascada y geometría de los tramos, en un solo lugar porque
+     los delays de entrada/salida se calculan a partir de ellos. */
+  --srail-step: 150ms;    /* separación entre opción y opción */
+  --srail-lead: 0.28s;    /* el remate de arranque abre la secuencia */
+  --srail-gap: 2.2rem;    /* aire entre opciones (= largo del tramo + los 2 puntos) */
+  --srail-dot-clear: 7px; /* cuánto se despega el tramo de cada punto */
+
+  display: flex;
+  position: fixed;
+  z-index: 40;
+  /* Barra centrada sobre el borde inferior (respeta la home indicator de iOS) */
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 0.9rem);
+  width: -moz-fit-content;
+  width: fit-content;
+  margin: 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: none; /* solo los botones capturan el mouse */
+  opacity: 0;
+  transform: translateY(1rem);
+  /* Al salir el contenedor espera a que la coreografía termine: si se
+     desvanece antes, tapa la salida escalonada de opciones y tramos. */
+  transition: opacity 0.3s ease 0.85s,
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.85s;
+}
+
+/* Estado visible: lo enciende SectionRail al entrar About. */
+.srail--in {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Lista --- */
+.srail__list {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: var(--srail-gap);
+  align-items: center;
+}
+
+.srail__row {
+  position: relative;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition: opacity 0.34s ease, transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Salida: al revés que la entrada, empezando por la última opción y
+     siempre después de que su tramo se haya borrado. */
+  transition-delay: calc((var(--n) - var(--i)) * 90ms + 70ms);
+}
+.srail--in .srail__row {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--srail-lead) + var(--i) * var(--srail-step));
+}
+
+.srail__item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: 0;
+  padding: 0.15rem 0;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: color 0.25s ease;
+}
+.srail__item:hover { color: var(--accent-text); }
+.srail__item:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* En la barra inferior no hay lugar para los labels: los reemplaza el flash */
+.srail__label {
+  display: none;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 200;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  line-height: 1;
+  transition: font-weight 0.2s ease;
+}
+
+/* Punto de estado. Fondo opaco a propósito: el tramo pasa por detrás y así no
+   se lo ve cruzarlo. */
+.srail__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease,
+              transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* --- Recorrido: puntos ya pasados y sección en curso ---
+   El color va de violeta a cian según la posición en el riel, igual que el
+   gradiente de la regla de progreso del nav. */
+.srail__row.is-past .srail__dot,
+.srail__row.is-active .srail__dot {
+  background: color-mix(in srgb, #22d3ee calc(var(--i) / var(--n) * 100%), var(--accent));
+  border-color: color-mix(in srgb, #22d3ee calc(var(--i) / var(--n) * 100%), var(--accent));
+}
+.srail__row.is-active .srail__item { color: var(--accent-text); }
+.srail__row.is-active .srail__label { font-weight: 500; }
+.srail__row.is-active .srail__dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  transform: scale(1.15);
+}
+
+/* --- Tramos entre puntos ---
+   No hay un eje único: cada opción trae el tramo que la une con la anterior
+   (`::before` apagado, `::after` pintado). Arranca y termina despegado del
+   punto, así la línea nunca los atraviesa. */
+.srail__row + .srail__row::before,
+.srail__row + .srail__row::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 0.5px);
+  right: calc(100% + var(--srail-dot-clear));
+  width: calc(var(--srail-gap) - 2 * var(--srail-dot-clear));
+  height: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  /* Salida: cada tramo se borra justo antes que su opción, de la última a la
+     primera. La entrada la definen las reglas de `.srail--in`. */
+  transition: transform 0.24s ease;
+  transition-delay: calc((var(--n) - var(--i)) * 90ms);
+}
+.srail__row + .srail__row::before {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.srail__row + .srail__row::after {
+  background: color-mix(in srgb, #22d3ee calc(var(--i) / var(--n) * 100%), var(--accent));
+}
+
+/* Entrada: el tramo se dibuja junto con la opción que lo trae, apenas detrás. */
+.srail--in .srail__row + .srail__row::before {
+  transform: scaleX(1);
+  transition: transform 0.28s ease;
+  transition-delay: calc(var(--srail-lead) + var(--i) * var(--srail-step) + 0.08s);
+}
+
+/* Pintado según el scroll: los tramos ya recorridos van completos y el
+   siguiente se llena con la fracción de sección andada. */
+.srail--in .srail__row::after { transition: transform 0.25s linear; }
+.srail--in .srail__row.is-past::after,
+.srail--in .srail__row.is-active::after { transform: scaleX(1); }
+.srail--in .srail__row.is-ahead::after { transform: scaleX(var(--srail-frac, 0)); }
+
+/* --- Remates de las puntas ---
+   Pieza en L: un tramo de eje que sobresale de la lista y una traviesa en la
+   punta. Las dos partes comparten color en todos los estados; si una pesa más
+   que la otra el remate se lee partido en vez de como una sola pieza. */
+.srail__cap {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 1px;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+.srail__cap--start { transform-origin: right center; }
+.srail__cap--end { transform-origin: left center; }
+
+.srail__cap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* Traviesa de la punta */
+.srail__cap::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 1px;
+  height: 11px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.srail__cap--start::after { left: 0; }
+.srail__cap--end::after { right: 0; }
+
+/* Los remates se comportan como los tramos: quedan pintados una vez que el
+   recorrido pasó por ellos. El de arranque está antes del primer punto, así
+   que se pinta apenas el riel entra y se mantiene en todas las secciones; el
+   de cierre está después del último y solo se pinta en la última sección. */
+.srail--in .srail__cap--start::before,
+.srail--in .srail__cap--start::after { background: var(--accent); }
+.srail--last .srail__cap--end::before,
+.srail--last .srail__cap--end::after { background: #22d3ee; }
+
+/* Entrada: el de arranque abre la secuencia y el de cierre la termina.
+   Salida (regla de arriba): al revés, el de cierre primero. */
+.srail--in .srail__cap { transform: scaleX(1); }
+.srail--in .srail__cap--start { transition-delay: 0s; }
+.srail--in .srail__cap--end {
+  transition-delay: calc(var(--srail-lead) + var(--n) * var(--srail-step) + 0.36s);
+}
+.srail__cap--start { transition-delay: calc(var(--n) * 90ms + 0.14s); }
+.srail__cap--end { transition-delay: 0s; }
+
+/* --- Flash del nombre de sección (solo barra inferior) ---
+   Aparece al cambiar de sección y se va solo al segundo. El componente lo
+   desmonta con el mismo tiempo, así que la animación corre una vez por entrada. */
+.srail__flash {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 50%;
+  padding: 0.34rem 0.8rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 65%, transparent);
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  line-height: 1;
+  animation: srailFlash 1s ease forwards;
+}
+
+@keyframes srailFlash {
+  0%       { opacity: 0; transform: translate(-50%, 6px); }
+  18%      { opacity: 1; transform: translate(-50%, 0); }
+  72%      { opacity: 1; transform: translate(-50%, 0); }
+  100%     { opacity: 0; transform: translate(-50%, -4px); }
+}
+
+/* ============================================================
+   Desde laptop: el mismo riel, girado a vertical contra el margen derecho.
+   ============================================================ */
+@media (min-width: 1024px) {
+  .srail {
+    --srail-gap: 2.6rem; /* con labels a la vista la lista pide bastante más aire */
+
+    /* Centrado vertical por márgenes automáticos, no por transform: el
+       transform queda libre para la animación de entrada/salida. */
+    left: auto;
+    top: 0;
+    bottom: 0;
+    height: -moz-fit-content;
+    height: fit-content;
+    margin: auto 0;
+    /* El riel vive en el margen derecho de las secciones. El margen real es
+       `max(gutter, (100vw - 1640px) / 2)` — 1640px es el bloque más ancho de la
+       portada (el carrusel de Characters) — así que el sobrante después de
+       descontar el ancho del riel más aire es lo que se puede despegar del
+       borde. En laptop da casi cero (queda pegado) y en monitores grandes sube
+       hasta 5rem. */
+    right: clamp(0.35rem, calc(max(9rem, (100vw - 1640px) / 2) - 8.5rem), 5rem);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.7rem;
+    transform: translateX(1.5rem);
+  }
+  .srail--in { transform: translateX(0); }
+
+  .srail__list {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .srail__row { transform: translateX(1.75rem); }
+
+  /* Tramos: mismo gesto, eje vertical */
+  .srail__row + .srail__row::before,
+  .srail__row + .srail__row::after {
+    top: auto;
+    right: 3px; /* eje de los puntos (7px de punto → 3px) */
+    bottom: calc(50% + var(--srail-dot-clear));
+    width: 1px;
+    height: calc(100% + var(--srail-gap) - 2 * var(--srail-dot-clear));
+    transform: scaleY(0);
+    transform-origin: top center;
+  }
+  .srail--in .srail__row + .srail__row::before { transform: scaleY(1); }
+  .srail--in .srail__row.is-past::after,
+  .srail--in .srail__row.is-active::after { transform: scaleY(1); }
+  .srail--in .srail__row.is-ahead::after { transform: scaleY(var(--srail-frac, 0)); }
+
+  /* Remates: la L rota 90° */
+  .srail__cap {
+    margin-right: 3px; /* alineado con el eje de los puntos */
+    width: 1px;
+    height: 30px;
+    transform: scaleY(0);
+  }
+  .srail__cap--start { transform-origin: bottom center; }
+  .srail__cap--end { transform-origin: top center; }
+  .srail--in .srail__cap { transform: scaleY(1); }
+  .srail__cap::after {
+    top: auto;
+    width: 11px;
+    height: 1px;
+    right: -3px;
+    left: auto;
+  }
+  .srail__cap--start::after { top: 0; }
+  .srail__cap--end::after { bottom: 0; }
+
+  .srail__label { display: block; }
+  .srail__flash { display: none; }
+}
+
+/* --- Margen lateral de la portada ---
+   El riel no se lleva una franja propia: vive dentro del margen derecho, que
+   crece de forma SIMÉTRICA para dejarle lugar. Los frames de sección calculan
+   su ancho como `min(100% - 2 * --page-gutter, cap)`, así que subir el gutter
+   agranda los dos lados por igual y el contenido sigue centrado.
+   No hace falta media query por dispositivo: apenas la pantalla da para el cap
+   de ancho (~1560px en adelante) el gutter deja de mandar y el margen lo fija
+   el cap, que es justo lo que pasa en monitores anchos. */
+@media (min-width: 1024px) {
+  /* El hero queda afuera: su composición ocupa el viewport completo y el riel
+     todavía no entró. */
+  .feed-main > section:not(.hero) { --page-gutter: 9rem; }
+
+  /* El carrusel de Characters trae su propio inset y no leía --page-gutter:
+     quedaba más ancho que el resto y se metía abajo del riel. */
+  .feed-main .ch-showcase__cards-container {
+    width: min(100% - 2 * var(--page-gutter), 1640px);
+  }
+}
+
+/* --- Reduced motion / "Pausar animaciones" ---
+   Sin coreografía: opciones, tramos y remates aparecen puestos. El pintado del
+   scroll se mantiene porque es información, no adorno. */
+@media (prefers-reduced-motion: reduce) {
+  .srail,
+  .srail__row,
+  .srail__item,
+  .srail__dot,
+  .srail__label {
+    transition: opacity 0.2s linear;
+    transition-delay: 0s;
+    transform: none !important;
+  }
+  .srail__flash { animation: none; opacity: 1; transform: translateX(-50%); }
+  .srail--in .srail__row + .srail__row::before,
+  .srail--in .srail__cap { transition: none; }
+  .srail--in .srail__row::after { transition: none; }
+}
+
+html.motion-off .srail,
+html.motion-off .srail__row {
+  transition: opacity 0.2s linear;
+  transition-delay: 0s;
+  transform: none !important;
+}
+html.motion-off .srail__flash { animation: none; opacity: 1; transform: translateX(-50%); }
+html.motion-off .srail--in .srail__row + .srail__row::before,
+html.motion-off .srail--in .srail__cap { transition: none; }
+html.motion-off .srail--in .srail__row::after { transition: none; }

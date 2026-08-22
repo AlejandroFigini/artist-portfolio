@@ -206,7 +206,24 @@ export default function HomeFx() {
     )
     document.querySelectorAll('.anim-video').forEach((v) => pauseObserver.observe(v))
 
+    /* Red de seguridad para el autoplay denegado. El observer pide `play()` una
+       sola vez, al entrar en viewport; si el navegador lo rechaza (iOS en bajo
+       consumo, o política de autoplay antes de cualquier interacción) la promesa
+       se descarta y NADIE reintenta — el observer no vuelve a disparar sobre ese
+       elemento hasta que salga y vuelva a entrar. Un video ya visible al cargar
+       queda pausado para siempre y hay que tocarle el botón.
+       El primer gesto del visitante, en cualquier parte de la página, habilita la
+       reproducción: se aprovecha para reintentar sobre lo que esté en pantalla. */
+    const retryOnGesture = () => {
+      document.querySelectorAll<HTMLVideoElement>('.obs-video, .decor-video, .about-video').forEach((v) => {
+        const r = v.getBoundingClientRect()
+        if (v.paused && r.bottom > 0 && r.top < window.innerHeight) void v.play().catch(() => {})
+      })
+    }
+    document.addEventListener('pointerdown', retryOnGesture, { once: true, passive: true })
+
     return () => {
+      document.removeEventListener('pointerdown', retryOnGesture)
       playObserver.disconnect()
       pauseObserver.disconnect()
     }

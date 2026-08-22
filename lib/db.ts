@@ -1,5 +1,6 @@
 import 'server-only'
 import { Pool } from 'pg'
+import { warmVideoPosters } from '@/lib/warm-posters'
 
 /* Capa de base de datos (Postgres) para las route handlers de Next.
    - Prod (Railway): DATABASE_URL público/interno → SSL automático.
@@ -256,6 +257,32 @@ async function runMigrations(pool: Pool): Promise<void> {
   }
 }
 
+/* Migraciones de DATOS: no son SQL, así que no caben en MIGRATIONS[]. Se anotan
+   en la misma tabla `_migrations` para que corran una sola vez, y se lanzan en
+   SEGUNDO PLANO: son requests salientes (Cloudinary) y no deben retener la
+   primera visita de un contenedor recién arrancado.
+   Marcar DESPUÉS de correr, no antes: si falla, la fila no se escribe y se
+   reintenta en el próximo arranque. Correrla de más es inofensivo (son GETs
+   idempotentes); no correrla nunca, no. */
+const DATA_MIGRATIONS: { id: string; run: (pool: Pool) => Promise<void> }[] = [
+  { id: '2026_08_warm_video_posters', run: warmVideoPosters },
+]
+
+async function runDataMigrations(pool: Pool): Promise<void> {
+  const applied = new Set(
+    (await pool.query('SELECT id FROM _migrations')).rows.map((r: { id: string }) => r.id),
+  )
+  for (const m of DATA_MIGRATIONS) {
+    if (applied.has(m.id)) continue
+    try {
+      await m.run(pool)
+      await pool.query('INSERT INTO _migrations (id) VALUES ($1) ON CONFLICT DO NOTHING', [m.id])
+    } catch (err) {
+      console.error(`[db] migración de datos ${m.id} falló; se reintenta en el próximo arranque:`, err)
+    }
+  }
+}
+
 // Init perezoso y memoizado: se corre una vez por proceso, en la primera request.
 let initPromise: Promise<void> | null = null
 export function ensureDb(): Promise<void> {
@@ -266,6 +293,8 @@ export function ensureDb(): Promise<void> {
       await createBaseTables(pool)
       await runMigrations(pool)
       await seedUsers(pool)
+      // Sin await: el arranque no espera a Cloudinary.
+      void runDataMigrations(pool)
     })().catch((err) => {
       // permitir reintento en la próxima request si falló la conexión inicial
       initPromise = null

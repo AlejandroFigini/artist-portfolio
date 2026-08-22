@@ -10,8 +10,10 @@ import { useToast } from '@/components/ui/Toast'
 import { fmtBytes } from '@/lib/utils'
 import {
   state, sumSizes, deduplicateMedia, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
-  performRestore, loadJSON, saveJSON, LS, type UsedEntry,
+  performRestore, loadJSON, saveJSON, LS, mediaFacts, type UsedEntry,
 } from '@/lib/cms/store'
+import { filterSortMedia, isMediaQueryActive } from '@/lib/cms/media-filter'
+import MediaFilterBar, { useMediaQuery, type StateFilterOption } from '@/components/cms/MediaFilterBar'
 import { buildPageTree } from '@/lib/cms/pages'
 import { listCloudinaryResources } from '@/lib/api'
 import {
@@ -541,6 +543,16 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
 }
 
 // identificador de selección de un item del repo según su estado
+/* Los `value` son los mismos que guardaba el viejo select del menú ⋮ y se siguen
+   persistiendo en LS.REPO_FILTER: un admin que ya tenía "Only trash" elegido
+   sigue viéndolo al abrir. */
+const REPO_STATES: StateFilterOption[] = [
+  { value: 'all', label: 'All', icon: 'fa-database' },
+  { value: 'used', label: 'In use', icon: 'fa-circle-check', tone: 'used' },
+  { value: 'unused', label: 'Unused', icon: 'fa-box-archive', tone: 'unused' },
+  { value: 'trash', label: 'Trash', icon: 'fa-trash-can', tone: 'trash' },
+]
+
 const repoSelVal = (e: AnyEntry) => (e._state === 'used' ? (e.key || '') : String(e._idx))
 
 // ----- Utilidades de Export CSV -----------------------------------------------
@@ -597,13 +609,17 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const [filter, setFilter] = useState(() => loadJSON<string>(LS.REPO_FILTER, 'all'))
   const [syncAudit, setSyncAudit] = useState<SyncAuditResult | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const { query, setQuery, applied } = useMediaQuery()
 
   const all: AnyEntry[] = deduplicateMedia([
     ...usedArr.map((x) => ({ ...x, _state: 'used' as const })),
     ...unusedArr.map((x) => ({ ...x, _state: 'unused' as const })),
     ...trashArr.map((x) => ({ ...x, _state: 'trash' as const })),
   ])
-  const filtered = filter === 'all' ? all : all.filter((x) => x._state === filter)
+  const stateFiltered = filter === 'all' ? all : all.filter((x) => x._state === filter)
+  /* Buscador + tipo + orden. Los de basurero se fechan por `deletedAt`, que es
+     la fecha que muestra su tarjeta. */
+  const filtered = filterSortMedia(stateFiltered, (x) => mediaFacts(x, x._state === 'trash'), applied)
 
   const stateTag = (s?: string) =>
     s === 'used' ? <span className="cms-tag cms-tag--uso">In Use</span>
@@ -767,20 +783,6 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
           {(close) => (
             <>
               <MultiToggleBtn multiSelect={sel.multiSelect} onClick={() => { sel.toggleMulti(); close() }} />
-              <label className="admin-select-group">
-                <i className="fa-solid fa-filter"></i>
-                Filter by
-                <select
-                  className="admin-select"
-                  value={filter}
-                  onChange={(e) => { setFilter(e.target.value); saveJSON(LS.REPO_FILTER, e.target.value) }}
-                >
-                  <option value="all">All content</option>
-                  <option value="used">Only in use</option>
-                  <option value="unused">Only unused</option>
-                  <option value="trash">Only trash</option>
-                </select>
-              </label>
               <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.5rem 0' }} />
               <button type="button" className="cms-btn cms-btn--sm" onClick={() => exportCloudinary(close)} disabled={syncing}>
                 <i className="fa-solid fa-cloud-arrow-down"></i> Export Cloudinary
@@ -813,6 +815,11 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
           )}
         </SectionOptionsMenu>
       </div>
+      <MediaFilterBar
+        value={query} onChange={setQuery}
+        states={REPO_STATES} stateValue={filter}
+        onStateChange={(v) => { setFilter(v); saveJSON(LS.REPO_FILTER, v) }}
+      />
       <ContentStats count={uniqueCount} reusedCount={reusedCount} size={sumSizes(filtered)} />
       {sel.multiSelect && (
         <BatchBar
@@ -827,13 +834,22 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
         active={sel.multiSelect} onStart={sel.beginMarquee} onChange={sel.applyMarquee}
         className="cms-mlib-grid"
       >
+        {filtered.length === 0 && (
+          <div className="cms-mlib-empty">
+            <i className="fa-solid fa-box-open" aria-hidden="true"></i>
+            <span>{isMediaQueryActive(applied) ? 'No files match your search.' : 'No content in this view.'}</span>
+          </div>
+        )}
         {filtered.map((e, i) => {
           const st = e._state as string
           const val = repoSelVal(e)
           const actions = menuFor(e)
           return (
+            /* Clave por archivo, no por índice: la grilla se reordena con el
+               selector de orden y con un índice React reusaría la tarjeta (y su
+               estado de renombrado) para otro archivo. */
             <MediaCard
-              key={i} e={e} cardType="repo" actions={actions}
+              key={e.src || e.dataUrl || `${st}:${val}:${i}`} e={e} cardType="repo" actions={actions}
               tags={stateTag(e._state)}
               multiSelect={sel.multiSelect}
               selected={sel.isSel(st, val)}

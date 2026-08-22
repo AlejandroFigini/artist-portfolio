@@ -11,9 +11,12 @@ import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb, isGalleryAsset } from '@/lib/utils'
 import {
-  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState, isDeferredMediaKey,
+  state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState, isDeferredMediaKey, mediaFacts,
 } from '@/lib/cms/store'
+import { filterSortMedia, isMediaQueryActive } from '@/lib/cms/media-filter'
+import MediaFilterBar, { useMediaQuery, type StateFilterOption } from '@/components/cms/MediaFilterBar'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
+import { isSettingsMediaKey } from '@/lib/settings'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields,
   syncWaveGroups, refreshTools, refreshContainerLabel,
@@ -123,11 +126,14 @@ type RepoPickerProps = {
   onSuccess?: () => void
 }
 
-const FILTERS = [
-  { value: 'all', label: 'Repository', icon: 'fa-database', colorClass: 'cms-filter-repo' },
-  { value: 'usado', label: 'In use', icon: 'fa-circle-check', colorClass: 'cms-filter-used' },
-  { value: 'sin usar', label: 'Unused', icon: 'fa-box-archive', colorClass: 'cms-filter-unused' },
-] as const
+/* Sin "Basurero" a propósito: el picker NUNCA ofrece contenido borrado.
+   Asignarlo a un contenedor lo des-borraría por la puerta de atrás, y el
+   siguiente vaciado de papelera destruiría bytes que la web está pidiendo. */
+const PICKER_STATES: StateFilterOption[] = [
+  { value: 'all', label: 'All', icon: 'fa-database' },
+  { value: 'usado', label: 'In use', icon: 'fa-circle-check', tone: 'used' },
+  { value: 'sin usar', label: 'Unused', icon: 'fa-box-archive', tone: 'unused' },
+]
 
 export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps) {
   const toast = useToast()
@@ -137,6 +143,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
   const [verifying, setVerifying] = useState(false)
+  const { query, setQuery, applied } = useMediaQuery()
 
   const [all, setAll] = useState<RepoEntry[]>([])
   const [loadingDb, setLoadingDb] = useState(true)
@@ -257,18 +264,14 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   }, [])
 
   if (!meta) return null
-  const filteredRaw = filter === 'all' ? all : all.filter((e) => e._state === filter)
-  const filtered = [...filteredRaw].sort((a, b) => {
-    const aCompat = (a.kind === 'video') === isVideoSlot ? 0 : 1
-    const bCompat = (b.kind === 'video') === isVideoSlot ? 0 : 1
-    if (aCompat !== bCompat) return aCompat - bCompat
-    if (filter === 'all') {
-      const aState = a._state === 'sin usar' ? 0 : 1
-      const bState = b._state === 'sin usar' ? 0 : 1
-      if (aState !== bState) return aState - bState
-    }
-    return (b.ts || 0) - (a.ts || 0)
-  })
+  const byState = filter === 'all' ? all : all.filter((e) => e._state === filter)
+  const searched = filterSortMedia(byState, (e) => mediaFacts(e), applied)
+  /* Lo incompatible con el contenedor baja al final, bajo su propia cabecera.
+     `Array.sort` es estable, así que dentro de cada grupo se conserva el orden
+     que eligió el admin en la barra. */
+  const filtered = [...searched].sort(
+    (a, b) => (((a.kind === 'video') === isVideoSlot ? 0 : 1) - ((b.kind === 'video') === isVideoSlot ? 0 : 1)),
+  )
 
   const performAssign = (moveFromOld: boolean) => {
     if (!selected) return
@@ -309,11 +312,13 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
       // Colección con manager abierto (guardado diferido): preview local; el
       // contenido se persiste recién en el commit (Save) del manager.
       emit()
-    } else if (cmsKey !== 'loader.gallop' && cmsKey !== 'settings.faviconUrl') {
+    } else if (!isSettingsMediaKey(cmsKey)) {
       // Guardado ACOTADO a la clave asignada (no el estado entero): inmune a un
       // ítem problemático del estado que tumbaría el POST completo.
       persistOverrideKeys([cmsKey]).catch(() => toast('Network error while syncing with server', 'error'))
     } else {
+      // Media de ajustes: vista previa local; persiste con el botón Guardar
+      // de su tarjeta (SETTINGS_MEDIA_CARDS, lib/settings.ts).
       emit()
     }
 
@@ -383,17 +388,11 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
           <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
           <div className="cms-meta-line"><strong>Container:</strong> <span style={{ opacity: 0.85 }}>{meta.label}</span></div>
         </div>
-        <div className="cms-repo-filter-bar" style={{ flexShrink: 0 }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.value} type="button"
-              className={`cms-repo-filter-btn ${f.colorClass}${filter === f.value ? ' active' : ''}`}
-              onClick={() => { setFilter(f.value); setSelected(null) }}
-            >
-              <i className={`fa-solid ${f.icon}`}></i> {f.label}
-            </button>
-          ))}
-        </div>
+        <MediaFilterBar
+          value={query} onChange={setQuery} compact
+          states={PICKER_STATES} stateValue={filter}
+          onStateChange={(v) => { setFilter(v as typeof filter); setSelected(null) }}
+        />
         {selected && (() => {
           const occCount = selected.src ? Object.values(state.usedContent).filter(u => u.src === selected.src).length : 0
           const ts = selected.ts
@@ -438,7 +437,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
             </div>
           )
         })()}
-        <div className="cms-repo-grid-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0, border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem 0.85rem', background: 'var(--bg-primary)' }}>
+        <div className="cms-repo-grid-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0, border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem 0.85rem', background: 'var(--bg-primary)' }} data-lenis-prevent>
           {loadingDb ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
               <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--accent)' }}></i>
@@ -449,7 +448,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               {filtered.length === 0 && (
                 <div className="cms-repo-empty">
                   <i className="fa-solid fa-box-open" style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'block', color: 'var(--accent)' }}></i>
-                  No content available of this type.
+                  {isMediaQueryActive(applied) ? 'No files match your search.' : 'No content available of this type.'}
                 </div>
               )}
               {filtered.map((entry, i) => {
@@ -457,7 +456,9 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
               const prevCompat = i > 0 && (filtered[i - 1].kind === 'video') === isVideoSlot
               const showHeader = !isCompat && (i === 0 || prevCompat)
               return (
-                <Fragment key={i}>
+                /* Clave por archivo: la grilla se reordena desde la barra y con
+                   un índice React reusaría el nodo para otro contenido. */
+                <Fragment key={entry.src || `${entry._state}:${i}`}>
                   {showHeader && (
                     <div style={{ gridColumn: '1 / -1', marginTop: i > 0 ? '0.8rem' : 0, paddingTop: i > 0 ? '0.8rem' : 0, borderTop: i > 0 ? '1px dashed var(--border)' : 'none', color: 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <i className="fa-solid fa-ban" style={{ color: '#ef4444' }}></i>

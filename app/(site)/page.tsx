@@ -3,8 +3,10 @@ import ReactDOM from 'react-dom'
 import HomeFx from '@/components/home/HomeFx'
 import HeroSlideshow from '@/components/home/Slideshow'
 import Hero from '@/components/home/Hero'
+import SectionRail from '@/components/home/SectionRail'
 import { getHeroPreloadServer } from '@/lib/hero-server'
-import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
+import { getSiteSettingsServer } from '@/lib/site-server'
+import { mediaSrcSet, optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 
 /* Todo lo que está abajo del fold va por `next/dynamic`. No es por el peso
    total —el HTML se sigue renderizando en el server, así que el contenido está
@@ -46,15 +48,24 @@ function preloadHeroImage(src: string, sizes: string, priority: boolean) {
 }
 
 export default async function HomePage() {
-  const hero = await getHeroPreloadServer()
+  const [hero, settings] = await Promise.all([getHeroPreloadServer(), getSiteSettingsServer()])
   preloadHeroImage(hero.panel, PANEL_SIZES, true)
   preloadHeroImage(hero.backdrop, BACKDROP_SIZES, false)
+
+  /* Póster de la pantalla de carga. Es lo PRIMERO que se ve del sitio y es un
+     <video>: hasta que decodifica su primer frame el recuadro pinta negro. El
+     póster tapa ese hueco, pero el <video> vive dentro de Providers (body), así
+     que su descarga arranca recién cuando el parser llega ahí y compite con
+     prioridad baja. Pedido desde el <head> y en alta, sale con la primera ola.
+     Solo en la portada: es la única ruta donde el loader se muestra. */
+  const loaderPoster = videoPosterSrc(settings.loaderVideo)
+  if (loaderPoster) ReactDOM.preload(loaderPoster, { as: 'image', fetchPriority: 'high' })
 
   return (
     <>
       <HomeFx />
       <HeroSlideshow />
-      <main>
+      <main className="feed-main">
         <Hero />
         <AboutSection />
         <AnimationsShowcase />
@@ -63,6 +74,7 @@ export default async function HomePage() {
         <ModelsShowcase />
         <IllustrationsShowcase />
       </main>
+      <SectionRail />
     </>
   )
 }

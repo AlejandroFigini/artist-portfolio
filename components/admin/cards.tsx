@@ -6,7 +6,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, cloudinaryThumb } from '@/lib/utils'
-import { state, getFormat, getContainerMeta, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { state, getFormat, getContainerMeta, mediaFacts, type UnusedEntry, type UsedEntry } from '@/lib/cms/store'
+import { useMediaRename, MediaRenameEditor, MediaRenamePencil } from './RenameMedia'
 
 /** Nombre de archivo sin su extensión (para el título de la tarjeta). */
 const stripExt = (name?: string) => (name ? name.replace(/\.[^./\\]+$/, '') : '')
@@ -122,15 +123,15 @@ export function MediaCard({ e, cardType, tags, actions, occurrences, multiSelect
   
   const srcKey = e.src ? e.src.split('?')[0].split('#')[0] : null
   const mm = (srcKey ? (state.mediaMeta[srcKey] || state.mediaMeta[e.src as string]) : null) || (e.key ? state.mediaMeta[e.key] : null)
-  let ts = cardType === 'trash' ? e.deletedAt : (e.ts ?? mm?.ts)
-
-  if (!ts && e.src && typeof e.src === 'string' && e.src.includes('/upload/v')) {
-    const match = e.src.match(/\/upload\/v(\d{10,})\//)
-    if (match && match[1]) {
-      ts = parseInt(match[1], 10) * 1000
-    }
-  }
+  /* Misma resolución de fecha que usa el orden de la grilla: si acá se muestra
+     una fecha, "Newest first" tiene que ordenar por esa. */
+  const ts = mediaFacts(e, cardType === 'trash').ts || undefined
   const size = e.size ?? mm?.size
+
+  /* Renombrar archivo: solo desde el Repositorio (el resto de los apartados
+     gestionan el ciclo de vida, no el asset). */
+  const rename = useMediaRename(e)
+  const canEditName = cardType === 'repo'
 
   // Título = nombre del archivo sin extensión; el nombre completo y el formato
   // van como datos. "Contenedor" = a qué contenedor pertenece (vacío si a ninguno).
@@ -154,6 +155,7 @@ export function MediaCard({ e, cardType, tags, actions, occurrences, multiSelect
       onClick={(ev) => {
         const t = ev.target as HTMLElement
         if (t.closest('.cms-mlib-actions') || t.closest('.cms-multi-check') || t.closest('.cms-info-tip')) return
+        if (t.closest('.cms-rename-file') || t.closest('.cms-rename-file-btn')) return
         onView()
       }}
     >
@@ -172,9 +174,16 @@ export function MediaCard({ e, cardType, tags, actions, occurrences, multiSelect
       </div>
       <div className="cms-mlib-info">
         <div className="cms-mlib-label" style={{ color: 'var(--accent)' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={title}>
-            {title}
-          </span>
+          {canEditName && rename.editing ? (
+            <MediaRenameEditor rename={rename} />
+          ) : (
+            <>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '0 1 auto', minWidth: 0 }} title={title}>
+                {title}
+              </span>
+              {canEditName && <MediaRenamePencil rename={rename} />}
+            </>
+          )}
         </div>
         <div className="cms-mlib-meta">
           <div className="cms-mlib-meta-truncate"><strong>Name:</strong> <span title={e.name || mm?.name || '—'}>{e.name || mm?.name || '—'}</span></div>

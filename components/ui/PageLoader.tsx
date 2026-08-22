@@ -22,7 +22,7 @@ import {
   startLoaderGateTimers,
   subscribeLoaderGates,
 } from '@/lib/loader-ready'
-import { optimizedMediaSrc, attachMediaRetry } from '@/lib/utils'
+import { optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
 
 const FADE_MS = 800
 // Mínimo que la animación de carga se queda en pantalla una vez pintada.
@@ -76,7 +76,9 @@ export default function PageLoader() {
   useEffect(() => {
     const v = videoRef.current
     if (!v || !videoSrc) return
-    v.muted = true // el atributo se sirve en el HTML; la propiedad es la que evalúa play()
+    /* El HTML del server sale con `muted=""` pero React borra el atributo al
+       hidratar, y iOS mira el atributo para decidir si permite el autoplay. */
+    keepVideoMuted(v)
     // Retry si la derivada de Cloudinary (transcode) todavía no está lista → sin
     // video negro; fallback al original (videoSrc) si sigue fallando.
     attachMediaRetry(v, videoSrc)
@@ -84,9 +86,14 @@ export default function PageLoader() {
     tryPlay()
     v.addEventListener('loadeddata', tryPlay)
     v.addEventListener('canplay', tryPlay)
+    /* Último recurso: si el navegador denegó igual (bajo consumo en iOS), el
+       primer toque en cualquier parte de la pantalla de carga lo arranca. Sin
+       esto la animación se queda congelada en su primer frame toda la espera. */
+    document.addEventListener('pointerdown', tryPlay, { once: true, passive: true })
     return () => {
       v.removeEventListener('loadeddata', tryPlay)
       v.removeEventListener('canplay', tryPlay)
+      document.removeEventListener('pointerdown', tryPlay)
     }
   }, [videoSrc])
 
@@ -249,6 +256,11 @@ export default function PageLoader() {
               // React-controlled (no pasa por engine.ts), así que se aplica
               // acá aparte.
               src={optimizedMediaSrc(videoSrc) || undefined}
+              /* El <src> llega recién al hidratar y desde ahí hay que descargar
+                 y decodificar: sin póster el recuadro se ve NEGRO ese rato, que
+                 es justo el arranque del sitio. El póster es una imagen chica y
+                 se pinta enseguida. */
+              poster={videoPosterSrc(videoSrc) || undefined}
               autoPlay loop muted playsInline preload="auto"
             ></video>
             <div className="loader-media-glow"></div>
