@@ -11,6 +11,7 @@ import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
 import { COLLECTIONS, collectionOf, fixedSlotKeys } from '@/lib/cms/collections'
 import { readSettings, allKeysOf } from '@/lib/cms/collection'
 import type { MediaFacts } from '@/lib/cms/media-filter'
+import { isNonMediaSettingsKey } from '@/lib/settings'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -756,6 +757,8 @@ export async function verifySingleUrl(url: string): Promise<boolean> {
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {
   if (!entry || !entry.src) return
+  // Ajuste de texto (duración del loader, nombre del CV…): no es un archivo.
+  if (isNonMediaSettingsKey(entry.key || '')) return
   const id = entry.src
   const otherUses = Object.values(state.usedContent).filter(u => u.src === id && u.key !== entry.key && !ignoreKeys.includes(u.key))
   if (otherUses.length === 0) {

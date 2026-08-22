@@ -17,7 +17,7 @@ import {
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
-import { SETTINGS_MEDIA_CARDS, isSettingsMediaKey } from '@/lib/settings'
+import { SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey } from '@/lib/settings'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
 import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
@@ -757,7 +757,22 @@ export function computeFields(key: string, el: HTMLElement, meta: Meta): FieldVa
 export function seedUsedContent() {
   let changed = false
   const allKeys = new Set([...Object.keys(elementsByKey), ...getAllKnownContainerKeys()])
+
+  /* Ajustes que no son media (settings.loaderDuration, settings.cvName…): su
+     valor es texto, nunca un archivo. Se purgan de los tres índices porque una
+     entrada vieja se realimentaba (unused → clave conocida → seed → al cambiar
+     el valor, el anterior volvía a "sin usar"). */
+  Object.keys(state.usedContent).forEach((key) => {
+    if (isNonMediaSettingsKey(key)) { delete state.usedContent[key]; changed = true }
+  })
+  const dropNonMedia = <T extends { key?: string }>(arr: T[]) => arr.filter((e) => !isNonMediaSettingsKey(e.key || ''))
+  const unusedClean = dropNonMedia(state.unused)
+  if (unusedClean.length !== state.unused.length) { state.unused = unusedClean; persistUnused(); changed = true }
+  const trashClean = dropNonMedia(state.trash)
+  if (trashClean.length !== state.trash.length) { state.trash = trashClean; persistTrash(); changed = true }
+
   allKeys.forEach((key) => {
+    if (isNonMediaSettingsKey(key)) return
     // Una clave retirada PERO con contenido no es un slot vacío: se siembra igual
     // (mismo criterio que el reconcile de refreshRetired). Sin esto, un contenedor
     // que quedó marcado retired con contenido —p.ej. el favicon— no aparecía en

@@ -54,3 +54,10 @@ export function loaderDurationMs(raw: string): number {
   if (!Number.isFinite(secs) || secs <= 0) return 1200
   return Math.min(Math.max(secs, 0.5), 15) * 1000
 }
+
+/* Ajuste que NO es media (duración del loader, nombre del CV…). El índice de
+   contenidos trata cualquier clave desconocida como imagen, así que sin este
+   filtro el valor crudo ("3") se sembraba como archivo y cada cambio de valor
+   mandaba el anterior a "sin usar". */
+export const isNonMediaSettingsKey = (key: string): boolean =>
+  key.startsWith('settings.') && !isSettingsMediaKey(key)
