@@ -99,6 +99,16 @@ export default function SectionRail() {
     }
   }, [])
 
+  /* Marca en <html> que la barra inferior está ocupando el pie de pantalla.
+     La tuerca de ajustes vive ahí abajo también y comparte franja con ella en
+     móvil, así que se sube mientras el riel está a la vista (ver el media
+     query de styles/section-rail.css). */
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('srail-on', visible)
+    return () => root.classList.remove('srail-on')
+  }, [visible])
+
   const goTo = useCallback((selector: string) => {
     const el = document.querySelector(selector)
     if (el) scrollToElement(el, isReduced())

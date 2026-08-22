@@ -333,6 +333,29 @@
   .srail__flash { display: none; }
 }
 
+/* --- Convivencia con la tuerca de ajustes ---
+   En móvil la barra del riel se apoya en el pie de pantalla, justo donde vive
+   la tuerca (bottom: 30px, 45px de alto). Las dos son `position: fixed` y en
+   pantallas angostas se pisan; además Chrome móvil corre el viewport al
+   retraer su barra de herramientas y las junta todavía más. Mientras el riel
+   está a la vista, la tuerca (y su panel) suben por encima de la etiqueta.
+   `.srail-on` lo pone SectionRail. */
+@media (max-width: 1023px) {
+  html.srail-on .settings-gear { bottom: 5.75rem; }
+  html.srail-on .settings-panel { bottom: calc(5.75rem + 55px); }
+  /* Se repiten las transiciones propias de cada uno: declarar solo `bottom`
+     pisaría las del retiro de la tuerca (esta hoja va después del legacy). */
+  .settings-gear {
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.35s ease, visibility 0.35s,
+                bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .settings-panel {
+    transition: opacity 0.3s ease, transform 0.3s ease,
+                bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 /* --- Margen lateral de la portada ---
    El riel no se lleva una franja propia: vive dentro del margen derecho, que
    crece de forma SIMÉTRICA para dejarle lugar. Los frames de sección calculan
