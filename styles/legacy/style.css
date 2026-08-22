@@ -1391,11 +1391,43 @@ footer {
 .settings-panel--admin {
     left: 85px;
 }
+/* --- Movil: tuerca compacta y pegada a la esquina ---
+   El pie de la pantalla ya carga con el menu; la tuerca de 45px a 30px de los
+   bordes competia con el. Se achica y se arrima al vertice. Las medidas van en
+   variables porque el panel y la segunda tuerca se posicionan a partir de
+   ellas: tocar el tamano no puede desalinearlos. */
+@media (max-width: 992px) {
+    :root {
+        --gear-size: 34px;
+        --gear-inset: 12px;
+        /* separacion entre la tuerca y lo que se apoya en ella */
+        --gear-gap: 8px;
+    }
+
+    .settings-gear {
+        width: var(--gear-size);
+        height: var(--gear-size);
+        bottom: var(--gear-inset);
+        left: var(--gear-inset);
+        font-size: 0.9rem;
+    }
+
+    .settings-panel {
+        bottom: calc(var(--gear-inset) + var(--gear-size) + var(--gear-gap));
+        left: var(--gear-inset);
+    }
+
+    .settings-gear--admin,
+    .settings-panel--admin {
+        left: calc(var(--gear-inset) + var(--gear-size) + var(--gear-gap));
+    }
+}
+
 @media (max-width: 600px) {
     /* En pantallas chicas, la tuerca admin va a la esquina derecha para no
        solaparse ni desbordar con el panel general. */
-    .settings-gear--admin { left: auto; right: 30px; }
-    .settings-panel--admin { left: auto; right: 30px; }
+    .settings-gear--admin { left: auto; right: var(--gear-inset, 30px); }
+    .settings-panel--admin { left: auto; right: var(--gear-inset, 30px); }
 }
 
 /* La tuerca no acompaña a la portada: sobra sobre el hero y entra al llegar a
