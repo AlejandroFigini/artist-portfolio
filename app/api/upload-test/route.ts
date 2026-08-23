@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   try {
     form = await req.formData()
   } catch {
-    return NextResponse.json({ error: 'Se esperaba multipart/form-data' }, { status: 400 })
+    return NextResponse.json({ error: 'Expected multipart/form-data' }, { status: 400 })
   }
 
   const file = form.get('file')
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const mediaState = String(form.get('mediaState') || '') as 'used' | 'unused' | 'trash' | ''
 
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: 'Falta el archivo' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing file' }, { status: 400 })
   }
 
   const isVideo = file.type.startsWith('video/')

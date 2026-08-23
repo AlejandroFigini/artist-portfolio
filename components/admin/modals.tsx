@@ -492,28 +492,34 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
 
 // ----- Subida directa (sección "Subir contenido") --------------------------------------
 
+type QueueItem = { file: File; name: string }
+type UploadOk = UploadResponse & { original_name: string; isVid: boolean }
+type UploadFail = { name: string; error: string }
+
+/* Cuántos resultados muestran vista previa. Con lotes grandes (90 archivos)
+   montar un <video>/<img> por resultado tira el navegador abajo. */
+const PREVIEW_LIMIT = 3
+
 export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[] }) {
-  const [phase, setPhase] = useState<'form' | 'uploading' | 'done' | 'error'>('form')
-  const [results, setResults] = useState<(UploadResponse & { original_name: string; isVid: boolean })[]>([])
-  const [errorMsg, setErrorMsg] = useState('')
+  const [phase, setPhase] = useState<'form' | 'uploading' | 'done'>('form')
+  const [results, setResults] = useState<UploadOk[]>([])
+  const [failures, setFailures] = useState<UploadFail[]>([])
   const [progressIndex, setProgressIndex] = useState(0)
 
-  // Track the editable base name for each file
-  const [fileNames, setFileNames] = useState<string[]>(() => files.map(f => getFileBasename(f.name)))
+  /* La cola es editable: archivo + nombre base viajan juntos para que sacar un
+     ítem no desalinee los nombres con los archivos. */
+  const [queue, setQueue] = useState<QueueItem[]>(() =>
+    files.map((f) => ({ file: f, name: getFileBasename(f.name) })))
 
-  // Check duplicates for each file against repo and other files in the same batch
+  // Un duplicado por ítem: contra el repositorio y contra el resto del lote.
   const duplicates = useMemo(() => {
-    return files.map((f, i) => {
-      const rawName = fileNames[i].trim() || getFileBasename(f.name)
-      const finalName = ensureExtension(rawName, f.name)
-      const nameLower = finalName.toLowerCase()
-      // Check against repo
-      const inRepo = Object.values(state.usedContent).some(u => u.name?.toLowerCase() === nameLower) || state.unused.some(u => u.name?.toLowerCase() === nameLower)
-      // Check against other files in the same batch
-      const inBatch = fileNames.findIndex((fn, j) => {
-        if (j === i) return false
-        return ensureExtension(fn.trim() || getFileBasename(files[j].name), files[j].name).toLowerCase() === nameLower
-      }) !== -1
+    const finalNameOf = (q: QueueItem) =>
+      ensureExtension(q.name.trim() || getFileBasename(q.file.name), q.file.name).toLowerCase()
+    return queue.map((q, i) => {
+      const nameLower = finalNameOf(q)
+      const inRepo = Object.values(state.usedContent).some((u) => u.name?.toLowerCase() === nameLower)
+        || state.unused.some((u) => u.name?.toLowerCase() === nameLower)
+      const inBatch = queue.some((other, j) => j !== i && finalNameOf(other) === nameLower)
       return inRepo || inBatch
     })
     /* state.usedContent y state.unused se REASIGNAN en el store (no solo se
@@ -521,37 +527,47 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
        dejaría la lista de duplicados desactualizada tras un guardado. El
        linter no puede saberlo porque viven fuera del componente. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files, fileNames, state.usedContent, state.unused])
+  }, [queue, state.usedContent, state.unused])
 
-  const hasAnyDuplicate = duplicates.some(d => d)
+  const dupCount = duplicates.filter(Boolean).length
+  const hasAnyDuplicate = dupCount > 0
 
-  const handleNameChange = (index: number, newName: string) => {
-    const newNames = [...fileNames]
-    newNames[index] = newName
-    setFileNames(newNames)
-  }
+  const handleNameChange = (index: number, newName: string) =>
+    setQueue((prev) => prev.map((q, i) => (i === index ? { ...q, name: newName } : q)))
 
+  // Sacar el último ítem deja la cola vacía → no hay nada que subir, se cierra.
+  const dropWhere = (drop: (index: number) => boolean) =>
+    setQueue((prev) => {
+      const next = prev.filter((_, i) => !drop(i))
+      if (next.length === 0) onClose()
+      return next
+    })
+
+  const removeAt = (index: number) => dropWhere((i) => i === index)
+  const removeDuplicates = () => dropWhere((i) => duplicates[i])
+
+  /* Un archivo que falla NO corta el lote: se anota y sigue. Antes un 400 en el
+     archivo 40 dejaba 39 subidos sin persistir y sin forma de saber cuáles. */
   const doUpload = () => {
     void (async () => {
       setPhase('uploading')
-      setErrorMsg('')
-      const uploaded: (UploadResponse & { original_name: string; isVid: boolean })[] = []
-      
-      try {
-        for (let i = 0; i < files.length; i++) {
-          setProgressIndex(i + 1)
-          const file = files[i]
-          const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
-          const rawName = fileNames[i].trim() || getFileBasename(file.name)
-          const finalName = ensureExtension(rawName, file.name)
+      const uploaded: UploadOk[] = []
+      const failed: UploadFail[] = []
+
+      for (let i = 0; i < queue.length; i++) {
+        setProgressIndex(i + 1)
+        const { file, name } = queue[i]
+        const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
+        const finalName = ensureExtension(name.trim() || getFileBasename(file.name), file.name)
+        try {
           const data = await uploadMedia(file, finalName, 'Direct uploads', 'unused')
-          
+
           // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
           const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
           hist.unshift({ ...data, origSize: file.size, origType: file.type, originalName: finalName, ts: Date.now() })
           if (hist.length > 3) hist.length = 3
           saveJSON(LS.UPLOAD_TEST, hist)
-          
+
           // entra al repositorio como "sin usar"
           state.unused.push({
             src: data.secure_url, dataUrl: data.secure_url, name: finalName, size: data.final_bytes,
@@ -560,61 +576,71 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
           })
           recordMediaMeta('', data.secure_url, { name: finalName, size: data.final_bytes, type: isVid ? 'video/webm' : 'image/webp', label: finalName, section: 'Direct uploads' })
           uploaded.push({ ...data, original_name: finalName, isVid })
+          /* Persistir archivo a archivo (el store lo debouncea): si el lote se
+             interrumpe, lo ya subido queda registrado en el repositorio. */
+          persistUnused()
+        } catch (err: unknown) {
+          failed.push({ name: finalName, error: err instanceof Error ? err.message : String(err) })
         }
-        
-        persistUnused()
-        emit()
-        setResults(uploaded)
-        setPhase('done')
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err)
-        setErrorMsg(msg)
-        setPhase('error')
       }
+
+      persistUnused()
+      emit()
+      setResults(uploaded)
+      setFailures(failed)
+      setPhase('done')
     })()
     return false as const
   }
+
+  const totalBytes = queue.reduce((acc, q) => acc + q.file.size, 0)
 
   const actions =
     phase === 'form'
       ? [
           { label: 'Cancel', onClick: () => {} },
-          { label: files.length > 1 ? `Compress and upload ${files.length} files` : 'Compress and upload to Cloudinary', primary: true, disabled: hasAnyDuplicate, onClick: doUpload },
+          {
+            label: queue.length > 1 ? `Compress and upload ${queue.length} files` : 'Compress and upload to Cloudinary',
+            primary: true,
+            disabled: hasAnyDuplicate,
+            title: hasAnyDuplicate ? 'Rename the duplicated files, or remove them from the queue' : undefined,
+            onClick: doUpload,
+          },
         ]
       : phase === 'uploading'
         ? []
-        : [{ label: phase === 'done' ? 'Close and update' : 'Close', primary: true, onClick: () => {} }]
+        : [{ label: 'Close and update', primary: true, onClick: () => {} }]
 
   return (
     <CmsModal title="Upload New Content" wide locked={phase === 'uploading'} onClose={onClose} actions={actions}>
       {phase === 'form' && (
         <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)' }}>
-          {files.length === 1 ? (
+          {queue.length === 1 ? (
             <>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>File name</label>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <input type="text" className="cms-field" value={fileNames[0]}
+                  <input type="text" className="cms-field" value={queue[0].name}
                     onChange={(e) => handleNameChange(0, e.target.value)}
-                    style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(files[0].name) ? 0 : 8, borderBottomRightRadius: getFileExtension(files[0].name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
-                  {getFileExtension(files[0].name) && (
+                    style={{ flex: 1, width: '100%', padding: '0.6rem', borderRadius: 8, borderTopRightRadius: getFileExtension(queue[0].file.name) ? 0 : 8, borderBottomRightRadius: getFileExtension(queue[0].file.name) ? 0 : 8, border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
+                  {getFileExtension(queue[0].file.name) && (
                     <span style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-primary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 8px 8px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
-                      {getFileExtension(files[0].name)}
+                      {getFileExtension(queue[0].file.name)}
                     </span>
                   )}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <div><strong>Size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(files[0].size)}</span></div>
-                <div><strong>Content type:</strong> {files[0].type.includes('video') ? 'Video' : 'Image'}</div>
-                <div><strong>Format:</strong> {files[0].type || 'File'}</div>
+                <div><strong>Size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(queue[0].file.size)}</span></div>
+                <div><strong>Content type:</strong> {queue[0].file.type.includes('video') ? 'Video' : 'Image'}</div>
+                <div><strong>Format:</strong> {queue[0].file.type || 'File'}</div>
               </div>
               {hasAnyDuplicate && (
                 <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
                   <div>
                     <strong style={{ display: 'block', marginBottom: '0.2rem' }}>Name already in use</strong>
-                    There is already a file with this exact name in the repository. Please rename the file above to avoid conflicts.
+                    There is already a file with this exact name in the repository. Rename it above, or cancel the upload.
                   </div>
                 </div>
               )}
@@ -622,36 +648,56 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
           ) : (
             <>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.6rem' }}>
-                  <i className="fa-solid fa-layer-group" style={{ color: 'var(--accent)', marginRight: '0.4rem' }}></i>
-                  {files.length} files selected for upload:
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <i className="fa-solid fa-layer-group" style={{ color: 'var(--accent)', marginRight: '0.4rem' }}></i>
+                    {queue.length} files queued for upload:
+                  </label>
+                  {hasAnyDuplicate && (
+                    <button type="button" className="cms-btn cms-btn--sm" onClick={removeDuplicates}
+                      style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}>
+                      <i className="fa-solid fa-broom" style={{ marginRight: '0.35rem' }}></i>
+                      Remove {dupCount} duplicate{dupCount > 1 ? 's' : ''}
+                    </button>
+                  )}
+                </div>
                 <div style={{ maxHeight: '350px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.8rem', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }} data-lenis-prevent>
-                  {files.map((f, i) => {
+                  {queue.map((q, i) => {
                     const isDup = duplicates[i]
-                    const ext = getFileExtension(f.name)
+                    const ext = getFileExtension(q.file.name)
                     return (
-                      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingBottom: '0.6rem', borderBottom: i < files.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                      <div key={`${q.file.name}-${q.file.lastModified}-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingBottom: '0.6rem', borderBottom: i < queue.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
                           <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
-                            <i className={`fa-solid ${f.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
+                            <i className={`fa-solid ${q.file.type.includes('video') ? 'fa-film' : 'fa-image'}`} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}></i>
                             File {i + 1}
                           </span>
-                          <span style={{ fontFamily: 'var(--font-mono), monospace', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(f.size)}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span style={{ fontFamily: 'var(--font-mono), monospace', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{fmtBytes(q.file.size)}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeAt(i)}
+                              title="Remove from the upload queue"
+                              aria-label={`Remove ${q.name || q.file.name} from the upload queue`}
+                              style={{ background: 'transparent', border: 'none', color: isDup ? '#ef4444' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.95rem', lineHeight: 1, padding: '0.15rem 0.3rem' }}
+                            >
+                              <i className="fa-solid fa-xmark"></i>
+                            </button>
+                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <input type="text" className="cms-field" value={fileNames[i]}
+                          <input type="text" className="cms-field" value={q.name}
                             onChange={(e) => handleNameChange(i, e.target.value)}
-                            style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
+                            style={{ flex: 1, width: '100%', padding: '0.4rem 0.6rem', borderRadius: 6, borderTopRightRadius: ext ? 0 : 6, borderBottomRightRadius: ext ? 0 : 6, border: `1px solid ${isDup ? '#ef4444' : 'var(--border)'}`, background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem' }} />
                           {ext && (
-                            <span style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
+                            <span style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)', borderWidth: '1px 1px 1px 0', borderStyle: 'solid', borderColor: isDup ? '#ef4444' : 'var(--border)', borderRadius: '0 6px 6px 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', userSelect: 'none' }}>
                               {ext}
                             </span>
                           )}
                         </div>
                         {isDup && (
                           <span style={{ color: '#ef4444', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <i className="fa-solid fa-triangle-exclamation"></i> Duplicate name
+                            <i className="fa-solid fa-triangle-exclamation"></i> Already in the repository — rename it, or remove it with the ×
                           </span>
                         )}
                       </div>
@@ -660,14 +706,14 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                 </div>
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <strong>Total size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(files.reduce((acc, f) => acc + f.size, 0))}</span>
+                <strong>Total size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(totalBytes)}</span>
               </div>
               {hasAnyDuplicate && (
                 <div style={{ padding: '0.75rem', marginTop: '1rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: '0.2rem' }}></i>
                   <div>
-                    <strong style={{ display: 'block', marginBottom: '0.2rem' }}>Duplicate names detected</strong>
-                    Some files conflict with existing ones in the repository (or with each other). Please rename the highlighted files above to avoid conflicts.
+                    <strong style={{ display: 'block', marginBottom: '0.2rem' }}>{dupCount} duplicate name{dupCount > 1 ? 's' : ''} detected</strong>
+                    Those files already exist in the repository (or clash with each other in this batch). Rename them, or drop them from the queue with the × so only the new ones are uploaded.
                   </div>
                 </div>
               )}
@@ -680,39 +726,61 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
         <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
           <i className="fa-solid fa-circle-notch fa-spin fa-3x" style={{ color: 'var(--accent)' }}></i>
           <h3 style={{ marginTop: '1rem', color: 'var(--text-primary)' }}>
-            {files.length > 1 ? `Uploading file ${progressIndex} of ${files.length}...` : 'Uploading and compressing...'}
+            {queue.length > 1 ? `Uploading file ${progressIndex} of ${queue.length}...` : 'Uploading and compressing...'}
           </h3>
           <p className="cms-admin-sub">This may take a few seconds depending on file size.</p>
         </div>
       )}
-      {phase === 'done' && results.length > 0 && (
+      {phase === 'done' && (
         <div style={{ padding: '1.5rem', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', maxHeight: '65vh', overflowY: 'auto' }} data-lenis-prevent>
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <i className="fa-solid fa-cloud-arrow-up" style={{ color: 'var(--accent)' }}></i>{' '}
-            {results.length > 1 ? `${results.length} files uploaded successfully` : 'Upload successful'}
+            {results.length === 1 ? 'Upload successful' : `${results.length} files uploaded successfully`}
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+          {failures.length > 0 && (
+            <div style={{ padding: '0.9rem', marginBottom: '1.5rem', background: 'color-mix(in srgb, #ef4444 15%, transparent)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontSize: '0.85rem' }}>
+              <strong style={{ display: 'block', marginBottom: '0.4rem' }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '0.4rem' }}></i>
+                {failures.length} file{failures.length > 1 ? 's' : ''} failed and stayed out of the repository
+              </strong>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                {failures.map((f, i) => (
+                  <li key={i}><span style={{ fontFamily: 'var(--font-mono), monospace' }}>{f.name}</span> — {f.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: results.length > PREVIEW_LIMIT ? '0.4rem' : '1.5rem' }}>
             {results.map((result, i) => (
-              <div key={i} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>
-                  <div><strong style={{ color: 'var(--text-primary)' }}>File:</strong> {result.original_name}</div>
-                  <div><strong style={{ color: 'var(--text-primary)' }}>Final size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(result.final_bytes)}</span></div>
-                  <div><strong style={{ color: 'var(--text-primary)' }}>Format:</strong> {result.final_format}</div>
-                </div>
-                {result.isVid ? (
-                  <video src={result.secure_url} controls style={{ maxWidth: '100%', maxHeight: '30vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+              <div key={i} style={{ background: 'var(--bg-primary)', padding: results.length > PREVIEW_LIMIT ? '0.5rem 0.75rem' : '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                {results.length > PREVIEW_LIMIT ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <i className={`fa-solid ${result.isVid ? 'fa-film' : 'fa-image'}`} style={{ marginRight: '0.5rem' }}></i>
+                      {result.original_name}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono), monospace', flexShrink: 0 }}>{fmtBytes(result.final_bytes)}</span>
+                  </div>
                 ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={result.secure_url} alt="Upload" style={{ maxWidth: '100%', maxHeight: '30vh', objectFit: 'contain', borderRadius: 8, display: 'block', margin: '0 auto' }} />
+                  <>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>
+                      <div><strong style={{ color: 'var(--text-primary)' }}>File:</strong> {result.original_name}</div>
+                      <div><strong style={{ color: 'var(--text-primary)' }}>Final size:</strong> <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{fmtBytes(result.final_bytes)}</span></div>
+                      <div><strong style={{ color: 'var(--text-primary)' }}>Format:</strong> {result.final_format}</div>
+                    </div>
+                    {result.isVid ? (
+                      <video src={result.secure_url} controls preload="none" style={{ maxWidth: '100%', maxHeight: '30vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={result.secure_url} alt="Upload" loading="lazy" style={{ maxWidth: '100%', maxHeight: '30vh', objectFit: 'contain', borderRadius: 8, display: 'block', margin: '0 auto' }} />
+                    )}
+                  </>
                 )}
               </div>
             ))}
           </div>
-        </div>
-      )}
-      {phase === 'error' && (
-        <div style={{ color: '#ef4444', padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>
-          <i className="fa-solid fa-circle-exclamation"></i> Error: {errorMsg}
         </div>
       )}
     </CmsModal>
