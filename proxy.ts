@@ -170,7 +170,19 @@ export default function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Matchear todo excepto archivos estáticos y optimización de imágenes
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|uploads/).*)',
+    /* Matchear todo excepto archivos estáticos y optimización de imágenes.
+
+       `api/upload-test` queda AFUERA a propósito. Con un proxy montado, Next
+       clona el body y lo bufferea en memoria para poder leerlo dos veces; el
+       tope de ese buffer (`proxyClientMaxBodySize`) son 10 MB por defecto y al
+       pasarse NO falla: entrega el body TRUNCADO al handler. Un archivo de más
+       de 10 MB llegaba como un multipart cortado y reventaba `req.formData()`.
+       Sacar la ruta del matcher evita el buffer entero — el archivo va derecho
+       al handler en streaming, sin copia en memoria.
+
+       Lo que se pierde acá se cubre en otro lado: los security headers los
+       aplica igual `next.config.ts` (source '/(.*)'), y el acceso lo corta
+       `requireRole` dentro del propio handler, antes de leer un solo byte. */
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|uploads/|api/upload-test).*)',
   ],
 }
