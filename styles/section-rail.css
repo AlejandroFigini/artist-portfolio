@@ -341,12 +341,18 @@
    está a la vista, la tuerca (y su panel) suben por encima de la etiqueta.
    `.srail-on` lo pone SectionRail. */
 @media (max-width: 1023px) {
-  html.srail-on .settings-gear { bottom: 5.75rem; }
-  html.srail-on .settings-panel { bottom: calc(5.75rem + var(--gear-size, 45px) + var(--gear-gap, 10px)); }
+  html.srail-on .settings-gear,
+  html.srail-on .settings-dock { bottom: 5.75rem; }
+  html.srail-on .settings-panel { bottom: calc(5.75rem + var(--dock-h, 45px) + var(--gear-gap, 10px)); }
   /* Se repiten las transiciones propias de cada uno: declarar solo `bottom`
      pisaría las del retiro de la tuerca (esta hoja va después del legacy). */
   .settings-gear {
     transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.35s ease, visibility 0.35s,
+                bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .settings-dock {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
                 opacity 0.35s ease, visibility 0.35s,
                 bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }

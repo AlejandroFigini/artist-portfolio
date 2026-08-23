@@ -7,7 +7,7 @@
    vivo vía setSettings tras guardar en Ajustes → Gestión. */
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { EMPTY_SETTINGS, SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
+import { EMPTY_SETTINGS, SETTINGS_KEYS, ANIM_FIELDS, ANIM_EVERY_FIELDS, animKey, type AnimEveryField, type AnimField, type SiteSettings } from '@/lib/settings'
 import { syncSettingsUsedContent } from '@/components/cms/engine'
 
 const SiteSettingsContext = createContext<{
@@ -29,7 +29,8 @@ function fromLocalOverrides(): Partial<SiteSettings> {
     if (ov[SETTINGS_KEYS.cvName]) res.cvName = ov[SETTINGS_KEYS.cvName]
     if (ov[SETTINGS_KEYS.faviconUrl]) res.faviconUrl = ov[SETTINGS_KEYS.faviconUrl]
     if (ov[SETTINGS_KEYS.appleIconUrl]) res.appleIconUrl = ov[SETTINGS_KEYS.appleIconUrl]
-    if (ov[SETTINGS_KEYS.navAnimUrl]) res.navAnimUrl = ov[SETTINGS_KEYS.navAnimUrl]
+    ANIM_FIELDS.forEach((f) => { if (ov[animKey(f)]) res[f] = ov[animKey(f)] })
+    ANIM_EVERY_FIELDS.forEach((f) => { if (ov[animKey(f)]) res[f] = ov[animKey(f)] })
     return res
   } catch {
     return {}
@@ -97,7 +98,8 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
             cvName: d.cvName || '',
             faviconUrl: d.faviconUrl || '',
             appleIconUrl: d.appleIconUrl || '',
-            navAnimUrl: d.navAnimUrl || '',
+            ...(Object.fromEntries(ANIM_FIELDS.map((f) => [f, d[f] || ''])) as Record<AnimField, string>),
+            ...(Object.fromEntries(ANIM_EVERY_FIELDS.map((f) => [f, d[f] || ''])) as Record<AnimEveryField, string>),
           })
         } else {
           const local = fromLocalOverrides()
@@ -113,7 +115,7 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
   useEffect(() => {
     syncSettingsUsedContent(settings)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when these specific fields change
-  }, [settings.loaderVideo, settings.faviconUrl, settings.appleIconUrl, settings.navAnimUrl])
+  }, [settings.loaderVideo, settings.faviconUrl, settings.appleIconUrl, ...ANIM_FIELDS.map((f) => settings[f])])
 
   useEffect(() => {
     applyFaviconToDOM(settings.faviconUrl || '', false)

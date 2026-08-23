@@ -667,7 +667,7 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
        sobrante queda fuera del clip. */
     overflow: hidden;
   }
-  .nav-anim-media {
+  .nav-anim-slot .decor-anim__media {
     display: block;
     width: 100%;
     height: calc(100% + 3px);

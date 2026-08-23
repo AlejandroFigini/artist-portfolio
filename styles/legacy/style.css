@@ -1391,43 +1391,127 @@ footer {
 .settings-panel--admin {
     left: 85px;
 }
-/* --- Movil: tuerca compacta y pegada a la esquina ---
-   El pie de la pantalla ya carga con el menu; la tuerca de 45px a 30px de los
-   bordes competia con el. Se achica y se arrima al vertice. Las medidas van en
-   variables porque el panel y la segunda tuerca se posicionan a partir de
-   ellas: tocar el tamano no puede desalinearlos. */
+/* --- La pestana solo existe en movil ---
+   En escritorio el contenedor desaparece como caja (`display: contents`) y las
+   tuercas conservan su `position: fixed` de siempre. */
+.settings-dock { display: contents; }
+.settings-dock__handle { display: none; }
+
+/* --- Movil: las tuercas se guardan detras de una flecha del borde ---
+   El pie de la pantalla ya carga con el menu; dos tuercas flotantes de 45px
+   competian con el. Ahora en reposo NO hay ningun icono: solo una flecha suelta
+   en el borde izquierdo, sin caja ni fondo. Al tocarla salen las tuercas.
+   El repliegue es UN solo `transform` sobre el contenedor (nada de animar
+   ancho): la flecha va en `left: 100%`, asi que cuando el contenedor se va a
+   -100% ella queda justo en el borde de la pantalla. */
 @media (max-width: 992px) {
     :root {
-        --gear-size: 34px;
-        --gear-inset: 12px;
+        /* La tuerca ya no esta a la vista en reposo (la tapa la flecha), asi
+           que puede respirar: mas grande y mas despegada del vertice. */
+        --gear-size: 42px;
+        --gear-inset: 18px;
         /* separacion entre la tuerca y lo que se apoya en ella */
         --gear-gap: 8px;
+        --dock-gap: 8px;
+        --dock-handle-w: 22px;
+        /* Alto de la zona replegable: es la tuerca sola, no hay caja alrededor.
+           El panel se apoya en el, asi que sale de aca y no de un numero suelto. */
+        --dock-h: var(--gear-size);
     }
 
-    .settings-gear {
+    /* Contenedor SIN chrome: no es una caja, solo agrupa lo que se repliega.
+       Todo lo visible en reposo es la flecha. */
+    .settings-dock {
+        display: flex;
+        align-items: center;
+        gap: var(--dock-gap);
+        position: fixed;
+        left: 0;
+        bottom: var(--gear-inset);
+        z-index: 1000;
+        /* Un pelo de aire para que la tuerca no quede pegada al borde. No mueve
+           la flecha: va anclada al lado derecho del contenedor, que se corre
+           entero al replegarse. */
+        padding: 0 0 0 10px;
+        background: none;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        transform: translateX(-100%);
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+                    opacity 0.35s ease, visibility 0.35s;
+    }
+
+    .settings-dock.is-open { transform: none; }
+
+    /* Flecha suelta, sin fondo ni borde. Va pegada al lado derecho del
+       contenedor: replegado queda apoyada en el borde de la pantalla; abierto,
+       al final de las tuercas. La caja de toque es mas alta que el glifo para
+       llegar a los 44px de area tactil. */
+    .settings-dock__handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        width: var(--dock-handle-w);
+        height: 44px;
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+        color: var(--accent);
+        font-size: 0.85rem;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .settings-dock__handle i {
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .settings-dock.is-open .settings-dock__handle i { transform: rotate(180deg); }
+
+    /* Las tuercas dejan de flotar: las coloca el flex del contenedor. Conservan
+       su sombra propia — sin caja detras, son ellas las que tienen que
+       despegarse del fondo. */
+    .settings-dock .settings-gear,
+    .settings-dock .settings-gear--admin {
+        position: static;
+        left: auto;
+        right: auto;
+        bottom: auto;
         width: var(--gear-size);
         height: var(--gear-size);
-        bottom: var(--gear-inset);
-        left: var(--gear-inset);
-        font-size: 0.9rem;
+        font-size: 1.05rem;
+    }
+    /* El retiro por scroll lo maneja el contenedor entero: sin esto las tuercas
+       se ocultaban por dentro y quedaba la flecha sola sin nada que mostrar. */
+    .settings-dock .settings-gear.is-away {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
     }
 
-    .settings-panel {
-        bottom: calc(var(--gear-inset) + var(--gear-size) + var(--gear-gap));
-        left: var(--gear-inset);
-    }
-
-    .settings-gear--admin,
+    /* Los dos paneles cuelgan de la tuerca: mismo margen lateral que ella y
+       apoyados encima con un respiro. Conservan su caja original (ancho, borde
+       y radio del bloque general). */
+    .settings-panel,
     .settings-panel--admin {
-        left: calc(var(--gear-inset) + var(--gear-size) + var(--gear-gap));
+        left: var(--gear-inset);
+        right: auto;
+        bottom: calc(var(--gear-inset) + var(--dock-h) + var(--gear-gap));
     }
-}
 
-@media (max-width: 600px) {
-    /* En pantallas chicas, la tuerca admin va a la esquina derecha para no
-       solaparse ni desbordar con el panel general. */
-    .settings-gear--admin { left: auto; right: var(--gear-inset, 30px); }
-    .settings-panel--admin { left: auto; right: var(--gear-inset, 30px); }
+    /* `.is-away` va despues de `.is-open`: al retirarse sobre la portada o el
+       footer manda el repliegue, este abierta o no. */
+    .settings-dock.is-away {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateX(-100%);
+    }
 }
 
 /* La tuerca no acompaña a la portada: sobra sobre el hero y entra al llegar a
@@ -4369,6 +4453,12 @@ html.motion-off #animBlobCanvas {
 .wave-item .cms-empty-overlay:hover { background: rgba(124, 58, 237, 0.08); }
 .wave-item .cms-empty-overlay i     { font-size: 1rem; }
 .wave-item .cms-empty-overlay span  { display: none; }
+
+/* Cajas de rotación de Gestión: mismo marco punteado, pero sin lugar físico
+   para el nombre del contenedor (son de ~100px y el texto empujaba el icono
+   fuera de la caja). Misma excepción que los slots de icono chicos. */
+.anim-slot--compact .cms-empty-overlay i    { font-size: 1.4rem; }
+.anim-slot--compact .cms-empty-overlay span { display: none; }
 .wave-item.cms-empty-slot > *:not(.cms-empty-overlay) { visibility: visible !important; }
 
 /* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Float animation + stagger ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */
@@ -4596,3 +4686,81 @@ body.hide-cms-controls .cms-placeholder-inner {
 
 
 
+
+/* ============================================================
+   CONTENEDORES DE ANIMACIÓN DECORATIVA (settings.*AnimUrl)
+   Base común de <DecorAnim>: el archivo se adapta al contenedor, nunca al
+   revés. Cada slot define su caja abajo (o en su propia hoja, como
+   `.nav-anim-slot` en nav.css, que además recorta con `cover`).
+   ============================================================ */
+
+.decor-anim {
+  /* Decorado: nunca intercepta un click ni tapa un control. */
+  pointer-events: none;
+}
+
+/* Trae el archivo de la próxima vuelta de la rotación; no se pinta nunca. */
+.decor-anim__preload {
+  display: none;
+}
+
+.decor-anim__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `cover` en todos lados, igual que el decorado del drawer: los archivos son
+     apaisados (1920x1080) con el dibujo al medio y aire muerto a los costados.
+     Con `contain` esa franja vacía se pagaba en pantalla y el personaje quedaba
+     diminuto; recortándola, el mismo ancho de caja rinde ~33% más de dibujo.
+     Por eso las cajas son 4/3 y no 16/9: la diferencia es justo lo que se
+     recorta de los flancos. */
+  object-fit: cover;
+  background: transparent;
+}
+
+/* --- Panel de ajustes (la tuerca) ---------------------------------------
+   Cierra el panel debajo del selector de idioma, a todo el ancho de la caja.
+   Va en el flujo (el panel está anclado abajo y crece hacia arriba, así que no
+   desplaza ningún control) y el alto se topa contra el viewport para que en
+   una pantalla corta no empuje el panel fuera de la pantalla. */
+.settings-panel__anim {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 34vh;
+  margin-top: 0.9rem;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* --- Footer -------------------------------------------------------------
+   Hueco libre bajo la marca. Acá el contenedor SÍ va en el flujo: la columna
+   tiene aire de sobra y no hay nada debajo que desplazar. */
+.footer-anim {
+  align-self: flex-start;
+  width: clamp(160px, 80%, 260px);
+  aspect-ratio: 4 / 3;
+  /* Sube contra las burbujas de redes: la columna ya separa con `gap: 1.5rem` y
+     el decorado quedaba flotando en la mitad baja del footer. El margen negativo
+     come ese gap; el ancla arriba del media pega el dibujo al borde superior de
+     la caja en vez de dejarlo centrado. */
+  margin-top: -1.1rem;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.footer-anim .decor-anim__media { object-position: center top; }
+
+/* --- Formulario de contacto (modal + /contact) --------------------------
+   Cierre de la columna, justo encima de la línea de Turnstile. */
+.contact-anim {
+  width: clamp(150px, 65%, 260px);
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  /* El footer se centra en móvil (.footer-col { align-items: center }): el
+     decorado acompaña, como el botón del CV. */
+  .footer-anim { align-self: center; }
+}

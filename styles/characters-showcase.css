@@ -163,8 +163,9 @@
 .ch-showcase .sw-item {
   color: #475569;
 }
+/* Sin pastilla de fondo (ver software-dropdown.css): el feedback es el color
+   del nombre. Acá solo se ajusta el tono de la sección. */
 .ch-showcase .sw-item:hover {
-  background: #f3efff;
   color: #7c3aed;
 }
 

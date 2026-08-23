@@ -364,6 +364,16 @@
   line-height: 1.5;
 }
 
+/* La página no pelea por alto como el modal (ahí todo se comprime para que el
+   botón de enviar entre sin scroll): acá el mensaje y la animación recuperan
+   su tamaño. */
+.ct-form .contact-textarea {
+  min-height: 120px;
+}
+.ct-form .contact-anim {
+  width: clamp(140px, 34%, 200px);
+}
+
 /* Success state (inline) */
 .ct-form-success {
   display: flex;

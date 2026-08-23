@@ -8,6 +8,8 @@ import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { useUiText } from '@/lib/cms/store'
 import { sendGAEvent } from '@next/third-parties/google'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
+import DecorAnim from '@/components/ui/DecorAnim'
+import { animSources, animIntervalMs } from '@/lib/settings'
 
 const EXPLORE_LINKS = [
   { href: '/#presentacion', label: 'About me', i18n: 'nav_about' },
@@ -30,6 +32,16 @@ export default function Footer() {
           <h2 className="footer-name">Lucia <span>Montaña</span></h2>
           <p className="footer-role">{ui('footer_role')}</p>
           <FooterSocial />
+          {/* Hueco libre bajo la marca: acá el contenedor SÍ va en el flujo —
+              la columna es la que tiene aire de sobra y nada que desplazar.
+              Solo se anima con el footer en pantalla. */}
+          <DecorAnim
+            sources={animSources(settings, 'footerAnimUrl')}
+            className="footer-anim"
+            rotateOn="interval"
+            slot="footer"
+            intervalMs={animIntervalMs(settings.footerAnimEvery)}
+          />
         </div>
         <div className="footer-col links-col">
           <h3 className="footer-label">{ui('footer_exploration')}</h3>

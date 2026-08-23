@@ -93,7 +93,10 @@
     transform: translateY(0);
     border-color: color-mix(in srgb, var(--accent) 48%, transparent);
   }
-  .sw-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  /* Sin pastilla de fondo: el bloque de color competía con el decorado y
+     ensanchaba visualmente la fila. El feedback pasa al texto y al logo. */
+  .sw-item:hover .sw-name { color: var(--accent); }
+  .sw-item:hover .sw-icon { transform: scale(1.06); }
 }
 
 .sw-item {
@@ -102,8 +105,9 @@
   gap: 0.7rem;
   padding: 0.45rem 0.6rem;
   border-radius: 4px;
-  transition: background 0.2s ease;
 }
+.sw-name { transition: color 0.2s ease; }
+.sw-icon { transition: transform 0.2s ease; }
 .sw-icon-wrap { position: relative; flex-shrink: 0; }
 .sw-icon {
   display: flex;
@@ -124,6 +128,62 @@
   font-size: 0.95rem;
   color: var(--text-primary);
 }
+/* Decorado del panel (settings.softwareAnimUrl). Fila propia dentro de la
+   lista: en el flujo, así nunca tapa un item ni le roba el click. */
+.sw-anim-row {
+  padding: 0.35rem 0.6rem 0.15rem;
+}
+.sw-anim {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 6px;
+}
+/* Apilado (móvil) el ancho manda; al costado, el alto. */
+@media (min-width: 900px) {
+  .sw-anim {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+}
+
+/* Con lugar de sobra el decorado se acomoda AL COSTADO de los software, pero
+   DENTRO del panel: el panel se ensancha en vez de alargarse. Debajo de 900px
+   vuelve al pie, apilado, que es donde entra. */
+@media (min-width: 900px) {
+  /* La columna del decorado se reserva con padding y la fila se apoya ahi,
+     centrada. Con grid + `grid-row: 1 / -1` el `-1` cae al final de la grilla
+     EXPLICITA —que no existe, las filas son implicitas—, asi que el decorado se
+     quedaba con una fila propia y estiraba el panel 125px de mas. */
+  .sw-list:has(.sw-anim-row) {
+    padding-right: calc(clamp(150px, 17vw, 210px) + 0.95rem);
+    /* El ancho lo dicta el contenido: el nombre más largo + el decorado. Con un
+       `min-width` fijo el panel reservaba una franja muerta entre el texto y el
+       dibujo. */
+    min-width: 0;
+    width: max-content;
+    max-width: min(92vw, 500px);
+    /* Piso de alto: con dos o tres software el panel sería más bajo que el
+       decorado y no habría dónde apoyarlo. */
+    min-height: 150px;
+  }
+  /* Cada fila se ciñe a SU contenido: el resaltado del hover dejaba de terminar
+     donde termina el nombre y llegaba hasta el decorado, que se leía como un
+     bloque aparte y lejano. */
+  .sw-list:has(.sw-anim-row) > .sw-item { width: fit-content; }
+  /* De borde a borde del panel: el decorado toma todo el alto disponible y
+     `cover` recorta los flancos, que es donde vive el espacio muerto de estos
+     archivos. Mismo criterio que el decorado del panel de ajustes. */
+  .sw-anim-row {
+    position: absolute;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    right: 0.4rem;
+    width: clamp(150px, 17vw, 210px);
+    padding: 0;
+  }
+}
+
 /* Overlay de subida compacto para el logo (solo el ícono, sin etiqueta) */
 .sw-icon-wrap .cms-empty-overlay {
   border-radius: 7px;

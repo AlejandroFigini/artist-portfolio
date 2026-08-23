@@ -12,7 +12,7 @@ import {
   state, sumSizes, deduplicateMedia, moveUsedToUnused, moveUnusedToTrash, restoreTrashToUnused,
   performRestore, loadJSON, saveJSON, LS, mediaFacts, type UsedEntry,
 } from '@/lib/cms/store'
-import { filterSortMedia, isMediaQueryActive } from '@/lib/cms/media-filter'
+import { filterSortMedia, groupByMediaState, isMediaQueryActive } from '@/lib/cms/media-filter'
 import MediaFilterBar, { useMediaQuery, type StateFilterOption } from '@/components/cms/MediaFilterBar'
 import { buildPageTree } from '@/lib/cms/pages'
 import { listCloudinaryResources } from '@/lib/api'
@@ -619,7 +619,10 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
   const stateFiltered = filter === 'all' ? all : all.filter((x) => x._state === filter)
   /* Buscador + tipo + orden. Los de basurero se fechan por `deletedAt`, que es
      la fecha que muestra su tarjeta. */
-  const filtered = filterSortMedia(stateFiltered, (x) => mediaFacts(x, x._state === 'trash'), applied)
+  const searched = filterSortMedia(stateFiltered, (x) => mediaFacts(x, x._state === 'trash'), applied)
+  /* Con "All" los estados no se entreveran: sin usar → en uso → basurero. El
+     orden de la barra sigue mandando dentro de cada grupo. */
+  const filtered = filter === 'all' ? groupByMediaState(searched, (x) => x._state || '') : searched
 
   const stateTag = (s?: string) =>
     s === 'used' ? <span className="cms-tag cms-tag--uso">In Use</span>

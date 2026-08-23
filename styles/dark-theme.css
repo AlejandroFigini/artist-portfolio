@@ -192,7 +192,6 @@ body {
   color: var(--text-secondary);
 }
 [data-theme="dark"] .ch-showcase .sw-item:hover {
-  background: rgba(147, 133, 166, 0.08);
   color: var(--text-primary);
 }
 

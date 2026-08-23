@@ -17,6 +17,8 @@ import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { sendGAEvent } from '@next/third-parties/google'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
+import DecorAnim from '@/components/ui/DecorAnim'
+import { animSources } from '@/lib/settings'
 
 const LS_MOTION = 'cms_motion_off_v1'
 const LS_HIDE_CMS = 'cms_hide_controls_v1'
@@ -71,6 +73,11 @@ export default function SettingsPanel() {
   const [adminOpen, setAdminOpen] = useState(false)
   // true mientras la tuerca todavía no debe mostrarse (portada, en móvil)
   const [gearAway, setGearAway] = useState(false)
+  /* Pestaña del borde (solo ≤992px): cerrada solo asoma la lengueta; al
+     abrirla salen las tuercas. Un toque más abre el panel. En escritorio la
+     pestaña no existe (`display: contents`) y las tuercas flotan como siempre,
+     así que este estado no las afecta. */
+  const [dockOpen, setDockOpen] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [sectionClear, setSectionClear] = useState<{ label: string; keys: string[]; count: number } | null>(null)
   // lazy init: en SSR no hay window; en hidratación lee el tema que el boot
@@ -97,6 +104,7 @@ export default function SettingsPanel() {
   const gearRef = useRef<HTMLButtonElement>(null)
   const adminPanelRef = useRef<HTMLDivElement>(null)
   const adminGearRef = useRef<HTMLButtonElement>(null)
+  const dockRef = useRef<HTMLDivElement>(null)
 
   const uploadCv = async (file: File) => {
     if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
@@ -152,15 +160,18 @@ export default function SettingsPanel() {
   }, [])
 
   useEffect(() => {
-    if (!open && !adminOpen) return
+    if (!open && !adminOpen && !dockOpen) return
     const onClick = (e: MouseEvent) => {
       const t = e.target as Node
       if (open && !(panelRef.current?.contains(t) || gearRef.current?.contains(t))) setOpen(false)
       if (adminOpen && !(adminPanelRef.current?.contains(t) || adminGearRef.current?.contains(t))) setAdminOpen(false)
+      // La pestaña se repliega si el toque cae fuera de ella Y de los paneles
+      // que abrió (cerrarla con un panel abierto dejaría el panel huérfano).
+      if (dockOpen && !(dockRef.current?.contains(t) || panelRef.current?.contains(t) || adminPanelRef.current?.contains(t))) setDockOpen(false)
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
-  }, [open, adminOpen])
+  }, [open, adminOpen, dockOpen])
 
   // Retiro de la tuerca sobre la portada y sobre el footer (ver `gearAway`).
   useEffect(() => {
@@ -187,7 +198,7 @@ export default function SettingsPanel() {
           const away = beforeAbout || atFooter
           setGearAway(away)
           // si se retira con un panel abierto, el panel se va con ella
-          if (away) { setOpen(false); setAdminOpen(false) }
+          if (away) { setOpen(false); setAdminOpen(false); setDockOpen(false) }
           ticking = false
         })
         ticking = true
@@ -231,10 +242,42 @@ export default function SettingsPanel() {
 
   return (
     <>
-      {/* Tuerca general — visible para todos los usuarios */}
-      <button ref={gearRef} id="settings-toggle" className={`settings-gear${gearAway ? ' is-away' : ''}`} aria-label={ui('settings')} onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
-        <i className="fa-solid fa-gear"></i>
-      </button>
+      {/* Pestaña del borde izquierdo. En ≤992px es la única pieza visible con la
+          pestaña cerrada; en escritorio el contenedor es `display: contents` y
+          las tuercas vuelven a flotar por su cuenta. */}
+      <div ref={dockRef} className={`settings-dock${dockOpen ? ' is-open' : ''}${gearAway ? ' is-away' : ''}`}>
+        <button
+          type="button"
+          className="settings-dock__handle"
+          aria-label={ui('settings_tab')}
+          aria-expanded={dockOpen}
+          aria-controls="settings-toggle"
+          onClick={() => {
+            // Al replegar se van también los paneles: quedarían sueltos sin
+            // su tuerca a la vista.
+            setDockOpen((o) => { if (o) { setOpen(false); setAdminOpen(false) } return !o })
+          }}
+        >
+          <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </button>
+        {/* Tuerca general — visible para todos los usuarios */}
+        <button ref={gearRef} id="settings-toggle" className={`settings-gear${gearAway ? ' is-away' : ''}`} aria-label={ui('settings')} onClick={() => { setOpen((o) => !o); setAdminOpen(false) }}>
+          <i className="fa-solid fa-gear"></i>
+        </button>
+        {/* Tuerca admin — comparte la pestaña, solo con sesión iniciada */}
+        {state.isAdmin && (
+          <button
+            ref={adminGearRef}
+            id="admin-settings-toggle"
+            className={`settings-gear settings-gear--admin${gearAway ? ' is-away' : ''}`}
+            aria-label="Admin settings"
+            title="Admin settings"
+            onClick={() => { setAdminOpen((o) => !o); setOpen(false) }}
+          >
+            <i className="fa-solid fa-user-gear"></i>
+          </button>
+        )}
+      </div>
       <div ref={panelRef} id="settings-panel" className={`settings-panel${open ? '' : ' hidden'}${gearAway ? ' is-away' : ''}`}>
         <h3>{ui('settings')}</h3>
         <div className="setting-item">
@@ -254,7 +297,6 @@ export default function SettingsPanel() {
             <span className="slider round"></span>
           </label>
         </div>
-        <hr className="settings-divider" />
         <div className="setting-item">
           <span>{ui('curriculum_vitae')}</span>
           <a
@@ -288,22 +330,16 @@ export default function SettingsPanel() {
             </div>
           </div>
         </div>
+        {/* Cierre del panel, debajo del selector de idioma: en el flujo y a todo
+            el ancho de la caja. Corre mientras el panel está abierto. */}
+        <DecorAnim sources={animSources(settings, 'panelAnimUrl')} className="settings-panel__anim" active={open} rotateOn="toggle" />
       </div>
 
-      {/* Tuerca admin — solo logueado como admin. Lista settings exclusivos de admin.
-          Por ahora: Hide Edit actions + Clear All Content (con el tiempo se suman más). */}
+      {/* Panel admin — solo logueado como admin. Lista settings exclusivos de admin.
+          Por ahora: Hide Edit actions + Clear All Content (con el tiempo se suman más).
+          Su tuerca vive en la pestaña, arriba. */}
       {state.isAdmin && (
         <>
-          <button
-            ref={adminGearRef}
-            id="admin-settings-toggle"
-            className={`settings-gear settings-gear--admin${gearAway ? ' is-away' : ''}`}
-            aria-label="Admin settings"
-            title="Admin settings"
-            onClick={() => { setAdminOpen((o) => !o); setOpen(false) }}
-          >
-            <i className="fa-solid fa-user-gear"></i>
-          </button>
           <div ref={adminPanelRef} id="admin-settings-panel" className={`settings-panel settings-panel--admin${adminOpen ? '' : ' hidden'}${gearAway ? ' is-away' : ''}`}>
             <h3>Admin Settings</h3>
             <div className="setting-item">

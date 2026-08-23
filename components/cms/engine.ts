@@ -12,12 +12,15 @@ import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer, markItemsSynced, markIntentionalClear,
-  persistTrash, loadTextDefaults, recordTextDefaults
+  persistTrash, loadTextDefaults, recordTextDefaults, purgeNonMediaSettingsEntries
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
 import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
-import { SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey } from '@/lib/settings'
+import {
+  SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey,
+  ANIM_SLOTS, animFields, animKey, animLabel, animPreviewClass,
+} from '@/lib/settings'
 import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
 import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
@@ -185,7 +188,19 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'loader.gallop', sel: '.loader-gallop', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Loading Screen' },
   { base: 'settings.faviconUrl', sel: '.favicon-preview-img', kind: 'image', accept: 'png,ico,svg,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Page Favicon' },
   { base: 'settings.appleIconUrl', sel: '.apple-icon-preview-img', kind: 'image', accept: 'png,ico,jpg,webp', mount: 'parent', section: 'Site Settings', label: 'Search Engine Icon' },
-  { base: 'settings.navAnimUrl', sel: '.nav-anim-preview', kind: 'video', accept: 'webm', mount: 'parent', section: 'Site Settings', label: 'Menu Animation' },
+  /* Animaciones decorativas: 4 apartados x (principal + 3 de rotación). Salen
+     de ANIM_SLOTS para que agregar un apartado no obligue a tocar el REGISTRY. */
+  ...ANIM_SLOTS.flatMap((slot) =>
+    animFields(slot.base).map((field, i): RegistryEntry => ({
+      base: animKey(field),
+      sel: `.${animPreviewClass(slot, i)}`,
+      kind: 'video',
+      accept: 'webm',
+      mount: 'parent',
+      section: 'Site Settings',
+      label: animLabel(slot, i),
+    })),
+  ),
   { base: 'hero.marquee', sel: '.hero-software-wave .wave-item', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Hero', fields: WAVE_FIELDS, label: (el, i) => `Wave Tool #${(i % 11) + 1}` },
   { base: 'hero.subtitle', sel: '.hero-subtitle', kind: 'text', mount: 'self', section: 'Hero', label: 'Subtitle (below title) — Hero' },
   { base: 'soft.global', sel: '.global-soft-icons .soft-item', kind: 'image', accept: 'webp', mount: 'self', section: 'Animations', label: (el, i) => `Animation Stack Logo #${i + 1}` },
@@ -759,17 +774,10 @@ export function seedUsedContent() {
   const allKeys = new Set([...Object.keys(elementsByKey), ...getAllKnownContainerKeys()])
 
   /* Ajustes que no son media (settings.loaderDuration, settings.cvName…): su
-     valor es texto, nunca un archivo. Se purgan de los tres índices porque una
+     valor es texto, nunca un archivo. Se purgan de los índices porque una
      entrada vieja se realimentaba (unused → clave conocida → seed → al cambiar
      el valor, el anterior volvía a "sin usar"). */
-  Object.keys(state.usedContent).forEach((key) => {
-    if (isNonMediaSettingsKey(key)) { delete state.usedContent[key]; changed = true }
-  })
-  const dropNonMedia = <T extends { key?: string }>(arr: T[]) => arr.filter((e) => !isNonMediaSettingsKey(e.key || ''))
-  const unusedClean = dropNonMedia(state.unused)
-  if (unusedClean.length !== state.unused.length) { state.unused = unusedClean; persistUnused(); changed = true }
-  const trashClean = dropNonMedia(state.trash)
-  if (trashClean.length !== state.trash.length) { state.trash = trashClean; persistTrash(); changed = true }
+  if (purgeNonMediaSettingsEntries()) { persistUnused(); persistTrash(); changed = true }
 
   allKeys.forEach((key) => {
     if (isNonMediaSettingsKey(key)) return
@@ -919,12 +927,16 @@ export function cleanTemporaryKeys(keys: string[]) {
    como un contenedor más. Va como tabla porque el bloque era idéntico por
    ajuste y el tercero (Search Engine Icon) directamente faltaba: sin entrada
    acá, su archivo no aparecía nunca en Site Configuration. */
-const SETTINGS_MEDIA = [
+const SETTINGS_MEDIA: { field: string; key: string; label: string; kind: 'image' | 'video' }[] = [
   { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen', kind: 'video' },
   { field: 'faviconUrl', key: 'settings.faviconUrl', label: 'Favicon', kind: 'image' },
   { field: 'appleIconUrl', key: 'settings.appleIconUrl', label: 'Search Engine Icon', kind: 'image' },
-  { field: 'navAnimUrl', key: 'settings.navAnimUrl', label: 'Menu Animation', kind: 'video' },
-] as const
+  ...ANIM_SLOTS.flatMap((slot) =>
+    animFields(slot.base).map((field, i) => ({
+      field, key: animKey(field), label: animLabel(slot, i), kind: 'video' as const,
+    })),
+  ),
+]
 
 type SettingsMediaPatch = Partial<Record<(typeof SETTINGS_MEDIA)[number]['field'], string>>
 

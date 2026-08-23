@@ -16,7 +16,11 @@ import { saveContent, uploadMedia } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
-import { SETTINGS_KEYS, type SiteSettings } from '@/lib/settings'
+import {
+  SETTINGS_KEYS, ANIM_SLOTS, ANIM_FIELDS, ANIM_EVERY_FIELDS, ANIM_EVERY_DEFAULT,
+  animFields, animKey, animLabel, animPreviewClass,
+  type AnimSlot, type SiteSettings,
+} from '@/lib/settings'
 import SocialSettings from './SocialSettings'
 
 export const CV_MAX_BYTES = 10 * 1024 * 1024
@@ -35,7 +39,8 @@ function toItems(patch: Partial<SiteSettings>): Record<string, string> {
   if (patch.cvName !== undefined) items[SETTINGS_KEYS.cvName] = patch.cvName
   if (patch.faviconUrl !== undefined) items[SETTINGS_KEYS.faviconUrl] = patch.faviconUrl
   if (patch.appleIconUrl !== undefined) items[SETTINGS_KEYS.appleIconUrl] = patch.appleIconUrl
-  if (patch.navAnimUrl !== undefined) items[SETTINGS_KEYS.navAnimUrl] = patch.navAnimUrl
+  ANIM_FIELDS.forEach((f) => { if (patch[f] !== undefined) items[animKey(f)] = patch[f] as string })
+  ANIM_EVERY_FIELDS.forEach((f) => { if (patch[f] !== undefined) items[animKey(f)] = patch[f] as string })
   return items
 }
 
@@ -60,7 +65,17 @@ const SETTINGS_MEDIA_SYNC: SettingsMediaSync[] = [
   { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', name: 'video', kind: 'video', type: 'video/webm', imageAware: true, imageName: 'loader-image' },
   { field: 'faviconUrl', key: SETTINGS_KEYS.faviconUrl, label: 'Favicon (.favicon-preview-img)', name: 'favicon', kind: 'image', type: 'image/webp' },
   { field: 'appleIconUrl', key: SETTINGS_KEYS.appleIconUrl, label: 'Apple Touch Icon (.apple-icon-preview-img)', name: 'apple-icon', kind: 'image', type: 'image/webp' },
-  { field: 'navAnimUrl', key: SETTINGS_KEYS.navAnimUrl, label: 'Menu Animation (.nav-anim-preview)', name: 'menu-animation', kind: 'video', type: 'video/webm' },
+  // Animaciones: principal + rotación, generadas desde ANIM_SLOTS.
+  ...ANIM_SLOTS.flatMap((slot) =>
+    animFields(slot.base).map((field, i): SettingsMediaSync => ({
+      field,
+      key: animKey(field),
+      label: `${animLabel(slot, i)} (.${animPreviewClass(slot, i)})`,
+      name: animLabel(slot, i).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      kind: 'video',
+      type: 'video/webm',
+    })),
+  ),
 ]
 
 /* Persiste un patch de ajustes: POST /api/content (sube dataURLs → URLs),
@@ -106,7 +121,8 @@ export function useSaveSettings() {
       cvName: pick('cvName'),
       faviconUrl: pick('faviconUrl'),
       appleIconUrl: pick('appleIconUrl'),
-      navAnimUrl: pick('navAnimUrl'),
+      ...(Object.fromEntries(ANIM_FIELDS.map((f) => [f, pick(f)])) as Pick<SiteSettings, (typeof ANIM_FIELDS)[number]>),
+      ...(Object.fromEntries(ANIM_EVERY_FIELDS.map((f) => [f, pick(f)])) as Pick<SiteSettings, (typeof ANIM_EVERY_FIELDS)[number]>),
     }
     setSettings(final)
     if (typeof window !== 'undefined') {
@@ -469,81 +485,195 @@ export function AppleIconSettings() {
   )
 }
 
-// ----- Animación del menú (drawer móvil) -------------------------------------
+// ----- Animaciones decorativas -----------------------------------------------
 
-export function NavAnimSettings() {
+/* Una tarjeta por apartado (ANIM_SLOTS): la animación principal más hasta 3 de
+   rotación. Con solo la principal cargada el contenedor no rota; con más, va
+   cambiando —al cerrarse el panel, o por carga de página en el footer—. El
+   circuito de guardado es el de siempre: el archivo asignado vive en
+   `state.items` y viaja a la DB con el botón de la tarjeta, las cuatro claves
+   del apartado en un solo POST. */
+
+const CAPTION: React.CSSProperties = {
+  fontSize: '0.72rem',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: 'var(--muted)',
+  marginBottom: '0.5rem',
+}
+
+function AnimPreviewBox({ cmsKey, previewClass, src, size, compact }: {
+  cmsKey: string
+  previewClass: string
+  src: string
+  size: string
+  /** Caja chica: el marco vacío muestra solo el icono, sin el nombre. */
+  compact?: boolean
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const preview = useVideoPreview(videoRef)
+  return (
+    <div
+      className={`site-setting-media${compact ? ' anim-slot--compact' : ''}`}
+      style={{
+        position: 'relative',
+        width: size,
+        aspectRatio: '1 / 1',
+        borderRadius: '14px',
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        border: src ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+        cursor: 'pointer',
+      }}
+      onClick={() => triggerContentPicker(cmsKey)}
+      {...preview}
+    >
+      <video
+        ref={videoRef}
+        data-cms-key={cmsKey}
+        className={previewClass}
+        src={src || undefined}
+        loop
+        muted
+        playsInline
+        style={{ width: '100%', height: '100%', objectFit: 'contain', display: src ? 'block' : 'none', pointerEvents: 'none' }}
+      />
+    </div>
+  )
+}
+
+function AnimSettingsCard({ slot }: { slot: AnimSlot }) {
   useCmsStore()
   const { settings } = useSiteSettings()
   const save = useSaveSettings()
   const [saving, setSaving] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const preview = useVideoPreview(videoRef)
 
-  const currentAnim = state.items[SETTINGS_KEYS.navAnimUrl] !== undefined
-    ? state.items[SETTINGS_KEYS.navAnimUrl]
-    : (settings.navAnimUrl || '')
-  const isChanged = currentAnim !== (settings.navAnimUrl || '')
+  const fields = animFields(slot.base)
+  /* `state.items` (lo asignado y todavía sin guardar) manda sobre lo persistido. */
+  const values = fields.map((f) => {
+    const key = animKey(f)
+    return state.items[key] !== undefined ? state.items[key] : (settings[f] || '')
+  })
+  /* Apartados que rotan por reloj: el intervalo es un ajuste de texto más y
+     viaja en el mismo Guardar que los archivos. */
+  const everyField = 'everyField' in slot ? slot.everyField : null
+  const savedEvery = everyField ? (settings[everyField] || '') : ''
+  const [every, setEvery] = useState(savedEvery)
+  /* Resincroniza el input cuando cambia lo persistido (otro guardado, o la
+     carga de /api/site). Ajuste EN RENDER, no en un efecto: el efecto dispara
+     un render en cascada y React lo desaconseja para estado derivado. */
+  const [everyBase, setEveryBase] = useState(savedEvery)
+  if (everyBase !== savedEvery) {
+    setEveryBase(savedEvery)
+    setEvery(savedEvery)
+  }
+  const isChanged = fields.some((f, i) => values[i] !== (settings[f] || '')) || every !== savedEvery
+  const loaded = values.filter(Boolean).length
+  const signature = values.join('|')
 
   useEffect(() => {
     indexEditables()
     attachEditControls()
-    if (!currentAnim) {
-      showEmptySlot(SETTINGS_KEYS.navAnimUrl)
-    } else {
-      const parent = elementsByKey[SETTINGS_KEYS.navAnimUrl]?.parentElement
+    fields.forEach((f, i) => {
+      const key = animKey(f)
+      if (!values[i]) {
+        showEmptySlot(key)
+        return
+      }
+      const parent = elementsByKey[key]?.parentElement
       if (parent) {
         parent.classList.remove('cms-empty-slot')
         parent.querySelector('.cms-empty-overlay')?.remove()
       }
-      refreshTools(SETTINGS_KEYS.navAnimUrl)
-    }
-  }, [currentAnim])
+      refreshTools(key)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `signature` resume los 4 valores
+  }, [signature, slot.base])
 
   const onSaveConfiguration = async () => {
     setSaving(true)
-    await save({ navAnimUrl: currentAnim }, 'Menu animation updated')
+    await save(
+      {
+        ...Object.fromEntries(fields.map((f, i) => [f, values[i]])),
+        ...(everyField ? { [everyField]: every } : {}),
+      } as Partial<SiteSettings>,
+      `${slot.label} updated`,
+    )
     setSaving(false)
   }
 
+  const rotationHelp = slot.rotateOn === 'interval'
+    ? 'Extra clips rotate on a timer while the animation is on screen, and each page load starts on a different one. With only the main one loaded, nothing rotates.'
+    : slot.rotateOn === 'load'
+      ? 'Extra clips rotate on every page load. With only the main one loaded, nothing rotates.'
+      : 'Extra clips rotate every time the panel closes, so the next one is already loaded when it opens again. With only the main one loaded, nothing rotates.'
+
   return (
-    <div className="admin-card" id="ajustes-nav-anim">
+    <div className="admin-card" id={slot.cardId}>
       <div className="admin-card-head">
-        <h2><i className="fa-solid fa-wand-magic-sparkles"></i> Menu Animation
-          <span className="cms-info-tip" tabIndex={0} aria-label="Decorative WebM video with a transparent background. It sits in the bottom-right corner of the mobile menu, plays once every time the menu opens, and never moves the menu options.">
+        <h2><i className={`fa-solid ${slot.icon}`}></i> {slot.label}
+          <span className="cms-info-tip" tabIndex={0} aria-label={rotationHelp}>
             <i className="fa-solid fa-circle-info"></i>
-            <span className="cms-info-bubble" role="tooltip" style={{ width: 280 }}>Decorative WebM video with a transparent background. It sits in the bottom-right corner of the mobile menu, plays once every time the menu opens, and never moves the menu options.</span>
+            <span className="cms-info-bubble" role="tooltip" style={{ width: 300 }}>{rotationHelp}</span>
           </span>
         </h2>
       </div>
-      <p className="cms-admin-sub">Mobile menu decorative animation</p>
-      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
-        <div
-          className="site-setting-media"
-          style={{
-            position: 'relative',
-            width: 'clamp(160px, 24vw, 200px)',
-            aspectRatio: '1 / 1',
-            borderRadius: '14px',
-            overflow: 'hidden',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
-            border: currentAnim ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-            cursor: 'pointer',
-          }}
-          onClick={() => triggerContentPicker(SETTINGS_KEYS.navAnimUrl)}
-          {...preview}
-        >
-          <video
-            ref={videoRef}
-            data-cms-key={SETTINGS_KEYS.navAnimUrl}
-            className="nav-anim-preview"
-            src={currentAnim || undefined}
-            loop
-            muted
-            playsInline
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: currentAnim ? 'block' : 'none', pointerEvents: 'none' }}
+      <p className="cms-admin-sub">{slot.sub}</p>
+      <div className="site-setting-row" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+        <div>
+          <div style={CAPTION}>Main</div>
+          <AnimPreviewBox
+            cmsKey={animKey(fields[0])}
+            previewClass={animPreviewClass(slot, 0)}
+            src={values[0]}
+            size="clamp(160px, 24vw, 200px)"
           />
         </div>
-        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div>
+          <div style={CAPTION}>
+            Rotation
+            <span style={{ marginLeft: '0.4rem', opacity: 0.7, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+              {loaded > 1 ? `${loaded} clips in rotation` : 'off'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {fields.slice(1).map((f, i) => (
+              <AnimPreviewBox
+                key={f}
+                cmsKey={animKey(f)}
+                previewClass={animPreviewClass(slot, i + 1)}
+                src={values[i + 1]}
+                size="clamp(84px, 11vw, 104px)"
+                compact
+              />
+            ))}
+          </div>
+        </div>
+        <div className="site-setting-fields" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {everyField && (
+            <div>
+              <div style={CAPTION}>Rotate every</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="number"
+                  min={3}
+                  max={300}
+                  step={1}
+                  className="social-input"
+                  value={every}
+                  placeholder={String(ANIM_EVERY_DEFAULT)}
+                  onChange={(e) => setEvery(e.target.value)}
+                  style={{ maxWidth: 90 }}
+                />
+                <i className="fa-solid fa-clock" style={{ color: '#a78bfa', fontSize: '1.1rem' }}></i>
+                <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>seconds</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.35rem' }}>
+                Empty → {ANIM_EVERY_DEFAULT}s. Allowed range: 3–300s.
+              </div>
+            </div>
+          )}
           <div>
             <button
               type="button"
@@ -551,13 +681,17 @@ export function NavAnimSettings() {
               onClick={onSaveConfiguration}
               disabled={!isChanged || saving}
             >
-              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save animation'}
+              <i className="fa-solid fa-floppy-disk"></i> {saving ? 'Saving…' : 'Save animations'}
             </button>
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+export function AnimationSettings() {
+  return <>{ANIM_SLOTS.map((slot) => <AnimSettingsCard key={slot.id} slot={slot} />)}</>
 }
 
 // ----- 3) Curriculum (CV) ----------------------------------------------------
@@ -711,7 +845,7 @@ export default function SiteSettings() {
       <LoaderSettings />
       <FaviconSettings />
       <AppleIconSettings />
-      <NavAnimSettings />
+      <AnimationSettings />
       <SocialSettings />
       <CvSettings />
       <TranslationSettings />

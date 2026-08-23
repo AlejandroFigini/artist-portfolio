@@ -138,6 +138,7 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Settings panel (visitor)
   settings: { en: 'Settings', es: 'Ajustes', pt: 'Configurações', fr: 'Paramètres' },
+  settings_tab: { en: 'Settings tab', es: 'Pestaña de ajustes', pt: 'Aba de configurações', fr: 'Onglet des paramètres' },
   dark_mode: { en: 'Dark Mode', es: 'Modo oscuro', pt: 'Modo escuro', fr: 'Mode sombre' },
   pause_animations: { en: 'Pause animations', es: 'Pausar animaciones', pt: 'Pausar animações', fr: 'Mettre en pause les animations' },
   curriculum_vitae: { en: 'Curriculum Vitae', es: 'Curriculum Vitae', pt: 'Curriculum Vitae', fr: 'Curriculum Vitae' },

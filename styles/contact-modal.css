@@ -4,24 +4,37 @@
    (violeta/cyan, bordes técnicos, micro-animaciones).
    ============================================================ */
 
-/* Modal sizing — más ancho que los modales estándar del CMS */
+/* Modal sizing — más ancho que los modales estándar del CMS.
+   `max-height` propio (los demás modales del CMS se quedan con el suyo): el
+   objetivo es que el formulario entre entero, con el botón de enviar a la
+   vista, sin scroll interno. */
 .cms-modal.contact-modal {
   width: min(520px, calc(100% - 2rem));
+  max-height: 94vh;
+}
+/* El tope real lo pone el envoltorio interno (86vh en admin.css) y adentro
+   viven 1.7rem de padding: los dos recortan el alto disponible del formulario.
+   Solo se aflojan para este modal. */
+.cms-modal.contact-modal .cms-modal-inner {
+  max-height: 94vh;
+  padding: 1.2rem 1.4rem;
 }
 
 /* ── Form layout ──────────────────────────────────────────── */
 
+/* Ritmo comprimido a propósito: son 5 campos + captcha + botón y el formulario
+   tiene que caber sin scroll en una laptop de 800px de alto. */
 .contact-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.65rem;
 }
 
 .contact-form-intro {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  margin: 0 0 0.3rem;
-  line-height: 1.5;
+  margin: 0;
+  line-height: 1.45;
 }
 
 /* ── Estructura ─────────────────────────────────────────────── */
@@ -74,7 +87,7 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
 .contact-field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .contact-label-row {
@@ -126,7 +139,7 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
 
 .contact-input {
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  padding: 0.5rem 0.8rem;
   font-family: var(--font);
   font-size: 0.9rem;
   color: var(--text-primary, #1e1e24);
@@ -149,18 +162,20 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
 
 .contact-textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 76px;
   max-height: 260px;
   line-height: 1.55;
 }
 
 /* ── Character counter ────────────────────────────────────── */
 
+/* Vive en el renglón de la etiqueta (ver FieldRow): no ocupa una línea propia
+   debajo del textarea. */
 .contact-charcount {
   font-size: 0.72rem;
   color: var(--text-secondary, #64748b);
-  text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ── Turnstile Disclaimer ───────────────────────────────────── */
@@ -172,7 +187,7 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
   font-size: 0.75rem;
   color: var(--text-secondary, #64748b);
   gap: 0.4rem;
-  padding: 0.3rem 0;
+  padding: 0.1rem 0;
 }
 .contact-turnstile-disclaimer i {
   display: inline-flex;
@@ -181,6 +196,20 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
 }
 .contact-turnstile-disclaimer.success {
   opacity: 0.9;
+}
+
+/* La decoración se mide contra el ALTO de la ventana, no contra el ancho del
+   modal: es lo único elástico que queda entre los campos y el botón de enviar.
+   `width: auto` + `aspect-ratio` hacen que el ancho salga del alto. */
+.cms-modal.contact-modal .contact-anim {
+  height: clamp(96px, 15vh, 150px);
+  width: auto;
+}
+
+/* Ventana corta: la decoración cede el lugar. Lo que no se negocia es que el
+   formulario entre con su botón a la vista; la animación es lo prescindible. */
+@media (max-height: 760px) {
+  .cms-modal.contact-modal .contact-anim { display: none; }
 }
 
 /* ── Error message ────────────────────────────────────────── */

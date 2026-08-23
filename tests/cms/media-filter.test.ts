@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
 import {
-  DEFAULT_MEDIA_QUERY, filterSortMedia, isMediaQueryActive, matchesMediaQuery, normalizeSearch,
+  DEFAULT_MEDIA_QUERY, filterSortMedia, groupByMediaState, isMediaQueryActive, matchesMediaQuery,
+  normalizeSearch,
   type MediaFacts, type MediaQuery,
 } from '@/lib/cms/media-filter'
 
@@ -94,5 +95,40 @@ describe('isMediaQueryActive', () => {
     expect(isMediaQueryActive(q({ sortBy: 'size', sortDir: 'asc' }))).toBe(false)
     expect(isMediaQueryActive(q({ search: 'a' }))).toBe(true)
     expect(isMediaQueryActive(q({ kind: 'video' }))).toBe(true)
+  })
+})
+
+describe('groupByMediaState', () => {
+  const rows = [
+    { n: 'a', st: 'used' }, { n: 'b', st: 'trash' }, { n: 'c', st: 'unused' },
+    { n: 'd', st: 'used' }, { n: 'e', st: 'unused' },
+  ]
+
+  it('ordena sin usar → en uso → basurero', () => {
+    expect(groupByMediaState(rows, (r) => r.st).map((r) => r.st))
+      .toEqual(['unused', 'unused', 'used', 'used', 'trash'])
+  })
+
+  it('conserva el orden previo dentro de cada grupo (sort estable)', () => {
+    expect(groupByMediaState(rows, (r) => r.st).map((r) => r.n))
+      .toEqual(['c', 'e', 'a', 'd', 'b'])
+  })
+
+  it('acepta el vocabulario del picker vía `order`', () => {
+    const picker = [{ st: 'usado' }, { st: 'sin usar' }, { st: 'usado' }]
+    expect(groupByMediaState(picker, (r) => r.st, ['sin usar', 'usado']).map((r) => r.st))
+      .toEqual(['sin usar', 'usado', 'usado'])
+  })
+
+  it('manda al final un estado desconocido', () => {
+    const mixed = [{ st: 'otro' }, { st: 'used' }, { st: 'unused' }]
+    expect(groupByMediaState(mixed, (r) => r.st).map((r) => r.st))
+      .toEqual(['unused', 'used', 'otro'])
+  })
+
+  it('no muta la lista original', () => {
+    const src = [{ st: 'trash' }, { st: 'unused' }]
+    groupByMediaState(src, (r) => r.st)
+    expect(src.map((r) => r.st)).toEqual(['trash', 'unused'])
   })
 })

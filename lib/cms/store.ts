@@ -11,7 +11,7 @@ import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
 import { COLLECTIONS, collectionOf, fixedSlotKeys } from '@/lib/cms/collections'
 import { readSettings, allKeysOf } from '@/lib/cms/collection'
 import type { MediaFacts } from '@/lib/cms/media-filter'
-import { isNonMediaSettingsKey } from '@/lib/settings'
+import { isNonMediaSettingsKey, ANIM_SLOTS, ANIM_FIELDS, animFields, animKey, animLabel } from '@/lib/settings'
 
 // Claves localStorage — idénticas al legacy (compatibilidad de datos)
 export const LS = {
@@ -316,15 +316,23 @@ export function flushSyncToServer(opts: { unload?: boolean } = {}): Promise<void
   }
   const payload: CmsStatePayload = {}
   let syncOverrides = false
+  /* Vaciado POR CONSUMO. Mover el último archivo de "sin usar" a un contenedor
+     deja la colección en [] y la guarda anti-vaciado del servidor lo rechazaba
+     con 409 ("el servidor rechazó el estado"), así que el cambio no se
+     persistía. Acá el vacío es legítimo: este punto ya solo corre con
+     `serverReady` y solo manda claves que el servidor dio, que es exactamente
+     lo que la guarda quiere atajar. Se declara en el mismo flush que lo lleva,
+     así el permiso no queda dando vueltas para un vaciado posterior. */
+  const declareEmpty = (key: string, empty: boolean) => { if (empty) _allowEmpty.add(key) }
   for (const k of _pendingKeys) {
     /* Nunca escribir una clave que el servidor no nos dio: sería devolverle el
        caché local como si fuera dato bueno. `overrides` va por otro camino
        (cms_data, con su propio diff) y no aplica. */
     if (k !== 'overrides' && !_serverAuthoritative.has(k)) continue
-    if (k === 'used_content') { payload.used_content = state.usedContent; try { localStorage.setItem('cms_state_used_content', JSON.stringify(state.usedContent)) } catch {} }
-    if (k === 'unused') { payload.unused = state.unused; try { localStorage.setItem('cms_state_unused', JSON.stringify(state.unused)) } catch {} }
-    if (k === 'retired') { payload.retired = state.retired; try { localStorage.setItem('cms_state_retired', JSON.stringify(state.retired)) } catch {} }
-    if (k === 'trash') { payload.trash = state.trash; try { localStorage.setItem('cms_state_trash', JSON.stringify(state.trash)) } catch {} }
+    if (k === 'used_content') { declareEmpty(k, Object.keys(state.usedContent).length === 0); payload.used_content = state.usedContent; try { localStorage.setItem('cms_state_used_content', JSON.stringify(state.usedContent)) } catch {} }
+    if (k === 'unused') { declareEmpty(k, state.unused.length === 0); payload.unused = state.unused; try { localStorage.setItem('cms_state_unused', JSON.stringify(state.unused)) } catch {} }
+    if (k === 'retired') { declareEmpty(k, state.retired.length === 0); payload.retired = state.retired; try { localStorage.setItem('cms_state_retired', JSON.stringify(state.retired)) } catch {} }
+    if (k === 'trash') { declareEmpty(k, state.trash.length === 0); payload.trash = state.trash; try { localStorage.setItem('cms_state_trash', JSON.stringify(state.trash)) } catch {} }
     if (k === 'media_meta') { payload.media_meta = state.mediaMeta; try { localStorage.setItem('cms_state_media_meta', JSON.stringify(state.mediaMeta)) } catch {} }
     if (k === 'audit') { payload.audit = state.audit.slice(-300); try { localStorage.setItem('cms_state_audit', JSON.stringify(payload.audit)) } catch {} }
     if (k === 'container_names') { payload.container_names = state.containerNames; try { localStorage.setItem('cms_state_container_names', JSON.stringify(state.containerNames)) } catch {} }
@@ -420,6 +428,13 @@ export function mergeServerState(server: CmsStatePayload) {
   }
 
   state.serverReady = true
+
+  /* Los ajustes de texto no son archivos: si la DB todavía tiene entradas viejas
+     (el bug del valor de `settings.loaderDuration` sembrado como media), se
+     purgan acá —único punto por el que pasan sitio y panel— y el flush deja la
+     DB limpia en vez de rehidratarlas en cada arranque. */
+  if (purgeNonMediaSettingsEntries()) { persistUsed(); persistUnused(); persistTrash() }
+
   emit()
 
   // Migración one-shot índice→uid. Se importa dinámicamente para no crear un
@@ -499,6 +514,11 @@ export function setAdminFlag(on: boolean, username?: string, role?: string, need
   // la sesión real vive en la cookie httpOnly `sid` (server-side); el
   // localStorage es solo un hint de UX para pintar rápido al recargar.
   try { localStorage.setItem(LS.ADMIN, on ? '1' : '0') } catch {}
+  /* Escrituras encoladas ANTES de saber que había sesión (el panel resuelve
+     `getAccount()` y `loadServerState()` en paralelo): el flush las rechaza por
+     `!state.isAdmin` y quedan pendientes sin timer. Al confirmarse el admin se
+     reprograma el envío. */
+  if (on) scheduleSyncToServer()
   emit()
 }
 
@@ -599,7 +619,13 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
   'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
   'settings.appleIconUrl': { section: 'Site Configuration', label: () => 'Search Engine Icon', kind: 'image' },
-  'settings.navAnimUrl': { section: 'Site Configuration', label: () => 'Menu Animation', kind: 'video' },
+  // Animaciones decorativas (principal + rotación), desde la tabla de ajustes.
+  ...Object.fromEntries(ANIM_SLOTS.flatMap((slot) =>
+    animFields(slot.base).map((f, i) => [
+      animKey(f),
+      { section: 'Site Configuration', label: () => animLabel(slot, i), kind: 'video' as const },
+    ]),
+  )),
   'contact.hero.bg': { section: 'Contact', label: () => 'Background Image — Contact', kind: 'image' },
   'contact.hero.title': { section: 'Contact', label: () => 'Title — Contact', kind: 'text' },
   'contact.hero.lede': { section: 'Contact', label: () => 'Subtitle — Contact', kind: 'text' },
@@ -686,7 +712,7 @@ export function getAllKnownContainerKeys(): string[] {
     'loader.gallop',
     'settings.faviconUrl',
     'settings.appleIconUrl',
-    'settings.navAnimUrl',
+    ...ANIM_FIELDS.map(animKey),
     'contact.hero.bg',
     'contact.social.anim',
     'anim.bg',
@@ -753,6 +779,28 @@ export async function verifySingleUrl(url: string): Promise<boolean> {
   const results = await verifyMedia([url])
   if (results.length === 0) return true // endpoint no disponible → asumir OK
   return results[0].exists
+}
+
+/* Purga los ajustes de texto (settings.loaderDuration, settings.cvName…) de los
+   índices de contenido. Su valor es texto crudo ("8"), nunca un archivo, pero el
+   índice trata cualquier clave desconocida como imagen y lo pintaba como tarjeta
+   del repositorio. La purga vivía solo en `seedUsedContent()`, que corre en el
+   sitio y no en /admin: la copia de la DB volvía a hidratar la entrada en cada
+   arranque. Devuelve true si tocó algo. */
+export function purgeNonMediaSettingsEntries(): boolean {
+  let changed = false
+  Object.keys(state.usedContent).forEach((key) => {
+    if (isNonMediaSettingsKey(key)) { delete state.usedContent[key]; changed = true }
+  })
+  Object.keys(state.mediaMeta).forEach((key) => {
+    if (isNonMediaSettingsKey(key)) { delete state.mediaMeta[key]; changed = true }
+  })
+  const drop = <T extends { key?: string }>(arr: T[]) => arr.filter((e) => !isNonMediaSettingsKey(e.key || ''))
+  const unusedClean = drop(state.unused)
+  if (unusedClean.length !== state.unused.length) { state.unused = unusedClean; changed = true }
+  const trashClean = drop(state.trash)
+  if (trashClean.length !== state.trash.length) { state.trash = trashClean; changed = true }
+  return changed
 }
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {

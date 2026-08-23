@@ -13,7 +13,7 @@ import { fmtBytes, fmtDateOnly, fmtTimeOnly, cloudinaryThumb, isGalleryAsset } f
 import {
   state, getFormat, getContainerMeta, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, recordMediaMeta, archiveMediaKey, cloudinaryMove, verifySingleUrl, purgeUrlsFromAllState, emit, mergeServerState, isDeferredMediaKey, mediaFacts,
 } from '@/lib/cms/store'
-import { filterSortMedia, isMediaQueryActive } from '@/lib/cms/media-filter'
+import { filterSortMedia, groupByMediaState, isMediaQueryActive } from '@/lib/cms/media-filter'
 import MediaFilterBar, { useMediaQuery, type StateFilterOption } from '@/components/cms/MediaFilterBar'
 import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { isSettingsMediaKey } from '@/lib/settings'
@@ -134,6 +134,10 @@ const PICKER_STATES: StateFilterOption[] = [
   { value: 'usado', label: 'In use', icon: 'fa-circle-check', tone: 'used' },
   { value: 'sin usar', label: 'Unused', icon: 'fa-box-archive', tone: 'unused' },
 ]
+
+/* Vocabulario propio del picker (heredado, sigue vivo en datos): mismo criterio
+   que `MEDIA_STATE_ORDER` —sin usar primero— pero con sus etiquetas. */
+const PICKER_STATE_ORDER = ['sin usar', 'usado'] as const
 
 export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps) {
   const toast = useToast()
@@ -266,10 +270,15 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   if (!meta) return null
   const byState = filter === 'all' ? all : all.filter((e) => e._state === filter)
   const searched = filterSortMedia(byState, (e) => mediaFacts(e), applied)
+  /* Con "All" los estados no se entreveran: primero lo sin usar, después lo que
+     ya está en uso. (Acá no hay basurero: el picker nunca lo ofrece.) */
+  const grouped = filter === 'all'
+    ? groupByMediaState(searched, (e) => e._state, PICKER_STATE_ORDER)
+    : searched
   /* Lo incompatible con el contenedor baja al final, bajo su propia cabecera.
      `Array.sort` es estable, así que dentro de cada grupo se conserva el orden
-     que eligió el admin en la barra. */
-  const filtered = [...searched].sort(
+     de arriba: primero por compatibilidad, y dentro de eso por estado. */
+  const filtered = [...grouped].sort(
     (a, b) => (((a.kind === 'video') === isVideoSlot ? 0 : 1) - ((b.kind === 'video') === isVideoSlot ? 0 : 1)),
   )
 

@@ -10,6 +10,9 @@
    apertura por click (sticky), que se cierra al clickear fuera. */
 
 import { useEffect, useRef, useState } from 'react'
+import DecorAnim from '@/components/ui/DecorAnim'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
+import { animSources } from '@/lib/settings'
 
 function SoftwareItem({ prefix, index }: { prefix: string; index: number }) {
   const iconRef = useRef<HTMLSpanElement>(null)
@@ -51,7 +54,19 @@ function SoftwareItem({ prefix, index }: { prefix: string; index: number }) {
 
 export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string; count?: number }) {
   const [open, setOpen] = useState(false)
+  /* El panel también se abre por hover/foco, y eso lo maneja CSS puro: sin
+     espejarlo en React la animación no sabría que está a la vista. El hover
+     solo cuenta con puntero fino, igual que el media query del CSS — en táctil
+     el :hover queda clavado tras el tap y el panel se daría por abierto. */
+  const [pointerOpen, setPointerOpen] = useState(false)
+  const hoverCapable = useRef(false)
   const ref = useRef<HTMLDivElement>(null)
+  const { settings } = useSiteSettings()
+  const animSrcs = animSources(settings, 'softwareAnimUrl')
+
+  useEffect(() => {
+    hoverCapable.current = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -62,8 +77,17 @@ export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
 
+  const shown = open || pointerOpen
+
   return (
-    <div ref={ref} className={`sw-dropdown${open ? ' is-open' : ''}`}>
+    <div
+      ref={ref}
+      className={`sw-dropdown${open ? ' is-open' : ''}`}
+      onMouseEnter={() => { if (hoverCapable.current) setPointerOpen(true) }}
+      onMouseLeave={() => setPointerOpen(false)}
+      onFocus={() => setPointerOpen(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPointerOpen(false) }}
+    >
       <button
         type="button"
         className="sw-trigger"
@@ -78,6 +102,14 @@ export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string
         {Array.from({ length: count }, (_, i) => (
           <SoftwareItem key={i} prefix={prefix} index={i} />
         ))}
+        {/* Decorado al pie del panel: mismo circuito que las demás animaciones
+            (Gestión → Software Panel Animation). Un solo ajuste para los tres
+            desplegables; cada uno rota por su cuenta al cerrarse. */}
+        {animSrcs.length > 0 && (
+          <li className="sw-anim-row" aria-hidden="true">
+            <DecorAnim sources={animSrcs} className="sw-anim" active={shown} rotateOn="toggle" />
+          </li>
+        )}
       </ul>
     </div>
   )

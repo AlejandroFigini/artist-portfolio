@@ -14,6 +14,7 @@
    Por eso la deduplicación es por (página, archivo) y no global. */
 
 import { sumSizes } from './store'
+import { ANIM_FIELDS, animKey } from '@/lib/settings'
 
 type TreeEntry = { key?: string; section?: string; size?: number | null; src?: string; dataUrl?: string }
 
@@ -30,7 +31,7 @@ export const SITE_PAGES: PageDef[] = [
       'Ajustes del sitio', 'Icono de la página', 'Favicon',
       'Site Settings', 'Configuración del sitio', 'Site Configuration',
     ],
-    keys: ['loader.gallop', 'settings.faviconUrl', 'settings.appleIconUrl', 'settings.navAnimUrl'],
+    keys: ['loader.gallop', 'settings.faviconUrl', 'settings.appleIconUrl', ...ANIM_FIELDS.map(animKey)],
   },
   {
     id: 'contact', label: 'Contact', route: '/contact', icon: 'fa-envelope',

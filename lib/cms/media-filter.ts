@@ -64,3 +64,25 @@ export function filterSortMedia<T>(list: T[], facts: (e: T) => MediaFacts, q: Me
   rows.sort((x, y) => compareMedia(x.f, y.f, q))
   return rows.map(({ e }) => e)
 }
+
+/* Orden de estados en la vista "All": primero lo que NO se está usando —que es
+   lo que el admin busca cuando entra al repositorio—, después lo ya asignado y
+   al final la papelera. Los dos consumidores hablan vocabularios distintos
+   (el panel `used|unused|trash`, el picker `usado|sin usar`), por eso el orden
+   se pasa por parámetro y no se cablea acá. */
+export const MEDIA_STATE_ORDER = ['unused', 'used', 'trash'] as const
+
+/** Agrupa por estado sin tocar el orden interno: `Array.sort` es estable, así
+ *  que dentro de cada grupo se conserva el criterio elegido en la barra.
+ *  Un estado que no figure en `order` cae al final. */
+export function groupByMediaState<T>(
+  list: T[],
+  stateOf: (e: T) => string,
+  order: readonly string[] = MEDIA_STATE_ORDER,
+): T[] {
+  const rank = (e: T) => {
+    const i = order.indexOf(stateOf(e))
+    return i === -1 ? order.length : i
+  }
+  return [...list].sort((a, b) => rank(a) - rank(b))
+}

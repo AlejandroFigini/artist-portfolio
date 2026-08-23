@@ -6,6 +6,9 @@
    modal, que abre con foco propio). La lógica vive en useContactForm(). */
 
 import type { ContactFormApi } from '@/hooks/useContactForm'
+import DecorAnim from '@/components/ui/DecorAnim'
+import { animSources } from '@/lib/settings'
+import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { FIELD_MAX, TURNSTILE_SITE_KEY, type ContactField } from '@/lib/contact-form'
 
 /* Flecha del <select>: nativa no se puede estilar, así que va como
@@ -30,10 +33,14 @@ type FieldRowProps = {
   icon: string
   labelKey: string
   optional?: boolean
+  /* Dato al margen del campo (el contador del mensaje). Va en el hueco derecho
+     del renglón de la etiqueta en vez de gastar una línea propia debajo del
+     campo; el error tiene prioridad sobre ese hueco. */
+  aside?: React.ReactNode
   children: (id: string) => React.ReactNode
 }
 
-function FieldRow({ form, idPrefix, field, icon, labelKey, optional, children }: FieldRowProps) {
+function FieldRow({ form, idPrefix, field, icon, labelKey, optional, aside, children }: FieldRowProps) {
   const { ui, fieldErrors, errorText } = form
   const id = `${idPrefix}-${field}`
   return (
@@ -45,11 +52,13 @@ function FieldRow({ form, idPrefix, field, icon, labelKey, optional, children }:
             ? <span className="contact-optional">{ui('field_optional')}</span>
             : <span className="contact-required">*</span>}
         </label>
-        {fieldErrors[field] && (
-          <span className="contact-field-error" role="alert">
-            <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors[field])}
-          </span>
-        )}
+        {fieldErrors[field]
+          ? (
+            <span className="contact-field-error" role="alert">
+              <i className="fa-solid fa-circle-exclamation"></i> {errorText(fieldErrors[field])}
+            </span>
+          )
+          : aside}
       </div>
       {children(id)}
     </div>
@@ -65,6 +74,7 @@ type Props = {
 }
 
 export default function ContactFormFields({ form, idPrefix, formClassName, introClassName, autoFocus }: Props) {
+  const { settings } = useSiteSettings()
   const {
     ui, values, setField, status, errorMsg,
     turnstileRef, turnstileStatus, turnstileStalled, canSend, submit, countries,
@@ -120,18 +130,23 @@ export default function ContactFormFields({ form, idPrefix, formClassName, intro
         )}
       </FieldRow>
 
-      <FieldRow {...row('message', 'fa-message', 'field_message')}>
+      <FieldRow
+        {...row('message', 'fa-message', 'field_message')}
+        aside={<span className="contact-charcount">{values.message.length}/{FIELD_MAX.message}</span>}
+      >
         {(id) => (
-          <>
-            <textarea
-              id={id} className="contact-input contact-textarea" value={values.message}
-              onChange={(e) => setField('message', e.target.value)}
-              rows={5} required
-            />
-            <span className="contact-charcount">{values.message.length}/{FIELD_MAX.message}</span>
-          </>
+          <textarea
+            id={id} className="contact-input contact-textarea" value={values.message}
+            onChange={(e) => setField('message', e.target.value)}
+            rows={4} required
+          />
         )}
       </FieldRow>
+
+      {/* Cierre del formulario, sobre la línea de Turnstile. En el flujo y
+          centrado: el formulario es una columna y no hay nada que tapar.
+          Mismo contenedor para el modal del nav y la página /contact. */}
+      <DecorAnim sources={animSources(settings, 'contactAnimUrl')} className="contact-anim" rotateOn="load" slot="contact" />
 
       {/* Turnstile (invisible): el widget se renderiza fuera de pantalla y acá
           solo se informa el estado de la verificación. */}

@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAjustes) return
-    const ids = ['ajustes-loader', 'ajustes-favicon', 'ajustes-apple-icon', 'ajustes-nav-anim', 'ajustes-social', 'ajustes-cv', 'ajustes-traducciones']
+    const ids = ['ajustes-loader', 'ajustes-favicon', 'ajustes-apple-icon', 'ajustes-nav-anim', 'ajustes-panel-anim', 'ajustes-footer-anim', 'ajustes-contact-anim', 'ajustes-software-anim', 'ajustes-social', 'ajustes-cv', 'ajustes-traducciones']
     
     const handleMouseOver = (e: MouseEvent) => {
       let el = e.target as HTMLElement | null
@@ -258,6 +258,18 @@ export default function AdminDashboard() {
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'ajustes-nav-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-nav-anim')}>
                   <i className="fa-solid fa-wand-magic-sparkles"></i><span>Menu animation</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-panel-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-panel-anim')}>
+                  <i className="fa-solid fa-sliders"></i><span>Options menu animation</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-footer-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-footer-anim')}>
+                  <i className="fa-solid fa-film"></i><span>Footer animation</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-contact-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-contact-anim')}>
+                  <i className="fa-solid fa-paper-plane"></i><span>Contact form animation</span>
+                </button>
+                <button type="button" className={`admin-nav-item${section === 'ajustes-software-anim' ? ' active' : ''}`} onClick={() => goto('ajustes-software-anim')}>
+                  <i className="fa-solid fa-layer-group"></i><span>Software panel animation</span>
                 </button>
                 <button type="button" className={`admin-nav-item${section === 'ajustes-social' ? ' active' : ''}`} onClick={() => goto('ajustes-social')}>
                   <i className="fa-solid fa-share-nodes"></i><span>Social media</span>
