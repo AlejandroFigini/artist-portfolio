@@ -22,11 +22,28 @@ export async function POST(req: Request) {
   const auth = await requireRole(req, ['owner', 'admin', 'demo'])
   if ('deny' in auth) return auth.deny
 
+  /* Tope por Content-Length ANTES de tocar el body: un archivo que se pasa del
+     límite se rechaza con un 413 legible en vez de reventar el parseo del
+     multipart y salir como un 400 críptico. El margen cubre el overhead de los
+     boundaries y los campos de texto del form. */
+  const declaredBytes = Number(req.headers.get('content-length') || 0)
+  if (declaredBytes > MAX_VIDEO_BYTES + 1024 * 1024) {
+    return NextResponse.json({ error: 'File too large. Maximum 100 MB.' }, { status: 413 })
+  }
+
   let form: FormData
   try {
     form = await req.formData()
-  } catch {
-    return NextResponse.json({ error: 'Expected multipart/form-data' }, { status: 400 })
+  } catch (err) {
+    /* Este catch NO significa "el cliente mandó otro Content-Type": el caso
+       real es un body multipart que llegó cortado (la lectura del archivo se
+       interrumpió en el navegador — típico con archivos aún no descargados de
+       OneDrive/iCloud). Se loguea la causa porque desde el front no se ve. */
+    console.error('[upload-test] no se pudo leer el body multipart:', err)
+    return NextResponse.json(
+      { error: 'The upload was interrupted before the file finished sending. Please try again.' },
+      { status: 400 },
+    )
   }
 
   const file = form.get('file')

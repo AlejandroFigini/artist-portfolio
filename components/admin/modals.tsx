@@ -494,11 +494,31 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
 
 type QueueItem = { file: File; name: string }
 type UploadOk = UploadResponse & { original_name: string; isVid: boolean }
-type UploadFail = { name: string; error: string }
+type UploadFail = { name: string; size: number; error: string }
 
 /* Cuántos resultados muestran vista previa. Con lotes grandes (90 archivos)
    montar un <video>/<img> por resultado tira el navegador abajo. */
 const PREVIEW_LIMIT = 3
+
+/* Intentos por archivo. La falla típica de un lote grande es transitoria: el
+   navegador no llega a leer el archivo entero (OneDrive/iCloud lo tienen sin
+   descargar) y el multipart sale cortado. Al segundo intento ya está en disco. */
+const UPLOAD_ATTEMPTS = 3
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+async function uploadWithRetry(file: File, finalName: string): Promise<UploadResponse> {
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
+    try {
+      return await uploadMedia(file, finalName, 'Direct uploads', 'unused')
+    } catch (err) {
+      lastErr = err
+      if (attempt < UPLOAD_ATTEMPTS) await wait(attempt * 600)
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+}
 
 export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[] }) {
   const [phase, setPhase] = useState<'form' | 'uploading' | 'done'>('form')
@@ -560,7 +580,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
         const isVid = file.type.includes('video') || /\.(webm|mp4|mov)$/i.test(file.name)
         const finalName = ensureExtension(name.trim() || getFileBasename(file.name), file.name)
         try {
-          const data = await uploadMedia(file, finalName, 'Direct uploads', 'unused')
+          const data = await uploadWithRetry(file, finalName)
 
           // historial de las últimas 3 subidas (LS_UPLOAD_TEST)
           const hist = loadJSON<Record<string, unknown>[]>(LS.UPLOAD_TEST, [])
@@ -580,7 +600,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
              interrumpe, lo ya subido queda registrado en el repositorio. */
           persistUnused()
         } catch (err: unknown) {
-          failed.push({ name: finalName, error: err instanceof Error ? err.message : String(err) })
+          failed.push({ name: finalName, size: file.size, error: err instanceof Error ? err.message : String(err) })
         }
       }
 
@@ -746,7 +766,10 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
               </strong>
               <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                 {failures.map((f, i) => (
-                  <li key={i}><span style={{ fontFamily: 'var(--font-mono), monospace' }}>{f.name}</span> — {f.error}</li>
+                  <li key={i}>
+                    <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{f.name}</span>{' '}
+                    <span style={{ opacity: 0.75 }}>({fmtBytes(f.size)})</span> — {f.error}
+                  </li>
                 ))}
               </ul>
             </div>
