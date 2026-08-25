@@ -2663,9 +2663,16 @@ html.perf-lite .m3d-slide {
    acorde a la secciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de galerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a.
    ============================================================ */
 
-/* Bloquear scroll mientras carga */
+/* Bloquear scroll mientras carga.
+   `overflow:hidden` en el body solo no alcanza en iOS: el documento sigue
+   haciendo rubber-band y un gesto iniciado sobre el overlay se propaga a la
+   pagina de atras. Ahora que el loader dura la carga real (y no un
+   temporizador corto) hay tiempo de sobra para que el visitante lo note. */
+html.loading-active,
 body.loading-active {
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
 }
 
 /* Saltar la pantalla de carga al volver desde la pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina de gestiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.
@@ -2678,6 +2685,8 @@ html.skip-loader body.loading-active { overflow: auto !important; }
     position: fixed;
     inset: 0;
     z-index: 9999999;
+    touch-action: none;
+    overscroll-behavior: contain;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2812,6 +2821,16 @@ video:not([controls])::-webkit-media-controls-panel {
     mix-blend-mode: screen;
 }
 
+/* `mix-blend-mode` sobre un <video> en reproduccion obliga a un blend por
+   frame en la GPU. Con el loader durando lo que dura la carga real, eso le
+   pelea ciclos justo a la hidratacion y al decode de las imagenes — o sea que
+   alarga la propia espera que esta decorando. Fuera en los equipos lite (el
+   boot script clasifica ahi a todo movil). */
+html.perf-lite .loader-media-glow {
+    mix-blend-mode: normal;
+    opacity: 0.5;
+}
+
 /* --- Costado: marca + estado --- */
 .loader-info {
     flex: 1 1 auto;
@@ -2938,6 +2957,35 @@ video:not([controls])::-webkit-media-controls-panel {
     will-change: transform;
 }
 
+/* La barra avanza por gates y puede quedarse quieta varios segundos en el mas
+   largo (`windowLoad`, que es el navegador terminando de bajar la pagina). Un
+   barrido por encima mantiene la sensacion de actividad sin mentir sobre el
+   numero: el relleno sigue siendo el progreso real. Solo `transform`. */
+.loader-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: translateX(-100%);
+    animation: loaderBarSweep 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes loaderBarSweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* La vista previa ya tiene su propio shimmer; dos serian ruido. */
+.loader-bar--indeterminate::after { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .loader-bar::after { animation: none; opacity: 0; }
+}
+
+html.motion-off .loader-bar::after { animation: none; opacity: 0; }
+
 /* Vista previa del admin: no hay carga real que medir → shimmer del original */
 .loader-bar--indeterminate .loader-bar-fill {
     width: 40%;
@@ -2966,6 +3014,28 @@ video:not([controls])::-webkit-media-controls-panel {
     display: inline-block;
     min-width: 3.4ch;
     text-align: right;
+}
+
+/* Movil en horizontal (~360px de alto): con el stage a tamano normal la linea
+   de estado y la barra —la unica senal de avance mientras se espera— quedaban
+   recortadas fuera del viewport. Se achica en vez de habilitar scroll: el
+   overlay no debe scrollear. */
+@media (max-height: 460px) {
+    .page-loader {
+        padding: 1.25rem;
+    }
+    .loader-stage {
+        gap: clamp(1rem, 3vw, 2rem);
+    }
+    .loader-media {
+        width: clamp(150px, 28vw, 240px);
+    }
+    .loader-title {
+        font-size: clamp(1.2rem, 3.5vw, 1.8rem);
+    }
+    .loader-subtitle {
+        display: none;
+    }
 }
 
 /* Loader responsive: apilar en vertical en pantallas chicas */

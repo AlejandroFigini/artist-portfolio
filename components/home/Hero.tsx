@@ -12,6 +12,7 @@ import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
+import { whenLoaderDone } from '@/lib/loader-ready'
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
@@ -27,19 +28,6 @@ function Corners() {
       <span className="bp-corner br"></span>
     </>
   )
-}
-
-// Espera a que el PageLoader suelte el body para arrancar la entrada
-function whenLoaderDone(cb: () => void): () => void {
-  if (!document.body.classList.contains('loading-active')) { cb(); return () => {} }
-  const mo = new MutationObserver(() => {
-    if (!document.body.classList.contains('loading-active')) {
-      mo.disconnect()
-      cb()
-    }
-  })
-  mo.observe(document.body, { attributes: true, attributeFilter: ['class'] })
-  return () => mo.disconnect()
 }
 
 export default function Hero() {

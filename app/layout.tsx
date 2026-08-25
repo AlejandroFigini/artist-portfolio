@@ -64,12 +64,45 @@ const BOOT_SCRIPT = `
   // contenido tiene que verse entero desde el primer paint.
   var motionOff = document.documentElement.classList.contains('motion-off');
   if (!reduced && !motionOff) document.documentElement.classList.add('motion-pending');
+  /* La pantalla de carga se muestra en TODA carga del index. El único salto es
+     volver desde gestión, y ese flag se lee y se BORRA acá mismo: si lo
+     consumiera React más tarde, cualquier camino que corte antes lo dejaría
+     vivo y se saltaría también la carga siguiente.
+     'lm_seen_loader' era el "una vez por sesión" que hacía que recargar no
+     mostrara nada; se limpia para que las sesiones abiertas se curen solas. */
   var skipLoader = false;
   try {
-    skipLoader = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1';
+    skipLoader = sessionStorage.getItem('cms_skip_loader') === '1';
+    sessionStorage.removeItem('cms_skip_loader');
+    sessionStorage.removeItem('lm_seen_loader');
   } catch (e) {}
   if (skipLoader) document.documentElement.classList.add('skip-loader');
-  if (!skipLoader && location.pathname === '/') document.body.classList.add('loading-active');
+  var showLoader = !skipLoader && location.pathname === '/';
+  if (showLoader) {
+    document.documentElement.classList.add('loading-active');
+    document.body.classList.add('loading-active');
+  }
+  /* Momento REAL en que la pantalla de carga quedó pintada. Se mide acá y no
+     en el componente porque el loader sale en el HTML del server y se pinta en
+     el FCP, mucho antes de que React hidrate: medir desde el montaje le sumaba
+     al piso configurable todo el tiempo de hidratación (~3.8s en 4G lento), y
+     por eso la duración de Gestión no se respetaba nunca en móvil.
+     El doble rAF garantiza que el frame ya se compuso. El presupuesto de
+     frames es un tope de reintentos del sondeo, NO un techo de cierre: si se
+     agota, el consumidor cae a su propio fallback y el loader sigue arriba. */
+  window.__loaderPaintedAt = 0;
+  if (showLoader) {
+    var frames = 0;
+    var probe = function () {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (document.getElementById('page-loader')) window.__loaderPaintedAt = performance.now();
+          else if (++frames < 120) probe();
+        });
+      });
+    };
+    probe();
+  }
 })();
 `
 

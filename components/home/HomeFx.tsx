@@ -7,6 +7,7 @@
    Todo respeta prefers-reduced-motion. */
 
 import { useEffect } from 'react'
+import { whenLoaderDone } from '@/lib/loader-ready'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -134,9 +135,18 @@ export default function HomeFx() {
       },
       { threshold: 0.1 },
     )
-    els.forEach((el) => io.observe(el))
-    titles.forEach((el) => io.observe(el))
+    /* Recién observar cuando la pantalla de carga se fue. `IntersectionObserver`
+       no sabe de oclusión: un elemento tapado por el overlay del loader cuenta
+       igual como visible, así que sin esto los reveals y los typewriters de lo
+       que está arriba del fold se reproducen enteros detrás del telón y el
+       visitante se encuentra la página quieta. Antes casi no se notaba porque
+       el loader duraba un temporizador corto; ahora dura la carga real. */
+    const cancelWait = whenLoaderDone(() => {
+      els.forEach((el) => io.observe(el))
+      titles.forEach((el) => io.observe(el))
+    })
     return () => {
+      cancelWait()
       io.disconnect()
       // restaurar títulos si el componente se desmonta a mitad de animación
       titles.forEach((t) => { if (t.dataset.text && !t.dataset.animated) t.innerHTML = t.dataset.text })

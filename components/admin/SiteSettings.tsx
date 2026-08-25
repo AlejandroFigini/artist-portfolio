@@ -18,6 +18,7 @@ import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, s
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import {
   SETTINGS_KEYS, ANIM_SLOTS, ANIM_FIELDS, ANIM_EVERY_FIELDS, ANIM_EVERY_DEFAULT,
+  LOADER_DURATION_MIN, LOADER_DURATION_MAX, LOADER_DURATION_DEFAULT, clampLoaderDuration,
   animFields, animKey, animLabel, animPreviewClass,
   type AnimSlot, type SiteSettings,
 } from '@/lib/settings'
@@ -185,9 +186,9 @@ function useVideoPreview(ref: React.RefObject<HTMLVideoElement | null>) {
 
 // ----- 1) Pantalla de carga --------------------------------------------------
 
-/* Espejo de loaderDurationMs(): el panel tiene que mostrar el piso que el
-   sitio realmente aplica cuando el ajuste nunca se guardó. */
-const DEFAULT_DURATION = '1.2'
+/* El panel muestra el piso que el sitio realmente aplica cuando el ajuste
+   nunca se guardó. El valor sale de lib/settings, no de una copia local. */
+const DEFAULT_DURATION = String(LOADER_DURATION_DEFAULT)
 
 export function LoaderSettings() {
   useCmsStore()
@@ -218,8 +219,14 @@ export function LoaderSettings() {
 
   const onSaveConfiguration = async () => {
     setSaving(true)
+    /* Se guarda ya acotado al rango que el sitio aplica, y se refleja en el
+       input: sin esto el panel quedaba mostrando un valor que el sitio no iba
+       a respetar. */
+    const secs = parseFloat(duration)
+    const clamped = clampLoaderDuration(Number.isFinite(secs) && secs > 0 ? secs : LOADER_DURATION_DEFAULT)
+    setDuration(String(clamped))
     await save({
-      loaderDuration: String(parseFloat(duration) || parseFloat(DEFAULT_DURATION)),
+      loaderDuration: String(clamped),
       loaderVideo: currentVideo,
     }, 'Loading screen settings updated')
     setSaving(false)
@@ -275,9 +282,11 @@ export function LoaderSettings() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="number"
-                min={0.5}
-                max={15}
-                step={0.5}
+                min={LOADER_DURATION_MIN}
+                max={LOADER_DURATION_MAX}
+                /* 0.1: con step 0.5 el default (1.2) cae fuera de la grilla del
+                   navegador y la flecha lo saltaba a 1.0/1.5. */
+                step={0.1}
                 className="social-input"
                 style={{ maxWidth: 90 }}
                 value={duration}

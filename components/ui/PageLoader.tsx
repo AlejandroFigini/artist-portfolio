@@ -1,13 +1,20 @@
 'use client'
 
-/* Pantalla de carga del index — portada de script.js initPageLoader().
-   Visitante: se muestra una vez por sesión (sessionStorage). El cierre lo
-   decide `lib/loader-ready`: el loader se va cuando el contenido crítico está
-   realmente pintado (datos + fuentes + hero + chunks), no cuando vence un
-   temporizador. La duración configurable pasa a ser el PISO estético y el
-   failsafe el techo duro. El video de galope (.loader-gallop) es un contenedor
-   CMS. Admin: queda visible y editable (no auto-oculta ni respeta el skip),
-   se cierra con el botón ✕ — única vía para subir/reemplazar ese video. */
+/* Pantalla de carga del index.
+
+   Se muestra en TODA carga del index, recarga incluida. El único salto es
+   volver desde gestión (`cms_skip_loader`, que consume el boot script del
+   layout antes del primer paint).
+
+   El cierre NO lo decide ningún reloj. Se va cuando se cumplen las dos cosas:
+   - todos los gates de `lib/loader-ready` resueltos, incluido `windowLoad`
+     (el evento del propio navegador: mientras no se dispara, el navegador
+     sigue bajando la página y el loader no se puede ir);
+   - el piso estético configurable, contado desde que el loader SE PINTÓ.
+
+   No hay failsafe: cada gate cierra cuando su operación termina, bien o mal,
+   así que un recurso roto libera igual. El video de galope (.loader-gallop) es
+   un contenedor CMS, editable desde la tarjeta de Gestión (no desde acá). */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
@@ -19,36 +26,54 @@ import {
   loaderProgress,
   loaderProgressServer,
   markLoaderGate,
-  startLoaderGateTimers,
   subscribeLoaderGates,
+  trackWindowLoad,
 } from '@/lib/loader-ready'
 import { optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
 
+declare global {
+  interface Window {
+    /** Sello del boot script: ms de reloj en que el loader quedó pintado. */
+    __loaderPaintedAt?: number
+  }
+}
+
 const FADE_MS = 800
-// Mínimo que la animación de carga se queda en pantalla una vez pintada.
-const MIN_ON_SCREEN_MS = 400
-// Techo duro sobre el piso configurable: por encima del gate más lento (8s).
-const FAILSAFE_MS = 9000
+/* La barra tarda 0.45s (transición CSS) en llegar visualmente al 100%. Cerrar
+   en el mismo frame en que resuelve el último gate haría que nunca se vea
+   completarse. Es un retardo de pintado, no un techo de carga. */
+const PRE_CLOSE_HOLD_MS = 450
+
+function releaseScrollLock() {
+  document.documentElement.classList.remove('loading-active')
+  document.body.classList.remove('loading-active')
+}
 
 export default function PageLoader() {
   const ui = useUiText()
   const pathname = usePathname()
   const [gone, setGone] = useState(pathname !== '/')
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
-  const [forced, setForced] = useState(false)
+  /* Mayor piso que ya se cumplió, en ms. No es un booleano a propósito: si la
+     duración configurada llega tarde y es MAYOR que la que se estaba usando,
+     un booleano ya latcheado la ignoraría — justo el caso que hace que el
+     ajuste de Gestión no se respete. */
+  const [floorSatisfiedMs, setFloorSatisfiedMs] = useState(0)
   const [isPreview, setIsPreview] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  /* Latch de cierre: una vez arrancado el fundido no se revierte. */
+  const closingRef = useRef(false)
+  /* Primer sello de pintado observado. Se congela: si se releyera en cada
+     evaluación, una duración que llega tarde re-anclaría el piso al "ahora" y
+     volvería a alargarse sola. */
+  const paintedAtRef = useRef(0)
   useCmsStore() // re-render cuando se activa/desactiva admin o cambia serverReady
   const { settings } = useSiteSettings()
   const serverReady = state.serverReady
   const minDisplay = loaderDurationMs(settings.loaderDuration) // piso configurable
-  const failsafe = minDisplay + FAILSAFE_MS
 
   const progress = useSyncExternalStore(subscribeLoaderGates, loaderProgress, loaderProgressServer)
-  const gatesReady = progress >= 1
-  // Al cerrarse la barra se completa aunque el failsafe haya cortado antes.
-  const shownProgress = forced || gatesReady ? 1 : progress
+  const canClose = progress >= 1 && floorSatisfiedMs >= minDisplay
 
   /* Fuente del video, resuelta UNA vez.
      Los ajustes llegan async (EMPTY_SETTINGS → overrides locales → /api/site) y
@@ -100,10 +125,10 @@ export default function PageLoader() {
   // 1. Escuchar cuando se solicita vista previa de la pantalla de carga desde gestión
   useEffect(() => {
     const onPreviewLoader = () => {
-      try { sessionStorage.removeItem('lm_seen_loader') } catch {}
       setIsPreview(true)
-      setMinTimeElapsed(false)
+      closingRef.current = false
       setGone(false)
+      document.documentElement.classList.add('loading-active')
       document.body.classList.add('loading-active')
       if (ref.current) ref.current.classList.remove('loader-hidden')
     }
@@ -111,49 +136,86 @@ export default function PageLoader() {
     return () => window.removeEventListener('cms:previewLoader', onPreviewLoader)
   }, [])
 
-  /* 2. Piso estético (minDisplay) + techo duro (failsafe). El failsafe fuerza
-        el cierre aunque queden gates abiertos: el sitio nunca queda tapado.
+  /* Red de seguridad del bloqueo de scroll: la clase la pone el boot script
+     antes del primer paint y solo React la saca. Si este componente muriera
+     por un error boundary o un Fast Refresh, el sitio quedaría sin scroll. */
+  useEffect(() => releaseScrollLock, [])
 
-        Los dos se cuentan desde el INICIO DE LA NAVEGACIÓN, no desde que corre
-        este efecto. Este componente monta recién al hidratar, y en 4G lento eso
-        pasa a los ~3.8s: el piso de 1.2s se convertía en "tapar el sitio hasta
-        los 5s" y terminaba atando el cierre incluso después de que todos los
-        gates estaban resueltos (medido: gates listos 4535ms, piso vencido
-        4980ms). Cuanto más lenta la conexión más tarde arrancaba el reloj, o
-        sea que el piso castigaba justo a quien ya venía sufriendo.
-
-        `performance.now()` es el tiempo transcurrido desde navigationStart, así
-        que restarlo da el semantic correcto: "el loader se ve al menos 1.2s de
-        la vida de la página". En una conexión rápida el piso sigue actuando
-        igual que antes.
-
-        El segundo término evita el efecto colateral: el loader se pinta en el
-        FCP, antes de hidratar, pero si el FCP llegara muy tarde y los gates
-        resolvieran de golpe la animación podría durar dos frames. Se le
-        garantiza un mínimo en pantalla contado desde que se pintó. */
+  /* 2. Salto al volver de gestión: el boot script ya marcó <html class="skip-loader">
+        y el CSS dejó el overlay en `display:none`, así que no hay nada que
+        animar — solo desmontar. Se difiere un tick porque desmontar en el
+        cuerpo del efecto encadena renders y acá no hay ninguna urgencia: el
+        loader ya es invisible. */
   useEffect(() => {
     if (gone || isPreview) return
-    const since = performance.now()
-    const painted = performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? 0
-    const floor = Math.max(minDisplay - since, MIN_ON_SCREEN_MS - (since - painted), 0)
-    const timer = window.setTimeout(() => {
-      setMinTimeElapsed(true)
-    }, floor)
-    const failsafeTimer = window.setTimeout(() => {
-      setMinTimeElapsed(true)
-      setForced(true)
-    }, Math.max(0, failsafe - since))
-    return () => {
-      clearTimeout(timer)
-      clearTimeout(failsafeTimer)
-    }
-  }, [gone, minDisplay, failsafe, isPreview])
+    if (!document.documentElement.classList.contains('skip-loader')) return
+    releaseScrollLock()
+    const t = window.setTimeout(() => setGone(true), 0)
+    return () => clearTimeout(t)
+  }, [gone, isPreview])
 
-  // 2b. Gates propios del loader. Los del contenido los marcan sus dueños
-  //     (Slideshow, HeroMediaCarousel, HomeFx, CmsRoot).
+  /* 3. Piso estético, contado desde que el loader SE PINTÓ.
+
+        Antes se contaba desde el inicio de la navegación y se evaluaba recién
+        al hidratar: en 4G lento eso ocurre a los ~3.8s, o sea que un piso de
+        1.2s daba negativo y la duración de Gestión no tenía ningún efecto. El
+        sello lo deja el boot script con doble rAF (app/layout.tsx).
+
+        Cadena de respaldo, de más exacta a más conservadora. Nunca puede
+        devolver un momento ANTERIOR al pintado: acortar el piso es el bug que
+        se está arreglando, alargarlo un poco solo se nota estéticamente.
+        1. sello del boot script (doble rAF, exacto);
+        2. entrada de Paint Timing (WebKit solo expone FCP, y recién desde
+           Safari 14.1, así que es refuerzo y no fuente);
+        3. con el documento a la vista pero sin ninguna de las dos: ahora. Sin
+           este escalón, cualquier entorno donde rAF no corra dejaría el piso
+           sin arrancar para siempre — y ya no hay failsafe que lo rescate.
+        Oculto (pestaña de fondo, prerender) no hay nada que contar: nadie vio
+        el loader. Se reintenta por rAF y por `visibilitychange`, que son
+        eventos, no relojes.
+
+        No se "latchea" el resultado: si la duración configurada llega tarde y
+        es mayor, el efecto se re-arma y el piso vuelve a exigirse. */
+  useEffect(() => {
+    if (gone || isPreview) return
+    let alive = true
+    let timer = 0
+    let raf = 0
+
+    const evaluate = () => {
+      if (!alive) return
+      // Puede re-entrar por `visibilitychange` o por rAF: no acumular relojes.
+      clearTimeout(timer)
+      cancelAnimationFrame(raf)
+      if (!paintedAtRef.current) {
+        const stamped = window.__loaderPaintedAt
+          || performance.getEntriesByName('first-contentful-paint')[0]?.startTime
+          || 0
+        if (stamped) paintedAtRef.current = stamped
+        else if (document.visibilityState === 'hidden') { raf = requestAnimationFrame(evaluate); return }
+        else paintedAtRef.current = performance.now()
+      }
+      const remaining = paintedAtRef.current + minDisplay - performance.now()
+      timer = window.setTimeout(() => {
+        if (alive) setFloorSatisfiedMs((prev) => Math.max(prev, minDisplay))
+      }, Math.max(0, remaining))
+    }
+    evaluate()
+    document.addEventListener('visibilitychange', evaluate)
+
+    return () => {
+      alive = false
+      clearTimeout(timer)
+      cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', evaluate)
+    }
+  }, [gone, isPreview, minDisplay])
+
+  // 3b. Gate del navegador. Los del contenido los marcan sus dueños
+  //     (Slideshow, HeroMediaCarousel, CmsRoot).
   useEffect(() => {
     if (gone) return
-    startLoaderGateTimers()
+    return trackWindowLoad()
   }, [gone])
 
   useEffect(() => {
@@ -163,9 +225,7 @@ export default function PageLoader() {
   /* Sin fuentes listas los títulos reflowean apenas se va el loader. Pero
      `document.fonts.ready` espera a TODAS las que arrancaron, y el sitio carga
      cuatro familias: Raleway (42 KB) y Fira Code (36 KB) son de detalle —
-     cotas blueprint, badges— y no aparecen en el texto grande de arriba. En 4G
-     lento terminaban a los ~4.5s y retenían el loader por un reflow que nadie
-     iba a ver.
+     cotas blueprint, badges— y no aparecen en el texto grande de arriba.
 
      Se espera solo a la familia del hero. `fonts.load()` resuelve cuando esa
      está lista; si el navegador no soporta la API o el shorthand falla, se
@@ -182,43 +242,19 @@ export default function PageLoader() {
     return () => { alive = false }
   }, [])
 
-  // 3. Decidir cuándo ocultar el preloader (debe cumplirse tiempo mínimo + servidor listo)
+  // 4. Cierre: una sola vía, y de ida — una vez arrancado no se revierte.
   useEffect(() => {
+    if (gone || isPreview || closingRef.current || !canClose) return
     const loader = ref.current
-    if (!loader || gone || isPreview) return
-
-    let skip = false
-    try {
-      skip = sessionStorage.getItem('cms_skip_loader') === '1' || sessionStorage.getItem('lm_seen_loader') === '1'
-      sessionStorage.removeItem('cms_skip_loader')
-    } catch {}
-
-    // Si ya se vio en la sesión actual y el servidor ya está listo, saltar
-    if (skip && serverReady && minTimeElapsed) {
+    if (!loader) return
+    closingRef.current = true
+    const hold = window.setTimeout(() => {
       loader.classList.add('loader-hidden')
-      document.body.classList.remove('loading-active')
-      const t = window.setTimeout(() => setGone(true), FADE_MS)
-      return () => clearTimeout(t)
-    }
-
-    if (skip && serverReady && !minTimeElapsed) {
-      document.body.classList.remove('loading-active')
-      setGone(true)
-      return
-    }
-
-    // Primera vez en la sesión: esperar el piso de tiempo Y que todos los
-    // gates de contenido hayan cerrado (o que el failsafe fuerce el cierre).
-    document.body.classList.add('loading-active')
-
-    if (forced || (minTimeElapsed && gatesReady)) {
-      loader.classList.add('loader-hidden')
-      document.body.classList.remove('loading-active')
-      try { sessionStorage.setItem('lm_seen_loader', '1') } catch {}
-      const t = window.setTimeout(() => setGone(true), FADE_MS)
-      return () => clearTimeout(t)
-    }
-  }, [gone, minTimeElapsed, serverReady, gatesReady, forced, isPreview])
+      releaseScrollLock()
+    }, PRE_CLOSE_HOLD_MS)
+    const fade = window.setTimeout(() => setGone(true), PRE_CLOSE_HOLD_MS + FADE_MS)
+    return () => { clearTimeout(hold); clearTimeout(fade) }
+  }, [gone, isPreview, canClose])
 
   if (gone) return null
 
@@ -231,7 +267,7 @@ export default function PageLoader() {
           onClick={() => {
             const loader = ref.current
             if (loader) loader.classList.add('loader-hidden')
-            document.body.classList.remove('loading-active')
+            releaseScrollLock()
             setIsPreview(false)
             setTimeout(() => setGone(true), FADE_MS)
           }}
@@ -241,7 +277,7 @@ export default function PageLoader() {
         </button>
       )}
       {/* body.loading-active lo agrega el boot script del layout (pre-paint) */}
-      <div id="page-loader" className="page-loader" ref={ref}>
+      <div id="page-loader" className="page-loader" ref={ref} aria-busy="true">
         <div className="loader-stage">
           <div className="loader-media">
             <video
@@ -261,7 +297,14 @@ export default function PageLoader() {
                  es justo el arranque del sitio. El póster es una imagen chica y
                  se pinta enseguida. */
               poster={videoPosterSrc(videoSrc) || undefined}
-              autoPlay loop muted playsInline preload="auto"
+              /* `metadata`, NO `auto`: un <video> con `auto` retiene el evento
+                 `load` del documento hasta tener el primer frame decodificado.
+                 Como ahora el loader ESPERA ese evento, con `auto` se quedaba
+                 esperándose a sí mismo — y `attachMediaRetry` re-arma esa
+                 retención en cada reintento. Con `metadata` el navegador
+                 suelta el evento apenas tiene la cabecera; el autoplay sigue
+                 bajando lo que necesita para reproducir. */
+              autoPlay loop muted playsInline preload="metadata"
             ></video>
             <div className="loader-media-glow"></div>
           </div>
@@ -275,7 +318,7 @@ export default function PageLoader() {
               </span>
               <span className="loader-text">
                 {ui('loading')}<span className="loader-dots"><i>.</i><i>.</i><i>.</i></span>
-                {!isPreview && <span className="loader-pct">{Math.round(shownProgress * 100)}%</span>}
+                {!isPreview && <span className="loader-pct">{Math.round(progress * 100)}%</span>}
               </span>
             </div>
             {/* Vista previa del admin: no hay carga real que medir → shimmer */}
@@ -284,11 +327,11 @@ export default function PageLoader() {
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-valuenow={isPreview ? undefined : Math.round(shownProgress * 100)}
+              aria-valuenow={isPreview ? undefined : Math.round(progress * 100)}
             >
               <span
                 className="loader-bar-fill"
-                style={isPreview ? undefined : { transform: `scaleX(${shownProgress})` }}
+                style={isPreview ? undefined : { transform: `scaleX(${progress})` }}
               ></span>
             </div>
           </div>

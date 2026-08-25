@@ -121,14 +121,24 @@ export const SETTINGS_MEDIA_CARDS: Record<string, string> = {
 /** Media de ajustes: guardado diferido al botón de su tarjeta, no al asignar. */
 export const isSettingsMediaKey = (key: string): boolean => key in SETTINGS_MEDIA_CARDS
 
-/* Piso estético del loader en ms, con clamp defensivo (0.5s–15s).
-   El piso es tiempo en el que la portada ya está pintada pero tapada: entra
-   entero en el LCP. 1.2s alcanza para que la animación se lea sin volverse el
-   techo de la métrica. El admin lo sigue subiendo desde Gestión. */
+/* Piso estético del loader, en segundos. Rango único: lo usan el clamp de
+   lectura, el clamp de guardado y los límites del input de Gestión. Sin esta
+   fuente común el panel aceptaba "999", lo persistía crudo y el sitio aplicaba
+   15s: el admin veía un número que el sitio no respetaba. */
+export const LOADER_DURATION_MIN = 0.5
+export const LOADER_DURATION_MAX = 15
+export const LOADER_DURATION_DEFAULT = 1.2
+
+export const clampLoaderDuration = (secs: number): number =>
+  Math.min(Math.max(secs, LOADER_DURATION_MIN), LOADER_DURATION_MAX)
+
+/* Piso estético del loader en ms. Es tiempo en el que la portada ya está
+   pintada pero tapada, contado desde que el loader se pintó (el sello lo deja
+   el boot script de app/layout.tsx). El admin lo sube desde Gestión. */
 export function loaderDurationMs(raw: string): number {
   const secs = parseFloat(raw)
-  if (!Number.isFinite(secs) || secs <= 0) return 1200
-  return Math.min(Math.max(secs, 0.5), 15) * 1000
+  if (!Number.isFinite(secs) || secs <= 0) return LOADER_DURATION_DEFAULT * 1000
+  return clampLoaderDuration(secs) * 1000
 }
 
 /* Ajuste que NO es media (duración del loader, nombre del CV…). El índice de
