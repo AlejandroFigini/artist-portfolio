@@ -73,14 +73,28 @@ export function revealAllNow() {
 
 const motionOff = () => document.documentElement.classList.contains('motion-off')
 
+/** Cancela el precalentado, sea `requestIdleCallback` o el `setTimeout` de respaldo. */
+function cancelWarm(id: number) {
+  if (window.cancelIdleCallback) window.cancelIdleCallback(id)
+  else window.clearTimeout(id)
+}
+
 export default function HomeFx() {
-  /* Precalentado de las secciones code-split (next/dynamic en page.tsx):
-     mientras la pantalla de carga está arriba se bajan sus chunks, así hidratan
-     junto con el resto en vez de montar tarde sobre el sitio ya visible.
-     Precalentar, no retener: el loader no espera a que terminen (ver
-     lib/loader-ready) — están abajo del fold y su descarga caía adentro del
-     LCP. Se dispara en idle para no competir con lo del primer viewport. */
+  /* Precalentado de las secciones code-split (next/dynamic en page.tsx): se
+     bajan sus chunks antes de que el visitante scrollee, así hidratan en vez de
+     montar tarde sobre el sitio ya visible.
+
+     DESPUÉS del evento `load`, no antes. Un <script> insertado en el documento
+     mientras la carga sigue en curso —y así es como el bundler trae un chunk
+     dinámico— RETRASA el propio evento `load`. Y el gate `windowLoad` de la
+     pantalla de carga espera justamente a ese evento. Precalentar en idle
+     mientras el loader estaba arriba se retenía a sí mismo: seis chunks de
+     secciones que están abajo del fold metidos dentro de la espera, que en un
+     teléfono son segundos con la barra clavada en el mismo punto.
+     Esperar a `load` los saca de esa ventana sin perder el precalentado: el
+     visitante todavía no llegó a scrollear. */
   useEffect(() => {
+    let idleId: number | undefined
     const warm = () => {
       void Promise.all([
         import('@/components/home/AboutSection'),
@@ -91,10 +105,20 @@ export default function HomeFx() {
         import('@/components/home/IllustrationsShowcase'),
       ]).catch(() => {})
     }
-    const ric = window.requestIdleCallback
-    if (!ric) { const t = window.setTimeout(warm, 200); return () => clearTimeout(t) }
-    const id = ric(warm, { timeout: 2000 })
-    return () => window.cancelIdleCallback(id)
+    const schedule = () => {
+      const ric = window.requestIdleCallback
+      idleId = ric ? ric(warm, { timeout: 2000 }) : window.setTimeout(warm, 200)
+    }
+
+    if (document.readyState === 'complete') {
+      schedule()
+      return () => { if (idleId !== undefined) cancelWarm(idleId) }
+    }
+    window.addEventListener('load', schedule, { once: true })
+    return () => {
+      window.removeEventListener('load', schedule)
+      if (idleId !== undefined) cancelWarm(idleId)
+    }
   }, [])
 
   // Reveals (.visible) + typewriter de section-typewriter
@@ -173,7 +197,10 @@ export default function HomeFx() {
           if (v.currentSrc || v.src || v.querySelector('source[src]')) v.load()
         }
       }),
-      { rootMargin: '300px 0px' },
+      /* Un viewport completo de anticipación, no 300px fijos: en un teléfono
+         eso es un tercio de pantalla y el video entraba en cuadro sin haber
+         decodificado su primer frame todavía. */
+      { rootMargin: '100% 0px' },
     )
     vids.forEach((v) => io.observe(v))
     return () => io.disconnect()

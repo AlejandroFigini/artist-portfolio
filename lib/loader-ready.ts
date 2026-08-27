@@ -104,10 +104,41 @@ export function trackWindowLoad(): () => void {
   }
 
   /* Crédito parcial mientras baja: sin esto la barra se queda quieta en el
-     tramo más largo de la espera y parece que se colgó. */
+     tramo más largo de la espera y parece que se colgó.
+
+     Medido sobre el build de producción: entre `interactive` y `load` lo único
+     que queda en vuelo son los chunks de JavaScript (~1 MB en la portada). Con
+     un solo escalón al 50%, la barra se plantaba en 86% —12 de 14 puntos de
+     peso— durante TODA esa espera, que en un teléfono son varios segundos.
+
+     El denominador es real, no un reloj: con el documento ya parseado
+     (`interactive`) están en el DOM todos los <script src>, así que se cuenta
+     cuántos terminaron contra cuántos hay. `markLoaderGate` nunca retrocede,
+     así que si Next inyecta chunks nuevos y el denominador crece, la barra se
+     queda quieta pero jamás miente hacia atrás. */
+  let scriptObserver: PerformanceObserver | null = null
+
+  const scriptProgress = () => {
+    const wanted = document.querySelectorAll('script[src]').length
+    if (!wanted) return
+    const doneCount = performance
+      .getEntriesByType('resource')
+      .filter((e) => (e as PerformanceResourceTiming).initiatorType === 'script' && e.duration >= 0)
+      .length
+    markLoaderGate('windowLoad', 0.5 + 0.5 * Math.min(1, doneCount / wanted))
+  }
+
   const onReadyState = () => {
-    if (document.readyState === 'interactive') markLoaderGate('windowLoad', 0.5)
-    else if (document.readyState === 'complete') settle()
+    if (document.readyState === 'interactive') {
+      markLoaderGate('windowLoad', 0.5)
+      if (!scriptObserver && typeof PerformanceObserver !== 'undefined') {
+        try {
+          scriptObserver = new PerformanceObserver(scriptProgress)
+          scriptObserver.observe({ type: 'resource', buffered: true })
+        } catch { scriptObserver = null }
+      }
+      scriptProgress()
+    } else if (document.readyState === 'complete') settle()
   }
   onReadyState()
 
@@ -123,6 +154,7 @@ export function trackWindowLoad(): () => void {
     window.removeEventListener('load', settle)
     document.removeEventListener('readystatechange', onReadyState)
     window.removeEventListener('pageshow', onPageShow)
+    scriptObserver?.disconnect()
   }
 }
 

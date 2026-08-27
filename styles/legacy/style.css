@@ -3646,6 +3646,36 @@ body.is-admin .cms-mount.cms-empty-slot {
 }
 
 /* ============================================================================
+   VIDEO SIN FRAME — nunca un rectangulo negro
+   Un <video> con fuente y sin frame decodificado pinta NEGRO opaco. El poster
+   que lo tapaba solo existe con Cloudinary (lib/utils.ts -> videoPosterSrc
+   devuelve '' para cualquier otra fuente), asi que en local y en cualquier
+   media que no venga de ahi el contenedor parpadeaba en negro al entrar en
+   cuadro. La clase `has-frame` la pone components/ui/ViewportGate en cuanto
+   readyState >= HAVE_CURRENT_DATA.
+   Se excluye `[controls]`: ahi el <video> es un reproductor que el visitante
+   abrio a proposito (lightbox, previsualizaciones) y tiene que verse aunque
+   todavia no haya decodificado.
+
+   La regla cuelga de `html.video-frame-gate`, que pone el propio ViewportGate
+   al montar: si ese componente no llega a correr (error de JS, hidratacion que
+   falla), no se oculta NADA y se vuelve al comportamiento anterior. Sin ese
+   gancho, un fallo del componente dejaria todos los videos del sitio
+   invisibles para siempre — falla peor que la que se esta arreglando.
+
+   SIN transicion, a proposito. Con `opacity: 0` de base y un fundido hacia 1
+   al aparecer la clase, el estado visible pasaba a depender de que la
+   transicion CORRIERA: en una pestana oculta las transiciones no avanzan y el
+   video se quedaba en opacidad 0 (medido). Un video invisible es peor que uno
+   negro. Con la regla escrita al reves —solo el caso SIN frame declara
+   opacidad— el estado visible es el valor por defecto y no necesita que se
+   anime nada para llegar a el.
+   ============================================================================ */
+html.video-frame-gate video:not([controls]):not(.has-frame) {
+    opacity: 0;
+}
+
+/* ============================================================================
    PAUSAR MOVIMIENTO (motion-off)
    ============================================================================ */
 html.motion-off *,

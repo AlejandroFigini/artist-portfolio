@@ -92,7 +92,12 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
      del primer scroll, y el mismo archivo bajado 3 veces por estar en 3
      secciones). El margen adelanta la carga lo suficiente como para que al
      entrar en cuadro ya tenga su primer frame. */
-  const [near, setNear] = useState(false)
+  const [nearObserved, setNearObserved] = useState(false)
+
+  /* Cerca del viewport = hay que traer el primer frame. Para los contenedores
+     de panel el disparador es la apertura, así que se deriva del render en vez
+     de encenderse desde un efecto. */
+  const near = nearObserved || active === true
 
   const list = sources.filter(Boolean)
   const total = list.length
@@ -137,17 +142,35 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
     return () => clearTimeout(id)
   }, [active, rotateOn, total, closeDelayMs])
 
-  // Precarga por cercanía: separada del observer de reproducción porque usa
-  // otro margen y no debe reiniciarse cuando cambia el clip de la rotación.
+  /* Precarga por cercanía: separada del observer de reproducción porque usa
+     otro margen y no debe reiniciarse cuando cambia el clip de la rotación.
+
+     Un viewport completo de anticipación (`100%`), no 400px fijos: en un
+     teléfono de 844px de alto, 400px es un tercio de pantalla y el clip no
+     llegaba a decodificar antes de entrar en cuadro — se veía el hueco.
+     El margen relativo da el mismo aire en cualquier tamaño.
+
+     Los contenedores que viven DENTRO de un panel que se abre y se cierra
+     (`active` definido: menú móvil, ajustes, desplegable de software) no los
+     alcanza ningún observer: cerrados no tienen caja, así que nunca
+     intersecan. Para esos el disparador es la APERTURA: `active` pasa a true
+     al principio de la animación del panel, así que el archivo empieza a bajar
+     mientras el panel todavía se está desplegando.
+     No se precargan en reposo a propósito: son tres paneles y medido daba
+     2,6 MB bajados en la carga inicial por clips que el visitante puede no
+     abrir nunca. Mientras no haya frame, el contenedor se ve vacío en vez de
+     negro (regla `has-frame`), que es justo lo que evita el parpadeo. */
   useEffect(() => {
     const box = slotRef.current
-    if (!box || near) return
+    // Los de panel no llevan observer: los enciende `active`, derivado arriba.
+    if (!box || nearObserved || active !== undefined) return
+
     const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setNear(true); io.disconnect() }
-    }, { rootMargin: '400px 0px' })
+      if (entry.isIntersecting) { setNearObserved(true); io.disconnect() }
+    }, { rootMargin: '100% 0px' })
     io.observe(box)
     return () => io.disconnect()
-  }, [near])
+  }, [nearObserved, active])
 
   useEffect(() => {
     const v = videoRef.current

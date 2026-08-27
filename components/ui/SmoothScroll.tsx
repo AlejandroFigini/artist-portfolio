@@ -23,6 +23,15 @@ export default function SmoothScroll() {
 
   useEffect(() => {
     if (!motion || prefersReducedMotion() || motionOffActive()) return
+    /* En un dispositivo táctil Lenis no aporta NADA: `syncTouch` está en false
+       a propósito (sincronizarlo pelea con el arrastre de los carruseles) y el
+       scroll del sistema ya es inercial. Lo que sí deja es coste: su chunk
+       entra en la ventana del evento `load` —que es lo que retiene la pantalla
+       de carga— y queda un rAF permanente en el ticker de GSAP llamando a
+       `ScrollTrigger.update` en cada scroll, justo en el aparato que menos
+       margen tiene. Sin Lenis, `scrollToElement` (lib/smooth-scroll) cae solo
+       al `scrollIntoView` nativo. */
+    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return
     let disposed = false
     let dispose: (() => void) | undefined
 
