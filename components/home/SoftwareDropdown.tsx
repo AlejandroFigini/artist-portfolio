@@ -107,7 +107,8 @@ export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string
             desplegables; cada uno rota por su cuenta al cerrarse. */}
         {animSrcs.length > 0 && (
           <li className="sw-anim-row" aria-hidden="true">
-            <DecorAnim sources={animSrcs} className="sw-anim" active={shown} rotateOn="toggle" />
+            {/* 0.85s es la transición de cierre de .sw-list (software-dropdown.css) */}
+            <DecorAnim sources={animSrcs} className="sw-anim" active={shown} rotateOn="toggle" closeDelayMs={900} />
           </li>
         )}
       </ul>

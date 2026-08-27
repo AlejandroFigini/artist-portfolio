@@ -18,18 +18,17 @@ import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { sendGAEvent } from '@next/third-parties/google'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
+import { SITE_SECTIONS } from '@/lib/site-sections'
+import { scrollToSection } from '@/lib/smooth-scroll'
 import DecorAnim from '@/components/ui/DecorAnim'
 import { animSources } from '@/lib/settings'
 
 const ContactModal = lazy(() => import('@/components/ui/ContactModal'))
 
-const GALLERY_LINKS = [
-  { href: '/illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
-  { href: '/animations', icon: 'fa-clapperboard', label: 'Animations', i18n: 'nav_animations' },
-  { href: '/characters', icon: 'fa-user-astronaut', label: 'Characters', i18n: 'nav_characters' },
-  { href: '/models-3d', icon: 'fa-cube', label: '3D Models', i18n: 'nav_3d' },
-  { href: '/multimedia', icon: 'fa-photo-film', label: 'Multimedia', i18n: 'nav_multimedia' },
-]
+/* Las galerías son secciones del feed, no rutas: el menú ancla a la portada
+   (ver lib/site-sections). Desde otra ruta el <Link> navega a /#id y el scroll
+   lo hace SectionHashScroll al montar la portada. */
+const GALLERY_LINKS = SITE_SECTIONS
 
 export default function Nav() {
   const motion = useMotionReady() // GSAP llega en su propio chunk
@@ -167,7 +166,6 @@ export default function Nav() {
 
     const activeEl = (): HTMLElement | null => {
       if (pathname === '/') return links.querySelector<HTMLElement>('a[href="/"]')
-      if (GALLERY_LINKS.some((l) => l.href === pathname)) return links.querySelector<HTMLElement>('#gallery-label')
       if (pathname === '/about') return links.querySelector<HTMLElement>('a[href="/about"]')
       if (pathname === '/contact') return links.querySelector<HTMLElement>('a[href="/contact"]')
       return null
@@ -291,10 +289,16 @@ export default function Nav() {
                 <div className="dropdown-content">
                   {GALLERY_LINKS.map((l) => (
                     <Link
-                      key={l.href}
-                      href={l.href}
-                      className={pathname === l.href ? 'active' : undefined}
-                      onClick={closeNav}
+                      key={l.id}
+                      href={`/#${l.id}`}
+                      onClick={(e) => {
+                        closeNav()
+                        // Ya en la portada no hay navegación: se ancla en el acto.
+                        if (pathname !== '/') return
+                        e.preventDefault()
+                        window.history.replaceState(null, '', `/#${l.id}`)
+                        scrollToSection(l.id, prefersReducedMotion())
+                      }}
                     >
                       <i className={`fa-solid ${l.icon}`}></i> <span>{ui(l.i18n, l.label)}</span>
                     </Link>

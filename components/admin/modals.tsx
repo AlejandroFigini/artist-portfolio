@@ -16,6 +16,9 @@ import {
   moveUsedToUnused, type UsedEntry,
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
+import {
+  computeFields, elementsByKey, ensureCollectionMeta, metaByKey, persistOverrideKeys,
+} from '@/components/cms/engine'
 import { cloudinaryAssetUrl, cloudinarySearchUrl } from '@/lib/cloudinary-console'
 import { Thumb, type AnyEntry } from './cards'
 import { useMediaRename, MediaRenameEditor, MediaRenamePencil } from './RenameMedia'
@@ -174,8 +177,22 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
 // ----- Editar información (variante admin: campos de usedContent) -------------------
 
 export function AdminEditInfoModal({ cmsKey, onClose }: CloseProp & { cmsKey: string }) {
+  const toast = useToast()
   const entry = state.usedContent[cmsKey]
-  const fields = entry?.fields || []
+  /* Los campos salen del REGISTRO vivo, no del `fields` guardado en la
+     entrada: ese es una foto del momento en que se sembro y no se refresca
+     nunca. Una entrada escrita por el modal de subida se guarda SIN campos, y
+     una sembrada desde /admin (donde la portada no esta montada) se guarda con
+     `null` — en los dos casos el formulario salia incompleto o vacio.
+     `ensureCollectionMeta` cubre proyectos y personajes, que no tienen
+     elemento propio en el DOM. El snapshot queda de respaldo para los
+     contenedores que solo existen mientras el sitio esta montado. */
+  const fields = useMemo(() => {
+    ensureCollectionMeta(cmsKey)
+    const meta = metaByKey[cmsKey]
+    const live = meta ? computeFields(cmsKey, elementsByKey[cmsKey] || null, meta) : null
+    return live && live.length ? live : (entry?.fields || [])
+  }, [cmsKey, entry])
   const refs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
 
   if (!entry) return null
@@ -188,20 +205,30 @@ export function AdminEditInfoModal({ cmsKey, onClose }: CloseProp & { cmsKey: st
         : [
             { label: 'Cancel', onClick: () => {} },
             { label: 'Save', primary: true, onClick: () => {
+              /* Escribe en `state.items` y en el servidor, no solo en el cache
+                 local: antes tocaba `cms_overrides_v1` y nada mas, asi que la
+                 edicion no llegaba nunca a la DB ni al sitio. */
               const items = loadJSON<Record<string, string>>(LS.OVERRIDES, {})
-              let changed = false
+              const changedKeys: string[] = []
               fields.forEach((f) => {
                 const v = refs.current[f.key]?.value
-                if (v != null && v !== f.value) {
-                  items[cmsKey + '::' + f.key] = v
-                  f.value = v
-                  changed = true
-                }
+                if (v == null || v === f.value) return
+                const compositeKey = cmsKey + '::' + f.key
+                state.items[compositeKey] = v
+                items[compositeKey] = v
+                f.value = v
+                const stored = state.usedContent[cmsKey]?.fields?.find((z) => z.key === f.key)
+                if (stored) stored.value = v
+                changedKeys.push(compositeKey)
               })
               saveJSON(LS.OVERRIDES, items)
               persistUsed()
-              if (changed) recordAudit({ user: 'superadmin', section: entry.section, label: entry.label, summary: 'Information edited' })
+              if (changedKeys.length) {
+                persistOverrideKeys(changedKeys).catch(() => toast('Network error while syncing with server', 'error'))
+                recordAudit({ section: entry.section, label: entry.label, kind: 'metadata', summary: 'Information edited' })
+              }
               emit()
+              toast(changedKeys.length ? 'Container updated' : 'No changes')
             } },
           ]}
     >
@@ -813,7 +840,8 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
 // ----- Auditoría de sincronización Cloudinary vs Gestión ----------------------
 
 export type SyncAuditResult = {
-  matching: { url: string; name: string; state: string; cloudinaryId: string }[]
+  /** Un archivo por fila; `uses` = contenedores que lo muestran. */
+  matching: { url: string; name: string; state: string; cloudinaryId: string; uses?: number }[]
   orphaned: { url: string; publicId: string; resourceType: string; format: string; bytes: number; folder: string }[]
   /** Contenedores que apuntan a un archivo que no existe en ningún lado. */
   broken: { url: string; name: string; state: string; section: string }[]
@@ -824,6 +852,16 @@ export type SyncAuditResult = {
   /** Cuánto arregla un "Apply repairs" y cuánto vacía un "Purge". */
   repairable: number
   purgeable: number
+  /* Balance archivo a archivo. `cloudinaryBytes` es el peso de los ORIGINALES
+     que Cloudinary lista: la consola de Cloudinary muestra más porque suma las
+     variantes derivadas de cada transformación y los backups, que el CMS no
+     administra. Comparar contra ese número es lo que no cerraba nunca. */
+  cloudinaryAssets: number
+  cloudinaryBytes: number
+  indexedFiles: number
+  indexedBytes: number
+  /** Archivos del índice sin tamaño conocido (no entran en `indexedBytes`). */
+  indexedUnknown: number
 }
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
@@ -846,7 +884,7 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
 
   const downloadReport = () => {
     const rows: string[][] = []
-    localResult.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, 'Synced']))
+    localResult.matching.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `Synced (${r.uses ?? 1} container(s))`]))
     localResult.orphaned.forEach((r) => rows.push([r.publicId, r.url, 'N/A', r.publicId, 'Orphaned in Cloudinary']))
     localResult.broken.forEach((r) => rows.push([r.name, r.url, r.state, 'N/A', 'Missing from storage']))
     localResult.stale.forEach((r) => rows.push([r.name, r.url, r.state, r.cloudinaryId, `Stale URL: the file now lives at ${r.fixedTo}`]))
@@ -928,11 +966,36 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
         { label: 'Close', primary: true, onClick: () => {} },
       ]}
     >
+      {/* Balance de las dos puntas. Va ARRIBA de las tarjetas de problemas
+          porque es la pregunta real: ¿el panel y Cloudinary tienen lo mismo? */}
+      <div style={{ marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Cloudinary: <strong style={{ color: 'var(--text-primary)' }}>{localResult.cloudinaryAssets} files</strong>
+            {' · '}<strong style={{ color: 'var(--text-primary)' }}>{fmtBytes(localResult.cloudinaryBytes)}</strong>
+          </span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Repository: <strong style={{ color: 'var(--text-primary)' }}>{localResult.indexedFiles} files</strong>
+            {' · '}<strong style={{ color: 'var(--text-primary)' }}>{fmtBytes(localResult.indexedBytes)}</strong>
+            {localResult.indexedUnknown > 0 && (
+              <span title="Files whose size is unknown, so they add 0 to the total">
+                {' '}(+{localResult.indexedUnknown} unmeasured)
+              </span>
+            )}
+          </span>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.45rem', lineHeight: 1.5 }}>
+          Both figures count original files only. Cloudinary&apos;s own dashboard reports more,
+          because it also bills the derived variants each transformation generates plus backups —
+          neither is managed from here, so they are expected to differ.
+        </div>
+      </div>
+
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#22c55e' }}>{localResult.matching.length}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Synced</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Synced files</div>
         </div>
         <div style={{ flex: 1, minWidth: 120, padding: '1rem', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>{localResult.orphaned.length}</div>

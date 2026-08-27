@@ -40,6 +40,11 @@ export default function HeroSlideshow() {
      pantalla" por si solo: quien decide si se ve es el hero. Fuera de el, todas
      las secciones son opacas y lo tapan por completo. */
   const parkedRef = useRef(false)
+  /* El efecto del crossfade publica acá su función de armado para que el
+     observer de aparcado —que ya existe y es el único que mira al hero— la
+     llame. Sin esto harían falta dos IntersectionObserver sobre el mismo
+     elemento, o reiniciar el crossfade entero en cada entrada y salida. */
+  const armRef = useRef<(() => void) | null>(null)
   useCmsStore()
   const serverReady = state.serverReady
   // Solo las slides con imagen real. Vacío → [] → fondo blanco.
@@ -79,6 +84,7 @@ export default function HeroSlideshow() {
       ([entry]) => {
         parkedRef.current = !entry.isIntersecting
         el.classList.toggle('is-parked', parkedRef.current)
+        armRef.current?.()
       },
       { rootMargin: '10% 0px' },
     )
@@ -97,9 +103,7 @@ export default function HeroSlideshow() {
     gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 2.5, ease: 'power2.out' })
     if (els.length < 2) return
 
-    const timer = setInterval(() => {
-      // Aparcado: nadie lo esta viendo, no hay por que tejer un crossfade.
-      if (parkedRef.current) return
+    const tick = () => {
       if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
         return
       }
@@ -111,10 +115,26 @@ export default function HeroSlideshow() {
       gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 3, ease: 'power1.inOut' })
       gsap.to(els[current], { opacity: 0, duration: 3, ease: 'power1.inOut' })
       current = next
-    }, intervalMs)
+    }
+
+    /* Aparcado = el hero no esta en pantalla. Antes el temporizador seguia
+       corriendo y hacia early-return: despertaba la CPU cada `intervalMs`
+       durante los ~8500px de scroll restantes sin tejer nada. Ahora se apaga
+       y se vuelve a armar cuando el hero reaparece. */
+    let timer: ReturnType<typeof setInterval> | undefined
+    const arm = () => {
+      if (parkedRef.current) {
+        if (timer) { clearInterval(timer); timer = undefined }
+        return
+      }
+      if (!timer) timer = setInterval(tick, intervalMs)
+    }
+    armRef.current = arm
+    arm()
 
     return () => {
-      clearInterval(timer)
+      armRef.current = null
+      if (timer) clearInterval(timer)
       gsap.killTweensOf(els)
     }
   }, [motion, slidesKey, intervalMs])

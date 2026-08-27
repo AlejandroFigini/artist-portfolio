@@ -490,19 +490,13 @@ export default function UsersSection() {
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Username</div>
               <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{state.username}</div>
             </div>
-            {/* El admin no puede cambiar su propio username (política): solo lectura,
-                con candado. Owner (y demo efímero) sí lo editan. */}
-            {state.role === 'admin' ? (
-              <span className="cms-tag" title="Admins cannot change their own username" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <i className="fa-solid fa-lock"></i> Locked
-              </span>
-            ) : (
-              <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === 'username' ? 'menu' : 'username')}>
-                {view === 'username' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-pen"></i> Edit</>}
-              </button>
-            )}
+            {/* Cualquier rol edita su propio username; el servidor rechaza el
+                duplicado. Cambiar el de OTRO usuario sigue siendo del owner. */}
+            <button type="button" className="cms-btn cms-btn--sm" onClick={() => setView(view === 'username' ? 'menu' : 'username')}>
+              {view === 'username' ? <><i className="fa-solid fa-xmark"></i> Cancel</> : <><i className="fa-solid fa-pen"></i> Edit</>}
+            </button>
           </div>
-          {view === 'username' && state.role !== 'admin' && (
+          {view === 'username' && (
             <div className="cms-login-form" style={{ padding: '0 1rem 1rem' }}>
               <label className="cms-field"><span>New username</span>
                 <input type="text" value={form.username} onChange={set('username')} autoComplete="off" />

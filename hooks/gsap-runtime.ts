@@ -60,6 +60,17 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
     return t
   }
 
+  /* El loop arranca cuando la sección entra en cuadro y NO se apagaba nunca:
+     seis secciones × título + descripción = once loops reconstruyendo su
+     innerHTML en spans y animándolos cada 8s para siempre, incluidas las
+     secciones que quedaron muy arriba o muy abajo. Se salta el ciclo mientras
+     el elemento está fuera del viewport: no hay nada que mirar y el texto ya
+     quedó pleno del ciclo anterior. */
+  const onScreen = () => {
+    const r = el.getBoundingClientRect()
+    return r.bottom > 0 && r.top < (window.innerHeight || 0) && r.width > 0
+  }
+
   const cycle = () => {
     /* `killed` se asignaba en kill() pero no se consultaba en ningún lado: un
        callback que cayera justo después de kill() reprogramaba el ciclo y el
@@ -67,7 +78,7 @@ function revealLoop(el: HTMLElement, intervalSec: number, build: BuildFn, animat
     if (killed) return
     // pausa global o modal abierto mid-loop → dejar el texto pleno y no re-animar
     const modalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
-    if (motionOffActive() || modalOpen) { wait = gsap.delayedCall(intervalSec, cycle); return }
+    if (motionOffActive() || modalOpen || !onScreen()) { wait = gsap.delayedCall(intervalSec, cycle); return }
     const tools = detachTools()
     const text = el.textContent || ''
     lastText = text

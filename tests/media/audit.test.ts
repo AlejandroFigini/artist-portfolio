@@ -185,3 +185,58 @@ describe('auditMedia — huérfanos', () => {
     expect(r.orphaned.map((o) => o.publicId)).toEqual(['portfolio/sin-usar/suelto'])
   })
 })
+
+describe('auditMedia — balance comparable con Cloudinary', () => {
+  it('cuenta ARCHIVOS sincronizados, no referencias: un archivo en tres contenedores es uno', () => {
+    /* Era el origen del "repositorio 208 / 220 sincronizados": `matching`
+       llevaba una fila por contenedor, así que un archivo reusado inflaba la
+       cifra y no se podía comparar con el total del repositorio. */
+    const a = asset('portfolio/en-uso/a')
+    const r = run({
+      rows: [
+        { key: 'hero.img', value: a.secure_url },
+        { key: 'about.img', value: a.secure_url },
+        { key: 'proj#x', value: a.secure_url },
+      ],
+      listing: { resources: [a], complete: true },
+    })
+
+    expect(r.matching).toHaveLength(1)
+    expect(r.matching[0].uses).toBe(3)
+    expect(r.checked).toBe(3) // las referencias se siguen contando aparte
+  })
+
+  it('pesa las dos puntas sobre los originales y separa lo que no puede medir', () => {
+    const a = asset('portfolio/en-uso/a', { bytes: 1500 })
+    const b = asset('portfolio/sin-usar/b', { bytes: 2500, tags: ['state:sin-usar'], state: 'unused' })
+    const r = run({
+      rows: [{ key: 'hero.img', value: a.secure_url }],
+      listing: { resources: [a, b], complete: true },
+      index: {
+        ...EMPTY_INDEX,
+        unused: [{ key: 'old.img', src: b.secure_url, size: 0 }],
+      },
+    })
+
+    expect(r.cloudinaryAssets).toBe(2)
+    expect(r.cloudinaryBytes).toBe(4000)
+    expect(r.indexedFiles).toBe(2)
+    // El peso sale del listado de Cloudinary aunque el índice traiga size 0.
+    expect(r.indexedBytes).toBe(4000)
+    expect(r.indexedUnknown).toBe(0)
+  })
+
+  it('no suma como 0 los archivos sin tamaño: los cuenta aparte', () => {
+    const r = run({
+      index: {
+        ...EMPTY_INDEX,
+        trash: [{ key: 'gone.img', src: '/uploads/local-a.webp' }],
+      },
+      localAssetExists: () => true,
+    })
+
+    expect(r.indexedFiles).toBe(1)
+    expect(r.indexedBytes).toBe(0)
+    expect(r.indexedUnknown).toBe(1)
+  })
+})

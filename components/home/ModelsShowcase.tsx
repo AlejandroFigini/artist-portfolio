@@ -83,7 +83,12 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
       const srcVal = v.getAttribute('src') || (srcEl && srcEl.getAttribute('src'))
       const has = !!srcVal
       setHasContent(has)
-      if (has) { try { v.pause(); v.currentTime = 0 } catch {} }
+      /* Rebobinar solo si el clip anterior avanzó. ESCRIBIR `currentTime`
+         obliga al navegador a resolver el recurso, así que anulaba el
+         `preload="none"` de la slide y bajaba los tres videos completos apenas
+         el CMS les asignaba src, con la sección fuera de cuadro. Leerlo es
+         gratis. Mismo arreglo que en AnimationsShowcase. */
+      if (has) { try { v.pause(); if (v.currentTime > 0) v.currentTime = 0 } catch {} }
     }
     sync()
     const mo = new MutationObserver(sync)
@@ -92,11 +97,24 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
     return () => { mo.disconnect(); v.removeEventListener('loadeddata', sync) }
   }, [])
 
+  /* Reproducir solo si es la slide activa Y la sección está en cuadro.
+     `.m3d-video` no figura en ninguna de las listas del motor de autoplay de
+     HomeFx, así que nadie más lo pausaba; y como el autoplay del coverflow se
+     congela fuera de vista, la slide activa quedaba reproduciendo en loop
+     indefinidamente detrás del fold desde que el CMS le ponía src. */
   useEffect(() => {
     const v = videoRef.current
     if (!v || !hasContent) return
-    if (isActive) { v.play().catch(() => {}) }
-    else { v.pause() }
+    if (!isActive) { v.pause(); return }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) void v.play().catch(() => {})
+        else v.pause()
+      },
+      { threshold: 0.15 },
+    )
+    io.observe(v)
+    return () => { io.disconnect(); v.pause() }
   }, [isActive, hasContent])
 
   return (
@@ -139,15 +157,26 @@ function Coverflow() {
     if (prefersReducedMotion()) return
     const stage = stageRef.current
     let inView = true
+
+    /* El temporizador se APAGA fuera de cuadro. Antes seguía disparando cada
+       5s de por vida para hacer un early-return sobre `inView`: un wake-up
+       inútil del hilo principal que en móvil cae en medio del scroll. */
+    let id: ReturnType<typeof setInterval> | undefined
+    const tick = () => {
+      const isModalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
+      if (!hoverRef.current && !dragRef.current.active && !isModalOpen) go(1)
+    }
+    const arm = () => {
+      if (inView) { if (!id) id = setInterval(tick, AUTOPLAY_MS) }
+      else if (id) { clearInterval(id); id = undefined }
+    }
+
     const io = stage
-      ? new IntersectionObserver((e) => { inView = e[0].isIntersecting }, { threshold: 0.2 })
+      ? new IntersectionObserver((e) => { inView = e[0].isIntersecting; arm() }, { threshold: 0.2 })
       : null
     if (stage && io) io.observe(stage)
-    const id = setInterval(() => {
-      const isModalOpen = typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))
-      if (!hoverRef.current && inView && !dragRef.current.active && !isModalOpen) go(1)
-    }, AUTOPLAY_MS)
-    return () => { clearInterval(id); io?.disconnect() }
+    arm()
+    return () => { if (id) clearInterval(id); io?.disconnect() }
   }, [go])
 
   // Drag horizontal → cambia slide.
@@ -384,7 +413,7 @@ export default function ModelsShowcase() {
   }, [motion])
 
   return (
-    <section ref={sectionRef} className="m3d-showcase" aria-labelledby="m3d-showcase-title">
+    <section ref={sectionRef} className="m3d-showcase" id="models-3d" aria-labelledby="m3d-showcase-title">
 
 
       <div className="m3d-showcase__frame">

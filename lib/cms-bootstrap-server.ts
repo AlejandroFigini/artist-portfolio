@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { ALL_LANGS, BASE_LANG, isTranslatableEntry, type Lang } from '@/lib/i18n'
 
@@ -29,7 +30,7 @@ const EMPTY: CmsBootstrap = { items: {}, translations: {}, retired: [] }
 /** Id del <script type="application/json"> que lo transporta. */
 export const CMS_BOOTSTRAP_ID = '__cms_bootstrap__'
 
-export async function getCmsBootstrapServer(): Promise<CmsBootstrap> {
+export const getCmsBootstrapServer = cache(async (): Promise<CmsBootstrap> => {
   if (!hasDb) return EMPTY
   try {
     await ensureDb()
@@ -68,7 +69,7 @@ export async function getCmsBootstrapServer(): Promise<CmsBootstrap> {
     console.error('[cms-bootstrap] error:', err)
     return EMPTY
   }
-}
+})
 
 /* `</script>` adentro de un valor cerraría la etiqueta antes de tiempo. Escapar
    `<` cubre ese caso y el de `<!--`, y sigue siendo JSON válido. */

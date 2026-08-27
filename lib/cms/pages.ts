@@ -33,16 +33,22 @@ export const SITE_PAGES: PageDef[] = [
     ],
     keys: ['loader.gallop', 'settings.faviconUrl', 'settings.appleIconUrl', ...ANIM_FIELDS.map(animKey)],
   },
+  /* Fallback: el Feed concentra todo lo que no es de una página dedicada.
+     Va SEGUNDO a propósito —después de los ajustes del sitio y antes del
+     resto— porque es donde vive casi todo el contenido y es la primera tab
+     que el admin abre. No matchea por sección ni por clave (`sections: []`,
+     sin `keys`), así que su posición en la lista no afecta el ruteo: se llega
+     por descarte, vía `FALLBACK_PAGE`. */
+  { id: 'feed', label: 'Feed', route: '/', icon: 'fa-house', sections: [] },
   {
     id: 'contact', label: 'Contact', route: '/contact', icon: 'fa-envelope',
     sections: ['Contact', 'Contacto'],
     keys: ['contact.hero.bg', 'contact.hero.title', 'contact.hero.lede', 'contact.social.anim'],
   },
-  /* Fallback: el Feed concentra todo lo que no es de una página dedicada. */
-  { id: 'feed', label: 'Feed', route: '/', icon: 'fa-house', sections: [] },
 ]
 
-const FALLBACK_PAGE = SITE_PAGES[SITE_PAGES.length - 1]
+/* Se resuelve por id y no por posición: el Feed ya no es el último. */
+const FALLBACK_PAGE = SITE_PAGES.find((p) => p.id === 'feed')!
 
 /* La clave indexada lleva sufijo posicional (`settings.faviconUrl#0`), así que
    la comparación es por la base, no por igualdad exacta. */

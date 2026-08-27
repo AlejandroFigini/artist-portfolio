@@ -111,3 +111,15 @@ export function fixedSlotKeys(): string[] {
   return FIXED_SLOTS.flatMap(({ base, length }) =>
     Array.from({ length }, (_, i) => `${base}#${i}`))
 }
+
+/* ¿La clave es un campo de TEXTO de un item de colección (`char#<uid>::name`,
+   `proj#<uid>::title`)? Los slots de concept art (`::cN`) son media; cualquier
+   otro sufijo es texto. Sin este filtro el índice de contenidos —que trata toda
+   clave desconocida como imagen— sembraba el valor crudo del campo ("Elena")
+   como si fuera un archivo: tarjetas fantasma en Gestión que, al borrarlas,
+   vaciaban el texto real del personaje/proyecto. */
+export function isCollectionTextKey(key: string): boolean {
+  if (!collectionOf(key)) return false
+  const i = key.indexOf('::')
+  return i >= 0 && !/^::c\d+$/.test(key.slice(i))
+}

@@ -496,3 +496,28 @@ export async function fetchAssetId(url: string): Promise<string | null> {
     return null
   }
 }
+
+/* ── CV ────────────────────────────────────────────────────────────────────
+   El CV NO es media: no pasa por /api/upload-test ni por Cloudinary. Vive en
+   la DB (tabla cms_files) y se sirve desde /api/cv, que además borra el
+   archivo anterior al reemplazarlo. */
+
+export type CvSaveResult = { url: string; name: string; bytes?: number }
+
+export async function uploadCvFile(file: Blob, name: string): Promise<CvSaveResult> {
+  const body = new FormData()
+  body.append('file', file, name)
+  body.append('name', name)
+  const r = await fetch('/api/cv', { method: 'POST', body })
+  const data = await r.json().catch(() => null) as { url?: string; name?: string; bytes?: number; error?: string } | null
+  if (!r.ok) throw new Error(data?.error || `Upload failed (HTTP ${r.status})`)
+  return { url: data?.url || '/api/cv', name: data?.name || name, bytes: data?.bytes }
+}
+
+export async function deleteCvFile(): Promise<void> {
+  const r = await fetch('/api/cv', { method: 'DELETE' })
+  if (!r.ok) {
+    const data = await r.json().catch(() => null) as { error?: string } | null
+    throw new Error(data?.error || `Delete failed (HTTP ${r.status})`)
+  }
+}

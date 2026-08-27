@@ -10,14 +10,12 @@ import { sendGAEvent } from '@next/third-parties/google'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
 import DecorAnim from '@/components/ui/DecorAnim'
 import { animSources, animIntervalMs } from '@/lib/settings'
+import { SITE_SECTIONS } from '@/lib/site-sections'
 
+/* Mismo destino que el menú: las galerías son secciones del feed, no rutas. */
 const EXPLORE_LINKS = [
-  { href: '/#presentacion', label: 'About me', i18n: 'nav_about' },
-  { href: '/illustrations', label: 'Illustrations', i18n: 'nav_illustrations' },
-  { href: '/animations', label: 'Animations', i18n: 'nav_animations' },
-  { href: '/characters', label: 'Characters', i18n: 'nav_characters' },
-  { href: '/models-3d', label: '3D Models', i18n: 'nav_3d' },
-  { href: '/multimedia', label: 'Multimedia', i18n: 'nav_multimedia' },
+  { href: '/#about', label: 'About me', i18n: 'nav_about' },
+  ...SITE_SECTIONS.map((s) => ({ href: `/#${s.id}`, label: s.label, i18n: s.i18n })),
   { href: '/contact', label: 'Contact', i18n: 'nav_contact' },
 ]
 

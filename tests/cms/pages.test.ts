@@ -82,3 +82,18 @@ describe('getPageAndSectionInfo', () => {
     expect(getPageAndSectionInfo({ key: 'proj#x', section: 'Projects' }).page).toBe('Feed (/)')
   })
 })
+
+describe('orden de las tabs', () => {
+  it('abre por Site Configuration y sigue por el Feed', () => {
+    /* El Feed concentra casi todo el contenido: es la tab que el admin abre
+       primero. Antes quedaba al final porque su posición hacía de fallback. */
+    const tree = buildPageTree([entry('hero.img', 'Hero', 'a.webp')])
+    expect(tree.map((p) => p.id)).toEqual(['config', 'feed', 'contact'])
+  })
+
+  it('el Feed sigue siendo el cajón de sastre aunque ya no sea el último', () => {
+    const tree = buildPageTree([entry('anim#0', 'Sección desconocida', 'x.webp')])
+    expect(pageById(tree, 'feed').count).toBe(1)
+    expect(pageById(tree, 'contact').count).toBe(0)
+  })
+})

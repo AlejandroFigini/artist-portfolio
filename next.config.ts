@@ -20,6 +20,20 @@ const nextConfig: NextConfig = {
        mano contra la lista por defecto y cambiarla acá devolvería 400. */
     formats: ['image/avif', 'image/webp'],
   },
+  /* Las galerías dejaron de ser rutas propias y pasaron a ser secciones del
+     feed (ver lib/site-sections.ts). Estas URLs siguen indexadas en los
+     buscadores y en enlaces viejos: se redirigen al ancla en vez de devolver
+     404. Permanentes para que el índice se actualice solo. */
+  async redirects() {
+    return [
+      { source: '/illustrations', destination: '/#illustrations', permanent: true },
+      { source: '/animations', destination: '/#animations', permanent: true },
+      { source: '/characters', destination: '/#characters', permanent: true },
+      { source: '/models-3d', destination: '/#models-3d', permanent: true },
+      // Nunca llegó a implementarse: no hay sección equivalente.
+      { source: '/multimedia', destination: '/', permanent: true },
+    ];
+  },
   // Security headers como respaldo (el proxy.ts también los setea, pero estos
   // cubren archivos estáticos y rutas que el proxy no matchea).
   async headers() {

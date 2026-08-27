@@ -754,11 +754,16 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
         stale: data.stale || [],
         repairable: data.repairable || 0,
         purgeable: data.purgeable || 0,
+        cloudinaryAssets: data.cloudinaryAssets || 0,
+        cloudinaryBytes: data.cloudinaryBytes || 0,
+        indexedFiles: data.indexedFiles || 0,
+        indexedBytes: data.indexedBytes || 0,
+        indexedUnknown: data.indexedUnknown || 0,
       }
       setSyncAudit(result)
       const problems = result.orphaned.length + result.broken.length + result.folderMismatch.length + result.stale.length
       toast(
-        `Audit complete: ${result.matching.length} synced, ${result.stale.length} stale URLs, ${result.folderMismatch.length} wrong state, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`,
+        `Audit complete: ${result.matching.length} synced files, ${result.stale.length} stale URLs, ${result.folderMismatch.length} wrong state, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`,
         problems ? 'error' : 'success',
       )
     } catch (e: unknown) {

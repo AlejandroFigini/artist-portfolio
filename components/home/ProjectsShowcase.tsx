@@ -204,7 +204,11 @@ export default function ProjectsShowcase() {
   // Fuera de pantalla el autoplay sigue disparando scrolls (y repintando el
   // track) sin que nadie lo vea: se frena hasta que la sección vuelve.
   const inView = useInViewRef(sectionRef)
+  /* Espejo del estado para los handlers de modal, que viven en otro efecto y
+     no pueden leer `inView` del closure. Mismo patrón que CharactersShowcase. */
+  const inViewRef = useRef(true)
   useEffect(() => {
+    inViewRef.current = inView
     const autoplay = carouselApi?.plugins()?.autoplay
     if (!carouselApi || !autoplay) return
     const apply = () => { if (inView) autoplay.play(); else autoplay.stop() }
@@ -227,7 +231,11 @@ export default function ProjectsShowcase() {
     const onModalClose = () => {
       try {
         const autoplay = carouselApi.plugins()?.autoplay as AutoplayType | undefined
-        if (autoplay && !document.body.classList.contains('contact-modal-open') && !document.body.classList.contains('cms-modal-open')) {
+        /* `inViewRef` es imprescindible: el freno por viewport solo se reaplica
+           cuando CAMBIA `inView`. Sin este guard, abrir y cerrar el modal de
+           contacto con la sección ya fuera de cuadro dejaba el autoplay
+           corriendo hasta que el visitante volviera a entrar y salir de ella. */
+        if (autoplay && inViewRef.current && !document.body.classList.contains('contact-modal-open') && !document.body.classList.contains('cms-modal-open')) {
           autoplay.play()
         }
       } catch {}
@@ -290,7 +298,7 @@ export default function ProjectsShowcase() {
   }, [motion])
 
   return (
-    <section ref={sectionRef} className="proj-showcase w-full">
+    <section ref={sectionRef} className="proj-showcase w-full" id="projects">
       {/* Riel vertical decorativo */}
 
 

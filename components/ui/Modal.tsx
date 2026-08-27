@@ -11,6 +11,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useKeyHandler } from '@/hooks/useKeyHandler'
 import { pauseGlobalMotion, playGlobalMotion } from '@/hooks/useGSAP'
+import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
 
 export type ModalAction = {
   label: React.ReactNode
@@ -59,9 +60,14 @@ export function CmsModal({ title, children, actions, wide, className = '', overl
 
   useEffect(() => {
     document.body.classList.add('cms-modal-open')
+    /* El bloqueo se pide y se libera por INSTANCIA (lleva contador propio): un
+       modal que se oculta con `show={false}` sigue montado y tiene que seguir
+       reteniendo el bloqueo mientras el picker que abrió está encima. */
+    lockPageScroll()
     pauseGlobalMotion()
     window.dispatchEvent(new CustomEvent('modal:open'))
     return () => {
+      unlockPageScroll()
       if (!document.querySelector('.cms-modal-overlay')) {
         document.body.classList.remove('cms-modal-open')
         playGlobalMotion()

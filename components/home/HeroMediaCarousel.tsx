@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useMotionReady } from '@/hooks/useGSAP';
+import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 import { COLLECTIONS } from '@/lib/cms/collections';
@@ -80,10 +80,13 @@ export default function HeroMediaCarousel({
     const els = document.querySelectorAll<HTMLElement>(`.${prefix}-carousel-slide`);
     if (els.length === 0) return;
     gsap.set(els, { opacity: 0 });
+    /* Con menos movimiento pedido: primera slide fija, sin fundido de entrada
+       ni rotación. Mismo criterio que Slideshow.tsx. */
+    if (prefersReducedMotion()) { gsap.set(els[0], { opacity: 1 }); return; }
     gsap.fromTo(els[0], { opacity: 0 }, { opacity: 1, duration: 2.0, ease: 'power2.out' });
     if (els.length < 2) return;
     let current = 0;
-    const timer = setInterval(() => {
+    const tick = () => {
       if (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open')) {
         return;
       }
@@ -99,9 +102,29 @@ export default function HeroMediaCarousel({
       } catch (err) {
         console.error(`[HeroMediaCarousel] GSAP error:`, err);
       }
-    }, duration);
+    };
+    /* El crossfade solo existe mientras alguien lo mira. Antes el temporizador
+       corría toda la sesión: tres instancias montadas (hero principal, hero
+       secundario y el carrusel de About) tejiendo dos tweens de 2s cada ciclo
+       con el hero ya a miles de píxeles del viewport. No alcanza con un
+       early-return: un `setInterval` que despierta para no hacer nada igual
+       despierta la CPU, y en móvil ese wake-up cae en medio del scroll. */
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!timer) timer = setInterval(tick, duration);
+        } else if (timer) {
+          clearInterval(timer);
+          timer = undefined;
+        }
+      },
+      { rootMargin: '10% 0px' },
+    );
+    io.observe(els[0]);
     return () => {
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
+      io.disconnect();
       gsap.killTweensOf(els);
     };
     // slidesKey changes when images are added/removed → re‑arm crossfade.

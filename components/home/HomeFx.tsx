@@ -153,17 +153,9 @@ export default function HomeFx() {
     }
   }, [])
 
-  // section-inactive: pausar animaciones CSS fuera de viewport
-  useEffect(() => {
-    const blocks = document.querySelectorAll('main > section, .main-footer')
-    if (!blocks.length || !('IntersectionObserver' in window)) return
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.target.classList.toggle('section-inactive', !e.isIntersecting)),
-      { rootMargin: '120px 0px', threshold: 0 },
-    )
-    blocks.forEach((b) => io.observe(b))
-    return () => io.disconnect()
-  }, [])
+  /* `section-inactive` se mudó a components/ui/ViewportGate, montado en el
+     layout de (site): acá solo cubría las rutas que montan HomeFx y dejaba
+     /about, /contact y /multimedia animando fuera de cuadro. */
 
   // preload diferido: los <video> arrancan en preload="none" (12 en la portada
   // = 12 fetches parciales de archivos de hasta 5 MB antes de que nadie los

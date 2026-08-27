@@ -8,8 +8,8 @@
 import { useSyncExternalStore } from 'react'
 import { isVideo } from '@/lib/utils'
 import { BASE_LANG, ui, type Lang } from '@/lib/i18n'
-import { COLLECTIONS, collectionOf, fixedSlotKeys } from '@/lib/cms/collections'
-import { readSettings, allKeysOf } from '@/lib/cms/collection'
+import { COLLECTIONS, collectionOf, fixedSlotKeys, isCollectionTextKey } from '@/lib/cms/collections'
+import { readSettings, mediaKeysOf } from '@/lib/cms/collection'
 import type { MediaFacts } from '@/lib/cms/media-filter'
 import { isNonMediaSettingsKey, ANIM_SLOTS, ANIM_FIELDS, animFields, animKey, animLabel } from '@/lib/settings'
 
@@ -429,11 +429,12 @@ export function mergeServerState(server: CmsStatePayload) {
 
   state.serverReady = true
 
-  /* Los ajustes de texto no son archivos: si la DB todavía tiene entradas viejas
-     (el bug del valor de `settings.loaderDuration` sembrado como media), se
-     purgan acá —único punto por el que pasan sitio y panel— y el flush deja la
-     DB limpia en vez de rehidratarlas en cada arranque. */
-  if (purgeNonMediaSettingsEntries()) { persistUsed(); persistUnused(); persistTrash() }
+  /* Los valores de texto no son archivos: si la DB todavía tiene entradas viejas
+     (el bug del valor de `settings.loaderDuration` o de `char#<uid>::name`
+     sembrado como media), se purgan acá —único punto por el que pasan sitio y
+     panel— y el flush deja la DB limpia en vez de rehidratarlas en cada
+     arranque. */
+  if (purgeNonMediaEntries()) { persistUsed(); persistUnused(); persistTrash(); persistRetired() }
 
   emit()
 
@@ -676,10 +677,17 @@ export function getContainerMeta(key: string): { label: string; section: string;
     const idx = readSettings(state.items, spec.prefix).ids.indexOf(id)
     const itemName = spec.itemNoun.charAt(0).toUpperCase() + spec.itemNoun.slice(1)
     const itemLabel = idx >= 0 ? `${itemName} #${idx + 1}` : spec.label
+    // Campo de ficha (`::name`, `::title`, `::summary`…): es texto, no un archivo.
+    // Devolverlo como 'image' hacía que el índice lo sembrara como contenido.
+    const field = isCollectionTextKey(key)
+      ? spec.fields?.find((d) => d.key === key.slice(key.indexOf('::') + 2))
+      : undefined
     return {
-      label: customLabel || (conceptMatch ? `${itemLabel} — Concept #${Number(conceptMatch[1]) + 1}` : itemLabel),
+      label: customLabel || (conceptMatch
+        ? `${itemLabel} — Concept #${Number(conceptMatch[1]) + 1}`
+        : field ? `${itemLabel} — ${field.label}` : itemLabel),
       section: spec.section,
-      kind: 'image',
+      kind: isCollectionTextKey(key) ? 'text' : 'image',
     }
   }
 
@@ -719,7 +727,7 @@ export function getAllKnownContainerKeys(): string[] {
     'about.video',
     ...fixedSlotKeys(),
     ...Object.values(COLLECTIONS).flatMap((spec) =>
-      readSettings(state.items, spec.prefix).ids.flatMap((id) => allKeysOf(spec, id))),
+      readSettings(state.items, spec.prefix).ids.flatMap((id) => mediaKeysOf(spec, id))),
   ]
   standard.forEach(k => keys.add(k))
   // 2) Claves en uso, retiradas, sin usar o en papelera
@@ -781,32 +789,47 @@ export async function verifySingleUrl(url: string): Promise<boolean> {
   return results[0].exists
 }
 
-/* Purga los ajustes de texto (settings.loaderDuration, settings.cvName…) de los
-   índices de contenido. Su valor es texto crudo ("8"), nunca un archivo, pero el
-   índice trata cualquier clave desconocida como imagen y lo pintaba como tarjeta
-   del repositorio. La purga vivía solo en `seedUsedContent()`, que corre en el
-   sitio y no en /admin: la copia de la DB volvía a hidratar la entrada en cada
-   arranque. Devuelve true si tocó algo. */
-export function purgeNonMediaSettingsEntries(): boolean {
+/* Claves cuyo VALOR es texto, no un archivo: los ajustes de texto
+   (settings.loaderDuration, settings.cvName…) y los campos de ficha de las
+   colecciones (char#<uid>::name, proj#<uid>::title…). El índice de contenidos
+   trata cualquier clave desconocida como imagen, así que sin este filtro el
+   valor crudo se sembraba como si fuera un archivo. */
+const isNonMediaIndexKey = (key: string): boolean =>
+  isNonMediaSettingsKey(key) || isCollectionTextKey(key)
+
+/* Purga esas claves de los índices de contenido. La purga vivía solo en
+   `seedUsedContent()`, que corre en el sitio y no en /admin: la copia de la DB
+   volvía a hidratar la entrada en cada arranque. Devuelve true si tocó algo.
+
+   Las entradas de ficha además arrastraban al texto real: la tarjeta fantasma
+   se veía en Gestión y "Mover a sin usar" borraba `char#<uid>::name`, con lo
+   que el personaje desaparecía del sitio. Por eso también se limpian `retired`
+   (un campo nunca es un slot retirado) y las copias que quedaron en sin-usar y
+   en la papelera. Solo se tocan los ÍNDICES: `state.items` —el texto real— no
+   se modifica acá. */
+export function purgeNonMediaEntries(): boolean {
   let changed = false
   Object.keys(state.usedContent).forEach((key) => {
-    if (isNonMediaSettingsKey(key)) { delete state.usedContent[key]; changed = true }
+    if (isNonMediaIndexKey(key)) { delete state.usedContent[key]; changed = true }
   })
   Object.keys(state.mediaMeta).forEach((key) => {
-    if (isNonMediaSettingsKey(key)) { delete state.mediaMeta[key]; changed = true }
+    if (isNonMediaIndexKey(key)) { delete state.mediaMeta[key]; changed = true }
   })
-  const drop = <T extends { key?: string }>(arr: T[]) => arr.filter((e) => !isNonMediaSettingsKey(e.key || ''))
+  const drop = <T extends { key?: string }>(arr: T[]) => arr.filter((e) => !isNonMediaIndexKey(e.key || ''))
   const unusedClean = drop(state.unused)
   if (unusedClean.length !== state.unused.length) { state.unused = unusedClean; changed = true }
   const trashClean = drop(state.trash)
   if (trashClean.length !== state.trash.length) { state.trash = trashClean; changed = true }
+  const retiredClean = state.retired.filter((key) => !isCollectionTextKey(key))
+  if (retiredClean.length !== state.retired.length) { state.retired = retiredClean; changed = true }
   return changed
 }
 
 export function retireUsedEntryToUnused(entry: UsedEntry, reason: 'retired' | 'replaced' | 'deleted' | 'upload' = 'retired', ignoreKeys: string[] = []) {
   if (!entry || !entry.src) return
-  // Ajuste de texto (duración del loader, nombre del CV…): no es un archivo.
-  if (isNonMediaSettingsKey(entry.key || '')) return
+  // Valor de texto (duración del loader, nombre del CV, ficha de un personaje…):
+  // no es un archivo, así que no tiene "sin usar" al que ir.
+  if (isNonMediaIndexKey(entry.key || '')) return
   const id = entry.src
   const otherUses = Object.values(state.usedContent).filter(u => u.src === id && u.key !== entry.key && !ignoreKeys.includes(u.key))
   if (otherUses.length === 0) {

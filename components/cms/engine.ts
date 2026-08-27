@@ -12,7 +12,7 @@ import { saveContent } from '@/lib/api'
 import {
   state, emit, recordAudit, recordMediaMeta, persistUsed, persistUnused, persistRetired,
   persistOverridesLocal, persistLang, retireUsedEntryToUnused, archiveMediaKey, clearItemOverrides, getAllKnownContainerKeys, getContainerMeta, type FieldValue, flushSyncToServer, markItemsSynced, markIntentionalClear,
-  persistTrash, loadTextDefaults, recordTextDefaults, purgeNonMediaSettingsEntries
+  persistTrash, loadTextDefaults, recordTextDefaults, purgeNonMediaEntries
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
@@ -21,7 +21,7 @@ import {
   SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey,
   ANIM_SLOTS, animFields, animKey, animLabel, animPreviewClass,
 } from '@/lib/settings'
-import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
+import { COLLECTIONS, collectionOf, isCollectionTextKey } from '@/lib/cms/collections'
 import { readSettings, planCommit, isEmptyMedia } from '@/lib/cms/collection'
 
 function resolveMediaName(src: string | undefined, key?: string): string {
@@ -479,8 +479,22 @@ function applyValue(el: HTMLElement, type: string, value: string) {
       else v.removeAttribute('src')
     }
     try {
-      v.load()
-      if (value && v.autoplay) v.play().catch(() => {})
+      /* `load()` SOLO cuando hace falta. Asignar `v.src` ya dispara el algoritmo
+         de carga del elemento, pero llamar a `load()` explícitamente hace que
+         Chrome ignore el `preload="none"` y se traiga el archivo igual: era la
+         razón por la que cada contenedor con video bajaba su archivo completo
+         apenas montaba, estuviera o no en pantalla.
+         Los dos casos que sí lo necesitan: un `<source>` hijo (cambiarle el
+         `src` no reinicia nada por sí solo) y el vaciado del contenedor. */
+      if (s || !value) v.load()
+      /* Regla dura del sitio: un video no arranca si no se ve. `applyValue`
+         corre en cada rescan y en cada emit del store, así que sin el chequeo
+         de caja cualquier slot con `autoplay` empezaba a reproducir apenas el
+         CMS le escribía el src, estuviera donde estuviera en la página. */
+      if (value && v.autoplay) {
+        const box = v.getBoundingClientRect()
+        if (box.bottom > 0 && box.top < (window.innerHeight || 0)) v.play().catch(() => {})
+      }
     } catch {}
   }
 }
@@ -493,6 +507,8 @@ export function ensureCollectionMeta(key: string) {
   if (metaByKey[key]) return
   const spec = collectionOf(key)
   if (!spec) return
+  // Un campo de ficha no tiene contenedor propio: se edita desde el item.
+  if (isCollectionTextKey(key)) return
   const conceptMatch = key.match(/::c(\d+)$/)
   // `spec.fields` (CollectionSpec, lib/cms/collections.ts) es metadata declarativa
   // { key, label, type } para que el gestor decida qué columna mostrar — no sirve
@@ -745,9 +761,11 @@ export function syncWaveGroups() {
 
 // ----- Campos de info -----------------------------------------------------------
 
-export function computeFields(key: string, el: HTMLElement, meta: Meta): FieldValue[] | null {
+export function computeFields(key: string, el: HTMLElement | null, meta: Meta): FieldValue[] | null {
   if (!meta.fields) return null
-  const cont = meta.container ? el.closest<HTMLElement>(meta.container) : el
+  // Sin elemento montado (el panel de gestion no renderiza la portada) no hay
+  // contenedor del que leer: los campos salen igual de `state.items`.
+  const cont = meta.container && el ? el.closest<HTMLElement>(meta.container) : el
   /* Contenedores de MEDIA (image/video con ficha: proyectos, personajes,
      animaciones, ilustraciones): sus campos son CMS y viven en `state.items`.
      NO se cae al DOM — era el bug: al quitar un contenido y agregar otro, `f.get`
@@ -777,10 +795,12 @@ export function seedUsedContent() {
      valor es texto, nunca un archivo. Se purgan de los índices porque una
      entrada vieja se realimentaba (unused → clave conocida → seed → al cambiar
      el valor, el anterior volvía a "sin usar"). */
-  if (purgeNonMediaSettingsEntries()) { persistUnused(); persistTrash(); changed = true }
+  if (purgeNonMediaEntries()) { persistUnused(); persistTrash(); persistRetired(); changed = true }
 
   allKeys.forEach((key) => {
-    if (isNonMediaSettingsKey(key)) return
+    // Ni los ajustes de texto ni los campos de ficha de una colección
+    // (`char#<uid>::name`) son archivos: su valor es el propio texto.
+    if (isNonMediaSettingsKey(key) || isCollectionTextKey(key)) return
     // Una clave retirada PERO con contenido no es un slot vacío: se siembra igual
     // (mismo criterio que el reconcile de refreshRetired). Sin esto, un contenedor
     // que quedó marcado retired con contenido —p.ej. el favicon— no aparecía en
@@ -1263,7 +1283,9 @@ export function clearAllSite() {
      página — o sea que la guarda quedaba desarmada justo para el cliente recién
      cargado y con el estado vacío, que es exactamente contra el que existe. */
   markIntentionalClear('used_content', 'unused', 'trash', 'retired', 'media_meta', 'audit', 'container_names')
-  if (!state.isAdmin) return
+  // Solo el owner puede vaciar el sitio entero (la UI ya oculta el botón; esto
+  // es la guarda real, por si alguien lo dispara desde otro lado).
+  if (!state.isAdmin || state.role !== 'owner') return
   // Fuerza el reset de los carruseles de portada aunque no tengan contenido CMS
   // (ej. el fondo mostrando los DEFAULT_SLIDES) → "limpiar todo" siempre los vacía.
   clearKeys(allMediaKeys(), Object.keys(COLLECTIONS))

@@ -132,7 +132,7 @@ export default function AboutSection() {
   }, [motion])
 
   return (
-    <section ref={sectionRef} className="about-section" aria-labelledby="about-title-h">
+    <section ref={sectionRef} className="about-section" id="about" aria-labelledby="about-title-h">
 
 
       <div className="about-frame">
@@ -219,13 +219,21 @@ export default function AboutSection() {
             <span className="about-media-blob about-media-blob--b" aria-hidden="true" />
 
             <div className="about-video-container">
+              {/* Sin `autoplay`: el atributo hace que el navegador baje y arranque
+                  el archivo apenas monta, esté o no en cuadro — es el reel más
+                  pesado de la portada (medido: 4,9 MB antes del primer scroll).
+                  Tampoco lleva `data-preload-defer`: esa marca sirve para los
+                  videos que NO se reproducen solos y necesitan su primer frame
+                  pintado, y acá promocionar a "metadata" 300px antes vuelve a
+                  traer el archivo completo. Este lo arranca el observer de
+                  HomeFx al entrar en cuadro, y hasta entonces el hueco lo tapa
+                  el póster que el motor del CMS le pone al slot. */}
               <video
                 className="about-video"
-                autoPlay
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload="none"
               />
               <div className="about-video-caption">
                 <span>FIG. 02a</span>

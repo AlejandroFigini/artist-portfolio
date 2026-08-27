@@ -162,6 +162,24 @@ export default function ContactPage() {
     return () => ctx.revert()
   }, [motion])
 
+  /* Reel de la sección Social: reproduce solo en cuadro. Efecto aparte y sin
+     depender de `motion` a propósito — el gate de reproducción no puede quedar
+     supeditado a que el chunk de GSAP haya bajado. La pausa al salir la cubre
+     además ViewportGate; acá está el arranque. */
+  useEffect(() => {
+    const v = mainRef.current?.querySelector<HTMLVideoElement>('.ct-social-anim')
+    if (!v || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) void v.play().catch(() => {})
+        else v.pause()
+      },
+      { threshold: 0.15 },
+    )
+    io.observe(v)
+    return () => { io.disconnect(); v.pause() }
+  }, [])
+
   return (
     <main ref={mainRef} className="ct-main">
       {/* Background decorations */}
@@ -274,7 +292,12 @@ export default function ContactPage() {
                   punteado + nube + nombre) sobre el padre mientras no haya media. */}
               <div className="ct-social-anim-container">
                 <Corners />
-                <video className="ct-social-anim" autoPlay muted loop playsInline preload="metadata" />
+                {/* Sin `autoplay`: /contact no monta HomeFx, así que nada lo
+                    pausaba y el reel de la tercera sección bajaba y reproducía
+                    en loop desde la carga, compitiendo con el formulario que es
+                    el objetivo real de la ruta. Lo arranca el observer del
+                    efecto de abajo, solo en cuadro. */}
+                <video className="ct-social-anim" muted loop playsInline preload="none" />
               </div>
             </div>
           </div>

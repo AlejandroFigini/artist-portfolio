@@ -4,6 +4,7 @@ import HomeFx from '@/components/home/HomeFx'
 import HeroSlideshow from '@/components/home/Slideshow'
 import Hero from '@/components/home/Hero'
 import SectionRail from '@/components/home/SectionRail'
+import SectionHashScroll from '@/components/home/SectionHashScroll'
 import { getHeroPreloadServer } from '@/lib/hero-server'
 import { getSiteSettingsServer } from '@/lib/site-server'
 import { mediaSrcSet, optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
@@ -75,6 +76,7 @@ export default async function HomePage() {
         <IllustrationsShowcase />
       </main>
       <SectionRail />
+      <SectionHashScroll />
     </>
   )
 }

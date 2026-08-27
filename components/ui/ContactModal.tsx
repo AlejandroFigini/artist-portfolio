@@ -33,8 +33,14 @@ export default function ContactModal({ onClose }: { onClose: () => void }) {
 
     return () => {
       document.body.classList.remove('contact-modal-open')
+      /* Reanudar SOLO lo que sigue en cuadro: el modal se abre desde el nav a
+         cualquier altura de scroll, así que un video pausado al abrirlo puede
+         estar fuera de pantalla al cerrarlo. */
       pausedVideos.forEach((v) => {
-        try { v.play() } catch {}
+        const r = v.getBoundingClientRect()
+        if (r.bottom > 0 && r.top < (window.innerHeight || 0)) {
+          try { v.play() } catch {}
+        }
       })
       playGlobalMotion()
       window.dispatchEvent(new CustomEvent('modal:close'))

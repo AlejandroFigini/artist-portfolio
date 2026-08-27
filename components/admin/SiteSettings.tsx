@@ -12,7 +12,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
-import { saveContent, uploadMedia } from '@/lib/api'
+import { saveContent, uploadCvFile, deleteCvFile } from '@/lib/api'
 import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
 import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
@@ -716,11 +716,11 @@ export function CvSettings() {
     if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
     setSaving(true)
     try {
-      // Multipart (no data URL dentro de un JSON): sube el PDF con su nombre real
-      // y persiste la URL resultante. Evita el body gigante que hacía fallar el
-      // guardado (Replace/Remove) y el asset con nombre "settings.*".
-      const res = await uploadMedia(file, file.name, 'CV')
-      await save({ cvUrl: res.secure_url, cvName: file.name }, `CV updated (${file.name})`)
+      /* Va a la DB por /api/cv, no al repositorio de media: el CV no es un
+         asset del portfolio y como tal inflaba el inventario y dejaba huérfano
+         el PDF anterior en cada reemplazo. El endpoint borra el viejo. */
+      const res = await uploadCvFile(file, file.name)
+      await save({ cvUrl: res.url, cvName: res.name }, `CV updated (${res.name})`)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Failed to upload CV', 'error')
     } finally {
@@ -730,8 +730,14 @@ export function CvSettings() {
 
   const remove = async () => {
     setSaving(true)
-    await save({ cvUrl: '', cvName: '' }, 'CV removed')
-    setSaving(false)
+    try {
+      await deleteCvFile()
+      await save({ cvUrl: '', cvName: '' }, 'CV removed')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Failed to remove CV', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

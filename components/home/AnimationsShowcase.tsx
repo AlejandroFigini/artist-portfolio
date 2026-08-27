@@ -78,9 +78,13 @@ function AnimCard({ index }: { index: number }) {
       }
       setVideoSrc(srcVal)
 
-      // Only pause/reset if we just transitioned to having content
-      if (has && !hasContentRef.current) { 
-        try { v.pause(); v.currentTime = 0 } catch {} 
+      /* Rebobinar solo si el clip anterior había avanzado. ESCRIBIR
+         `currentTime` obliga al navegador a resolver el recurso, así que en el
+         primer sync anulaba el `preload="none"` de la tarjeta y bajaba el
+         archivo entero de cada una, muy por debajo del fold (medido: 5,5 MB en
+         dos tarjetas). Leerlo no cuesta nada. */
+      if (has && !hasContentRef.current) {
+        try { v.pause(); if (v.currentTime > 0) v.currentTime = 0 } catch {}
       }
       hasContentRef.current = has
     }
@@ -109,8 +113,13 @@ function AnimCard({ index }: { index: number }) {
     v.addEventListener('loadeddata', syncContent)
     v.addEventListener('emptied', syncContent)
 
-    // Polling fallback: catches any edge case the observer misses
-    const poll = setInterval(syncContent, 500)
+    /* Red de seguridad del sondeo: cubre el caso que el observer no ve, pero
+       el único que reemplaza el contenido de una tarjeta es el motor del CMS
+       con sesión abierta. Para el visitante eran seis temporizadores llamando
+       a dos setState cada 500 ms de por vida, sobre un DOM que ya nadie toca. */
+    const poll = setInterval(() => {
+      if (document.body.classList.contains('is-admin')) syncContent()
+    }, 500)
 
     return () => {
       mo.disconnect()
@@ -141,6 +150,9 @@ function AnimCard({ index }: { index: number }) {
     const v = videoRef.current
     if (!v) return
     v.pause()
+    // Rebobinar acá y no solo al entrar: si no, la tarjeta queda congelada en
+    // el frame donde se cortó y la miniatura "recuerda" dónde quedó.
+    try { if (v.currentTime > 0) v.currentTime = 0 } catch {}
     setPlaying(false)
   }, [])
 
@@ -365,7 +377,7 @@ export default function AnimationsShowcase() {
   }, [motion])
 
   return (
-    <section ref={sectionRef} className="anim-showcase" aria-labelledby="anim-showcase-title">
+    <section ref={sectionRef} className="anim-showcase" id="animations" aria-labelledby="anim-showcase-title">
 
 
       <div className="anim-showcase__frame">

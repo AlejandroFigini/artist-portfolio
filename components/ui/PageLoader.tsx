@@ -192,7 +192,21 @@ export default function PageLoader() {
           || performance.getEntriesByName('first-contentful-paint')[0]?.startTime
           || 0
         if (stamped) paintedAtRef.current = stamped
-        else if (document.visibilityState === 'hidden') { raf = requestAnimationFrame(evaluate); return }
+        else if (document.visibilityState === 'hidden') {
+          /* Oculto y sin sello: nadie vio el loader, asi que el piso no tiene
+             a quien proteger y se da por cumplido. No alcanza con reintentar
+             por rAF: mientras el documento esta oculto rAF NO corre, asi que
+             un documento que nunca se muestra —iframe fuera de pantalla,
+             rastreador, vista previa incrustada— se quedaba tapado para
+             siempre mostrando "Loading…", con todos los gates ya cumplidos.
+             Es el unico camino que quedaba sin salida propia.
+             El rAF y `visibilitychange` siguen enganchados: si la pestaña se
+             abre antes de que cierre, se sella el pintado de verdad y el piso
+             se recalcula (`Math.max`, nunca acorta). */
+          setFloorSatisfiedMs((prev) => Math.max(prev, minDisplay))
+          raf = requestAnimationFrame(evaluate)
+          return
+        }
         else paintedAtRef.current = performance.now()
       }
       const remaining = paintedAtRef.current + minDisplay - performance.now()

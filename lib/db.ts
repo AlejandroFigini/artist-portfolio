@@ -185,6 +185,25 @@ const MIGRATIONS: { id: string; sql: string }[] = [
     id: '2026_08_users_demo_no_setup',
     sql: "UPDATE users SET needs_setup = FALSE WHERE role = 'demo' AND needs_setup = TRUE",
   },
+  {
+    /* Documentos del sitio (hoy solo el CV). NO son media: el CV vivía en
+       Cloudinary y contaminaba el repositorio —contaba como archivo, sumaba
+       MB y nunca coincidía con "Contenido en uso"—, y al reemplazarlo el
+       anterior quedaba huérfano para siempre. Una fila por documento: el
+       reemplazo es un UPSERT, así que no puede acumular copias.
+       El filesystem no sirve para esto (Railway lo borra en cada deploy). */
+    id: '2026_08_cms_files',
+    sql: `
+      CREATE TABLE IF NOT EXISTS cms_files (
+        key VARCHAR(64) PRIMARY KEY,
+        name TEXT NOT NULL,
+        mime VARCHAR(128) NOT NULL,
+        bytes INTEGER NOT NULL,
+        data BYTEA NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ]
 
 /* Seed de usuarios: corre en boot si la tabla está vacía. Credenciales

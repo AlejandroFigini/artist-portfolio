@@ -147,7 +147,11 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
   const [verifying, setVerifying] = useState(false)
-  const { query, setQuery, applied } = useMediaQuery()
+  /* El filtro de tipo arranca en el que el contenedor ACEPTA, no en "All":
+     abrir el picker de un slot de video y ver el repositorio entero (con los
+     videos apenas ordenados primero) obliga a filtrar a mano en cada asignacion.
+     El chip "All" sigue estando para cuando se quiere mirar todo. */
+  const { query, setQuery, applied } = useMediaQuery({ kind: isVideoSlot ? 'video' : 'image' })
 
   const [all, setAll] = useState<RepoEntry[]>([])
   const [loadingDb, setLoadingDb] = useState(true)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COLLECTIONS, collectionOf } from '@/lib/cms/collections'
+import { COLLECTIONS, collectionOf, isCollectionTextKey } from '@/lib/cms/collections'
 import {
   allKeysOf,
   fieldKeysOf,
@@ -487,5 +487,28 @@ describe('FIXED_SLOTS', () => {
     expect(keys).toContain('illustration#14')
     expect(keys).not.toContain('illustration#15')
     expect(keys).not.toContain('proj#0')
+  })
+})
+
+describe('isCollectionTextKey', () => {
+  it('reconoce los campos de ficha como texto', () => {
+    expect(isCollectionTextKey('char#ab12cd::name')).toBe(true)
+    expect(isCollectionTextKey('char#ab12cd::role')).toBe(true)
+    expect(isCollectionTextKey('proj#ab12cd::title')).toBe(true)
+    // El modal escribe campos que la spec no declara: también son texto.
+    expect(isCollectionTextKey('proj#ab12cd::end_date')).toBe(true)
+  })
+
+  it('no marca como texto la media del item ni los concepts', () => {
+    expect(isCollectionTextKey('char#ab12cd')).toBe(false)
+    expect(isCollectionTextKey('proj#ab12cd')).toBe(false)
+    expect(isCollectionTextKey('char#ab12cd::c0')).toBe(false)
+    expect(isCollectionTextKey('proj#ab12cd::c12')).toBe(false)
+  })
+
+  it('ignora claves ajenas a las colecciones', () => {
+    expect(isCollectionTextKey('anim#3')).toBe(false)
+    expect(isCollectionTextKey('settings.cvName')).toBe(false)
+    expect(isCollectionTextKey('about.spec#0::k')).toBe(false)
   })
 })

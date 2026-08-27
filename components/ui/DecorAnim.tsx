@@ -12,6 +12,10 @@
    - 'toggle' → al CERRARSE el panel que la aloja (drawer, panel de ajustes).
      El cambio ocurre con el panel cerrado y el archivo entrante se precarga en
      esa ventana muerta, así que al abrir ya está listo: nunca se ve el salto.
+     El salto se espera `closeDelayMs`: el cierre es una transición CSS, no es
+     instantáneo, y rotar al toque dejaba el clip nuevo a la vista durante todo
+     el cierre. Si el panel se reabre antes de que venza, no rota — se vuelve a
+     ver el mismo clip, que es justo lo que se espera.
    - 'load'   → una por montaje, siguiendo un contador en localStorage. Es lo
      que sirve para lo que se desmonta al cerrarse (el modal de contacto),
      donde un índice en memoria se perdería.
@@ -61,9 +65,12 @@ type Props = {
   slot?: string
   /** Período de rotación en ms (solo 'interval'). */
   intervalMs?: number
+  /** Espera tras el cierre antes de rotar (solo 'toggle'). Tiene que cubrir la
+   *  transición de cierre del panel anfitrión. */
+  closeDelayMs?: number
 }
 
-export default function DecorAnim({ sources, className, active, rotateOn = 'toggle', slot, intervalMs }: Props) {
+export default function DecorAnim({ sources, className, active, rotateOn = 'toggle', slot, intervalMs, closeDelayMs = 600 }: Props) {
   const slotRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const pending = useRef<Promise<void> | null>(null)
@@ -79,6 +86,13 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
   /* En pantalla ahora mismo. Gobierna el reloj de la rotación 'interval': un
      temporizador corriendo fuera de vista quemaría archivos que nadie mira. */
   const [visible, setVisible] = useState(false)
+  /* Cerca del viewport. Hasta acá el elemento arranca en `preload="none"`: con
+     "metadata" el navegador se trae el archivo ENTERO de cada contenedor
+     decorativo apenas monta (medido en la portada: 5 instancias = 5,6 MB antes
+     del primer scroll, y el mismo archivo bajado 3 veces por estar en 3
+     secciones). El margen adelanta la carga lo suficiente como para que al
+     entrar en cuadro ya tenga su primer frame. */
+  const [near, setNear] = useState(false)
 
   const list = sources.filter(Boolean)
   const total = list.length
@@ -106,15 +120,34 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
     return () => clearInterval(id)
   }, [rotateOn, total, visible, active, intervalMs])
 
-  // 'toggle': al cerrarse pasa a la siguiente, con el panel ya fuera de vista.
+  /* 'toggle': al cerrarse pasa a la siguiente, con el panel ya fuera de vista.
+     La espera es obligatoria: el cierre es una transición CSS, no es
+     instantáneo, y rotar en el acto dejaba el clip nuevo a la vista durante
+     todo el cierre. Reabrir antes de que venza cancela la rotación — se vuelve
+     a ver el mismo clip, que es lo que el usuario espera. */
   const prevActive = useRef(active)
   useEffect(() => {
-    if (rotateOn === 'toggle' && total > 1 && prevActive.current === true && active === false) {
+    const closing = rotateOn === 'toggle' && total > 1 && prevActive.current === true && active === false
+    prevActive.current = active
+    if (!closing) return
+    const id = setTimeout(() => {
       setIdx((i) => (i + 1) % total)
       setWarm(true)
-    }
-    prevActive.current = active
-  }, [active, rotateOn, total])
+    }, closeDelayMs)
+    return () => clearTimeout(id)
+  }, [active, rotateOn, total, closeDelayMs])
+
+  // Precarga por cercanía: separada del observer de reproducción porque usa
+  // otro margen y no debe reiniciarse cuando cambia el clip de la rotación.
+  useEffect(() => {
+    const box = slotRef.current
+    if (!box || near) return
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setNear(true); io.disconnect() }
+    }, { rootMargin: '400px 0px' })
+    io.observe(box)
+    return () => io.disconnect()
+  }, [near])
 
   useEffect(() => {
     const v = videoRef.current
@@ -165,7 +198,7 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
         loop
         muted
         playsInline
-        preload={warm ? 'auto' : 'metadata'}
+        preload={warm ? 'auto' : near ? 'metadata' : 'none'}
         disablePictureInPicture
         disableRemotePlayback
       />

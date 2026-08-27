@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { itemKey, readSettings } from '@/lib/cms/collection'
 import { COLLECTIONS } from '@/lib/cms/collections'
@@ -19,7 +20,7 @@ export type HeroPreload = { backdrop: string; panel: string }
 
 const EMPTY: HeroPreload = { backdrop: '', panel: '' }
 
-export async function getHeroPreloadServer(): Promise<HeroPreload> {
+export const getHeroPreloadServer = cache(async (): Promise<HeroPreload> => {
   if (!hasDb) return EMPTY
   try {
     await ensureDb()
@@ -53,4 +54,4 @@ export async function getHeroPreloadServer(): Promise<HeroPreload> {
     console.error('[hero-server] error:', err)
     return EMPTY
   }
-}
+})

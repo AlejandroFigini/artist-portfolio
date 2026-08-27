@@ -12,7 +12,7 @@ import { ALL_LANGS, LANG_META, type Lang } from '@/lib/i18n'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { useToast } from '@/components/ui/Toast'
-import { uploadMedia } from '@/lib/api'
+import { uploadCvFile, deleteCvFile } from '@/lib/api'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -111,12 +111,9 @@ export default function SettingsPanel() {
     if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }
     setSavingCv(true)
     try {
-      const res = await uploadMedia(file, file.name, 'settings', 'used')
-      if (res.success) {
-        await saveSettings({ cvUrl: res.secure_url, cvName: file.name }, `CV updated (${file.name})`)
-      } else {
-        toast(res.error || 'Upload failed', 'error')
-      }
+      // Mismo circuito que Gestión: DB vía /api/cv, nunca el repositorio de media.
+      const res = await uploadCvFile(file, file.name)
+      await saveSettings({ cvUrl: res.url, cvName: res.name }, `CV updated (${res.name})`)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Upload failed', 'error')
     }
@@ -125,7 +122,12 @@ export default function SettingsPanel() {
 
   const removeCv = async () => {
     setSavingCv(true)
-    await saveSettings({ cvUrl: '', cvName: '' }, 'CV removed')
+    try {
+      await deleteCvFile()
+      await saveSettings({ cvUrl: '', cvName: '' }, 'CV removed')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Failed to remove CV', 'error')
+    }
     setSavingCv(false)
   }
 
@@ -336,7 +338,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Panel admin — solo logueado como admin. Lista settings exclusivos de admin.
-          Por ahora: Hide Edit actions + Clear All Content (con el tiempo se suman más).
+          Por ahora: Hide Edit actions + Clear Current Section (+ Clear All Content, solo owner).
           Su tuerca vive en la pestaña, arriba. */}
       {state.isAdmin && (
         <>
@@ -364,18 +366,23 @@ export default function SettingsPanel() {
                 <i className="fa-solid fa-eraser"></i>
               </button>
             </div>
-            <div className="setting-item">
-              <span>Clear All Content</span>
-              <button
-                type="button"
-                className="cv-btn cv-btn-settings"
-                id="clear-content-btn"
-                title="Clear all page content"
-                onClick={() => setShowClearConfirm(true)}
-              >
-                <i className="fa-solid fa-trash"></i>
-              </button>
-            </div>
+            {/* Vaciar el sitio entero es irreversible para el resto de los
+                roles: queda reservado al owner. "Clear Current Section" sigue
+                disponible para cualquier admin. */}
+            {state.role === 'owner' && (
+              <div className="setting-item">
+                <span>Clear All Content</span>
+                <button
+                  type="button"
+                  className="cv-btn cv-btn-settings"
+                  id="clear-content-btn"
+                  title="Clear all page content"
+                  onClick={() => setShowClearConfirm(true)}
+                >
+                  <i className="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            )}
             <hr className="settings-divider" />
             <div className="setting-item">
           <span>Upload CV</span>
@@ -469,7 +476,7 @@ export default function SettingsPanel() {
           </div>
         </div>
       )}
-      {showClearConfirm && (
+      {showClearConfirm && state.role === 'owner' && (
         <div className="cms-confirm-overlay" onClick={() => setShowClearConfirm(false)}>
           <div className="cms-confirm-dialog" onClick={(e) => e.stopPropagation()}>
             <h3>Clear All Content?</h3>

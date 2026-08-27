@@ -166,6 +166,11 @@ export default function Hero() {
       if (typeof document !== 'undefined' && (document.body.classList.contains('contact-modal-open') || document.body.classList.contains('cms-modal-open'))) {
         return
       }
+      /* El hero no se ve: saltar el ciclo. Cada replay fuerza un reflow
+         (`offsetWidth`) y promueve ~12 letras a capa de GPU durante 650ms —
+         trabajo caro, repetido cada 9s, para una animación que nadie mira. */
+      const box = (title as HTMLElement).getBoundingClientRect()
+      if (box.bottom <= 0 || box.top >= (window.innerHeight || 0)) return
       setHint(true)
       title.classList.remove('anim-in')
       void (title as HTMLElement).offsetWidth

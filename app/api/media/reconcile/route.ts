@@ -169,6 +169,10 @@ async function reconcile(apply: boolean, purge: boolean) {
   return {
     checked: report.checked,
     cloudinaryAssets: report.cloudinaryAssets,
+    cloudinaryBytes: report.cloudinaryBytes,
+    indexedFiles: report.indexedFiles,
+    indexedBytes: report.indexedBytes,
+    indexedUnknown: report.indexedUnknown,
     findings: report.findings,
     counts: report.counts,
     // Vistas para el panel de auditoría.

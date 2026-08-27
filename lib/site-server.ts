@@ -1,8 +1,13 @@
 import 'server-only'
+import { cache } from 'react'
 import { getPool, hasDb, ensureDb } from '@/lib/db'
 import { SETTINGS_KEYS, EMPTY_SETTINGS, ANIM_FIELDS, ANIM_EVERY_FIELDS, animKey, type SiteSettings } from '@/lib/settings'
 
-export async function getSiteSettingsServer(): Promise<SiteSettings> {
+/* `cache()` = una sola consulta por request. El layout lo pide para el favicon
+   y la portada para el póster del loader: sin esto son dos viajes a la base
+   por cada visita, y con la base en otro servicio de Railway eso es latencia
+   pura metida en el TTFB. */
+export const getSiteSettingsServer = cache(async (): Promise<SiteSettings> => {
   if (!hasDb) return EMPTY_SETTINGS
   try {
     await ensureDb()
@@ -27,4 +32,4 @@ export async function getSiteSettingsServer(): Promise<SiteSettings> {
     console.error('[site-server] error:', err)
     return EMPTY_SETTINGS
   }
-}
+})

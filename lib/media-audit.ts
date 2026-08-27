@@ -50,7 +50,11 @@ export type Finding = {
 /* Vistas para el panel de auditoría: las mismas conclusiones, agrupadas por lo
    que el admin necesita ver. No agregan lógica, sólo forma. */
 export type AuditViews = {
-  matching: { url: string; name: string; state: string; cloudinaryId: string }[]
+  /* Un archivo por fila, NO una por contenedor: `uses` dice en cuántos
+     contenedores está. Contar referencias hacía que "sincronizados" superara
+     al total del repositorio (220 vs 208) y las dos cifras no se pudieran
+     comparar con lo que reporta Cloudinary. */
+  matching: { url: string; name: string; state: string; cloudinaryId: string; uses: number }[]
   stale: { url: string; name: string; state: string; section: string; cloudinaryId: string; fixedTo: string }[]
   missing: { url: string; name: string; state: string; section: string }[]
   orphaned: { url: string; publicId: string; resourceType: string; format: string; bytes: number; folder: string }[]
@@ -60,6 +64,17 @@ export type AuditViews = {
 export type AuditReport = AuditViews & {
   checked: number
   cloudinaryAssets: number
+  /* Bytes de los assets ORIGINALES que Cloudinary lista. No coincide con el
+     total de la consola de Cloudinary y no tiene por qué: ahí también entran
+     las variantes derivadas (los recortes que genera cada transformación) y
+     los backups, que el CMS ni conoce ni administra. Esta es la cifra
+     comparable contra el peso del repositorio. */
+  cloudinaryBytes: number
+  /** Archivos ÚNICOS que el índice del panel sostiene (no referencias). */
+  indexedFiles: number
+  /** Bytes que el índice cree tener. `indexedUnknown` son los que no sabe pesar. */
+  indexedBytes: number
+  indexedUnknown: number
   findings: Finding[]
   counts: Record<string, number>
   /** `cms_data` que apunta a una URL muerta pero con el asset vivo en otro lado. */
@@ -149,7 +164,15 @@ export function auditMedia({ rows, listing, index, localAssetExists }: AuditInpu
   }
   const sectionOf = (url: string): string => metaOf(url).section || ''
 
-  const matching: AuditViews['matching'] = []
+  /* Indexado por URL: el mismo archivo puede estar en varios contenedores y
+     acá se cuenta UNA vez. */
+  const matchingByUrl = new Map<string, AuditViews['matching'][number]>()
+  const addMatch = (url: string, row: Omit<AuditViews['matching'][number], 'uses'>) => {
+    const id = srcKey(url)
+    const prev = matchingByUrl.get(id)
+    if (prev) { prev.uses += 1; return }
+    matchingByUrl.set(id, { ...row, uses: 1 })
+  }
   const stale: AuditViews['stale'] = []
   const missing: AuditViews['missing'] = []
 
@@ -158,7 +181,7 @@ export function auditMedia({ rows, listing, index, localAssetExists }: AuditInpu
     const hit = byUrl.get(clean)
     if (hit) {
       referenced.add(hit.public_id)
-      matching.push({ url: value, name: nameOf(value, key), state: 'used', cloudinaryId: hit.public_id })
+      addMatch(value, { url: value, name: nameOf(value, key), state: 'used', cloudinaryId: hit.public_id })
       continue
     }
     /* La URL guardada no existe en Cloudinary. Buscar el mismo archivo en otra
@@ -367,7 +390,7 @@ export function auditMedia({ rows, listing, index, localAssetExists }: AuditInpu
       const src = entrySrc(e)
       const hit = src ? byUrl.get(src) : undefined
       if (!hit) continue
-      matching.push({ url: src, name: (e.name as string) || (e.label as string) || nameOf(src), state, cloudinaryId: hit.public_id })
+      addMatch(src, { url: src, name: (e.name as string) || (e.label as string) || nameOf(src), state, cloudinaryId: hit.public_id })
     }
   }
 
@@ -395,9 +418,33 @@ export function auditMedia({ rows, listing, index, localAssetExists }: AuditInpu
     Object.keys(cleanUsed).length !== Object.keys(usedContent).length ||
     Object.entries(cleanUsed).some(([k, v]) => srcKey(usedContent[k]?.src || '') !== srcKey(v.src))
 
+  /* Peso comparable de los dos lados. El del índice se arma sobre los archivos
+     únicos —el mismo criterio del contador del repositorio— y se lleva aparte
+     la cuenta de los que no tienen tamaño conocido: sumarlos como 0 es lo que
+     hacía que el panel mostrara mucho menos de lo real sin decir por qué. */
+  const bytesByUrl = new Map<string, number | null>()
+  for (const e of [...Object.values(cleanUsed) as LooseEntry[], ...cleanUnused, ...cleanTrash]) {
+    const src = entrySrc(e)
+    if (!src || bytesByUrl.has(src)) continue
+    const known = byUrl.get(src)?.bytes ?? (typeof e.size === 'number' ? e.size : null)
+    bytesByUrl.set(src, known && known > 0 ? known : null)
+  }
+  let indexedBytes = 0
+  let indexedUnknown = 0
+  for (const n of bytesByUrl.values()) {
+    if (n === null) indexedUnknown += 1
+    else indexedBytes += n
+  }
+
+  const matching = [...matchingByUrl.values()]
+
   return {
     checked: refs.length,
     cloudinaryAssets: resources.length,
+    cloudinaryBytes: resources.reduce((sum, r) => sum + (r.bytes || 0), 0),
+    indexedFiles: bytesByUrl.size,
+    indexedBytes,
+    indexedUnknown,
     findings,
     counts: findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.kind]: (a[f.kind] || 0) + 1 }), {}),
     repairs,
