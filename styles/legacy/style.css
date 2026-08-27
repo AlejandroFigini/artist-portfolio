@@ -1413,7 +1413,9 @@ footer {
         /* separacion entre la tuerca y lo que se apoya en ella */
         --gear-gap: 8px;
         --dock-gap: 8px;
-        --dock-handle-w: 22px;
+        /* La flecha lleva una lengueta translucida detras (mas abajo): con 22px
+           quedaba una astilla. 26 le da cuerpo sin volverla un boton. */
+        --dock-handle-w: 26px;
         /* Alto de la zona replegable: es la tuerca sola, no hay caja alrededor.
            El panel se apoya en el, asi que sale de aca y no de un numero suelto. */
         --dock-h: var(--gear-size);
@@ -1464,9 +1466,27 @@ footer {
         background: none;
         box-shadow: none;
         color: var(--accent);
-        font-size: 0.85rem;
+        font-size: 1rem;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+    }
+    /* Replegada es lo UNICO que queda en pantalla, y una flecha suelta sobre
+       una foto clara casi no se lee. Se le da una lengueta translucida que la
+       despega del fondo sin convertirla en un boton: apenas un apoyo. Abierta
+       no lleva nada — ahi acompana a las tuercas, que ya tienen su caja. */
+    .settings-dock:not(.is-open) .settings-dock__handle {
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        border-radius: 0 10px 10px 0;
+        box-shadow: 0 2px 10px rgba(124, 58, 237, 0.18);
+    }
+
+    /* Con el drawer de navegacion abierto la flecha queda flotando encima del
+       menu: es de otra capa y no tiene nada que hacer ahi. */
+    body.nav-open .settings-dock {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateX(-100%);
     }
     .settings-dock__handle i {
         transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2173,9 +2193,19 @@ input:checked+.slider:before {
     /* Las burbujas de redes venÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­an en una sola lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea sin wrap ni centrado: con las
        7 redes cargadas el contenedor pedÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a 378px sobre 333 disponibles y la
        ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºltima quedaba cortada por el borde de la pantalla. */
+    /* Escalan con el viewport para que las 7 redes entren en UN renglon: a
+       42px fijos + 1rem de separacion pedian 390px y el correo caia solo a la
+       linea de abajo. El `flex-wrap` se conserva como red de seguridad por si
+       algun dia se agrega otra red. */
     .footer-social-bubbles {
         flex-wrap: wrap;
         justify-content: center;
+        gap: clamp(0.3rem, 1.5vw, 0.75rem);
+    }
+    .social-bubble {
+        width: clamp(30px, 8.2vw, 42px);
+        height: clamp(30px, 8.2vw, 42px);
+        font-size: clamp(0.85rem, 3.4vw, 1.2rem);
     }
 
     .footer-bottom-bar {
@@ -2570,13 +2600,22 @@ html.perf-lite .wave-item {
     animation: none !important;
 }
 
-/* 2c. El desenfoque del fondo de portada se mudo de un backdrop-filter sobre
-      .carousel-overlay (viewport entero, re-desenfocado en cada frame) a un
-      filter en .carousel-slide. La regla 1 solo neutraliza backdrop-filter, asi
-      que el modo ligero tiene que descartar este blur explicitamente — si no,
-      movil estrenaria un desenfoque que hasta ahora no pagaba. */
+/* 2c. EXCEPCION deliberada a la regla 1, y a la del blur de la portada.
+
+      El modo ligero se enciende para TODO telefono (ver el boot script de
+      app/layout.tsx: `mobile` alcanza para marcarlo), asi que apagar el
+      cristal aca es apagarlo en movil siempre. El resultado era una portada
+      plana, sin el vidrio esmerilado que define la pieza en escritorio.
+
+      Lo que se restituye es barato y esta acotado a la portada: el blur de 2px
+      cae sobre una imagen de fondo que no se anima, asi que se compone UNA vez
+      y despues la slide solo cambia de opacidad. El motivo original de la
+      regla 1 —re-desenfocar el viewport entero en cada frame— era el del
+      backdrop-filter viejo sobre `.carousel-overlay`, que ya no existe.
+      El resto de la regla 1 sigue en pie: lightbox, modales y paneles siguen
+      sin backdrop-filter en modo ligero. */
 html.perf-lite .carousel-slide {
-    filter: none !important;
+    filter: blur(2px);
 }
 
 /* 2d. `about-video-breathe` es un `scale()` sobre un <video> EN REPRODUCCION:

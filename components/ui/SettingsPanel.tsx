@@ -106,6 +106,18 @@ export default function SettingsPanel() {
   const adminGearRef = useRef<HTMLButtonElement>(null)
   const dockRef = useRef<HTMLDivElement>(null)
 
+  /* Usado el panel, la pestana se repliega sola: la tuerca es el paso
+     intermedio para llegar a los ajustes, no un boton que tenga que quedarse
+     a la vista despues. En reposo lo unico visible vuelve a ser la flecha.
+     Se dispara en el flanco abierto -> cerrado, no con "no hay panel
+     abierto": si no, replegaria la pestana en el mismo gesto que la abre. */
+  const panelWasOpen = useRef(false)
+  useEffect(() => {
+    const anyOpen = open || adminOpen
+    if (panelWasOpen.current && !anyOpen) setDockOpen(false)
+    panelWasOpen.current = anyOpen
+  }, [open, adminOpen])
+
   const uploadCv = async (file: File) => {
     if (file.type !== 'application/pdf') { toast('CV must be a PDF file.', 'error'); return }
     if (file.size > CV_MAX_BYTES) { toast('PDF exceeds the 10 MB limit.', 'error'); return }

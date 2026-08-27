@@ -340,8 +340,12 @@
 @media (max-width: 880px) {
   .ch-showcase__rail { display: none; }
   .ch-panel { grid-template-columns: 1fr; max-height: none; }
-  /* 21/9 (panorámico) para achicar aún más el retrato y maximizar el área para el texto */
-  .ch-portrait-wrap { aspect-ratio: 21 / 9; max-height: 180px; }
+  /* El 21/9 dejaba el retrato como una franja: es la pieza principal de la
+     tarjeta y a 126px de alto no se leía el personaje. Sube a 3/2, que es
+     donde deja de parecer un recorte sin volverse cuadrado.
+     El alto que gana lo cede la descripción (ver `.ch-desc` más abajo), no la
+     tarjeta: el objetivo es redistribuir, no estirar el panel. */
+  .ch-portrait-wrap { aspect-ratio: 3 / 2; max-height: 230px; }
   .ch-panel__info { padding-top: 0.5rem; }
 
   /* El bloque de texto ocupaba de más y estiraba la tarjeta a lo alto.
@@ -353,7 +357,17 @@
   .ch-counter { margin-bottom: 0.3rem; }
   .ch-name { margin-bottom: 0.2rem; }
   .ch-role { margin-bottom: 0.45rem; }
-  .ch-desc { line-height: 1.55; }
+  /* Recortada a 3 renglones: es el espacio que se le pasa al retrato. Apilada
+     la ficha se lee de un vistazo y el texto completo sigue estando en el
+     lightbox, que es donde se va a leer de verdad. */
+  .ch-desc {
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
   .ch-lightbox__media.is-shifted { transform: none; }
   .ch-lightbox__info-panel { position: static; width: auto; margin-top: 1rem; }
   .ch-lightbox__media { flex-direction: column; }

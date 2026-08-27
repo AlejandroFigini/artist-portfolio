@@ -95,9 +95,25 @@ export default function AboutSection() {
         .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, 0.5)
         .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, 0.85)
         .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04 }, 1.35)
-        .to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' }, 1.3)
-        .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, 1.45)
-        .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.05, ease: 'power3.out' }, 1.7)
+
+      /* SPECS y CONTACT cierran la coreografia (t=1.3s..1.7s contados desde que
+         asoma el TECHO de la seccion). En dos columnas funciona: entran junto
+         con el resto, todo dentro del mismo viewport.
+
+         Apilado no. La grilla pasa a una sola columna (about.css, 960px) y ese
+         bloque queda al fondo de una seccion larguisima: cuando el visitante
+         termina de bajar hasta el, la linea de tiempo arranco hace rato y sus
+         primeros 1.3s se consumieron con el bloque fuera de cuadro. Lo que se ve
+         es un hueco que tarda 'de mas' en llenarse. Ahi el bloque se gobierna
+         solo: entra cuando entra EL. */
+      const stacked = window.matchMedia('(max-width: 960px)').matches
+      const META_SELECTOR = '.about-meta-row, .about-spec, .about-social'
+
+      if (!stacked) {
+        tl.to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' }, 1.3)
+          .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, 1.45)
+          .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.05, ease: 'power3.out' }, 1.7)
+      }
 
       let played = false
       const io = new IntersectionObserver((entries) => {
@@ -115,6 +131,26 @@ export default function AboutSection() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
+      let metaIo: IntersectionObserver | null = null
+      const metaEl = stacked ? sec.querySelector<HTMLElement>('.about-meta') : null
+      /* La lista se resuelve ACA y no dentro de la callback: el selector solo
+         esta acotado a la seccion mientras corre el cuerpo del `gsap.context`. */
+      const metaEls = metaEl ? Array.from(sec.querySelectorAll<HTMLElement>(META_SELECTOR)) : []
+      if (metaEl && metaEls.length) {
+        let metaPlayed = false
+        metaIo = new IntersectionObserver((entries) => {
+          for (const e of entries) {
+            if (!e.isIntersecting || metaPlayed) continue
+            metaPlayed = true
+            metaIo?.disconnect()
+            gsap.to(metaEls, {
+              autoAlpha: 1, x: 0, y: 0, duration: 0.45, stagger: 0.05, ease: 'power3.out',
+            })
+          }
+        }, { rootMargin: '0px 0px -15% 0px', threshold: 0.15 })
+        metaIo.observe(metaEl)
+      }
+
       gsap.to('.about-video', {
         scale: 1.05, duration: 7, ease: 'sine.inOut',
         yoyo: true, repeat: -1, delay: 1.8,
@@ -127,6 +163,8 @@ export default function AboutSection() {
 
 
       ScrollTrigger.refresh()
+
+      return () => { metaIo?.disconnect() }
     }, sectionRef)
     return () => { clearTimeout(twTimeout); ledeTw?.kill(); ctx.revert() }
   }, [motion])
