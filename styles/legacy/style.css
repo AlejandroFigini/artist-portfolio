@@ -3657,6 +3657,12 @@ body.is-admin .cms-mount.cms-empty-slot {
    abrio a proposito (lightbox, previsualizaciones) y tiene que verse aunque
    todavia no haya decodificado.
 
+   `:not([poster])` es imprescindible: el poster se PINTA con readyState en 0,
+   que es justo el estado de un <video preload="none">. Sin esa exclusion, en
+   produccion —donde el motor del CMS si pone poster porque la media viene de
+   Cloudinary— esta regla ocultaba el poster, que es exactamente la imagen que
+   tapa el hueco. Con poster no hace falta esconder nada: ya hay algo que ver.
+
    La regla cuelga de `html.video-frame-gate`, que pone el propio ViewportGate
    al montar: si ese componente no llega a correr (error de JS, hidratacion que
    falla), no se oculta NADA y se vuelve al comportamiento anterior. Sin ese
@@ -3671,7 +3677,7 @@ body.is-admin .cms-mount.cms-empty-slot {
    opacidad— el estado visible es el valor por defecto y no necesita que se
    anime nada para llegar a el.
    ============================================================================ */
-html.video-frame-gate video:not([controls]):not(.has-frame) {
+html.video-frame-gate video:not([controls]):not(.has-frame):not([poster]) {
     opacity: 0;
 }
 

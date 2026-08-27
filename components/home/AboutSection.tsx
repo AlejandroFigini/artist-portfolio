@@ -18,6 +18,8 @@ import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/u
 import { sendGAEvent } from '@next/third-parties/google'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
+import { useCmsItems } from '@/lib/cms/content-context'
+import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 
@@ -52,6 +54,15 @@ export default function AboutSection() {
   useCmsStore()
   const isAdmin = state.isAdmin
   const { links } = useSocial()
+  /* El reel se pinta con su `src` y su `poster` desde el servidor. Antes salía
+     vacío y se lo escribía el motor del CMS después de hidratar, así que el
+     póster —que es lo que tapa el hueco mientras el video no decodifica— no
+     existía hasta entonces. `about.video#0` es la clave que le asigna
+     `indexEditables` (base + '#' + índice dentro del selector). */
+  const cmsItems = useCmsItems()
+  const aboutVideoRaw = cmsItems['about.video#0'] || ''
+  const aboutVideoSrc = aboutVideoRaw ? optimizedMediaSrc(aboutVideoRaw) : ''
+  const aboutVideoPoster = aboutVideoRaw ? videoPosterSrc(aboutVideoRaw) : ''
   const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
 
   useEffect(() => {
@@ -272,6 +283,8 @@ export default function AboutSection() {
                 loop
                 playsInline
                 preload="none"
+                src={aboutVideoSrc || undefined}
+                poster={aboutVideoPoster || undefined}
               />
               <div className="about-video-caption">
                 <span>FIG. 02a</span>

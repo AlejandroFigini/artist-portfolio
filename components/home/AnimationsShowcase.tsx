@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
+import { useCmsItems } from '@/lib/cms/content-context'
+import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 import { sendGAEvent } from '@next/third-parties/google'
 
 /* 6 contenedores = 2 filas de 3 en la grilla de escritorio. Al cambiar este
@@ -32,17 +34,24 @@ function Corners() {
 type CardFields = { title: string; project: string; date: string; inspiration: string; desc: string }
 
 function AnimCard({ index }: { index: number }) {
+  /* `src` y `poster` desde el servidor: antes la tarjeta salía vacía y el motor
+     del CMS le escribía la fuente después de hidratar. */
+  const cmsRaw = useCmsItems()[`anim#${index}`] || ''
+  const cmsSrc = cmsRaw ? optimizedMediaSrc(cmsRaw) : ''
+  const cmsPoster = cmsRaw ? videoPosterSrc(cmsRaw) : ''
   const ui = useUiText()
   const videoRef = useRef<HTMLVideoElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [hasContent, setHasContent] = useState(false)
-  const [videoSrc, setVideoSrc] = useState('')
+  const [hasContent, setHasContent] = useState(!!cmsRaw)
+  const [videoSrc, setVideoSrc] = useState(cmsSrc)
   const [showInfo, setShowInfo] = useState(false)
   const [fields, setFields] = useState<CardFields>({ title: '', project: '', date: '', inspiration: '', desc: '' })
   const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
-  const hasContentRef = useRef(false)
+  // Arranca alineado con lo que ya pinto el servidor: sin esto el primer sync
+  // veria una transicion "vacio -> con contenido" que no ocurrio.
+  const hasContentRef = useRef(!!cmsRaw)
 
   // ── Detect whether the video has real content ──
   // The CMS mutates the <video> element imperatively (sets/removes src).
@@ -196,6 +205,8 @@ function AnimCard({ index }: { index: number }) {
           <video
             ref={videoRef}
             className="anim-card__video anim-video"
+            src={cmsSrc || undefined}
+            poster={cmsPoster || undefined}
             muted
             loop
             playsInline

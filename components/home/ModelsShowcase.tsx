@@ -14,6 +14,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
+import { useCmsItems } from '@/lib/cms/content-context'
+import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
 const AUTOPLAY_MS = 5000
@@ -73,7 +75,13 @@ function slideStyle(off: number): React.CSSProperties {
    reproduce solo cuando es la slide activa (perf). */
 function Slide({ index, isActive, off }: { index: number; isActive: boolean; off: number }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [hasContent, setHasContent] = useState(false)
+  /* `src` y `poster` desde el servidor. La clave la arma `indexEditables` como
+     base + '#' + índice del elemento dentro del selector, y acá el índice de la
+     slide es exactamente ese. */
+  const cmsRaw = useCmsItems()[`model3d#${index}`] || ''
+  const cmsSrc = cmsRaw ? optimizedMediaSrc(cmsRaw) : ''
+  const cmsPoster = cmsRaw ? videoPosterSrc(cmsRaw) : ''
+  const [hasContent, setHasContent] = useState(!!cmsRaw)
 
   useEffect(() => {
     const v = videoRef.current
@@ -129,6 +137,8 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
           playsInline
           preload="none"
           data-preload-defer=""
+          src={cmsSrc || undefined}
+          poster={cmsPoster || undefined}
         />
         {!hasContent && (
           <div className="m3d-slide__placeholder" aria-hidden="true">
