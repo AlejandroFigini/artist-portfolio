@@ -142,7 +142,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: serializeCmsBootstrap(cmsBootstrap) }}
         />
-        <Providers initialSettings={initialSettings}>{children}</Providers>
+        <Providers initialSettings={initialSettings} initialContent={cmsBootstrap}>{children}</Providers>
         <DeferredAnalytics gaId="G-SPJEZ45JR0" />
       </body>
     </html>

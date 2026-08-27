@@ -13,7 +13,9 @@ import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useCmsStore } from '@/lib/cms/store'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { itemKey } from '@/lib/cms/collection'
-import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection'
+import { readSettings } from '@/lib/cms/collection'
+import { DEFAULT_DURATION_MS } from '@/lib/cms/useCollection'
+import { useCmsItems } from '@/lib/cms/content-context'
 import { markLoaderGate } from '@/lib/loader-ready'
 import { optimizedMediaSrc } from '@/lib/utils'
 
@@ -47,11 +49,16 @@ export default function HeroSlideshow() {
   const armRef = useRef<(() => void) | null>(null)
   useCmsStore()
   const serverReady = state.serverReady
-  // Solo las slides con imagen real. Vacío → [] → fondo blanco.
-  const slides = readCollectionIds('hero')
-    .map((id) => state.items[itemKey(COLLECTIONS['hero'], id)] || '')
+  /* Solo las slides con imagen real. Vacío → [] → fondo blanco.
+     Se lee del contexto y no de `state.items` para que el fondo del hero salga
+     pintado en el HTML del servidor: leyendo del store, en SSR estaba vacío y
+     el `background-image` recién aparecía después de hidratar. */
+  const items = useCmsItems()
+  const heroSettings = readSettings(items, 'hero')
+  const slides = heroSettings.ids
+    .map((id) => items[itemKey(COLLECTIONS['hero'], id)] || '')
     .filter((s) => s.trim() !== '')
-  const intervalMs = readCollectionDuration('hero')
+  const intervalMs = heroSettings.duration ?? DEFAULT_DURATION_MS
   // Firma primitiva y estable: dos renders con el mismo contenido dan el mismo
   // string, aunque `slides` sea un array nuevo por el .map().filter() de arriba.
   const slidesKey = slides.join('|')

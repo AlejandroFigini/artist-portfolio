@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
+import { useCmsItems } from '@/lib/cms/content-context';
 import { useCarouselSync } from '@/components/ui/useCarouselSync';
 import { COLLECTIONS } from '@/lib/cms/collections';
 import { itemKey } from '@/lib/cms/collection';
-import { readCollectionDuration, readCollectionIds } from '@/lib/cms/useCollection';
+import { readSettings } from '@/lib/cms/collection';
+import { DEFAULT_DURATION_MS } from '@/lib/cms/useCollection';
 import { markLoaderGate, type LoaderGate } from '@/lib/loader-ready';
 
 import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils';
 
-function SmoothImage({ src, className, onSettled }: { src: string; className?: string; onSettled?: () => void }) {
+/* `eager` solo para la primera slide del carrusel que reporta el gate del
+   loader: esa es la imagen del LCP. El resto va en `lazy` — ahora que las
+   slides se pintan en el servidor, sin esto el carrusel de About (que está
+   debajo del fold) bajaba sus cuatro imágenes en la carga inicial. Las que
+   están dentro del viewport las trae el navegador igual aunque sean `lazy`. */
+function SmoothImage({ src, className, onSettled, eager }: { src: string; className?: string; onSettled?: () => void; eager?: boolean }) {
   const [loaded, setLoaded] = useState(false);
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -20,6 +27,8 @@ function SmoothImage({ src, className, onSettled }: { src: string; className?: s
       sizes="(max-width: 768px) 90vw, 50vw"
       alt=""
       className={className}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchPriority={eager ? 'high' : undefined}
       decoding="async"
       onLoad={() => { setLoaded(true); onSettled?.(); }}
       onError={() => onSettled?.()}
@@ -56,8 +65,15 @@ export default function HeroMediaCarousel({
   const serverReady = state.serverReady;
 
   const spec = COLLECTIONS[prefix];
-  const slides = readCollectionIds(prefix).map((id) => state.items[itemKey(spec, id)] || '');
-  const duration = readCollectionDuration(prefix);
+  /* `useCmsItems` en vez de `state.items`: en el render del servidor el store
+     está vacío y este carrusel emitía su estado vacío, con lo cual la imagen
+     principal de la portada —el LCP— no existía en el HTML y no empezaba a
+     bajar hasta después de hidratar. Leyendo del contexto, el <img> con su
+     `src` real sale ya en el marcado del servidor. */
+  const items = useCmsItems();
+  const settings = readSettings(items, prefix);
+  const slides = settings.ids.map((id) => items[itemKey(spec, id)] || '');
+  const duration = settings.duration ?? DEFAULT_DURATION_MS;
   const finalPanels = slides;
 
   // Signature for sync hook – concatenated slide sources
@@ -145,6 +161,7 @@ export default function HeroMediaCarousel({
                 <SmoothImage
                   src={src}
                   className={className}
+                  eager={!!readyGate && i === 0}
                   onSettled={readyGate && i === 0 ? () => markLoaderGate(readyGate) : undefined}
                 />
               ) : (
