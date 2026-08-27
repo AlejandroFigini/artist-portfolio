@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP';
 import { useCmsStore, state } from '@/lib/cms/store';
 import { useCmsItems } from '@/lib/cms/content-context';
@@ -17,10 +17,46 @@ import { mediaSrcSet, optimizedMediaSrc } from '@/lib/utils';
    debajo del fold) bajaba sus cuatro imágenes en la carga inicial. Las que
    están dentro del viewport las trae el navegador igual aunque sean `lazy`. */
 function SmoothImage({ src, className, onSettled, eager }: { src: string; className?: string; onSettled?: () => void; eager?: boolean }) {
-  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  /* 'pending' = todavia no hay imagen que mostrar.
+     'faded'   = llego por evento estando la pagina viva -> se funde.
+     'instant' = ya estaba completa al montar (la pinto el servidor o salio de
+                 cache) -> se muestra SIN transicion. El fundido existia para
+                 tapar un pop-in que en ese caso no ocurre, y acá seria peor
+                 que inutil: son 1,2s de retraso sobre la imagen del LCP, que
+                 es justo la que se acaba de conseguir que este en el HTML.
+                 Ademas evita que el estado visible dependa de que una
+                 transicion CORRA: no avanza en pestana oculta. */
+  const [phase, setPhase] = useState<'pending' | 'faded' | 'instant'>('pending');
+  const loaded = phase !== 'pending';
+
+  /* Reconciliacion con una imagen que YA termino de cargar.
+
+     Desde que estas slides se pintan en el servidor, el navegador puede
+     terminar de bajar la imagen ANTES de que React hidrate y enganche
+     `onLoad`. Ese evento ya paso y no se vuelve a emitir, asi que quedaban dos
+     cosas rotas a la vez: el fundido no arrancaba nunca (opacidad 0 = imagen
+     invisible) y el gate `heroPanel` de la pantalla de carga no se cerraba
+     jamas — la barra clavada en 12/14 del peso, o sea 86%, para siempre.
+
+     `complete` es el estado, no el evento: se puede consultar en el montaje.
+     `naturalWidth` distingue "cargo" de "fallo": el gate se cierra en los dos
+     casos (el loader no puede esperar a una imagen rota) pero solo se hace
+     visible la que de verdad decodifico. `markLoaderGate` es idempotente, asi
+     que no molesta que despues llegue tambien el `onLoad`. */
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el?.complete) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el estado real del <img>, no es estado derivable
+    if (el.naturalWidth > 0) setPhase('instant');
+    onSettled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar: reconcilia el evento que se perdio
+  }, []);
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={imgRef}
       src={optimizedMediaSrc(src, 1200)}
       srcSet={mediaSrcSet(src)}
       // el panel ocupa ~la mitad del ancho en desktop y casi todo en móvil
@@ -30,7 +66,7 @@ function SmoothImage({ src, className, onSettled, eager }: { src: string; classN
       loading={eager ? 'eager' : 'lazy'}
       fetchPriority={eager ? 'high' : undefined}
       decoding="async"
-      onLoad={() => { setLoaded(true); onSettled?.(); }}
+      onLoad={() => { setPhase((p) => (p === 'pending' ? 'faded' : p)); onSettled?.(); }}
       onError={() => onSettled?.()}
       style={{
         position: 'absolute',
@@ -39,7 +75,7 @@ function SmoothImage({ src, className, onSettled, eager }: { src: string; classN
         height: '100%',
         objectFit: 'cover',
         opacity: loaded ? 1 : 0,
-        transition: 'opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: phase === 'faded' ? 'opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
       }}
     />
   );
