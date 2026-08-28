@@ -9,17 +9,19 @@ import {
 } from '@/components/ui/carousel'
 import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay'
 import { useInViewRef } from '@/hooks/useInView'
+import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { canHover, mediaSrcSet, optimizedMediaSrc } from '@/lib/utils'
-import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
+import { useCmsStore, state, useUiText } from '@/lib/cms/store'
 
 // Shared hook for carousel reinitialization
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { COLLECTIONS } from '@/lib/cms/collections'
-import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
-import { readCollectionIds, readCollectionDuration } from '@/lib/cms/useCollection'
+import { isEmptyMedia, itemKey, readSettings } from '@/lib/cms/collection'
+import { DEFAULT_DURATION_MS } from '@/lib/cms/useCollection'
 
 
-// El contenido se lee reactivamente desde el store (state.items) y se renderiza
+// El contenido se lee reactivamente (lib/cms/content-context: el payload del
+// servidor primero, el store una vez cargado) y se renderiza
 // como JSX. Antes se leía vía data-attrs + MutationObserver, pero embla clona los
 // slides al hacer loop/reInit y los clones quedaban sin el src/textos que el motor
 // inyectaba imperativamente sólo en el nodo original → tarjetas en blanco.
@@ -27,13 +29,18 @@ import { readCollectionIds, readCollectionDuration } from '@/lib/cms/useCollecti
 
 function ProjectCard({ id, index }: { id: string; index: number }) {
   useCmsStore()
+  /* `useCmsItems` / `useCmsText` en lugar de `state.items` y `t()`: en el render
+     del servidor el store está vacío, así que la tarjeta salía sin imagen y sin
+     textos y todo aparecía recién después de hidratar. Ambos leen del contenido
+     que el servidor ya mandó y pasan al store en cuanto el cliente lo carga —
+     con la traducción aplicada, que es lo que `t()` garantizaba. */
+  const items = useCmsItems()
+  const text = useCmsText()
   const key = `proj#${id}`
-  const imgSrc = state.items[key] || ''
-  // Texto vía t(): esta tarjeta se re-renderiza desde el store, así que leer
-  // state.items directo pisaría la traducción que aplicó setLanguage.
-  const title = t(`${key}::title`)
-  const startDate = t(`${key}::start_date`)
-  const summary = t(`${key}::summary`)
+  const imgSrc = items[key] || ''
+  const title = text(`${key}::title`)
+  const startDate = text(`${key}::start_date`)
+  const summary = text(`${key}::summary`)
   const hasImage = !isEmptyMedia(imgSrc)
 
   const [isHovered, setIsHovered] = useState(false)
@@ -52,7 +59,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
   const conceptsKey = [
     0,
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) =>
-      !isEmptyMedia(state.items[`${key}::c${idx - 1}`])),
+      !isEmptyMedia(items[`${key}::c${idx - 1}`])),
   ].join(',')
 
   const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])
@@ -85,7 +92,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
         className="w-full aspect-[16/10] sm:aspect-[3/2] bg-gray-50 relative block shrink-0 overflow-hidden border-b border-gray-100/80"
       >
         {galleryKeys.map((gKey, idx) => {
-          const src = state.items[gKey]
+          const src = items[gKey]
           const isMain = idx === 0
           
           // Si no es la principal y no tiene imagen, no la renderizamos
@@ -173,17 +180,22 @@ export default function ProjectsShowcase() {
   const sectionRef = useRef<HTMLElement>(null)
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
 
-  const ids = readCollectionIds('proj')
+  /* La lista de proyectos también sale del contenido del servidor: leyéndola
+     del store, en SSR no había ids y la sección entera se renderizaba sin una
+     sola tarjeta. */
+  const items = useCmsItems()
+  const projSettings = readSettings(items, 'proj')
+  const ids = projSettings.ids
   const spec = COLLECTIONS['proj']
   /* Intervalo de rotación, editable desde Gestionar proyectos (spec.duration).
      Autoplay recibe el delay al construirse, así que va también en la `key` del
      carrusel: sin remontar, un cambio de intervalo no se aplicaría hasta
      recargar. */
-  const autoplayDelay = readCollectionDuration('proj')
+  const autoplayDelay = projSettings.duration ?? DEFAULT_DURATION_MS
 
   const completedIds = ids.filter((id) => {
     const key = itemKey(spec, id)
-    return !isEmptyMedia(state.items[key]) && !!(state.items[`${key}::title`] || '').trim()
+    return !isEmptyMedia(items[key]) && !!(items[`${key}::title`] || '').trim()
   })
 
   // Embla clona los slides con loop:true y los clones son copias estáticas del
@@ -192,10 +204,10 @@ export default function ProjectsShowcase() {
   const projSignature = ids.map((id) => {
     const key = itemKey(spec, id)
     return [
-      state.items[key] || '',
-      state.items[`${key}::title`] || '',
-      state.items[`${key}::start_date`] || '',
-      state.items[`${key}::summary`] || '',
+      items[key] || '',
+      items[`${key}::title`] || '',
+      items[`${key}::start_date`] || '',
+      items[`${key}::summary`] || '',
     ].join('|')
   }).join('~')
 

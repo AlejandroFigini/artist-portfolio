@@ -25,7 +25,7 @@
    con las ediciones locales y el idioma aplicados. */
 
 import { createContext, useContext } from 'react'
-import { state, useCmsStore } from './store'
+import { state, t, useCmsStore } from './store'
 import type { CmsBootstrap } from './bootstrap'
 
 const EMPTY: CmsBootstrap = { items: {}, translations: {}, retired: [] }
@@ -54,4 +54,21 @@ export function useCmsItems(): Record<string, string> {
   useCmsStore()
   const boot = useContext(CmsContentContext)
   return state.itemsLoaded ? state.items : boot.items
+}
+
+/* Igual que `t()` del store, pero resolviendo contra el payload del servidor
+   mientras el cliente todavía no cargó el suyo. Devuelve una función y no un
+   valor para que un componente pueda resolver varias claves con una sola
+   suscripción.
+
+   El idioma no entra en juego en el servidor: la elección vive en
+   localStorage y se aplica al hidratar, así que el HTML sale siempre en el
+   idioma base y el motor lo traduce después — igual que hasta ahora, solo que
+   antes el punto de partida era el texto de muestra del JSX y ahora es el
+   contenido real. */
+export function useCmsText(): (key: string, fallback?: string) => string {
+  useCmsStore()
+  const boot = useContext(CmsContentContext)
+  return (key: string, fallback = '') =>
+    state.itemsLoaded ? t(key, fallback) : boot.items[key] || fallback
 }

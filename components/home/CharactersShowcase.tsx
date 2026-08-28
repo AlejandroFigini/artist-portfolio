@@ -7,7 +7,8 @@
    y se asoma el siguiente). Cada personaje expone retrato + galería de concepts
    y su ficha (nombre / rol / descripción), con lightbox. Dinámico: cantidad y
    orden se gestionan desde el CMS (CharactersManager, evento `cms:charactersManager`),
-   espejando ProjectsShowcase: el contenido se lee reactivamente de state.items y
+   espejando ProjectsShowcase: el contenido se lee reactivamente del contexto de
+   contenido (lib/cms/content-context, que arranca con lo que mando el servidor) y
    los contenedores quedan registrados en engine.ts para edición inline.
    Ref. visual: case-studies con scroll lateral (Awwwards / Active Theory). */
 
@@ -21,12 +22,12 @@ import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/u
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useInViewRef } from '@/hooks/useInView'
 import { canHover, optimizedMediaSrc } from '@/lib/utils'
-import { useCmsStore, state, t, useUiText } from '@/lib/cms/store'
+import { useCmsStore, state, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { sendGAEvent } from '@next/third-parties/google'
 import { COLLECTIONS } from '@/lib/cms/collections'
-import { isEmptyMedia, itemKey } from '@/lib/cms/collection'
-import { readCollectionIds } from '@/lib/cms/useCollection'
+import { isEmptyMedia, itemKey, readSettings } from '@/lib/cms/collection'
+import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 
 const CONCEPTS_PER = 3
 
@@ -44,12 +45,12 @@ function Corners() {
 /* Imagen editable (bg-image). El contenedor con data-cms-key queda registrado en
    el motor CMS (engine.ts), que maneja el estado vacío (marco punteado + subida)
    y las herramientas de edición inline. Acá pintamos el media reactivamente desde
-   state.items y exponemos data-full para el lightbox. */
+   el contexto de contenido y exponemos data-full para el lightbox. */
 function CharMedia({
   cmsKey, className, onOpen,
 }: { cmsKey: string; className: string; onOpen: (src: string) => void }) {
   useCmsStore()
-  const src = state.items[cmsKey] || ''
+  const src = useCmsItems()[cmsKey] || ''
   const has = !isEmptyMedia(src)
   return (
     <div
@@ -72,11 +73,15 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
   const key = `char#${id}`
   const sampleNames = ['Elena — Paladin Concept', 'Kaelen — Shadow Wanderer', 'Lyra — Star Weaver', 'Thorne — Iron Juggernaut', 'Vael — Frost Blade', 'Zephyr — Sky Hunter', 'Nyx — Void Oracle', 'Orion — Solar Warden']
   const sampleRoles = ['Hero Concept & Turnaround', 'Dark Fantasy Character Design', 'Sci-Fi Protagonist Study', 'Mecha & Armor Lookdev', 'Cryo Warrior Visual Dev', 'Aero Scout Character Sheet', 'Mystic Entity Concept Art', 'Paladin Commander Sculpt']
-  // Texto vía t(): este panel se re-renderiza desde el store, así que leer
-  // state.items directo pisaría la traducción que aplicó setLanguage.
-  const name = t(`${key}::name`, sampleNames[index % sampleNames.length] || '')
-  const role = t(`${key}::role`, sampleRoles[index % sampleRoles.length] || '')
-  const desc = t(`${key}::desc`, 'Full character exploration: from early rough thumbnails and silhouette studies to finalized lookdev, turnaround sheets, and expression breakdowns.')
+  /* `useCmsText` en lugar de `t()`: resuelve contra el contenido que ya mandó el
+     servidor, así el panel sale con sus textos en el HTML en vez de con el texto
+     de muestra. Una vez cargado el store pasa a leer de ahí, con la traducción
+     aplicada — que es lo que `t()` garantizaba. */
+  const text = useCmsText()
+  const panelItems = useCmsItems()
+  const name = text(`${key}::name`, sampleNames[index % sampleNames.length] || '')
+  const role = text(`${key}::role`, sampleRoles[index % sampleRoles.length] || '')
+  const desc = text(`${key}::desc`, 'Full character exploration: from early rough thumbnails and silhouette studies to finalized lookdev, turnaround sheets, and expression breakdowns.')
   const num = String(index + 1).padStart(2, '0')
   const tot = String(total).padStart(2, '0')
 
@@ -93,7 +98,7 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
   const conceptsKey = [
     0,
     ...Array.from({ length: CONCEPTS_PER }, (_, m) => m + 1).filter((idx) =>
-      !isEmptyMedia(state.items[`${key}::c${idx - 1}`])),
+      !isEmptyMedia(panelItems[`${key}::c${idx - 1}`])),
   ].join(',')
 
   const validConceptIndices = useMemo(() => conceptsKey.split(',').map(Number), [conceptsKey])
@@ -236,12 +241,15 @@ export default function CharactersShowcase() {
     return () => { api.off('reInit', apply) }
   }, [api, inView])
 
-  const ids = readCollectionIds('char')
+  /* Del contenido del servidor: leyendo del store, en SSR no habia ids y la
+     seccion se renderizaba sin un solo personaje. */
+  const items = useCmsItems()
+  const ids = readSettings(items, 'char').ids
   const spec = COLLECTIONS['char']
 
   const completedIds = ids.filter((id) => {
     const key = itemKey(spec, id)
-    return !isEmptyMedia(state.items[key]) && !!(state.items[`${key}::name`] || '').trim()
+    return !isEmptyMedia(items[key]) && !!(items[`${key}::name`] || '').trim()
   })
 
   // Firma del contenido visible → reInit de embla cuando cambian alta/baja/orden
@@ -249,9 +257,9 @@ export default function CharactersShowcase() {
   const signature = ids.map((id) => {
     const key = itemKey(spec, id)
     return [
-      state.items[key] || '',
-      state.items[`${key}::name`] || '',
-      ...Array.from({ length: CONCEPTS_PER }, (_, m) => state.items[`${key}::c${m}`] || ''),
+      items[key] || '',
+      items[`${key}::name`] || '',
+      ...Array.from({ length: CONCEPTS_PER }, (_, m) => items[`${key}::c${m}`] || ''),
     ].join('|')
   }).join('~')
 
