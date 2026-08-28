@@ -52,12 +52,12 @@ export default function SmoothScroll() {
       const tick = (time: number) => lenis.raf(time * 1000) // gsap da segundos
       lenis.on('scroll', ScrollTrigger.update)
       gsap.ticker.add(tick)
-      gsap.ticker.lagSmoothing(0)
+      // `lagSmoothing(0)` se mudó a hooks/gsap-runtime: hace falta monte o no
+      // monte Lenis, y en táctil ya no se monta.
       setSmoothScroller(lenis)
 
       dispose = () => {
         gsap.ticker.remove(tick)
-        gsap.ticker.lagSmoothing(500, 33) // valor por defecto de GSAP
         setSmoothScroller(null)
         lenis.destroy()
       }

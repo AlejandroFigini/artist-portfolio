@@ -16,6 +16,22 @@ import type { LoopHandle } from './motion-flags'
 
 gsap.registerPlugin(ScrollTrigger)
 
+/* Sin suavizado de lag, para TODA la coreografía del sitio.
+
+   Por defecto GSAP asume que un frame de más de 500ms fue un pico de lag y en
+   ese frame avanza el tiempo solo 33ms, para no dar un salto. Durante el
+   arranque del sitio en un teléfono hay frames de dos segundos enteros
+   (medido: 757, 1936, 1993, 1991, 1994, 2006 ms en la carga de la portada),
+   así que un tween de 2s necesitaría ~60 de esos frames para terminar: en la
+   práctica se congela. Era exactamente lo que dejaba el carrusel principal del
+   hero y el fondo en opacidad ~0.01, o sea invisibles.
+
+   Antes esto lo desactivaba components/ui/SmoothScroll al montar Lenis, y al
+   dejar de montarlo en táctil se perdió sin que nadie lo notara. Vive acá
+   porque es una propiedad del motor de animación, no del scroll suave: aplica
+   monte o no monte Lenis, y en cualquier ruta. */
+gsap.ticker.lagSmoothing(0)
+
 // ----- Pausa global (toggle "Pausar animaciones") ----------------------------
 // Mata toda la coreografía GSAP viva: loops de reveal (dejan el texto pleno),
 // tweens en curso (saltan a estado final) y ScrollTriggers (quedan completados
