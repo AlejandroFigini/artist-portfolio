@@ -416,21 +416,43 @@ se parece a lo que se tocó. Dos ejemplos reales:
   enciende en el efecto de `CmsRoot`. Por eso el primer render del cliente lee
   todavía del contexto: mismo mapa que el servidor, mismo marcado.
 - **Un `<img>` pintado por el servidor puede completar antes de hidratar** y su
-  `onLoad` no llega nunca. Reconciliar con `complete` / `naturalWidth`, que son
-  ESTADO y se pueden consultar al montar. Lo mismo con `readyState` en video.
+  `onLoad` no llega nunca. Reconciliar con `complete`, que es ESTADO y se puede
+  consultar al montar. Lo mismo con `readyState` en video.
+- **`complete: true` con `naturalWidth: 0` NO significa "imagen rota".** Tambien
+  es el estado transitorio mientras el navegador reevalua el candidato del
+  `srcSet` (medido: la misma imagen termino en `naturalWidth` 442). Decidir
+  "fallo" con ese dato dejo la imagen principal de la portada invisible para
+  siempre, porque `onLoad` ya no vuelve. Un `<img>` roto con `alt=""` no pinta
+  nada, asi que ante la duda se muestra.
+- **`img.decode()` se cuelga: nunca colgar un gate del loader de esa promesa.**
+  Medido sobre una imagen que descarga bien (200, 30 KB): no resuelve ni
+  rechaza en mas de 4 segundos. Quien cierra el gate es `onload`/`onerror`;
+  `decode()` sirve como mejor caso (deja el bitmap listo), no como condicion.
 - **Al pintar media en el servidor, revisar `loading="lazy"`**: lo que antes se
   bajaba tarde por accidente (no tenía `src` hasta hidratar) pasa a bajarse de
   entrada.
 
 ### Cómo verificar
 
-Con el navegador disponible, estas cuatro cosas después de cualquier cambio de
-arranque o de media:
+**Probar como VISITANTE, no solo con sesión de admin.** Con sesión abierta el
+sitio recorre otros caminos: baja `admin.css`, el motor engancha los controles
+de edición y los contenedores vacíos se pintan distinto. Dos regresiones de esta
+lista —el loader clavado en 79% y la imagen del hero invisible— NO se
+manifestaban como admin y aparecieron en la primera carga como visitante.
 
-1. El loader **cierra** y llega a 100%.
+Con el navegador disponible, después de cualquier cambio de arranque o de media:
+
+1. El loader **cierra** y llega a 100%. Si se planta, el número dice cuál gate
+   falló: total 14, así que 86% = falta uno de peso 2 (`heroPanel`) y 79% = uno
+   de peso 3 (`heroBackdrop` o `serverState`).
 2. Ningún `<video>` visible con `readyState < 2` (sería un negro).
 3. Nada reproduciendo ni moviéndose fuera de viewport.
-4. Móvil Y escritorio: varias regresiones de esta lista salieron en uno solo.
+4. Las imágenes del hero en opacidad 1 — no alcanza con que hayan descargado.
+5. Móvil Y escritorio: varias regresiones de esta lista salieron en uno solo.
+
+Ojo con las capturas de pantalla: una tomada inmediatamente después de un scroll
+sale desfasada y muestra la sección en blanco. Asentar el scroll y capturar
+aparte, o se persiguen fantasmas.
 
 ## Setup para colaboradores
 
