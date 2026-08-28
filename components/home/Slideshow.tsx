@@ -63,10 +63,21 @@ export default function HeroSlideshow() {
   // string, aunque `slides` sea un array nuevo por el .map().filter() de arriba.
   const slidesKey = slides.join('|')
 
-  /* Gate del loader: el fondo no debe descubrirse pintándose. Se precarga y
-     decodifica la primera slide con la MISMA URL que usa el div, así ya está
-     en caché cuando el loader se va. Antes de serverReady las slides todavía
-     no llegaron: marcar ahí daría el gate por cumplido de más. */
+  /* Gate del loader: el fondo no debe descubrirse pintándose. Se precarga la
+     primera slide con la MISMA URL que usa el div, así ya está en caché cuando
+     el loader se va. Antes de serverReady las slides todavía no llegaron:
+     marcar ahí daría el gate por cumplido de más.
+
+     Quien cierra el gate es `onload`/`onerror`, NO `decode()`. `decode()` se
+     cuelga: medido en el navegador, sobre una imagen que descarga bien devuelve
+     una promesa que no resuelve ni rechaza en varios segundos. Mientras el
+     contenido llegaba después de hidratar esto no se notaba, porque el efecto
+     corría primero con `slides` vacío y el gate se cerraba por el camino de
+     `!first`; desde que la slide viaja en el HTML del servidor, la primera
+     pasada ya tiene fuente y el loader quedaba esperando esa promesa para
+     siempre (barra clavada en 79% = 11/14 del peso).
+     `decode()` se conserva como mejor caso —deja el bitmap listo y evita el
+     salto al pintar— pero ya no es quien decide. */
   useEffect(() => {
     if (!serverReady) return
     const first = slides[0]
@@ -74,8 +85,12 @@ export default function HeroSlideshow() {
     let alive = true
     const done = () => { if (alive) markLoaderGate('heroBackdrop') }
     const img = new Image()
+    img.onload = done
+    img.onerror = done
     img.src = optimizedMediaSrc(first, backdropWidth())
-    img.decode().then(done, done)
+    // Ya estaba en caché: los eventos de carga no vuelven a emitirse.
+    if (img.complete) done()
+    void img.decode().then(done, done)
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- slidesKey es la firma estable de `slides`
   }, [slidesKey, serverReady])

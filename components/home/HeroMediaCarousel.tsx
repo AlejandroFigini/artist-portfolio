@@ -47,8 +47,15 @@ function SmoothImage({ src, className, onSettled, eager }: { src: string; classN
   useEffect(() => {
     const el = imgRef.current;
     if (!el?.complete) return;
+    /* Se muestra SIN mirar `naturalWidth`. Ese valor en 0 con `complete` en true
+       es ambiguo: puede ser una imagen rota, pero tambien una que el navegador
+       todavia no resolvio (pasa mientras reevalua el candidato del srcSet).
+       Tratarlo como fallo dejaba la slide visible del hero en opacidad 0 PARA
+       SIEMPRE —medido: naturalWidth 442, o sea que habia cargado— porque el
+       `onLoad` ya no vuelve a emitirse. Y no hay contra: un <img> roto con
+       `alt=""` no pinta nada, asi que mostrarlo no muestra nada. */
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el estado real del <img>, no es estado derivable
-    if (el.naturalWidth > 0) setPhase('instant');
+    setPhase('instant');
     onSettled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar: reconcilia el evento que se perdio
   }, []);
