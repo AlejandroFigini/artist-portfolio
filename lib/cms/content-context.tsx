@@ -66,6 +66,24 @@ export function useCmsItems(): Record<string, string> {
    idioma base y el motor lo traduce después — igual que hasta ahora, solo que
    antes el punto de partida era el texto de muestra del JSX y ahora es el
    contenido real. */
+/* QUE NO conviene resolver por acá.
+
+   Un texto pasa a estar controlado por React en cuanto se lee con este hook, y
+   hay contenedores cuyo contenido lo posee OTRO mecanismo que muta el DOM:
+
+   - Los títulos y bajadas de sección (.anim-showcase__title / __desc y sus
+     equivalentes en char, proj, m3d, illu, más .about-lede). Los reveal loops
+     de hooks/gsap-runtime les reescriben el innerHTML en spans por letra o por
+     palabra. Si React repinta ese nodo porque cambió el valor, borra los spans
+     y corta la animación — que es la firma visual del sitio.
+   - Los que llevan `data-i18n` (p. ej. h2[data-i18n="about_title"]), que muta
+     `applyStaticTranslations`.
+   - .bio-content, donde el motor reemplaza con textContent un <div> que en el
+     JSX tiene <p> adentro: React y el motor no coinciden en la estructura.
+
+   Y el rédito es chico: medido sobre la base real, de los contenedores bajo
+   reveal loop solo DOS tenían valor propio; el resto muestra el texto por
+   defecto del JSX, que ya viaja en el HTML del servidor. No vale la pena. */
 export function useCmsText(): (key: string, fallback?: string) => string {
   useCmsStore()
   const boot = useContext(CmsContentContext)

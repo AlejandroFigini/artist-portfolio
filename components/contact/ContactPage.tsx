@@ -9,7 +9,8 @@ import '@/styles/contact-page.css'
 
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
-import { t, useUiText } from '@/lib/cms/store'
+import { useUiText } from '@/lib/cms/store'
+import { useCmsText } from '@/lib/cms/content-context'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
@@ -38,6 +39,9 @@ function Corners() {
 export default function ContactPage() {
   const motion = useMotionReady()
   const ui = useUiText()
+  // Resuelve contra el contenido del servidor: el hero de /contact sale escrito
+  // en el HTML en vez de esperar a que hidrate.
+  const text = useCmsText()
   const { links } = useSocial()
   const { settings } = useSiteSettings()
   const { downloadCv, isDownloading } = useDownloadCv(settings.cvUrl, settings.cvName || 'CV.pdf')
@@ -201,8 +205,8 @@ export default function ContactPage() {
           <div className="ct-hero-wrap">
             <Corners />
             <span className="ct-hero__file ct-section__fig" data-i18n="ct_file">{ui('ct_file')}</span>
-            <h1 id="ct-title" className="ct-hero__title">{t('contact.hero.title', CT_TITLE)}</h1>
-            <p className="ct-hero__lede">{t('contact.hero.lede', CT_LEDE)}</p>
+            <h1 id="ct-title" className="ct-hero__title">{text('contact.hero.title#0', CT_TITLE)}</h1>
+            <p className="ct-hero__lede">{text('contact.hero.lede#0', CT_LEDE)}</p>
           </div>
         </div>
       </section>

@@ -11,8 +11,13 @@ import { useEffect, useRef } from 'react'
 import WaveMarquee from './WaveMarquee'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
+import { useCmsText } from '@/lib/cms/content-context'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { whenLoaderDone } from '@/lib/loader-ready'
+
+/* Texto base del subtitulo: lo que se ve mientras el admin no lo edite. */
+const HERO_SUBTITLE =
+  "Bachelor's degree on Animation and Videogames. Illustrator, Character / environment design and 3D generalist."
 
 const openCarousel = (prefix: string) =>
   window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
@@ -34,6 +39,13 @@ export default function Hero() {
   const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
   useCmsStore() // re-render al cambiar admin (muestra/oculta los engranajes)
+  /* El subtítulo del hero es texto editable y esta por encima del fold: sale
+     resuelto desde el servidor en vez de esperar a que el motor lo escriba tras
+     hidratar. Es seguro hacerlo controlado por React porque este parrafo no lo
+     toca ningun loop de reveal ni `applyStaticTranslations` (no lleva
+     `data-i18n`) — a diferencia de los titulos de seccion, ver el comentario en
+     lib/cms/content-context. */
+  const text = useCmsText()
   const isAdmin = state.isAdmin
 
   // Coreografía de entrada + parallax de scroll
@@ -237,7 +249,7 @@ export default function Hero() {
             <span className="bp-measure-label">{MEASURE_LABEL}</span>
           </div>
           <p className="hero-subtitle">
-            Bachelor&apos;s degree on Animation and Videogames. Illustrator, Character / environment design and 3D generalist.
+            {text('hero.subtitle#0', HERO_SUBTITLE)}
           </p>
         </div>
 

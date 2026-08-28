@@ -14,7 +14,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { useUiText } from '@/lib/cms/store'
-import { useCmsItems } from '@/lib/cms/content-context'
+import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
@@ -372,6 +372,10 @@ function GalleryStrip() {
 export default function ModelsShowcase() {
   const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
+  /* Los dos bloques de texto de la seccion son contenedores editables sueltos
+     (no los toca ningun reveal loop, a diferencia del titulo y la bajada de
+     arriba), asi que se resuelven desde el servidor. */
+  const text = useCmsText()
 
   useEffect(() => {
     if (prefersReducedMotion()) return
@@ -441,8 +445,8 @@ export default function ModelsShowcase() {
           <div className="m3d-texts">
             {TEXT_BLOCKS.map((b, i) => (
               <article key={i} className="m3d-text">
-                <h3 className="m3d-text__title">{b.title}</h3>
-                <p className="m3d-text__body">{b.body}</p>
+                <h3 className="m3d-text__title">{text(`model3d.title#${i}`, b.title)}</h3>
+                <p className="m3d-text__body">{text(`model3d.desc#${i}`, b.body)}</p>
               </article>
             ))}
           </div>
