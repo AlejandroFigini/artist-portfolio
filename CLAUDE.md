@@ -341,6 +341,97 @@ corresponden y sus `keys` fijas, y registrar cada contenedor en `CONTAINER_BASES
 (`lib/cms/store.ts`) para que tenga sección y nombre fuera del DOM de esa ruta.
 Sin eso, el contenido de la página nueva cae en el catch-all del Feed.
 
+## Performance — trampas ya pisadas
+
+> Cada punto de acá costó una regresión, varias en producción. No son teoría:
+> son mecanismos de ESTE proyecto que se rompen de formas que no se ven venir.
+> Antes de optimizar algo, leer la trampa que le corresponde.
+
+### La regla que resume a todas
+
+**Al sacar o mover algo, preguntar qué MÁS dependía de eso.** Verificar que el
+efecto buscado ocurrió no alcanza: el fallo aparece en otro lado, y casi nunca
+se parece a lo que se tocó. Dos ejemplos reales:
+
+- Se dejó de montar Lenis en táctil. Con Lenis se iba `gsap.ticker.lagSmoothing(0)`,
+  que vivía adentro de ese bloque → **el hero quedó invisible en móvil**. El
+  síntoma no fue "el scroll se siente distinto".
+- El hero pasó a renderizarse en el servidor. Con eso, la imagen podía terminar
+  de cargar antes de hidratar → el `onLoad` nunca llegaba → **la pantalla de
+  carga se colgaba en 86% para siempre**.
+
+### GSAP
+
+- **`gsap.ticker.lagSmoothing(0)` no se toca.** Vive en `hooks/gsap-runtime.ts`.
+  Por defecto GSAP trata un frame de más de 500ms como pico de lag y avanza solo
+  33ms. En el arranque en móvil hay frames de 2 segundos (medido: 757, 1936,
+  1993, 1991, 1994, 2006 ms), así que un tween de 2s se congela.
+- **Los reveal loops se apropian del nodo**: `typewriterRevealLoop` y
+  `wordRevealLoop` reescriben el `innerHTML` en spans. Un texto bajo un loop NO
+  puede pasar a estar controlado por React: el primer repintado le borra la
+  animación. Ver la lista en `lib/cms/content-context.tsx`.
+
+### Video
+
+- **Un `<video>` con fuente y sin frame decodificado pinta NEGRO.** El póster lo
+  tapa, pero `videoPosterSrc()` solo genera derivada para Cloudinary: en local
+  son cero pósters. De ahí la clase `has-frame` que pone `ViewportGate`.
+- **`load()` anula `preload="none"`.** Asignar `v.src` ya dispara el algoritmo
+  de carga; llamar a `load()` explícitamente hace que Chrome baje el archivo
+  igual. Solo hace falta con un `<source>` hijo o al vaciar el contenedor.
+- **Escribir `currentTime` también fuerza la descarga.** Leerlo es gratis;
+  asignarlo obliga a resolver el recurso. Rebobinar solo si de verdad avanzó.
+- **`preload="metadata"` deja `readyState` en 1, no en 2.** Hay metadata pero no
+  frame: sigue siendo un rectángulo negro hasta que reproduce.
+
+### CSS
+
+- **Nunca hacer que el estado VISIBLE dependa de que corra una transición.** En
+  pestaña oculta las transiciones no avanzan y el elemento se queda en el valor
+  inicial. Escribir la regla al revés: que visible sea el valor por defecto y
+  solo el estado oculto declare la propiedad.
+- **Toda regla CSS que ESCONDA algo va colgada de una clase que pone el JS**
+  (ej. `html.video-frame-gate`). Si ese JS falla, no se oculta nada. Al revés,
+  un fallo deja contenido invisible para siempre — peor que el bug original.
+
+### Temporizadores y gates
+
+- **Un `setInterval` que hace early-return igual despierta la CPU.** Se apaga el
+  temporizador (`clearInterval` desde el IntersectionObserver), no se lo guardea
+  por dentro. En móvil ese wake-up cae en medio del scroll.
+- **Un chunk dinámico pedido antes del evento `load` RETRASA ese evento**, y el
+  gate `windowLoad` de la pantalla de carga espera justamente a `load`.
+  Precalentar secciones mientras el loader está arriba lo retiene a sí mismo.
+- **Los gates del loader (`lib/loader-ready.ts`) son la primera víctima de
+  cualquier cambio en el arranque.** Su peso delata cuál falló: el total es 14,
+  así que clavado en 86% = falta uno de peso 2 (`heroPanel`) o `windowLoad` a
+  medio crédito. Al tocar el arranque, verificar SIEMPRE que el loader cierre.
+
+### SSR del contenido del CMS
+
+- **`state` (`lib/cms/store.ts`) es un singleton de módulo**: escribirlo desde el
+  servidor filtra contenido entre requests. El contenido va por
+  `lib/cms/content-context.tsx` (`useCmsItems` / `useCmsText`).
+- **La coherencia de hidratación depende de `state.itemsLoaded`**, que recién se
+  enciende en el efecto de `CmsRoot`. Por eso el primer render del cliente lee
+  todavía del contexto: mismo mapa que el servidor, mismo marcado.
+- **Un `<img>` pintado por el servidor puede completar antes de hidratar** y su
+  `onLoad` no llega nunca. Reconciliar con `complete` / `naturalWidth`, que son
+  ESTADO y se pueden consultar al montar. Lo mismo con `readyState` en video.
+- **Al pintar media en el servidor, revisar `loading="lazy"`**: lo que antes se
+  bajaba tarde por accidente (no tenía `src` hasta hidratar) pasa a bajarse de
+  entrada.
+
+### Cómo verificar
+
+Con el navegador disponible, estas cuatro cosas después de cualquier cambio de
+arranque o de media:
+
+1. El loader **cierra** y llega a 100%.
+2. Ningún `<video>` visible con `readyState < 2` (sería un negro).
+3. Nada reproduciendo ni moviéndose fuera de viewport.
+4. Móvil Y escritorio: varias regresiones de esta lista salieron en uno solo.
+
 ## Setup para colaboradores
 
 Para trabajar en este proyecto instalar gstack:
