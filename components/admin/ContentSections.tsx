@@ -22,7 +22,7 @@ import {
 } from './actions'
 import { MediaCard, type AnyEntry, type MenuAction } from './cards'
 import MarqueeSelect, { type SelPick } from './MarqueeSelect'
-import { SyncAuditModal, type SyncAuditResult } from './modals'
+import { SyncAuditModal, emptySyncBalance, type SyncAuditResult } from './modals'
 
 export type AdminModal =
   | { kind: 'view'; e: AnyEntry; cardType: 'used' | 'unused' | 'trash' | 'repo'; menu: { label: React.ReactNode; onClick: () => void }[] }
@@ -546,6 +546,12 @@ export function SectionBasurero({ trashArr, openModal }: Ctx) {
 /* Los `value` son los mismos que guardaba el viejo select del menú ⋮ y se siguen
    persistiendo en LS.REPO_FILTER: un admin que ya tenía "Only trash" elegido
    sigue viéndolo al abrir. */
+/* Nombre visible de cada apartado del balance, para nombrar en el aviso cuál
+   no cuadra en vez de decir sólo "hay diferencias". */
+const BUCKET_LABELS: [keyof SyncAuditResult['balance']['match'], string][] = [
+  ['used', 'In use'], ['unused', 'Unused'], ['trash', 'Trash'], ['settings', 'Site settings'],
+]
+
 const REPO_STATES: StateFilterOption[] = [
   { value: 'all', label: 'All', icon: 'fa-database' },
   { value: 'used', label: 'In use', icon: 'fa-circle-check', tone: 'used' },
@@ -759,13 +765,23 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
         indexedFiles: data.indexedFiles || 0,
         indexedBytes: data.indexedBytes || 0,
         indexedUnknown: data.indexedUnknown || 0,
+        /* Sin balance en la respuesta NO se dice "sincronizado": el respaldo
+           viene con `balanced: false` a propósito. */
+        balance: data.balance || emptySyncBalance(),
+        adopted: data.adopted || 0,
       }
       setSyncAudit(result)
-      const problems = result.orphaned.length + result.broken.length + result.folderMismatch.length + result.stale.length
-      toast(
-        `Audit complete: ${result.matching.length} synced files, ${result.stale.length} stale URLs, ${result.folderMismatch.length} wrong state, ${result.orphaned.length} orphaned, ${result.broken.length} broken refs`,
-        problems ? 'error' : 'success',
-      )
+      /* El veredicto sale del balance por apartado, no de que las listas de
+         problemas estén vacías. Un archivo que existe en las dos puntas pero
+         en apartados distintos no aparecía en ninguna lista y por eso el panel
+         informaba "todo sincronizado" con los números descuadrados. */
+      const off = BUCKET_LABELS.filter(([key]) => !result.balance.match[key]).map(([, label]) => label)
+      if (off.length === 0 && result.balance.balanced) {
+        toast(`In sync: ${result.matching.length} files match Cloudinary in every section.`, 'success')
+      } else {
+        const detail = off.length ? off.join(', ') : 'totals'
+        toast(`NOT in sync — mismatch in: ${detail}. Open the report for the file-by-file difference.`, 'error')
+      }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e)
       toast(`Error comparing: ${message}`, 'error')
@@ -800,16 +816,23 @@ export function SectionRepo({ usedArr, unusedArr, trashArr, openModal }: Ctx) {
               </button>
               <button type="button" className="cms-btn cms-btn--sm" onClick={async () => {
                 close()
-                toast('Generating ZIP archive URL...', 'info')
+                toast('Building the ZIP from the current repository...', 'info')
                 try {
                   const res = await fetch('/api/download-repo')
                   const data = await res.json()
-                  if (data.url) {
-                    window.open(data.url, '_blank')
-                    toast('Download started', 'success')
-                  } else {
-                    throw new Error(data.error || 'Unknown error')
-                  }
+                  if (!res.ok || !data.url) throw new Error(data.error || `HTTP ${res.status}`)
+                  window.open(data.url, '_blank')
+                  /* El ZIP se arma con la lista exacta que cuenta el panel, así
+                     que se informa qué entró de verdad. Si Cloudinary metió
+                     menos archivos que los pedidos hay que decirlo: bajar un
+                     ZIP corto en silencio era el bug original. */
+                  const short = data.files < data.expectedFiles
+                  toast(
+                    short
+                      ? `Download started with ${data.files} of ${data.expectedFiles} files — Cloudinary skipped ${data.expectedFiles - data.files}.`
+                      : `Download started: ${data.files} files (${fmtBytes(data.expectedBytes)}).`,
+                    short ? 'error' : 'success',
+                  )
                 } catch (e) {
                   toast(`Download failed: ${e instanceof Error ? e.message : 'unknown error'}`, 'error')
                 }

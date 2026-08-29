@@ -13,7 +13,7 @@ import {
   state, useCmsStore, loadState, sumSizes, deduplicateMedia, loadJSON, saveJSON, emit, LS, setAdminFlag, loadServerState, cleanOrphanOverrides,
 } from '@/lib/cms/store'
 import { getAccount, logout } from '@/lib/api'
-import { autoCleanTrash, resolveSizes, clearAudit } from './actions'
+import { autoCleanTrash, resolveSizes, hydrateSizesFromCloudinary, clearAudit } from './actions'
 import { SectionUsado, SectionNoUsado, SectionBasurero, SectionRepo, type AdminModal } from './ContentSections'
 import { ViewMediaModal, RenameContainerModal, AssociateContainerModal, AdminEditInfoModal, AdminUploadModal, SelectContainerActionModal } from './modals'
 import SiteSettings from './SiteSettings'
@@ -82,7 +82,14 @@ export default function AdminDashboard() {
            y su limpieza de huérfanos borraba el índice entero. El dueño del seed
            es CmsRoot, que sí carga el contenido antes. Y scaffold mutaba storage
            remoto como efecto de renderizar una página. */
-        resolveSizes([...Object.values(state.usedContent), ...state.unused])
+        /* Primero el peso REAL: Cloudinary es donde están los bytes y su
+           listado los publica por asset. `resolveSizes` queda como respaldo
+           para lo que ese listado no cubre —dataURLs y rutas locales
+           `/uploads/` del entorno de desarrollo—, y ahora también mira la
+           papelera, que antes no recibía nunca y por eso pesaba 0. */
+        hydrateSizesFromCloudinary().finally(() => {
+          resolveSizes([...Object.values(state.usedContent), ...state.unused, ...state.trash])
+        })
       }
     })
   }, [])  

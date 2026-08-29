@@ -157,6 +157,8 @@ async function reconcile(apply: boolean, purge: boolean) {
            reclasificados) y los ghost de índice (entradas sin archivo detrás que
            nextUsed/nextUnused/nextTrash ya excluyeron). */
         applied += report.findings.filter((f) => f.kind === 'index-drift' || (f.kind === 'ghost' && !f.key)).length
+        // Y las adopciones: son escrituras reales del índice, no un efecto.
+        applied += report.adopted
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {})
         throw err
@@ -173,6 +175,13 @@ async function reconcile(apply: boolean, purge: boolean) {
     indexedFiles: report.indexedFiles,
     indexedBytes: report.indexedBytes,
     indexedUnknown: report.indexedUnknown,
+    /* El veredicto real: apartado por apartado, cantidad y bytes. Sin esto el
+       panel informaba "sincronizado" comparando totales que podían empatar con
+       los apartados descuadrados. */
+    balance: report.balance,
+    /* Assets de Cloudinary que el panel no tenía en ningún apartado y este run
+       incorpora al índice. Es lo que cierra la diferencia de cantidad. */
+    adopted: report.adopted,
     findings: report.findings,
     counts: report.counts,
     // Vistas para el panel de auditoría.

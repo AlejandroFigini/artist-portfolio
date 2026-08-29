@@ -862,7 +862,44 @@ export type SyncAuditResult = {
   indexedBytes: number
   /** Archivos del índice sin tamaño conocido (no entran en `indexedBytes`). */
   indexedUnknown: number
+  /* EL veredicto. Cuatro filas, dos columnas, cantidad y bytes: si una sola
+     casilla difiere no está sincronizado, sin importar que los totales empaten.
+     Antes sólo se comparaban totales y por eso un archivo mal clasificado —uno
+     de menos en un apartado y uno de más en otro— pasaba como "todo ok". */
+  balance: SyncBalance
+  /** Archivos de Cloudinary que el panel no tenía y una reparación adopta. */
+  adopted: number
 }
+
+export type SyncBucket = { files: number; bytes: number }
+export type SyncBucketKey = 'used' | 'unused' | 'trash' | 'settings'
+export type SyncBalance = {
+  cloudinary: Record<SyncBucketKey, SyncBucket>
+  panel: Record<SyncBucketKey, SyncBucket>
+  match: Record<SyncBucketKey, boolean>
+  panelUnknown: number
+  balanced: boolean
+}
+
+const EMPTY_BUCKETS: Record<SyncBucketKey, SyncBucket> = {
+  used: { files: 0, bytes: 0 }, unused: { files: 0, bytes: 0 },
+  trash: { files: 0, bytes: 0 }, settings: { files: 0, bytes: 0 },
+}
+
+/** Balance vacío para una respuesta vieja o incompleta. `balanced: false` a
+ *  propósito: sin datos no se afirma que esté sincronizado. */
+export const emptySyncBalance = (): SyncBalance => ({
+  cloudinary: { ...EMPTY_BUCKETS }, panel: { ...EMPTY_BUCKETS },
+  match: { used: false, unused: false, trash: false, settings: false },
+  panelUnknown: 0, balanced: false,
+})
+
+const BUCKET_ROWS: { key: SyncBucketKey; label: string; icon: string; hint: string }[] = [
+  { key: 'used', label: 'In use', icon: 'fa-check', hint: 'Gallery files a container is showing on the site.' },
+  { key: 'unused', label: 'Unused', icon: 'fa-folder-closed', hint: 'Retired files, kept for reuse.' },
+  { key: 'trash', label: 'Trash', icon: 'fa-trash-can', hint: 'Files marked for deletion.' },
+  { key: 'settings', label: 'Site settings', icon: 'fa-sliders', hint: 'CV, tab icon, loading screen and decorative animations. They are in use but are not gallery content, so they never appear in the "In use" count.' },
+]
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
   const bom = '\uFEFF'
@@ -879,6 +916,10 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
   const toast = useToast()
   const [tab, setTab] = useState<'matching' | 'orphaned' | 'broken' | 'folderMismatch' | 'stale'>('stale')
   const [localResult, setLocalResult] = useState<SyncAuditResult>(result)
+  /* Respuesta sin `balance` (servidor viejo o error a medio parsear): se pinta
+     un balance vacío y NO balanceado. Afirmar "sincronizado" sin haber podido
+     comparar es exactamente el fallo que se está corrigiendo. */
+  const balance = localResult.balance ?? emptySyncBalance()
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isFixing, setIsFixing] = useState(false)
 
@@ -966,28 +1007,85 @@ export function SyncAuditModal({ result, onClose }: CloseProp & { result: SyncAu
         { label: 'Close', primary: true, onClick: () => {} },
       ]}
     >
-      {/* Balance de las dos puntas. Va ARRIBA de las tarjetas de problemas
-          porque es la pregunta real: ¿el panel y Cloudinary tienen lo mismo? */}
-      <div style={{ marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Cloudinary: <strong style={{ color: 'var(--text-primary)' }}>{localResult.cloudinaryAssets} files</strong>
-            {' · '}<strong style={{ color: 'var(--text-primary)' }}>{fmtBytes(localResult.cloudinaryBytes)}</strong>
-          </span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Repository: <strong style={{ color: 'var(--text-primary)' }}>{localResult.indexedFiles} files</strong>
-            {' · '}<strong style={{ color: 'var(--text-primary)' }}>{fmtBytes(localResult.indexedBytes)}</strong>
-            {localResult.indexedUnknown > 0 && (
-              <span title="Files whose size is unknown, so they add 0 to the total">
-                {' '}(+{localResult.indexedUnknown} unmeasured)
-              </span>
-            )}
-          </span>
+      {/* EL veredicto. Va ARRIBA de todo porque es la pregunta real: ¿cada
+          apartado del panel tiene los mismos archivos y los mismos bytes que
+          Cloudinary? Se compara fila por fila, no por totales: dos totales
+          iguales pueden esconder un archivo mal clasificado. */}
+      <div style={{ marginBottom: '1rem', borderRadius: 12, background: 'var(--bg-secondary)', border: `1px solid ${balance.balanced ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)'}`, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.7rem 1rem', background: balance.balanced ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}>
+          <i className={`fa-solid ${balance.balanced ? 'fa-circle-check' : 'fa-triangle-exclamation'}`} style={{ color: balance.balanced ? '#22c55e' : '#ef4444', fontSize: '1.1rem' }}></i>
+          <strong style={{ color: 'var(--text-primary)' }}>
+            {balance.balanced ? 'In sync: every section matches Cloudinary, file for file and byte for byte.' : 'Not in sync: at least one section does not match Cloudinary.'}
+          </strong>
         </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.45rem', lineHeight: 1.5 }}>
-          Both figures count original files only. Cloudinary&apos;s own dashboard reports more,
-          because it also bills the derived variants each transformation generates plus backups —
-          neither is managed from here, so they are expected to differ.
+        <div className="cms-audit-table-wrap">
+          <table className="cms-audit-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Cloudinary</th>
+                <th>Management</th>
+                <th>Difference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BUCKET_ROWS.map((row) => {
+                const c = balance.cloudinary[row.key]
+                const m = balance.panel[row.key]
+                const ok = balance.match[row.key]
+                const dFiles = m.files - c.files
+                const dBytes = m.bytes - c.bytes
+                return (
+                  <tr key={row.key}>
+                    <td>
+                      <i className={`fa-solid ${row.icon}`} style={{ marginRight: '0.4rem', opacity: 0.7 }}></i>
+                      {row.label}
+                      <span className="cms-info-tip" tabIndex={0} style={{ marginLeft: '0.35rem' }}>
+                        <i className="fa-solid fa-circle-info" style={{ opacity: 0.55 }}></i>
+                        <span className="cms-info-bubble" role="tooltip" style={{ fontWeight: 'normal', textTransform: 'none', whiteSpace: 'normal', minWidth: '240px' }}>{row.hint}</span>
+                      </span>
+                    </td>
+                    <td>{c.files} files · {fmtBytes(c.bytes)}</td>
+                    <td>{m.files} files · {fmtBytes(m.bytes)}</td>
+                    <td style={{ color: ok ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                      {ok ? <><i className="fa-solid fa-check"></i> match</> : (
+                        <>
+                          {dFiles !== 0 && <>{dFiles > 0 ? '+' : ''}{dFiles} files</>}
+                          {dFiles !== 0 && dBytes !== 0 && ' · '}
+                          {dBytes !== 0 && <>{dBytes > 0 ? '+' : ''}{fmtBytes(Math.abs(dBytes))}</>}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+              <tr style={{ fontWeight: 700 }}>
+                <td>Total</td>
+                <td>{localResult.cloudinaryAssets} files · {fmtBytes(localResult.cloudinaryBytes)}</td>
+                <td>
+                  {localResult.indexedFiles} files · {fmtBytes(localResult.indexedBytes)}
+                  {localResult.indexedUnknown > 0 && (
+                    <span title="Files the panel lists but Cloudinary does not have, so they cannot be weighed">
+                      {' '}(+{localResult.indexedUnknown} unmeasured)
+                    </span>
+                  )}
+                </td>
+                <td style={{ color: localResult.indexedFiles === localResult.cloudinaryAssets && localResult.indexedBytes === localResult.cloudinaryBytes ? '#22c55e' : '#ef4444' }}>
+                  {localResult.indexedFiles - localResult.cloudinaryAssets > 0 ? '+' : ''}
+                  {localResult.indexedFiles - localResult.cloudinaryAssets} files
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '0.6rem 1rem', lineHeight: 1.5 }}>
+          Sizes come from Cloudinary itself, not from what the panel had cached. Both columns count
+          original files only: Cloudinary&apos;s own dashboard reports more because it also bills the
+          derived variants each transformation generates plus backups, and neither is managed from here.
+          {localResult.adopted > 0 && (
+            <> <strong>{localResult.adopted}</strong> file(s) exist in Cloudinary and are missing from every
+            section of the panel; repairing adds them to Unused so both sides end up with the same count.</>
+          )}
         </div>
       </div>
 

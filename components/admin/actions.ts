@@ -82,6 +82,57 @@ export async function emptyTrash() {
   flushSyncToServer()
 }
 
+/* ----- Peso real de cada archivo -------------------------------------------
+   Cloudinary es donde están los bytes, así que Cloudinary pone el número. Esta
+   hidratación PISA el `size` que traiga el índice: un tamaño viejo guardado al
+   subir (o medido con un HEAD sobre la URL de entrega, que devuelve la variante
+   recodificada) es justamente lo que hacía que la barra lateral y las cabeceras
+   de cada apartado no dieran lo mismo que la consola de Cloudinary.
+
+   Corre para los TRES apartados —incluida la papelera, que `resolveSizes` nunca
+   recibía y por eso pesaba 0— y toca únicamente entradas cuyo archivo el
+   listado conoce: lo que Cloudinary no devolvió se deja como estaba. */
+export async function hydrateSizesFromCloudinary(): Promise<void> {
+  let sizes: Record<string, number>
+  let complete: boolean
+  try {
+    const res = await fetch('/api/media/sizes', { cache: 'no-store' })
+    if (!res.ok) return
+    const data = await res.json() as { sizes?: Record<string, number>; complete?: boolean }
+    sizes = data.sizes || {}
+    complete = !!data.complete
+  } catch {
+    // Sin lectura no se toca nada: un tamaño viejo es mejor que un 0 inventado.
+    return
+  }
+  /* Una lectura truncada no puede corregir pesos: los archivos que faltaron en
+     la respuesta quedarían indistinguibles de los que Cloudinary no tiene. */
+  if (!complete || Object.keys(sizes).length === 0) return
+
+  let changed = false
+  const apply = (e: { src?: string; dataUrl?: string; key?: string; size?: number | null; name?: string }) => {
+    const src = e.src || e.dataUrl || ''
+    if (!src) return
+    const bytes = sizes[src.split('?')[0].split('#')[0]]
+    if (!bytes || e.size === bytes) return
+    e.size = bytes
+    recordMediaMeta(e.key || '', src, { size: bytes, name: e.name })
+    changed = true
+  }
+
+  Object.values(state.usedContent).forEach(apply)
+  state.unused.forEach(apply)
+  state.trash.forEach(apply)
+
+  if (changed) {
+    emit()
+    persistUsed()
+    persistUnused()
+    persistTrash()
+    flushSyncToServer()
+  }
+}
+
 // Tamaños y fechas faltantes: dataURL se estima; URLs remotas se miden con un fetch
 /* `key` y `name` se declaran acá porque los callers ya los mandan y el cuerpo
    los necesita para recordMediaMeta; antes se accedían con `as any`. */
@@ -129,30 +180,33 @@ export async function resolveSizes(entries: SizeEntry[]) {
     }
   }
 
-  // Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del navegador
-  if (urlsToFetch.length > 0) {
+  /* Segunda pasada: pedir los tamaños al backend para eludir bloqueos CORS del
+     navegador. En TANDAS: el endpoint acepta 150 URLs por request y descarta el
+     resto en silencio, así que con el repositorio por encima de ese número los
+     sobrantes quedaban en 0 para siempre y el total del panel salía corto sin
+     que nada lo dijera. */
+  const RESOLVE_BATCH = 150
+  const measured: Record<string, number> = {}
+  for (let i = 0; i < urlsToFetch.length; i += RESOLVE_BATCH) {
     try {
       const res = await fetch('/api/resolve-sizes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: urlsToFetch })
+        body: JSON.stringify({ urls: urlsToFetch.slice(i, i + RESOLVE_BATCH) })
       })
-      if (res.ok) {
-        const { results } = await res.json() as { results: Record<string, number> }
-        if (results) {
-          for (const e of entries) {
-            const src = e.src || e.dataUrl || ''
-            if (results[src] && (!e.size || e.size === 0)) {
-              e.size = results[src]
-              recordMediaMeta(e.key || '', src, { size: results[src], ts: e.ts ?? undefined, name: e.name })
-              changed = true
-            }
-          }
-        }
-      }
+      if (!res.ok) continue
+      const { results } = await res.json() as { results: Record<string, number> }
+      if (results) Object.assign(measured, results)
     } catch {
       // Un fallo midiendo tamaños no debe romper el panel: se quedan sin dato.
     }
+  }
+  for (const e of entries) {
+    const src = e.src || e.dataUrl || ''
+    if (!measured[src] || (e.size && e.size > 0)) continue
+    e.size = measured[src]
+    recordMediaMeta(e.key || '', src, { size: measured[src], ts: e.ts ?? undefined, name: e.name })
+    changed = true
   }
   
   if (changed) {

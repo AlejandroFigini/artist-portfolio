@@ -608,6 +608,11 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryListing> {
     const secure_url = (r.secure_url as string) || ''
     const public_id = (r.public_id as string) || ''
     if (!public_id && !secure_url) return
+    /* El ZIP que arma "Download ZIP" se guarda en la cuenta como asset `raw`.
+       Es una DERIVADA del repositorio, no contenido: si entrara al listado se
+       contaría a sí mismo, aparecería como huérfano en cada auditoría y su peso
+       inflaría el total contra el que se compara Cloudinary. */
+    if (Array.isArray(r.tags) && (r.tags as string[]).includes(ARCHIVE_TAG)) return
     const key = public_id || secure_url
 
     if (!allMap.has(key)) {
@@ -674,4 +679,97 @@ export async function listAllCloudinaryResources(): Promise<CloudinaryListing> {
   }
 
   return { resources: Array.from(allMap.values()), complete }
+}
+
+/* ----- Descarga del repositorio completo -----------------------------------
+   `download_zip_url({ prefixes: 'portfolio', resource_type: 'all' })` era un
+   ZIP incompleto por dos motivos independientes:
+
+   1. `resource_type` NO viaja firmado: el SDK lo mete en la RUTA del endpoint
+      (`/v1_1/<cloud>/<resource_type>/generate_archive`). `all` no es un tipo de
+      recurso — los válidos son `image`, `video`, `raw` y `auto`. Un archivo por
+      prefijo sólo puede llevar UN tipo, así que videos y `raw` (el CV en PDF)
+      quedaban afuera. De ahí que bajar la carpeta desde la consola de Cloudinary
+      diera el número correcto y desde la web no.
+   2. `prefixes: 'portfolio'` es otro conjunto que el que audita el panel: el
+      listado del repositorio no filtra por carpeta, así que cualquier asset
+      fuera de `portfolio/` se contaba en la web y no entraba al ZIP.
+
+   La corrección es no volver a describir el conjunto: se pasa la lista exacta
+   de assets que el panel acaba de contar, con `resource_type: 'auto'` +
+   `fully_qualified_public_ids` (`<tipo>/<entrega>/<public_id>`), que es la única
+   combinación que admite tipos mezclados en un mismo archivo.
+
+   Se usa el modo `create` (POST) y no la URL firmada de descarga: con ~200
+   assets la lista supera holgadamente el largo de URL que aguanta un GET. El
+   ZIP resultante se etiqueta y el listado lo excluye. */
+
+const ARCHIVE_TAG = 'system:repo-archive'
+const ARCHIVE_PUBLIC_ID = 'system/artist-portfolio-repo'
+/** Tope de Cloudinary para `fully_qualified_public_ids` en un solo archivo. */
+const ARCHIVE_MAX_ASSETS = 1000
+
+export type RepoArchive = {
+  url: string
+  /** Archivos que Cloudinary dice haber metido en el ZIP. */
+  files: number
+  /** Peso de los originales incluidos, para contrastar con el panel. */
+  bytes: number
+  /** Lo que el panel contaba antes de pedirlo. Si no coincide, algo se cayó. */
+  expectedFiles: number
+  expectedBytes: number
+}
+
+export async function createRepoArchive(): Promise<RepoArchive> {
+  if (!hasCloudinary) throw new Error('Cloudinary is not configured in this environment.')
+
+  const { resources, complete } = await listAllCloudinaryResources()
+  /* Un listado truncado daría un ZIP silenciosamente incompleto, que es
+     exactamente el problema que se está arreglando. */
+  if (!complete) throw new Error('Could not read the full Cloudinary listing. Archive aborted.')
+  if (resources.length === 0) throw new Error('There is nothing to download: Cloudinary is empty.')
+  if (resources.length > ARCHIVE_MAX_ASSETS) {
+    throw new Error(`Cloudinary allows at most ${ARCHIVE_MAX_ASSETS} files per archive and the repository has ${resources.length}.`)
+  }
+
+  const expectedBytes = resources.reduce((sum, r) => sum + (r.bytes || 0), 0)
+  const ids = resources.map((r) => `${r.resource_type}/upload/${r.public_id}`)
+
+  /* El ZIP anterior se borra antes de crear el nuevo: así nunca hay más de uno
+     ocupando storage, y `target_public_id` no colisiona con el viejo. */
+  await cloudinary.api
+    .delete_resources_by_tag(ARCHIVE_TAG, { resource_type: 'raw' })
+    .catch((err) => console.warn('[createRepoArchive] no se pudo borrar el ZIP anterior:', err))
+
+  const res = await cloudinary.uploader.create_zip({
+    resource_type: 'auto',
+    mode: 'create',
+    fully_qualified_public_ids: ids,
+    target_public_id: ARCHIVE_PUBLIC_ID,
+    target_tags: [ARCHIVE_TAG],
+    use_original_filename: true,
+    /* Se conserva la estructura de carpetas: sin esto dos archivos con el mismo
+       nombre original en carpetas distintas se pisan dentro del ZIP. */
+    flatten_folders: false,
+    /* Un asset que desapareció entre el listado y la creación no puede tirar
+       abajo la descarga entera; la diferencia se ve comparando `files`. */
+    allow_missing: true,
+  } as Parameters<typeof cloudinary.uploader.create_zip>[0]) as {
+    secure_url?: string
+    url?: string
+    file_count?: number
+    resource_count?: number
+    bytes?: number
+  }
+
+  const url = res.secure_url || res.url
+  if (!url) throw new Error('Cloudinary did not return an archive URL.')
+
+  return {
+    url,
+    files: res.file_count ?? res.resource_count ?? 0,
+    bytes: res.bytes ?? 0,
+    expectedFiles: resources.length,
+    expectedBytes,
+  }
 }
