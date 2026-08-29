@@ -428,6 +428,13 @@ se parece a lo que se tocó. Dos ejemplos reales:
   Medido sobre una imagen que descarga bien (200, 30 KB): no resuelve ni
   rechaza en mas de 4 segundos. Quien cierra el gate es `onload`/`onerror`;
   `decode()` sirve como mejor caso (deja el bitmap listo), no como condicion.
+- **El servidor NO conoce el viewport.** Cualquier ancho de imagen calculado a
+  partir de `window` (`innerWidth`, `devicePixelRatio`) no puede emitirse en el
+  HTML: el servidor elige a ciegas, el navegador se baja esa variante y despues
+  la que quiere el cliente. Medido cuando paso: el fondo del hero
+  (`portada-3.webp`) se descargaba en 640, 1080 Y 1920 — en un telefono, la
+  variante de 1920px antes de hidratar. Se resuelve al montar y hasta entonces
+  no se emite la URL; el `<link rel=preload>` ya cubre la descarga temprana.
 - **Al pintar media en el servidor, revisar `loading="lazy"`**: lo que antes se
   bajaba tarde por accidente (no tenía `src` hasta hidratar) pasa a bajarse de
   entrada.

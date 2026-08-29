@@ -7,7 +7,7 @@
    Sin imágenes → fondo blanco (sin portadas estáticas). 1 imagen → fija,
    sin rotación. Con prefers-reduced-motion queda la primera slide fija. */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
 import { state, useCmsStore } from '@/lib/cms/store'
@@ -27,10 +27,17 @@ import { optimizedMediaSrc } from '@/lib/utils'
 const BACKDROP_STEPS = [640, 828, 1200, 1920]
 
 /* El fondo es 100vw × 100vh: pedir 1600px fijos en un teléfono era traer ~2.5×
-   los píxeles necesarios. Las slides llegan por evento del CMS (nunca en SSR),
-   así que leer `window` acá es seguro. */
+   los píxeles necesarios.
+
+   Solo se puede resolver en el CLIENTE, porque depende del viewport. El
+   contenido de las slides ahora SÍ viaja en el HTML del servidor, así que el
+   `background-image` se pinta recién después de montar: si el servidor eligiera
+   un ancho a ciegas, el navegador se bajaría esa variante y despues la que
+   quiere el cliente. Medido cuando pasaba: `portada-3.webp` se descargaba en
+   640, 1080 Y 1920 — en un teléfono, la variante de 1920px del fondo antes de
+   hidratar. El `<link rel=preload>` de app/(site)/page.tsx ya cubre la descarga
+   temprana con la misma escalera de anchos, así que no se pierde nada. */
 function backdropWidth(): number {
-  if (typeof window === 'undefined') return 1920
   const need = Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2))
   return BACKDROP_STEPS.find((w) => w >= need) ?? BACKDROP_STEPS[BACKDROP_STEPS.length - 1]
 }
@@ -42,6 +49,9 @@ export default function HeroSlideshow() {
      pantalla" por si solo: quien decide si se ve es el hero. Fuera de el, todas
      las secciones son opacas y lo tapan por completo. */
   const parkedRef = useRef(false)
+  /* Ancho de la variante del fondo. `null` hasta montar: el servidor no puede
+     saberlo y emitir un ancho a ciegas duplica la descarga (ver backdropWidth). */
+  const [bgWidth, setBgWidth] = useState<number | null>(null)
   /* El efecto del crossfade publica acá su función de armado para que el
      observer de aparcado —que ya existe y es el único que mira al hero— la
      llame. Sin esto harían falta dos IntersectionObserver sobre el mismo
@@ -62,6 +72,12 @@ export default function HeroSlideshow() {
   // Firma primitiva y estable: dos renders con el mismo contenido dan el mismo
   // string, aunque `slides` sea un array nuevo por el .map().filter() de arriba.
   const slidesKey = slides.join('|')
+
+  // El viewport recién se conoce en el cliente.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- depende del viewport, no es derivable en el servidor
+    setBgWidth(backdropWidth())
+  }, [])
 
   /* Gate del loader: el fondo no debe descubrirse pintándose. Se precarga la
      primera slide con la MISMA URL que usa el div, así ya está en caché cuando
@@ -173,7 +189,7 @@ export default function HeroSlideshow() {
             key={`${i}-${src}`}
             className="carousel-slide"
             style={{
-              backgroundImage: `url('${optimizedMediaSrc(src, backdropWidth())}')`,
+              backgroundImage: bgWidth ? `url('${optimizedMediaSrc(src, bgWidth)}')` : undefined,
               opacity: 0,
             }}
           ></div>
