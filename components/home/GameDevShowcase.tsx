@@ -24,7 +24,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
-import { openLightbox } from '@/components/ui/lightbox'
+import { openLightbox, openVideoLightbox } from '@/components/ui/lightbox'
 import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
@@ -94,10 +94,15 @@ export function storeHref(value: string): string {
    adentro se pinta <img> o <video> según lo que haya cargado el admin.
    `cmsKey` va explícito porque las celdas están duplicadas: sin él el motor
    las indexaría por posición y la copia recibiría claves fantasma. */
-function CmsMedia({ cmsKey, sizes, onOpen }: { cmsKey: string; sizes: string; onOpen?: () => void }) {
+function CmsMedia({ cmsKey, sizes, onOpen, onExpand }: { cmsKey: string; sizes: string; onOpen?: () => void; onExpand?: () => void }) {
   const raw = useCmsItems()[cmsKey] || ''
   const isClip = isVideoSrc(raw)
+  const ui = useUiText()
   const videoRef = useRef<HTMLVideoElement>(null)
+  /* Espejo del estado REAL del <video>, no de quien apretó el botón: la cinta
+     también arranca y frena sola con el observer de abajo, así que el icono
+     tiene que seguir al elemento y no al último click. */
+  const [playing, setPlaying] = useState(false)
 
   /* Loop en cuadro. La red universal de ViewportGate solo PAUSA —nunca
      arranca— así que el play lo decide cada sección. Las dos copias se gatean
@@ -115,6 +120,30 @@ function CmsMedia({ cmsKey, sizes, onOpen }: { cmsKey: string; sizes: string; on
     io.observe(v)
     return () => { io.disconnect(); v.pause() }
   }, [isClip])
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !isClip) return
+    const sync = () => setPlaying(!v.paused)
+    sync()
+    v.addEventListener('play', sync)
+    v.addEventListener('pause', sync)
+    return () => { v.removeEventListener('play', sync); v.removeEventListener('pause', sync) }
+  }, [isClip])
+
+  const togglePlay = useCallback((e: React.MouseEvent) => {
+    // El contenedor abre el lightbox (o el picker en admin): el botón no.
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) void v.play().catch(() => {})
+    else v.pause()
+  }, [])
+
+  const expand = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onExpand?.()
+  }, [onExpand])
 
   return (
     <div className="gd-tile__media" data-cms-key={cmsKey} data-full={raw} onClick={onOpen}>
@@ -143,10 +172,32 @@ function CmsMedia({ cmsKey, sizes, onOpen }: { cmsKey: string; sizes: string; on
           draggable={false}
         />
       )}
+      {/* Controles al hover, misma distribución que la tarjeta de Animations:
+          fila abajo a la derecha, play/pausa primero y pantalla completa
+          después. Antes era una marca fija arriba a la derecha, y en una
+          animación el icono de play quedaba encendido incluso mientras la
+          pieza se estaba reproduciendo. */}
       {raw && (
-        <span className="gd-tile__hud" aria-hidden="true">
-          <i className={`fa-solid ${isClip ? 'fa-play' : 'fa-up-right-and-down-left-from-center'}`} />
-        </span>
+        <div className="gd-tile__controls">
+          {isClip && (
+            <button
+              type="button"
+              className="gd-tile__btn"
+              onClick={togglePlay}
+              aria-label={playing ? ui('pause') : ui('play')}
+            >
+              <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="gd-tile__btn"
+            onClick={expand}
+            aria-label={ui('view_fullscreen')}
+          >
+            <i className="fa-solid fa-expand" />
+          </button>
+        </div>
       )}
     </div>
   )
@@ -165,11 +216,21 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
   const desc = text(`${key}::desc`)
   const link = text(`${key}::link`)
 
-  const openFull = useCallback(() => {
-    if (!raw || isClip) return // el lightbox del sitio muestra imágenes
-    openLightbox(optimizedMediaSrc(raw, 1600), title, desc, storeHref(link))
+  /* Pantalla completa. Lo dispara el botón del overlay para los dos tipos de
+     pieza; el click sobre la media sigue abriendo SOLO las imágenes, porque la
+     cinta se arrastra y un clip a pantalla completa por rozar la banda sería
+     un accidente. */
+  const expandMedia = useCallback(() => {
+    if (!raw) return
+    if (isClip) openVideoLightbox(optimizedMediaSrc(raw), title, desc, { project, date })
+    else openLightbox(optimizedMediaSrc(raw, 1600), title, desc, storeHref(link))
     sendGAEvent('event', 'fullscreen_open')
-  }, [raw, isClip, title, desc, link])
+  }, [raw, isClip, title, desc, link, project, date])
+
+  const openFull = useCallback(() => {
+    if (isClip) return
+    expandMedia()
+  }, [isClip, expandMedia])
 
   return (
     <figure
@@ -182,7 +243,7 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
       data-desc={desc}
       data-link={link}
     >
-      <CmsMedia cmsKey={key} sizes={TILE_SIZES} onOpen={openFull} />
+      <CmsMedia cmsKey={key} sizes={TILE_SIZES} onOpen={openFull} onExpand={expandMedia} />
       {/* La ficha va FUERA de `.gd-tile__media`: ese nodo es el contenedor
           registrado en el motor, y con el contenedor vacío la regla global
           `.cms-empty-slot > *` esconde todo lo que no sea el marco punteado. */}

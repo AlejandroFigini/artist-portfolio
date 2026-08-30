@@ -456,15 +456,31 @@
 .gd-tile:not(.cms-empty-slot):hover .media-caption { opacity: 1; transform: translateY(0); }
 .gd-tile.cms-empty-slot .media-caption { display: none; }
 
-/* Lupa de pantalla completa (imagen) o marca de reproducción (animación) */
-/* Va en el vértice OPUESTO a la ficha —que se apoya abajo— y por ENCIMA de
-   ella, igual que en Illustrations. Antes estaba abajo a la derecha y sin
-   `z-index`: caía justo en la parte más oscura del degradado y además la ficha
-   (z-index 3) lo tapaba, así que al hacer hover el botón desaparecía. */
-.gd-tile__hud {
+/* Controles al hover: play/pausa (solo animación) + pantalla completa.
+   Misma distribución que la tarjeta de Animations (.anim-card__controls):
+   fila abajo a la derecha, apoyada sobre la parte oscura del degradado.
+   Va por ENCIMA de la ficha (z-index 3), o esta se los comía al hacer hover. */
+.gd-tile__controls {
   position: absolute;
-  top: 0.6rem;
   right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  gap: 0.4rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  /* El click sobre la media lo maneja el contenedor (lightbox o, en admin, el
+     picker); el puntero se habilita solo con los botones a la vista, para no
+     robarle el click al picker cuando la celda está vacía. */
+  pointer-events: none;
+  z-index: 4;
+}
+.gd-tile:not(.cms-empty-slot):hover .gd-tile__controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.gd-tile__btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,29 +491,25 @@
   border: 1px solid rgba(167, 139, 250, 0.3);
   color: #fff;
   font-size: 0.62rem;
-  opacity: 0;
-  transform: scale(0.7);
-  transition: opacity 0.3s ease, transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
-  /* El click lo maneja el contenedor (lightbox o, en admin, el picker); el
-     puntero se habilita solo con el boton a la vista, para no robarle el click
-     al picker cuando la celda esta vacia. */
-  pointer-events: none;
-  z-index: 4;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
 }
-.gd-tile:not(.cms-empty-slot):hover .gd-tile__hud {
-  opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
-}
-.gd-tile__hud:hover {
+.gd-tile__btn:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
   transform: scale(1.12);
 }
-/* La marca de reproducción se queda a la vista: avisa que la pieza es una
-   animación aunque el puntero no esté encima (y en táctil no hay hover). */
-.gd-tile--clip .gd-tile__hud { opacity: 0.9; transform: scale(1); }
+/* Sin puntero fino (táctil) no hay hover: los controles se quedan a la vista,
+   si no serían inalcanzables. Misma salida que la ficha (.media-caption). */
+@media (hover: none) {
+  .gd-tile:not(.cms-empty-slot) .gd-tile__controls {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
 
 /* ============================================================
    RESPONSIVE

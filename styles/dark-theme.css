@@ -118,6 +118,7 @@ body {
 [data-theme="dark"] .anim-card__btn:hover,
 [data-theme="dark"] .anim-lightbox__close:hover,
 [data-theme="dark"] .anim-lightbox__info-btn:hover,
+[data-theme="dark"] .ch-lightbox__close:hover,
 [data-theme="dark"] .ch-lightbox__info-btn,
 /* `.cms-btn` vive en admin.css, que NO es solo de admin: `Modal.tsx` lo
    importa on-demand al montar cualquier modal, y los de contacto y login son
@@ -131,6 +132,8 @@ body {
 [data-theme="dark"] .cv-btn,
 [data-theme="dark"] .cv-btn:hover,
 [data-theme="dark"] .cv-min-btn:hover,
+[data-theme="dark"] .gd-tile__btn:hover,
+[data-theme="dark"] .illu-cell__hud:hover,
 [data-theme="dark"] .lightbox.info-open .info-toggle-btn,
 [data-theme="dark"] .settings-gear,
 [data-theme="dark"] .srail__flash {

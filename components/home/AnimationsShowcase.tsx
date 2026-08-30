@@ -223,7 +223,7 @@ function AnimCard({ index }: { index: number }) {
                 type="button"
                 className="anim-card__btn"
                 onClick={togglePlay}
-                aria-label={playing ? 'Pausar' : 'Reproducir'}
+                aria-label={playing ? ui('pause') : ui('play')}
               >
                 <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`} />
               </button>

@@ -153,6 +153,8 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Showcase chrome
   view_fullscreen: { en: 'View fullscreen', es: 'Ver en pantalla completa', pt: 'Ver em tela cheia', fr: 'Voir en plein écran' },
+  play: { en: 'Play', es: 'Reproducir', pt: 'Reproduzir', fr: 'Lire' },
+  pause: { en: 'Pause', es: 'Pausar', pt: 'Pausar', fr: 'Pause' },
   information: { en: 'Information', es: 'Información', pt: 'Informação', fr: 'Informations' },
   inspiration: { en: 'Inspiration', es: 'Inspiración', pt: 'Inspiração', fr: 'Inspiration' },
   no_characters: { en: 'No characters configured yet', es: 'Todavía no hay personajes configurados', pt: 'Ainda não há personagens configurados', fr: "Aucun personnage configuré pour l'instant" },
