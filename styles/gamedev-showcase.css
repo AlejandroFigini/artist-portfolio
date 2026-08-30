@@ -162,10 +162,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: clamp(0.7rem, 1.4vw, 1.1rem);
-  /* `center` y no `start`: la columna de datos es la mas alta y define el alto
-     de la fila, asi que con `start` la media quedaba pegada arriba y dejaba un
-     hueco muerto debajo. Centrada, el aire se reparte. */
-  align-items: center;
+  /* De vuelta a `start`: el hueco que quedaba bajo la media ahora lo ocupa la
+     tira de capturas. */
+  align-items: start;
   padding: clamp(0.7rem, 1.2vw, 1rem);
   border-radius: 6px;   /* Steam apenas redondea */
   background: linear-gradient(to bottom, var(--steam-bg) 0%, var(--steam-bg-2) 100%);
@@ -176,6 +175,18 @@
     0 14px 34px -14px rgba(0, 0, 0, 0.55),
     0 4px 10px -6px rgba(0, 0, 0, 0.35);
 }
+/* Columna izquierda: vista grande + tira de capturas. */
+.gd-feature__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.gd-feature__stage {
+  position: relative;
+  border-radius: 3px;
+  overflow: hidden;
+}
 .gd-feature__media {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -183,6 +194,83 @@
   overflow: hidden;
   background: #0e1821;
 }
+/* La vista previa va COMO CAPA encima y no reemplazando el contenedor:
+   `.gd-feature__media` es el nodo registrado en el motor del CMS y tiene que
+   seguir montado para que el admin lo pueda editar. */
+.gd-feature__preview {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #0e1821;
+}
+.gd-feature__preview img,
+.gd-feature__preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Tira de capturas. Cuatro contenedores fijos, como la fila de miniaturas de
+   una ficha de Steam. */
+.gd-feature__thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.gd-feature__thumb {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #0e1821;
+  /* Steam marca la miniatura activa con un borde claro; acá el hover sube el
+     brillo y baja la opacidad del resto. */
+  opacity: 0.65;
+  transition: opacity 0.2s ease, outline-color 0.2s ease;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+}
+.gd-feature__thumb.has-media { cursor: pointer; }
+.gd-feature__thumbs:hover .gd-feature__thumb { opacity: 0.45; }
+.gd-feature__thumbs .gd-feature__thumb.has-media:hover,
+.gd-feature__thumbs .gd-feature__thumb.has-media:focus-visible {
+  opacity: 1;
+  outline-color: var(--steam-link);
+}
+.gd-feature__thumbmedia { position: absolute; inset: 0; }
+.gd-feature__thumbimg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Chapa de reproducir: avisa que esa captura es una animación. */
+.gd-feature__play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.gd-feature__play i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding-left: 0.1rem;
+}
+/* Miniatura vacía: manda el marco punteado, sin chapa ni atenuado. */
+.gd-feature__thumb:has(.cms-empty-slot) { opacity: 1; }
 .gd-feature__body {
   display: flex;
   flex-direction: column;
@@ -407,6 +495,11 @@
   .gd-feature__spec dt { font-size: 0.54rem; }
   .gd-feature__spec dd { font-size: 0.7rem; }
   .gd-feature__genre { font-size: 0.64rem; padding: 0.05rem 0.3rem; }
+  /* La columna izquierda mide ~144px en un telefono: cuatro miniaturas en fila
+     daban 32px de ancho, ilegibles y sin area de toque. En 2x2 quedan ~68px.
+     El hover no existe en tactil, asi que la tira es sobre todo el acceso del
+     admin a esos contenedores — pero tiene que poder tocarse. */
+  .gd-feature__thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gd-feature__desc {
     font-size: 0.76rem;
     line-height: 1.4;

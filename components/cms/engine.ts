@@ -324,6 +324,9 @@ const REGISTRY: RegistryEntry[] = [
   /* Proyecto destacado: mismo contenedor polimórfico, con su ficha (el enlace
      va como campo `::link` para que el export de traducciones lo excluya). */
   { base: 'gamedev.hero', sel: '.gd-feature__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-feature', fields: GAMEDEV_FEATURE_FIELDS, label: 'Featured Game' },
+  /* Tira de capturas del destacado, como la de una ficha de Steam. Cada una
+     acepta imagen o animación; al pasar el puntero reemplazan la vista grande. */
+  { base: 'gamedev.hero.shot', sel: '.gd-feature__thumb .gd-feature__thumbmedia', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', label: (el, i) => `Featured Screenshot #${i + 1}` },
 ]
 
 // ----- Índices del motor ------------------------------------------------------

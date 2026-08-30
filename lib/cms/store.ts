@@ -670,6 +670,7 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'gamedev.desc': { section: 'Game Dev', label: (n) => `Block Text #${n} — Game Dev`, kind: 'text' },
   'gamedev': { section: 'Game Dev', label: (n) => `Game Material #${n}`, kind: 'media' },
   'gamedev.hero': { section: 'Game Dev', label: () => 'Featured Game', kind: 'media' },
+  'gamedev.hero.shot': { section: 'Game Dev', label: (n) => `Featured Screenshot #${n}`, kind: 'media' },
 }
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' | 'media' } {

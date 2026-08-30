@@ -21,7 +21,7 @@
    en loop y solo mientras está en cuadro. Las dos copias comparten
    `data-cms-key`: el motor las trata como un solo contenedor. */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { openLightbox } from '@/components/ui/lightbox'
@@ -42,6 +42,9 @@ const DRAG_THRESHOLD = 5  // px antes de considerar arrastre (deja pasar los cli
 
 const TILE_SIZES = '(max-width: 1023px) 60vw, 30vw'
 const FEATURE_SIZES = '(max-width: 1023px) 90vw, 32vw'
+const SHOT_SIZES = '(max-width: 1023px) 22vw, 8vw'
+/* Capturas del destacado, como la tira de una ficha de Steam. */
+const SHOT_COUNT = 4
 
 /* Bloques de texto (3). Contenido por defecto, editable desde el CMS. */
 const TEXT_BLOCKS: { title: string; body: string }[] = [
@@ -317,10 +320,85 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
   )
 }
 
+/* Miniatura de la tira. Al pasar el puntero reemplaza la vista grande; si lo
+   cargado es una animación lleva la chapa de reproducir, como en Steam. */
+function FeatureShot({ index, onHover }: { index: number; onHover: (src: string) => void }) {
+  const key = `gamedev.hero.shot#${index}`
+  const raw = useCmsItems()[key] || ''
+  const isClip = isVideoSrc(raw)
+
+  return (
+    <figure
+      className={`gd-feature__thumb${raw ? ' has-media' : ''}`}
+      onMouseEnter={() => raw && onHover(raw)}
+      onFocus={() => raw && onHover(raw)}
+      tabIndex={raw ? 0 : -1}
+    >
+      <div className="gd-feature__thumbmedia" data-cms-key={key} data-full={raw}>
+        {isClip ? (
+          /* La miniatura de un video NO reproduce: solo muestra su póster. Son
+             cuatro a la vez y ninguna se está mirando — lo que se mira es la
+             vista grande, que es la que sí reproduce. */
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img className="gd-feature__thumbimg" src={videoPosterSrc(raw) || undefined} alt="" loading="lazy" decoding="async" draggable={false} />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            className="gd-feature__thumbimg"
+            src={raw ? optimizedMediaSrc(raw, 400) : undefined}
+            sizes={raw ? SHOT_SIZES : undefined}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+          />
+        )}
+        {isClip && (
+          <span className="gd-feature__play" aria-hidden="true">
+            <i className="fa-solid fa-play" />
+          </span>
+        )}
+      </div>
+    </figure>
+  )
+}
+
+/* Vista grande. Muestra la media del destacado salvo que el puntero esté sobre
+   una miniatura, y ahí pinta la de esa. Va como CAPA encima y no reemplazando
+   el contenedor: `.gd-feature__media` es el nodo registrado en el motor del
+   CMS y tiene que seguir montado para que el admin lo pueda editar. */
+function FeaturePreview({ src }: { src: string }) {
+  const isClip = isVideoSrc(src)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !isClip) return
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) void v.play().catch(() => {}); else v.pause() },
+      { threshold: 0.2 },
+    )
+    io.observe(v)
+    return () => { io.disconnect(); v.pause() }
+  }, [isClip, src])
+
+  return (
+    <div className="gd-feature__preview" aria-hidden="true">
+      {isClip ? (
+        <video ref={videoRef} className="gd-tile__video" muted loop playsInline preload="metadata" src={optimizedMediaSrc(src)} poster={videoPosterSrc(src) || undefined} />
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img className="gd-tile__img" src={optimizedMediaSrc(src, 1200)} alt="" decoding="async" draggable={false} />
+      )}
+    </div>
+  )
+}
+
 /* Proyecto destacado. Mismo contenedor polimórfico que una celda —acepta
    captura o animación— pero acá la ficha SÍ se pinta: es el contenido de la
    tarjeta. */
 function FeaturedGame() {
+  const [preview, setPreview] = useState('')
   const text = useCmsText()
   const ui = useUiText()
   const key = 'gamedev.hero#0'
@@ -354,11 +432,21 @@ function FeaturedGame() {
       data-language={language}
       data-link={text(`${key}::link`)}
     >
-      {/* Cápsula arriba, ficha abajo: la distribución de la barra lateral de
-          Steam. El ratio es el de su cápsula de cabecera (460x215), que es
-          bastante más apaisada que un 16:9 y por eso no dispara el alto. */}
-      <div className="gd-feature__media">
-        <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
+      {/* Columna izquierda: vista grande + tira de capturas, como la ficha de
+          un juego en Steam. */}
+      <div className="gd-feature__left" onMouseLeave={() => setPreview('')}>
+        <div className="gd-feature__stage">
+          <div className="gd-feature__media">
+            <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
+          </div>
+          {preview && <FeaturePreview src={preview} />}
+        </div>
+
+        <div className="gd-feature__thumbs">
+          {Array.from({ length: SHOT_COUNT }, (_, i) => (
+            <FeatureShot key={i} index={i} onHover={setPreview} />
+          ))}
+        </div>
       </div>
 
       <div className="gd-feature__body">
