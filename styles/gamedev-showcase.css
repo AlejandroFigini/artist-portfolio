@@ -138,71 +138,95 @@
    propia ficha y enlace a la tienda. Comparte el contenedor polimórfico de
    las celdas, así que acepta captura o animación.
    ============================================================ */
-/* Distribución de la barra lateral de una ficha de Steam: cápsula arriba,
-   después descripción y una retícula de `ETIQUETA: valor`, y el botón de
-   tienda al pie.
+/* ============================================================
+   PROYECTO DESTACADO — replica deliberada de una ficha de Steam.
 
-   Lo que NO se copia es la paleta: Steam pinta los valores en su celeste de
-   enlace y acá manda el violeta del sitio, que cumple el mismo papel. La
-   identidad blueprint no se negocia por parecido. */
+   Decision del autor, tomada despues de plantearle que rompe la identidad
+   blueprint del resto del sitio: quiere que la tarjeta se lea como sacada de
+   Steam. Por eso este bloque —y SOLO este— sale de la paleta del proyecto y
+   usa la de Steam, con sus tokens propios para que quede claro que es una
+   isla y no una fuga de estilo.
+
+   Distribucion: media a un lado, ficha al otro (como la pagina de un juego,
+   captura grande a la izquierda y columna de datos a la derecha).
+   ============================================================ */
 .gd-feature {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.6rem, 1.2vw, 0.9rem);
+  /* Paleta Steam. Valores de su hoja de estilos, no aproximados a ojo. */
+  --steam-bg: #1b2838;        /* panel */
+  --steam-bg-2: #16202d;      /* fondo del bloque de datos */
+  --steam-title: #ffffff;
+  --steam-text: #c6d4df;      /* cuerpo */
+  --steam-label: #8f98a0;     /* etiqueta de dato */
+  --steam-link: #67c1f5;      /* valor / enlace */
+
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(0.7rem, 1.4vw, 1.1rem);
+  align-items: start;
   padding: clamp(0.7rem, 1.2vw, 1rem);
-  border-radius: 16px;
-  background: rgba(124, 58, 237, 0.04);
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 6px;   /* Steam apenas redondea */
+  background: linear-gradient(to bottom, var(--steam-bg) 0%, var(--steam-bg-2) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.4);
 }
-/* El ratio es el de la cápsula de cabecera de Steam (460x215): bastante más
-   apaisada que un 16:9, que es lo que evita que la tarjeta se dispare de alto
-   al pasar a vertical. */
 .gd-feature__media {
   position: relative;
-  aspect-ratio: 460 / 215;
-  border-radius: 12px;
+  aspect-ratio: 16 / 9;
+  border-radius: 3px;
   overflow: hidden;
-  background: #f3f1fb;
+  background: #0e1821;
 }
 .gd-feature__body {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
   min-width: 0;
 }
-/* Ficha de tienda: género / lanzamiento / idioma, en filas `ETIQUETA: valor`
-   como las de Steam. Cada dato solo ocupa lugar si está cargado, así que con
-   los tres vacíos la tarjeta no crece.
+.gd-feature__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1.05rem, 1.7vw, 1.45rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--steam-title);
+  margin: 0;
+  min-height: 1em; /* la tarjeta no salta mientras el título está vacío */
+}
+.gd-feature__desc {
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--steam-text);
+  margin: 0;
+}
 
-   Retícula de dos columnas con las filas en `display: contents`: así todas las
-   etiquetas comparten una única columna y los valores quedan alineados entre
-   sí, que es lo que hace legible el bloque de Steam. */
+/* Filas `ETIQUETA: valor`. Reticula de dos columnas con las filas en
+   `display: contents`: todas las etiquetas comparten una columna y los valores
+   quedan alineados entre si — es lo que hace legible ese bloque en Steam. */
 .gd-feature__specs {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.3rem 0.7rem;
+  gap: 0.28rem 0.6rem;
   align-items: baseline;
-  margin: 0.1rem 0 0;
-  padding-top: 0.55rem;
-  border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+  margin: 0.15rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.2);
 }
 .gd-feature__spec { display: contents; }
 .gd-feature__spec dt {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.56rem;
-  letter-spacing: 0.14em;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--steam-label);
   white-space: nowrap;
 }
 /* Los dos puntos van por CSS: son puntuación de la etiqueta, no contenido. */
 .gd-feature__spec dt::after { content: ':'; }
 .gd-feature__spec dd {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.35;
-  color: var(--accent);
+  color: var(--steam-link);
   overflow-wrap: anywhere;
 }
 
@@ -211,52 +235,35 @@
 .gd-feature__genres {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
 .gd-feature__genre {
-  padding: 0.1rem 0.45rem;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  font-size: 0.72rem;
-  line-height: 1.45;
-  color: var(--accent);
+  padding: 0.05rem 0.4rem;
+  border-radius: 2px;
+  background: rgba(103, 193, 245, 0.2);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--steam-link);
 }
-.gd-feature__title {
-  font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(1.1rem, 1.8vw, 1.55rem);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  margin: 0;
-  min-height: 1em; /* la tarjeta no salta mientras el título está vacío */
-}
-.gd-feature__desc {
-  font-size: clamp(0.82rem, 1.05vw, 0.94rem);
-  font-weight: 200;
-  line-height: 1.55;
-  color: #000;
-  margin: 0;
-}
+
+/* Boton azul de Steam. */
 .gd-feature__link {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   align-self: flex-start;
-  margin-top: 0.25rem;
-  padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  background: var(--accent);
-  border: 1px solid var(--accent);
+  margin-top: 0.15rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 2px;
+  background: linear-gradient(to right, #47bfff 0%, #1a44c2 60%);
+  border: none;
   color: #fff;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.25s ease, transform 0.25s ease;
+  transition: filter 0.2s ease;
 }
-.gd-feature__link:hover {
-  background: var(--accent-hover, #7c3aed);
-  transform: translateY(-1px);
-}
+.gd-feature__link:hover { filter: brightness(1.25); }
 
 /* ============================================================
    CINTAS DE MATERIAL — dos rieles que se mueven solos en sentidos opuestos y
@@ -378,28 +385,29 @@
    mitad. La descripción se recorta a 3 líneas para que un texto largo no
    devuelva el problema. */
 @media (max-width: 600px) {
-  /* En móvil la cápsula ya es apaisada, así que la tarjeta sigue entrando
-     vertical sin volverse un bloque alto. */
+  /* Sigue en dos columnas: la media se achica en vez de irse arriba, que es lo
+     que dispara el alto de la tarjeta en un telefono. La descripcion se recorta
+     a 3 lineas para que un texto largo no la vuelva a estirar. */
   .gd-feature {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
     gap: 0.55rem;
-    padding: 0.6rem;
-    border-radius: 12px;
+    padding: 0.55rem;
   }
-  .gd-feature__body { gap: 0.4rem; }
-  .gd-feature__title { font-size: clamp(0.95rem, 4vw, 1.1rem); }
-  .gd-feature__specs { gap: 0.25rem 0.6rem; padding-top: 0.45rem; }
-  .gd-feature__spec dt { font-size: 0.5rem; letter-spacing: 0.12em; }
-  .gd-feature__spec dd { font-size: 0.74rem; }
-  .gd-feature__genre { font-size: 0.68rem; }
+  .gd-feature__body { gap: 0.35rem; }
+  .gd-feature__title { font-size: clamp(0.9rem, 3.8vw, 1.05rem); }
+  .gd-feature__specs { gap: 0.2rem 0.45rem; padding: 0.4rem 0.45rem; }
+  .gd-feature__spec dt { font-size: 0.54rem; }
+  .gd-feature__spec dd { font-size: 0.7rem; }
+  .gd-feature__genre { font-size: 0.64rem; padding: 0.05rem 0.3rem; }
   .gd-feature__desc {
-    font-size: 0.8rem;
-    line-height: 1.45;
+    font-size: 0.76rem;
+    line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .gd-feature__link { padding: 0.4rem 0.75rem; font-size: 0.72rem; }
+  .gd-feature__link { padding: 0.35rem 0.7rem; font-size: 0.68rem; }
 }
 
 @media (max-width: 600px) {

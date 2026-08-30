@@ -609,24 +609,10 @@ body {
 [data-theme="dark"] .gd-tile {
   background: var(--surface-1);
 }
-[data-theme="dark"] .gd-feature {
-  background: var(--surface-1);
-  border-color: var(--dk-hairline);
-}
-[data-theme="dark"] .gd-feature__media { background: var(--surface-2); }
-[data-theme="dark"] .gd-feature__title { color: var(--text-primary); }
-[data-theme="dark"] .gd-feature__desc { color: var(--text-secondary); }
-[data-theme="dark"] .gd-feature__spec dt { color: var(--text-secondary); }
-[data-theme="dark"] .gd-feature__spec dd { color: var(--accent-text); }
-[data-theme="dark"] .gd-feature__genre {
-  background: var(--dk-tint-2);
-  color: var(--accent-text);
-}
-[data-theme="dark"] .gd-feature__link {
-  background: var(--accent-solid);
-  border-color: var(--accent-solid);
-  color: #fff;
-}
+/* La tarjeta del destacado NO lleva overrides de tema: es una replica de una
+   ficha de Steam y su paleta es la de Steam en los dos temas (ver el bloque en
+   gamedev-showcase.css). Cambiarla en oscuro seria dejar de parecerse justo a
+   lo que se quiso replicar. */
 [data-theme="dark"] .gd-tile:not(.cms-empty-slot) {
   box-shadow: var(--shadow-lg), 0 0 0 1px var(--dk-hairline);
 }
