@@ -69,8 +69,10 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Sección Game Dev (bandas de material con deriva horizontal)
   gd_track_label: { en: 'Game material', es: 'Material de juegos', pt: 'Material de jogos', fr: 'Matériel de jeux' },
-  gd_featured: { en: 'Featured', es: 'Destacado', pt: 'Destaque', fr: 'À la une' },
-  gd_store: { en: 'View on Steam', es: 'Ver en Steam', pt: 'Ver na Steam', fr: 'Voir sur Steam' },
+  gd_store: { en: 'Available on Steam', es: 'Disponible en Steam', pt: 'Disponível na Steam', fr: 'Disponible sur Steam' },
+  gd_release: { en: 'Release', es: 'Lanzamiento', pt: 'Lançamento', fr: 'Sortie' },
+  gd_genre: { en: 'Genre', es: 'Género', pt: 'Gênero', fr: 'Genre' },
+  gd_language: { en: 'Language', es: 'Idioma', pt: 'Idioma', fr: 'Langue' },
 
   // Riel lateral de secciones de la portada (SectionRail)
   rail_sections: { en: 'Sections', es: 'Secciones', pt: 'Seções', fr: 'Sections' },

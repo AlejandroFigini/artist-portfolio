@@ -25,6 +25,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import { openLightbox } from '@/components/ui/lightbox'
+import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { isVideoSrc, mediaSrcSet, optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
@@ -151,6 +152,8 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
   const raw = items[key] || ''
   const isClip = isVideoSrc(raw)
   const title = text(`${key}::title`)
+  const project = text(`${key}::project`)
+  const date = text(`${key}::date`)
   const desc = text(`${key}::desc`)
   const link = text(`${key}::link`)
 
@@ -166,10 +169,16 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
       style={{ aspectRatio: ratio }}
       aria-hidden={clone || undefined}
       data-title={title}
+      data-project={project}
+      data-date={date}
       data-desc={desc}
       data-link={link}
     >
       <CmsMedia cmsKey={key} sizes={TILE_SIZES} onOpen={openFull} />
+      {/* La ficha va FUERA de `.gd-tile__media`: ese nodo es el contenedor
+          registrado en el motor, y con el contenedor vacío la regla global
+          `.cms-empty-slot > *` esconde todo lo que no sea el marco punteado. */}
+      <MediaCaption title={title} date={date} project={project} />
     </figure>
   )
 }
@@ -313,23 +322,49 @@ function FeaturedGame() {
 
   const title = text(`${key}::title`)
   const desc = text(`${key}::desc`)
+  const release = text(`${key}::release`)
+  const genre = text(`${key}::genre`)
+  const language = text(`${key}::language`)
   const href = storeHref(text(`${key}::link`))
 
+  /* Ficha de tienda. Cada dato es opcional y solo ocupa lugar si está
+     cargado: con los tres vacíos la tarjeta queda igual de compacta que antes. */
+  const specs: { label: string; value: string; icon: string }[] = [
+    { label: ui('gd_release', 'Release'), value: release, icon: 'fa-regular fa-calendar' },
+    { label: ui('gd_genre', 'Genre'), value: genre, icon: 'fa-solid fa-gamepad' },
+    { label: ui('gd_language', 'Language'), value: language, icon: 'fa-solid fa-language' },
+  ].filter((sp) => !!sp.value)
+
   return (
-    <article className="gd-feature" data-title={title} data-desc={desc} data-link={text(`${key}::link`)}>
+    <article
+      className="gd-feature"
+      data-title={title}
+      data-desc={desc}
+      data-release={release}
+      data-genre={genre}
+      data-language={language}
+      data-link={text(`${key}::link`)}
+    >
       <div className="gd-feature__media">
         <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
       </div>
 
       <div className="gd-feature__body">
-        <span className="gd-feature__tag">
-          <i className="fa-solid fa-star" aria-hidden="true" /> {ui('gd_featured', 'Featured')}
-        </span>
         <h3 className="gd-feature__title">{title}</h3>
         <p className="gd-feature__desc">{desc}</p>
+        {specs.length > 0 && (
+          <dl className="gd-feature__specs">
+            {specs.map((sp) => (
+              <div key={sp.label} className="gd-feature__spec">
+                <dt><i className={sp.icon} aria-hidden="true" /> {sp.label}</dt>
+                <dd>{sp.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         {href && (
           <a className="gd-feature__link" href={href} target="_blank" rel="noopener noreferrer">
-            <i className="fa-brands fa-steam" aria-hidden="true" /> {ui('gd_store', 'View on Steam')}
+            <i className="fa-brands fa-steam" aria-hidden="true" /> {ui('gd_store', 'Available on Steam')}
           </a>
         )}
       </div>

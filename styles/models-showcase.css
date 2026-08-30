@@ -367,6 +367,16 @@
 }
 .m3d-gallery-cell:not(.cms-empty-slot):hover .m3d-gallery__img { transform: scale(1.05); }
 
+/* Ficha al hover (.media-caption, hoja compartida) sobre las dos piezas de la
+   sección: la cinta de imágenes y la slide del coverflow. En el contenedor
+   vacío no existe — ahí manda el marco punteado. */
+.m3d-gallery-cell:not(.cms-empty-slot):hover .media-caption,
+.m3d-slide:not(.cms-empty-slot):hover .media-caption { opacity: 1; transform: translateY(0); }
+.m3d-gallery-cell.cms-empty-slot .media-caption,
+.m3d-slide.cms-empty-slot .media-caption { display: none; }
+/* La copia de la cinta no repite la ficha en admin, igual que sus tools. */
+.m3d-gallery-cell--clone .media-caption { pointer-events: none; }
+
 /* --- Responsive --- */
 @media (max-width: 900px) {
   /* minmax(0,…): sin esto el item hereda min-width:auto y la cinta de la

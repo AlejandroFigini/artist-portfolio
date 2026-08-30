@@ -23,6 +23,7 @@
 @import "./projects-showcase.css"; /* sección Projects: carrusel horizontal de proyectos */
 @import "./characters-showcase.css"; /* sección Character Design: stage + carrusel */
 @import "./models-showcase.css"; /* sección 3D: split 2-col (textos sticky + videos) */
+@import "./media-caption.css"; /* ficha al hover compartida (.media-caption) */
 @import "./gamedev-showcase.css"; /* sección Game Dev: escenario oscuro pineado + recorrido horizontal */
 @import "./illustrations-showcase.css"; /* sección Illustrations: masonry de contenedores CMS (build limpio) */
 @import "./software-dropdown.css"; /* desplegable de software reutilizable (.sw-*) */

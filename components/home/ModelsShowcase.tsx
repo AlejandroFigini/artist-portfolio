@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
@@ -75,6 +76,8 @@ function slideStyle(off: number): React.CSSProperties {
    reproduce solo cuando es la slide activa (perf). */
 function Slide({ index, isActive, off }: { index: number; isActive: boolean; off: number }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const text = useCmsText()
+  const fKey = `model3d#${index}`
   /* `src` y `poster` desde el servidor. La clave la arma `indexEditables` como
      base + '#' + índice del elemento dentro del selector, y acá el índice de la
      slide es exactamente ese. */
@@ -147,6 +150,11 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
           </div>
         )}
       </div>
+      <MediaCaption
+        title={text(`${fKey}::title`)}
+        date={text(`${fKey}::date`)}
+        project={text(`${fKey}::project`)}
+      />
     </figure>
   )
 }
@@ -248,16 +256,28 @@ function Coverflow() {
    detiene). Cada celda comparte data-cms-key entre copias → el motor CMS
    actualiza todas las instancias (mismo patrón que el wave del hero; evita los
    clones imperativos de embla que rompen la mutación del CMS). */
-function galleryCells(copy: number) {
-  return Array.from({ length: GALLERY_COUNT }, (_, i) => (
+function GalleryCell({ copy, index }: { copy: number; index: number }) {
+  const text = useCmsText()
+  const key = `model3d.gallery#${index}`
+  return (
     <div
-      key={`${copy}-${i}`}
       className={`m3d-gallery-cell${copy > 0 ? ' m3d-gallery-cell--clone' : ''}`}
       aria-hidden={copy > 0 || undefined}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="m3d-gallery__img" data-cms-key={`model3d.gallery#${i}`} alt="" draggable={false} loading="lazy" decoding="async" />
+      <img className="m3d-gallery__img" data-cms-key={key} alt="" draggable={false} loading="lazy" decoding="async" />
+      <MediaCaption
+        title={text(`${key}::title`)}
+        date={text(`${key}::date`)}
+        project={text(`${key}::project`)}
+      />
     </div>
+  )
+}
+
+function galleryCells(copy: number) {
+  return Array.from({ length: GALLERY_COUNT }, (_, i) => (
+    <GalleryCell key={`${copy}-${i}`} copy={copy} index={i} />
   ))
 }
 

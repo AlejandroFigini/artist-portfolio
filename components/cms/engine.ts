@@ -102,10 +102,13 @@ export const PROJECT_FIELDS: FieldDef[] = [
     set: (c, v) => { c.setAttribute('data-title', v); const e = c.querySelector('.proj-card-title'); if (e) e.textContent = v } },
   { key: 'start_date', label: 'Start Date', optional: true,
     get: (c) => c.getAttribute('data-start-date') || '',
-    set: (c, v) => { c.setAttribute('data-start-date', v); const e = c.querySelector('.proj-card-date'); if (e) e.textContent = v } },
+    set: (c, v) => { c.setAttribute('data-start-date', v) } },
+  /* La etiqueta visible de la tarjeta es la fecha de FIN, no la de inicio: un
+     proyecto se presenta por cuándo se terminó. El setter de `end_date` es el
+     que escribe `.proj-card-date`. */
   { key: 'end_date', label: 'End Date', optional: true,
     get: (c) => c.getAttribute('data-end-date') || '',
-    set: (c, v) => { c.setAttribute('data-end-date', v) } },
+    set: (c, v) => { c.setAttribute('data-end-date', v); const e = c.querySelector('.proj-card-date'); if (e) e.textContent = v } },
   { key: 'duration', label: 'Duration', optional: true,
     get: (c) => c.getAttribute('data-duration') || '',
     set: (c, v) => { c.setAttribute('data-duration', v) } },
@@ -140,6 +143,12 @@ const GAMEDEV_FIELDS: FieldDef[] = [
   { key: 'title', label: 'Title', optional: true,
     get: (c) => c.getAttribute('data-title') || '',
     set: (c, v) => { c.setAttribute('data-title', v) } },
+  { key: 'project', label: 'Project / Game', optional: true,
+    get: (c) => c.getAttribute('data-project') || '',
+    set: (c, v) => { c.setAttribute('data-project', v) } },
+  { key: 'date', label: 'Date', optional: true,
+    get: (c) => c.getAttribute('data-date') || '',
+    set: (c, v) => { c.setAttribute('data-date', v) } },
   { key: 'desc', label: 'Description (when viewing full screen)', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => { c.setAttribute('data-desc', v) } },
@@ -157,9 +166,33 @@ const GAMEDEV_FEATURE_FIELDS: FieldDef[] = [
   { key: 'desc', label: 'Description', textarea: true, optional: true,
     get: (c) => c.getAttribute('data-desc') || '',
     set: (c, v) => { c.setAttribute('data-desc', v); const e = c.querySelector('.gd-feature__desc'); if (e) e.textContent = v } },
+  { key: 'release', label: 'Release Date', optional: true,
+    get: (c) => c.getAttribute('data-release') || '',
+    set: (c, v) => { c.setAttribute('data-release', v) } },
+  { key: 'genre', label: 'Genre', optional: true,
+    get: (c) => c.getAttribute('data-genre') || '',
+    set: (c, v) => { c.setAttribute('data-genre', v) } },
+  { key: 'language', label: 'Language', optional: true,
+    get: (c) => c.getAttribute('data-language') || '',
+    set: (c, v) => { c.setAttribute('data-language', v) } },
   { key: 'link', label: 'Store link (Steam, itch.io…)', optional: true,
     get: (c) => c.getAttribute('data-link') || '',
     set: (c, v) => { c.setAttribute('data-link', v) } },
+]
+
+/* Ficha de una pieza de 3D — la consume la misma `MediaCaption` que Game Dev.
+   Los `data-*` son la fuente que lee el modal; el nodo visible lo pinta React
+   desde el store, así que acá no hay que espejar nada. */
+const MODEL3D_FIELDS: FieldDef[] = [
+  { key: 'title', label: 'Title', optional: true,
+    get: (c) => c.getAttribute('data-title') || '',
+    set: (c, v) => { c.setAttribute('data-title', v) } },
+  { key: 'project', label: 'Project', optional: true,
+    get: (c) => c.getAttribute('data-project') || '',
+    set: (c, v) => { c.setAttribute('data-project', v) } },
+  { key: 'date', label: 'Date', optional: true,
+    get: (c) => c.getAttribute('data-date') || '',
+    set: (c, v) => { c.setAttribute('data-date', v) } },
 ]
 
 const WAVE_FIELDS: FieldDef[] = [
@@ -276,8 +309,8 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'model3d.intro', sel: '.m3d-showcase__desc', kind: 'text', mount: 'self', section: '3D Models', label: 'Introductory Text — 3D' },
   { base: 'model3d.title', sel: '.m3d-text__title', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Block Title #${i + 1} — 3D` },
   { base: 'model3d.desc', sel: '.m3d-text__body', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Block Text #${i + 1} — 3D` },
-  { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `3D Video #${i + 1}` },
-  { base: 'model3d.gallery', sel: '.m3d-gallery__img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `3D Image #${i + 1}` },
+  { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', container: '.m3d-slide', fields: MODEL3D_FIELDS, label: (el, i) => `3D Video #${i + 1}` },
+  { base: 'model3d.gallery', sel: '.m3d-gallery__img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', container: '.m3d-gallery-cell', fields: MODEL3D_FIELDS, label: (el, i) => `3D Image #${i + 1}` },
   { base: 'gamedev.soft', sel: '.gamedev-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Game Dev', label: (el, i) => `Software Logo #${i + 1}` },
   { base: 'gamedev.softname', sel: '.gamedev-soft-name', kind: 'text', mount: 'self', section: 'Game Dev', label: (el, i) => `Software Name #${i + 1}` },
   { base: 'gamedev.heading', sel: '.gd-showcase__title', kind: 'text', mount: 'self', section: 'Game Dev', label: 'Section Name — Game Dev' },

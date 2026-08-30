@@ -39,7 +39,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
   const key = `proj#${id}`
   const imgSrc = items[key] || ''
   const title = text(`${key}::title`)
-  const startDate = text(`${key}::start_date`)
+  const endDate = text(`${key}::end_date`)
   const summary = text(`${key}::summary`)
   const hasImage = !isEmptyMedia(imgSrc)
 
@@ -138,7 +138,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
           <div className="flex items-center gap-3 mb-3" style={{ marginBottom: '0.85rem' }}>
             <span className="w-8 h-[1.5px] bg-[var(--accent)]"></span>
             <span className="proj-card-date text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-              {startDate || 'In progress'}
+              {endDate || 'In progress'}
             </span>
           </div>
 
@@ -206,7 +206,7 @@ export default function ProjectsShowcase() {
     return [
       items[key] || '',
       items[`${key}::title`] || '',
-      items[`${key}::start_date`] || '',
+      items[`${key}::end_date`] || '',
       items[`${key}::summary`] || '',
     ].join('|')
   }).join('~')
