@@ -69,7 +69,12 @@ const TEXT_BLOCKS: { title: string; body: string }[] = [
    Se acepta el dominio sin esquema (lo natural de copiar y pegar) solo si
    tiene forma de host — al menos un punto. */
 export function storeHref(value: string): string {
-  const raw = (value || '').trim()
+  /* Solo el primer token: una URL no puede llevar un espacio en crudo, y al
+     pegar en el campo es fácil que entren dos (o la URL con una nota atrás).
+     `new URL` no rechaza eso — codifica el espacio como %20 y devuelve un
+     enlace que no lleva a ninguna parte. Visto en la base real: el campo tenía
+     la misma URL dos veces separadas por un espacio. */
+  const raw = (value || '').trim().split(/\s+/)[0] || ''
   if (!raw) return ''
   const candidate = /^https?:\/\//i.test(raw)
     ? raw
@@ -327,12 +332,16 @@ function FeaturedGame() {
   const language = text(`${key}::language`)
   const href = storeHref(text(`${key}::link`))
 
-  /* Ficha de tienda. Cada dato es opcional y solo ocupa lugar si está
-     cargado: con los tres vacíos la tarjeta queda igual de compacta que antes. */
-  const specs: { label: string; value: string; icon: string }[] = [
-    { label: ui('gd_release', 'Release'), value: release, icon: 'fa-regular fa-calendar' },
-    { label: ui('gd_genre', 'Genre'), value: genre, icon: 'fa-solid fa-gamepad' },
-    { label: ui('gd_language', 'Language'), value: language, icon: 'fa-solid fa-language' },
+  /* Ficha de tienda, en el orden en que Steam la muestra: género, fecha de
+     lanzamiento, idioma. Cada dato es opcional y solo ocupa lugar si está
+     cargado: con los tres vacíos la tarjeta queda igual de compacta que antes.
+
+     El género se parte por comas y se pinta como etiquetas sueltas, igual que
+     Steam — el admin escribe "Adventure, Casual, Free to Play" de corrido. */
+  const genres = genre.split(',').map((g) => g.trim()).filter(Boolean)
+  const specs: { label: string; value: string }[] = [
+    { label: ui('gd_release', 'Release date'), value: release },
+    { label: ui('gd_language', 'Language'), value: language },
   ].filter((sp) => !!sp.value)
 
   return (
@@ -345,6 +354,9 @@ function FeaturedGame() {
       data-language={language}
       data-link={text(`${key}::link`)}
     >
+      {/* Cápsula arriba, ficha abajo: la distribución de la barra lateral de
+          Steam. El ratio es el de su cápsula de cabecera (460x215), que es
+          bastante más apaisada que un 16:9 y por eso no dispara el alto. */}
       <div className="gd-feature__media">
         <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
       </div>
@@ -352,16 +364,30 @@ function FeaturedGame() {
       <div className="gd-feature__body">
         <h3 className="gd-feature__title">{title}</h3>
         <p className="gd-feature__desc">{desc}</p>
-        {specs.length > 0 && (
+
+        {(genres.length > 0 || specs.length > 0) && (
           <dl className="gd-feature__specs">
+            {genres.length > 0 && (
+              <div className="gd-feature__spec">
+                <dt>{ui('gd_genre', 'Genre')}</dt>
+                <dd>
+                  <span className="gd-feature__genres">
+                    {genres.map((g) => (
+                      <span key={g} className="gd-feature__genre">{g}</span>
+                    ))}
+                  </span>
+                </dd>
+              </div>
+            )}
             {specs.map((sp) => (
               <div key={sp.label} className="gd-feature__spec">
-                <dt><i className={sp.icon} aria-hidden="true" /> {sp.label}</dt>
+                <dt>{sp.label}</dt>
                 <dd>{sp.value}</dd>
               </div>
             ))}
           </dl>
         )}
+
         {href && (
           <a className="gd-feature__link" href={href} target="_blank" rel="noopener noreferrer">
             <i className="fa-brands fa-steam" aria-hidden="true" /> {ui('gd_store', 'Available on Steam')}

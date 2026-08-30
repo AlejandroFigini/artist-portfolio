@@ -138,19 +138,28 @@
    propia ficha y enlace a la tienda. Comparte el contenedor polimórfico de
    las celdas, así que acepta captura o animación.
    ============================================================ */
+/* Distribución de la barra lateral de una ficha de Steam: cápsula arriba,
+   después descripción y una retícula de `ETIQUETA: valor`, y el botón de
+   tienda al pie.
+
+   Lo que NO se copia es la paleta: Steam pinta los valores en su celeste de
+   enlace y acá manda el violeta del sitio, que cumple el mismo papel. La
+   identidad blueprint no se negocia por parecido. */
 .gd-feature {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
-  gap: clamp(0.8rem, 1.6vw, 1.2rem);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.2vw, 0.9rem);
   padding: clamp(0.7rem, 1.2vw, 1rem);
   border-radius: 16px;
   background: rgba(124, 58, 237, 0.04);
   border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
+/* El ratio es el de la cápsula de cabecera de Steam (460x215): bastante más
+   apaisada que un 16:9, que es lo que evita que la tarjeta se dispare de alto
+   al pasar a vertical. */
 .gd-feature__media {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 460 / 215;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f1fb;
@@ -158,34 +167,59 @@
 .gd-feature__body {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.5rem;
   min-width: 0;
 }
-/* Ficha de tienda: lanzamiento / género / idioma. Cada dato solo ocupa lugar
-   si está cargado, así que con los tres vacíos la tarjeta no crece. */
+/* Ficha de tienda: género / lanzamiento / idioma, en filas `ETIQUETA: valor`
+   como las de Steam. Cada dato solo ocupa lugar si está cargado, así que con
+   los tres vacíos la tarjeta no crece.
+
+   Retícula de dos columnas con las filas en `display: contents`: así todas las
+   etiquetas comparten una única columna y los valores quedan alineados entre
+   sí, que es lo que hace legible el bloque de Steam. */
 .gd-feature__specs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 1.1rem;
-  margin: 0.15rem 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.3rem 0.7rem;
+  align-items: baseline;
+  margin: 0.1rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
 }
-.gd-feature__spec { min-width: 0; }
+.gd-feature__spec { display: contents; }
 .gd-feature__spec dt {
   font-family: var(--font-mono), monospace;
-  font-size: 0.54rem;
-  letter-spacing: 0.16em;
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 0.1rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
-.gd-feature__spec dt i { margin-right: 0.25rem; font-size: 0.6rem; }
+/* Los dos puntos van por CSS: son puntuación de la etiqueta, no contenido. */
+.gd-feature__spec dt::after { content: ':'; }
 .gd-feature__spec dd {
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 300;
-  line-height: 1.3;
-  color: var(--text-primary);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--accent);
   overflow-wrap: anywhere;
+}
+
+/* Géneros: el admin escribe "Adventure, Casual, Free to Play" de corrido y se
+   parten por coma, igual que las etiquetas de Steam. */
+.gd-feature__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.gd-feature__genre {
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--accent);
 }
 .gd-feature__title {
   font-family: var(--font-display, 'Syne', sans-serif);
@@ -344,18 +378,19 @@
    mitad. La descripción se recorta a 3 líneas para que un texto largo no
    devuelva el problema. */
 @media (max-width: 600px) {
+  /* En móvil la cápsula ya es apaisada, así que la tarjeta sigue entrando
+     vertical sin volverse un bloque alto. */
   .gd-feature {
-    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
-    gap: 0.7rem;
+    gap: 0.55rem;
     padding: 0.6rem;
     border-radius: 12px;
   }
-  .gd-feature__media { aspect-ratio: 4 / 3; }
-  .gd-feature__body { gap: 0.35rem; }
+  .gd-feature__body { gap: 0.4rem; }
   .gd-feature__title { font-size: clamp(0.95rem, 4vw, 1.1rem); }
-  .gd-feature__specs { gap: 0.25rem 0.75rem; }
+  .gd-feature__specs { gap: 0.25rem 0.6rem; padding-top: 0.45rem; }
   .gd-feature__spec dt { font-size: 0.5rem; letter-spacing: 0.12em; }
-  .gd-feature__spec dd { font-size: 0.72rem; }
+  .gd-feature__spec dd { font-size: 0.74rem; }
+  .gd-feature__genre { font-size: 0.68rem; }
   .gd-feature__desc {
     font-size: 0.8rem;
     line-height: 1.45;

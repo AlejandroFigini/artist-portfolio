@@ -616,8 +616,12 @@ body {
 [data-theme="dark"] .gd-feature__media { background: var(--surface-2); }
 [data-theme="dark"] .gd-feature__title { color: var(--text-primary); }
 [data-theme="dark"] .gd-feature__desc { color: var(--text-secondary); }
-[data-theme="dark"] .gd-feature__spec dt { color: var(--accent-text); }
-[data-theme="dark"] .gd-feature__spec dd { color: var(--text-primary); }
+[data-theme="dark"] .gd-feature__spec dt { color: var(--text-secondary); }
+[data-theme="dark"] .gd-feature__spec dd { color: var(--accent-text); }
+[data-theme="dark"] .gd-feature__genre {
+  background: var(--dk-tint-2);
+  color: var(--accent-text);
+}
 [data-theme="dark"] .gd-feature__link {
   background: var(--accent-solid);
   border-color: var(--accent-solid);

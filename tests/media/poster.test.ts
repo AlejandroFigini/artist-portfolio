@@ -98,3 +98,12 @@ describe('acceptsMediaKind', () => {
     expect(acceptsMediaKind('video', undefined)).toBe(false)
   })
 })
+
+describe('storeHref — valores pegados de más', () => {
+  it('se queda con el primer token: una URL no lleva espacios', () => {
+    expect(storeHref('https://store.steampowered.com/app/1/ store.steampowered.com/app/1/'))
+      .toBe('https://store.steampowered.com/app/1/')
+    expect(storeHref('store.steampowered.com/app/1/  nota suelta'))
+      .toBe('https://store.steampowered.com/app/1/')
+  })
+})
