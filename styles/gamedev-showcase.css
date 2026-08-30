@@ -34,9 +34,14 @@
 }
 
 /* --- Frame interior --- */
+/* `z-index: 3`, igual que `.anim-showcase__frame` y `.m3d-showcase__frame`.
+   Con 2 empataba con `.gd-rows` —su hermano siguiente— y, a igual z-index,
+   pinta el último del DOM: el desplegable de software abierto se iba DETRÁS de
+   las cintas. Subirle el z-index al propio desplegable no alcanza; su `20` no
+   sale de este frame, que ya es contexto de apilado. */
 .gd-showcase__frame {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   width: min(100% - 2 * var(--page-gutter), 1320px);
   margin: 0 auto;
 }
@@ -480,17 +485,20 @@
   transform: translateY(0);
   pointer-events: auto;
 }
+/* Mismo botón que `.anim-card__btn`: círculo de 2rem, borde de acento al 50%
+   y relleno oscuro translúcido. Es el acabado que ya comparten Animations e
+   Illustrations; acá era un cuadrado redondeado y desentonaba. */
 .gd-tile__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border-radius: 8px;
-  background: rgba(11, 11, 18, 0.66);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(13, 13, 18, 0.6);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
@@ -499,7 +507,7 @@
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 /* Sin puntero fino (táctil) no hay hover: los controles se quedan a la vista,
    si no serían inalcanzables. Misma salida que la ficha (.media-caption). */
