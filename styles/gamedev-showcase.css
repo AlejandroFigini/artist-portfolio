@@ -162,11 +162,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: clamp(0.7rem, 1.4vw, 1.1rem);
-  align-items: start;
+  /* `center` y no `start`: la columna de datos es la mas alta y define el alto
+     de la fila, asi que con `start` la media quedaba pegada arriba y dejaba un
+     hueco muerto debajo. Centrada, el aire se reparte. */
+  align-items: center;
   padding: clamp(0.7rem, 1.2vw, 1rem);
   border-radius: 6px;   /* Steam apenas redondea */
   background: linear-gradient(to bottom, var(--steam-bg) 0%, var(--steam-bg-2) 100%);
   border: 1px solid rgba(0, 0, 0, 0.4);
+  /* Panel oscuro sobre seccion clara: la sombra es lo que lo despega del
+     fondo. Negra y no violeta — la tarjeta esta fuera de la paleta del sitio. */
+  box-shadow:
+    0 14px 34px -14px rgba(0, 0, 0, 0.55),
+    0 4px 10px -6px rgba(0, 0, 0, 0.35);
 }
 .gd-feature__media {
   position: relative;
