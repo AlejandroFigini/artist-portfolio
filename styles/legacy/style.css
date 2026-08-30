@@ -1374,11 +1374,19 @@ footer {
     box-shadow: var(--shadow-lg);
     width: 280px;
     min-width: 280px;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
 }
 
+/* `.hidden` es la utilidad de Tailwind y trae `display: none`. Un elemento sin
+   caja no transiciona: al sacarle la clase el navegador no tiene estado
+   inicial y salta al valor final, asi que ni el panel ni la cascada de adentro
+   llegaban a animarse nunca. Se le devuelve la caja acá y el ocultado lo hacen
+   `opacity` + `visibility`, que si transicionan (y `visibility` mantiene el
+   panel fuera del foco y de los lectores de pantalla mientras esta cerrado). */
 .settings-panel.hidden {
+    display: block;
     opacity: 0;
+    visibility: hidden;
     transform: translateX(20px);
     pointer-events: none;
 }
