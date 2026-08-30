@@ -441,10 +441,14 @@
 .gd-tile.cms-empty-slot .media-caption { display: none; }
 
 /* Lupa de pantalla completa (imagen) o marca de reproducción (animación) */
+/* Va en el vértice OPUESTO a la ficha —que se apoya abajo— y por ENCIMA de
+   ella, igual que en Illustrations. Antes estaba abajo a la derecha y sin
+   `z-index`: caía justo en la parte más oscura del degradado y además la ficha
+   (z-index 3) lo tapaba, así que al hacer hover el botón desaparecía. */
 .gd-tile__hud {
   position: absolute;
+  top: 0.6rem;
   right: 0.6rem;
-  bottom: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -456,12 +460,16 @@
   color: #fff;
   font-size: 0.62rem;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transform: scale(0.7);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  /* El click lo maneja el contenedor (lightbox o, en admin, el picker). */
+  pointer-events: none;
+  z-index: 4;
 }
-.gd-tile:hover .gd-tile__hud { opacity: 1; }
+.gd-tile:not(.cms-empty-slot):hover .gd-tile__hud { opacity: 1; transform: scale(1); }
 /* La marca de reproducción se queda a la vista: avisa que la pieza es una
    animación aunque el puntero no esté encima (y en táctil no hay hover). */
-.gd-tile--clip .gd-tile__hud { opacity: 0.9; }
+.gd-tile--clip .gd-tile__hud { opacity: 0.9; transform: scale(1); }
 
 /* ============================================================
    RESPONSIVE
