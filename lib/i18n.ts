@@ -61,10 +61,16 @@ export const UI_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   nav_animations: { en: 'Animations', es: 'Animaciones', pt: 'Animações', fr: 'Animations' },
   nav_characters: { en: 'Characters', es: 'Personajes', pt: 'Personagens', fr: 'Personnages' },
   nav_3d: { en: '3D Models', es: 'Modelos 3D', pt: 'Modelos 3D', fr: 'Modèles 3D' },
+  nav_gamedev: { en: 'Game Dev', es: 'Videojuegos', pt: 'Jogos', fr: 'Jeux vidéo' },
   nav_multimedia: { en: 'Multimedia', es: 'Multimedia', pt: 'Multimídia', fr: 'Multimédia' },
   nav_portfolio: { en: 'Portfolio', es: 'Portfolio', pt: 'Portfólio', fr: 'Portfolio' },
   nav_about: { en: 'About me', es: 'Sobre mí', pt: 'Sobre mim', fr: 'À propos' },
   nav_contact: { en: 'Contact', es: 'Contacto', pt: 'Contato', fr: 'Contact' },
+
+  // Sección Game Dev (bandas de material con deriva horizontal)
+  gd_track_label: { en: 'Game material', es: 'Material de juegos', pt: 'Material de jogos', fr: 'Matériel de jeux' },
+  gd_featured: { en: 'Featured', es: 'Destacado', pt: 'Destaque', fr: 'À la une' },
+  gd_store: { en: 'View on Steam', es: 'Ver en Steam', pt: 'Ver na Steam', fr: 'Voir sur Steam' },
 
   // Riel lateral de secciones de la portada (SectionRail)
   rail_sections: { en: 'Sections', es: 'Secciones', pt: 'Seções', fr: 'Sections' },

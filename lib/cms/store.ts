@@ -616,7 +616,7 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 
-const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' }> = {
+const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' | 'media' }> = {
   'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
   'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
   'settings.appleIconUrl': { section: 'Site Configuration', label: () => 'Search Engine Icon', kind: 'image' },
@@ -662,9 +662,17 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'model3d.desc': { section: '3D Models', label: (n) => `Block Text #${n} — 3D`, kind: 'text' },
   'model3d': { section: '3D Models', label: (n) => `3D Video #${n}`, kind: 'video' },
   'model3d.gallery': { section: '3D Models', label: (n) => `3D Image #${n}`, kind: 'image' },
+  'gamedev.soft': { section: 'Game Dev', label: (n) => `Software Logo #${n}`, kind: 'image' },
+  'gamedev.softname': { section: 'Game Dev', label: (n) => `Software Name #${n}`, kind: 'text' },
+  'gamedev.heading': { section: 'Game Dev', label: () => 'Section Name — Game Dev', kind: 'text' },
+  'gamedev.intro': { section: 'Game Dev', label: () => 'Introductory Text — Game Dev', kind: 'text' },
+  'gamedev.title': { section: 'Game Dev', label: (n) => `Block Title #${n} — Game Dev`, kind: 'text' },
+  'gamedev.desc': { section: 'Game Dev', label: (n) => `Block Text #${n} — Game Dev`, kind: 'text' },
+  'gamedev': { section: 'Game Dev', label: (n) => `Game Material #${n}`, kind: 'media' },
+  'gamedev.hero': { section: 'Game Dev', label: () => 'Featured Game', kind: 'media' },
 }
 
-export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' } {
+export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' | 'media' } {
   const customLabel = state.containerNames[key]
 
   // Colecciones con uid (proj#/char#): el índice no es numérico, así que el
@@ -871,8 +879,10 @@ export function archiveMediaKey(key: string, reason: 'retired' | 'replaced' | 'd
     const meta = getContainerMeta(key)
     const label = state.containerNames[key] || meta.label || key
     const section = meta.section || 'Otros'
-    const kind: 'image' | 'video' = meta.kind === 'video' ? 'video' : 'image'
     const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
+    /* En un contenedor `media` el tipo lo define el archivo, no el registro. */
+    const kind: 'image' | 'video' =
+      meta.kind === 'video' || (meta.kind === 'media' && isVideo(mm?.type, src)) ? 'video' : 'image'
     entry = {
       key,
       label,

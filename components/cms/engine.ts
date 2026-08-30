@@ -16,7 +16,7 @@ import {
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
-import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
+import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted, isVideoSrc } from '@/lib/utils'
 import {
   SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey,
   ANIM_SLOTS, animFields, animKey, animLabel, animPreviewClass,
@@ -133,6 +133,35 @@ const CHARACTER_FIELDS: FieldDef[] = [
 ]
 
 
+/* Ficha de una pieza de material. Mínima a propósito: la sección muestra
+   material suelto, no proyectos, así que solo alimenta el lightbox. El dato
+   vive en los `data-*` de `.gd-tile`, que es de donde lo lee el modal. */
+const GAMEDEV_FIELDS: FieldDef[] = [
+  { key: 'title', label: 'Title', optional: true,
+    get: (c) => c.getAttribute('data-title') || '',
+    set: (c, v) => { c.setAttribute('data-title', v) } },
+  { key: 'desc', label: 'Description (when viewing full screen)', textarea: true, optional: true,
+    get: (c) => c.getAttribute('data-desc') || '',
+    set: (c, v) => { c.setAttribute('data-desc', v) } },
+  { key: 'link', label: 'Link (itch.io, Steam, repository…)', optional: true,
+    get: (c) => c.getAttribute('data-link') || '',
+    set: (c, v) => { c.setAttribute('data-link', v) } },
+]
+
+/* Proyecto destacado. Mismos `data-*` que una pieza suelta, pero acá el título
+   y la descripción SÍ se pintan (la ficha es el contenido de la tarjeta). */
+const GAMEDEV_FEATURE_FIELDS: FieldDef[] = [
+  { key: 'title', label: 'Game Title',
+    get: (c) => c.getAttribute('data-title') || '',
+    set: (c, v) => { c.setAttribute('data-title', v); const e = c.querySelector('.gd-feature__title'); if (e) e.textContent = v } },
+  { key: 'desc', label: 'Description', textarea: true, optional: true,
+    get: (c) => c.getAttribute('data-desc') || '',
+    set: (c, v) => { c.setAttribute('data-desc', v); const e = c.querySelector('.gd-feature__desc'); if (e) e.textContent = v } },
+  { key: 'link', label: 'Store link (Steam, itch.io…)', optional: true,
+    get: (c) => c.getAttribute('data-link') || '',
+    set: (c, v) => { c.setAttribute('data-link', v) } },
+]
+
 const WAVE_FIELDS: FieldDef[] = [
   { key: 'name', label: 'Software Name',
     get: (c) => txt(c.querySelector('.wave-text')),
@@ -171,7 +200,11 @@ const ABOUT_SOCIAL_FIELDS: FieldDef[] = [
 type RegistryEntry = {
   base: string
   sel: string
-  kind: 'text' | 'image' | 'video'
+  /* `media` = el contenedor acepta imagen O video, y el tipo real lo decide el
+     archivo que se sube. Su media NO la pinta el motor: la pinta React desde
+     el store (ver `applyMedia`), porque el elemento a renderizar cambia con el
+     valor —<img> o <video>— y `applyValue` despacha por tag. */
+  kind: 'text' | 'image' | 'video' | 'media'
   accept?: string
   mount: 'self' | 'parent' | 'none'
   section: string
@@ -245,6 +278,19 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'model3d.desc', sel: '.m3d-text__body', kind: 'text', mount: 'self', section: '3D Models', label: (el, i) => `Block Text #${i + 1} — 3D` },
   { base: 'model3d', sel: '.m3d-slide .m3d-video', kind: 'video', accept: 'webm', mount: 'parent', section: '3D Models', label: (el, i) => `3D Video #${i + 1}` },
   { base: 'model3d.gallery', sel: '.m3d-gallery__img', kind: 'image', accept: 'webp', mount: 'parent', section: '3D Models', label: (el, i) => `3D Image #${i + 1}` },
+  { base: 'gamedev.soft', sel: '.gamedev-soft-icon', kind: 'image', accept: 'webp,png,svg', mount: 'self', section: 'Game Dev', label: (el, i) => `Software Logo #${i + 1}` },
+  { base: 'gamedev.softname', sel: '.gamedev-soft-name', kind: 'text', mount: 'self', section: 'Game Dev', label: (el, i) => `Software Name #${i + 1}` },
+  { base: 'gamedev.heading', sel: '.gd-showcase__title', kind: 'text', mount: 'self', section: 'Game Dev', label: 'Section Name — Game Dev' },
+  { base: 'gamedev.intro', sel: '.gd-showcase__desc', kind: 'text', mount: 'self', section: 'Game Dev', label: 'Introductory Text — Game Dev' },
+  { base: 'gamedev.title', sel: '.gd-text__title', kind: 'text', mount: 'self', section: 'Game Dev', label: (el, i) => `Block Title #${i + 1} — Game Dev` },
+  { base: 'gamedev.desc', sel: '.gd-text__body', kind: 'text', mount: 'self', section: 'Game Dev', label: (el, i) => `Block Text #${i + 1} — Game Dev` },
+  /* Un solo tipo de celda para las bandas: cada una acepta imagen O animación
+     y el tipo lo define el archivo. El elemento registrado es el envoltorio
+     (`.gd-tile__media`), que no cambia; adentro React pinta <img> o <video>. */
+  { base: 'gamedev', sel: '.gd-row .gd-tile__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-tile', fields: GAMEDEV_FIELDS, label: (el, i) => `Game Material #${i + 1}` },
+  /* Proyecto destacado: mismo contenedor polimórfico, con su ficha (el enlace
+     va como campo `::link` para que el export de traducciones lo excluya). */
+  { base: 'gamedev.hero', sel: '.gd-feature__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-feature', fields: GAMEDEV_FEATURE_FIELDS, label: 'Featured Game' },
 ]
 
 // ----- Índices del motor ------------------------------------------------------
@@ -252,7 +298,7 @@ const REGISTRY: RegistryEntry[] = [
 export type Meta = {
   label: string
   section: string
-  kind: 'text' | 'image' | 'video'
+  kind: 'text' | 'image' | 'video' | 'media'
   accept?: string
   fields?: FieldDef[]
   container?: string
@@ -335,6 +381,15 @@ function renderWidthOf(el: HTMLElement): number {
 /* `data-cms-src` guarda SIEMPRE la URL original: lo que se pinta puede ser una
    variante redimensionada, pero el CMS (picker, repositorio, "en uso") tiene
    que seguir viendo el archivo real. */
+/* Tipo REAL de un contenedor `media`, que depende del archivo cargado y no del
+   registro. Todo lo que persiste (usedContent, repositorio) guarda el tipo
+   resuelto: `media` describe qué acepta el contenedor, no qué tiene. */
+export function resolveMediaKind(kind: Meta['kind'], src?: string | null): 'image' | 'video' {
+  if (kind === 'video') return 'video'
+  if (kind === 'image' || kind === 'text') return 'image'
+  return isVideoSrc(src) ? 'video' : 'image'
+}
+
 export function currentSrcOf(el: HTMLElement | null): string {
   if (!el) return ''
   if (el.dataset.cmsSrc) return el.dataset.cmsSrc
@@ -536,6 +591,11 @@ export function ensureCollectionMeta(key: string) {
 export function applyMedia(key: string, value: string) {
   // Items de colección: los pinta React desde el store, no el motor.
   if (collectionOf(key)) { emit(); return }
+
+  /* Contenedores `media` (imagen O video): el elemento a pintar depende del
+     valor, así que lo resuelve React leyendo el store. Escribir acá sería
+     elegir por tag —y el tag correcto todavía no existe. */
+  if (metaByKey[key]?.kind === 'media') { emit(); return }
 
   // Galería 3D (cinta): mismo data-cms-key en las 2 copias → actualizar todas
   // las instancias (la copia clon mantiene el loop seamless con contenido).
@@ -776,7 +836,7 @@ export function computeFields(key: string, el: HTMLElement | null, meta: Meta): 
      Contenedores de solo-texto con campos (about specs, nombres de software…) no
      son media: su valor inicial vive en el markup, así que ahí el fallback al DOM
      sigue siendo la fuente correcta. */
-  const isMedia = meta.kind === 'image' || meta.kind === 'video'
+  const isMedia = meta.kind === 'image' || meta.kind === 'video' || meta.kind === 'media'
   return meta.fields.map((f) => {
     const compositeKey = key + '::' + f.key
     const val = isMedia
@@ -808,7 +868,7 @@ export function seedUsedContent() {
     if (state.retired.includes(key) && isEmptyMedia(state.items[key])) return
     const el = elementsByKey[key] || null
     const meta = metaByKey[key] || getContainerMeta(key)
-    if (!meta || (meta.kind !== 'image' && meta.kind !== 'video')) return
+    if (!meta || meta.kind === 'text') return
     const src = state.items[key] || (el ? currentSrcOf(el) : '')
     const mm = state.mediaMeta[key] || (src ? state.mediaMeta[src] : undefined)
     let ts: number | undefined = mm?.ts
@@ -850,7 +910,7 @@ export function seedUsedContent() {
     if (mm) { name = mm.name || name; size = mm.size ?? null; original = false }
     state.usedContent[key] = {
       key, label: meta.label, section: meta.section,
-      kind: meta.kind as 'image' | 'video', src, name, size, ts, original,
+      kind: resolveMediaKind(meta.kind, src), src, name, size, ts, original,
       fields: computeFields(key, el, meta),
     }
     if (ts || size) {
@@ -1010,13 +1070,17 @@ function visualHosts(key: string): HTMLElement[] {
     const els = Array.from(document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`))
     return els.length > 0 ? els : []
   }
-  // Buscar todas las copias o clones en el DOM (carruseles, galerías 3D, proyectos, personajes, etc.)
+  /* Buscar todas las copias o clones en el DOM (carruseles, galerías 3D,
+     proyectos, personajes, etc.). El fallback es `parentElement`, y por eso
+     `.gd-feature__media` figura en la lista: su padre es la tarjeta entera del
+     destacado, y marcar ESA como slot vacío escondía su ficha (la regla
+     `.cms-empty-slot > *` oculta todo lo que no sea el overlay). */
   const allEls = Array.from(document.querySelectorAll<HTMLElement>(`[data-cms-key="${key}"]`))
   if (allEls.length > 0) {
     const hosts = allEls.map((el) => {
       if (el.classList.contains('wave-item')) return el
       if (isIconSlot(el)) return el.closest('a') || el
-      const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+      const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell, .gd-feature__media') || el.parentElement || el
       if (key.includes('::c') && host && host.classList.contains('ch-portrait-wrap')) return null
       return host
     }).filter((e): e is HTMLElement => !!e)
@@ -1026,7 +1090,7 @@ function visualHosts(key: string): HTMLElement[] {
   if (!el) return []
   if (el.classList.contains('wave-item')) return [el]
   if (isIconSlot(el)) return [el.closest('a') || el]
-  const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell') || el.parentElement || el
+  const host = el.closest<HTMLElement>('.illu-cell, .animation-item, .model-video-card, .m3d-slide, .ch-portrait-wrap, .ch-concept-cell, .project-item, .m3d-gallery-cell, .gd-feature__media') || el.parentElement || el
   if (key.includes('::c') && host && host.classList.contains('ch-portrait-wrap')) return []
   return [host]
 }
@@ -1151,7 +1215,7 @@ export function moveToUnusedSite(key: string) {
     const s = state.items[key] || currentSrcOf(el)
     const mm = state.mediaMeta[key] || (s ? state.mediaMeta[s] : undefined)
     entry = {
-      key, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+      key, label: meta.label, section: meta.section, kind: resolveMediaKind(meta.kind, s),
       src: s, name: mm?.name || resolveMediaName(s, key), size: mm?.size ?? null, original: mm ? false : true,
     }
   }

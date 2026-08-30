@@ -23,6 +23,7 @@ const SECTIONS: RailSection[] = [
   { selector: '.proj-showcase', i18n: 'rail_projects', label: 'Projects' },
   { selector: '.ch-showcase', i18n: 'nav_characters', label: 'Characters' },
   { selector: '.m3d-showcase', i18n: 'nav_3d', label: '3D Models' },
+  { selector: '.gd-showcase', i18n: 'nav_gamedev', label: 'Game Dev' },
   { selector: '.illu-showcase', i18n: 'nav_illustrations', label: 'Illustrations' },
 ]
 

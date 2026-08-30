@@ -26,6 +26,7 @@ const AnimationsShowcase = dynamic(() => import('@/components/home/AnimationsSho
 const ProjectsShowcase = dynamic(() => import('@/components/home/ProjectsShowcase'))
 const CharactersShowcase = dynamic(() => import('@/components/home/CharactersShowcase'))
 const ModelsShowcase = dynamic(() => import('@/components/home/ModelsShowcase'))
+const GameDevShowcase = dynamic(() => import('@/components/home/GameDevShowcase'))
 const IllustrationsShowcase = dynamic(() => import('@/components/home/IllustrationsShowcase'))
 
 /* Index — portada. HomeFx concentra los efectos globales (reveals, typewriter,
@@ -73,6 +74,7 @@ export default async function HomePage() {
         <ProjectsShowcase />
         <CharactersShowcase />
         <ModelsShowcase />
+        <GameDevShowcase />
         <IllustrationsShowcase />
       </main>
       <SectionRail />

@@ -55,7 +55,9 @@ export default function CmsRoot() {
       const meta = engine.metaByKey[c.key]
       if (!meta || !fileInputRef.current) return
       pendingKeyRef.current = c.key
-      fileInputRef.current.accept = meta.kind === 'video' ? 'video/*' : 'image/*'
+      // : el contenedor acepta las dos cosas y el archivo define cual es.
+      fileInputRef.current.accept =
+        meta.kind === 'media' ? 'image/*,video/*' : meta.kind === 'video' ? 'video/*' : 'image/*'
       fileInputRef.current.click()
       return
     }

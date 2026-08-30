@@ -8,7 +8,7 @@ import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
-import { fmtBytes, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
+import { fmtBytes, getFileBasename, getFileExtension, ensureExtension, isVideo } from '@/lib/utils'
 import { cloudinaryAssetUrl } from '@/lib/cloudinary-console'
 import {
   state, recordAudit, persistUnused, persistUsed, persistRetired, performRenameContainer, getContainerMeta, recordMediaMeta, archiveMediaKey, emit, isDeferredMediaKey, type FieldValue,
@@ -131,9 +131,12 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           emit()
         }
 
-        const finalType = isFavicon ? 'image/png' : (file.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'))
+        /* En un contenedor `media` el tipo real lo trae el archivo subido. */
+        const uploadedKind: 'image' | 'video' =
+          meta.kind === 'video' || (meta.kind === 'media' && isVideo(file.type, file.name)) ? 'video' : 'image'
+        const finalType = isFavicon ? 'image/png' : (file.type || (uploadedKind === 'video' ? 'video/webm' : 'image/webp'))
         const entry = {
-          key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+          key: cmsKey, label: meta.label, section: meta.section, kind: uploadedKind,
           src: data.secure_url, name: finalName, size: data.final_bytes, original: false,
           ts: Date.now(), type: finalType,
         }

@@ -102,6 +102,7 @@ export default function HomeFx() {
         import('@/components/home/ProjectsShowcase'),
         import('@/components/home/CharactersShowcase'),
         import('@/components/home/ModelsShowcase'),
+        import('@/components/home/GameDevShowcase'),
         import('@/components/home/IllustrationsShowcase'),
       ]).catch(() => {})
     }

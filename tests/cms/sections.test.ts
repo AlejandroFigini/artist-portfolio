@@ -4,7 +4,7 @@ import { SITE_SECTIONS, isSiteSectionId, sectionIdFromHash } from '@/lib/site-se
 describe('SITE_SECTIONS', () => {
   it('sigue el orden de montaje de la portada e incluye Projects', () => {
     expect(SITE_SECTIONS.map((s) => s.id)).toEqual([
-      'animations', 'projects', 'characters', 'models-3d', 'illustrations',
+      'animations', 'projects', 'characters', 'models-3d', 'gamedev', 'illustrations',
     ])
   })
 

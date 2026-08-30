@@ -115,6 +115,7 @@
 .fa-folder-closed::before { content: "\e185"; }
 .fa-folder-open::before { content: "\f07c"; }
 .fa-folder-tree::before { content: "\f802"; }
+.fa-gamepad::before { content: "\f11b"; }
 .fa-gauge-high::before { content: "\f625"; }
 .fa-gear::before { content: "\f013"; }
 .fa-ghost::before { content: "\f6e2"; }
@@ -190,5 +191,6 @@
 .fa-instagram::before { content: "\f16d"; }
 .fa-linkedin::before { content: "\f08c"; }
 .fa-linkedin-in::before { content: "\f0e1"; }
+.fa-steam::before { content: "\f1b6"; }
 .fa-vimeo-v::before { content: "\f27d"; }
 .fa-youtube::before { content: "\f167"; }

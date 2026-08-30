@@ -24,6 +24,7 @@ export const SITE_SECTIONS: SiteSection[] = [
   { id: 'projects', icon: 'fa-diagram-project', label: 'Projects', i18n: 'rail_projects' },
   { id: 'characters', icon: 'fa-user-astronaut', label: 'Characters', i18n: 'nav_characters' },
   { id: 'models-3d', icon: 'fa-cube', label: '3D Models', i18n: 'nav_3d' },
+  { id: 'gamedev', icon: 'fa-gamepad', label: 'Game Dev', i18n: 'nav_gamedev' },
   { id: 'illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
 ]
 

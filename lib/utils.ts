@@ -43,6 +43,12 @@ export function fmtTimeOnly(ts: number): string {
   return `${p2(d.getHours())}:${p2(d.getMinutes())}`
 }
 
+/** Un valor de media es video si su extensión lo es. Se decide por la URL
+ *  guardada, que es lo único que tiene un contenedor que acepta ambos tipos. */
+export function isVideoSrc(src?: string | null): boolean {
+  return !!src && /\.(webm|mp4|mov|m4v)(\?|#|$)/i.test(src)
+}
+
 export function isVideo(type?: string | null, name?: string | null): boolean {
   return !!((type && (type.includes('webm') || type.includes('video'))) || (name && /\.webm$/i.test(name)))
 }

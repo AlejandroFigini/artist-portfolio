@@ -19,7 +19,7 @@ import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { isSettingsMediaKey } from '@/lib/settings'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields,
-  syncWaveGroups, refreshTools, refreshContainerLabel,
+  syncWaveGroups, refreshTools, refreshContainerLabel, resolveMediaKind,
 } from './engine'
 
 // ----- Content Picker ---------------------------------------------------------
@@ -39,6 +39,7 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
 
   if (!meta) return null
   const isVideo = meta.kind === 'video'
+  const isAnyMedia = meta.kind === 'media'
 
   const commitRename = () => {
     const newName = nameRef.current?.value.trim()
@@ -57,7 +58,7 @@ export function ContentPickerModal({ cmsKey, onLocal, onRepo, onClose }: Content
         <div className="cms-up-head">
           <div className="cms-meta-line"><strong>Page:</strong> <span style={{ opacity: 0.85 }}>Main feed</span></div>
           <div className="cms-meta-line"><strong>Section:</strong> <span style={{ opacity: 0.85 }}>{meta.section}</span></div>
-          <div className="cms-meta-line"><strong>Required type:</strong> <span style={{ opacity: 0.85 }}>{isVideo ? 'Video' : 'Image'}</span></div>
+          <div className="cms-meta-line"><strong>Required type:</strong> <span style={{ opacity: 0.85 }}>{isAnyMedia ? 'Image or video' : isVideo ? 'Video' : 'Image'}</span></div>
           <div className="cms-container-name-row" style={{ marginTop: '0.55rem', paddingTop: '0.55rem', borderTop: '1px solid rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {editingName ? (
               <label className="cms-field" style={{ flex: 1, margin: 0 }}>
@@ -143,6 +144,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const toast = useToast()
   const meta = metaByKey[cmsKey]
   const isVideoSlot = meta?.kind === 'video'
+  // Un contenedor `media` acepta las dos cosas: nada baja al final por tipo.
+  const acceptsAnyMedia = meta?.kind === 'media'
   const [filter, setFilter] = useState<'all' | 'usado' | 'sin usar'>('all')
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
@@ -151,7 +154,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
      abrir el picker de un slot de video y ver el repositorio entero (con los
      videos apenas ordenados primero) obliga a filtrar a mano en cada asignacion.
      El chip "All" sigue estando para cuando se quiere mirar todo. */
-  const { query, setQuery, applied } = useMediaQuery({ kind: isVideoSlot ? 'video' : 'image' })
+  /* Un contenedor `media` acepta los dos tipos: arranca sin preseleccion. */
+  const { query, setQuery, applied } = useMediaQuery(
+    acceptsAnyMedia ? {} : { kind: isVideoSlot ? 'video' : 'image' },
+  )
 
   const [all, setAll] = useState<RepoEntry[]>([])
   const [loadingDb, setLoadingDb] = useState(true)
@@ -282,9 +288,11 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   /* Lo incompatible con el contenedor baja al final, bajo su propia cabecera.
      `Array.sort` es estable, así que dentro de cada grupo se conserva el orden
      de arriba: primero por compatibilidad, y dentro de eso por estado. */
-  const filtered = [...grouped].sort(
-    (a, b) => (((a.kind === 'video') === isVideoSlot ? 0 : 1) - ((b.kind === 'video') === isVideoSlot ? 0 : 1)),
-  )
+  const filtered = acceptsAnyMedia
+    ? grouped
+    : [...grouped].sort(
+        (a, b) => (((a.kind === 'video') === isVideoSlot ? 0 : 1) - ((b.kind === 'video') === isVideoSlot ? 0 : 1)),
+      )
 
   const performAssign = (moveFromOld: boolean) => {
     if (!selected) return
@@ -304,10 +312,10 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     archiveMediaKey(cmsKey, 'replaced')
 
     state.usedContent[cmsKey] = {
-      key: cmsKey, label: meta.label, section: meta.section, kind: meta.kind as 'image' | 'video',
+      key: cmsKey, label: meta.label, section: meta.section, kind: resolveMediaKind(meta.kind, src),
       src, name: selected.name || 'media', size: selected.size ?? null, original: false,
       fields: computeFields(cmsKey, elementsByKey[cmsKey], meta),
-      ts: selected.ts || Date.now(), type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'),
+      ts: selected.ts || Date.now(), type: selected.type || (resolveMediaKind(meta.kind, src) === 'video' ? 'video/webm' : 'image/webp'),
     }
 
     if (selected._state === 'sin usar') {
@@ -320,7 +328,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
 
     persistUsed()
     cloudinaryMove(src, getCloudinaryFolder(meta.section))
-    recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (meta.kind === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
+    recordMediaMeta(cmsKey, src, { name: selected.name || 'media', size: selected.size ?? 0, type: selected.type || (resolveMediaKind(meta.kind, src) === 'video' ? 'video/webm' : 'image/webp'), label: meta.label, section: meta.section })
     if (isDeferredMediaKey(cmsKey)) {
       // Colección con manager abierto (guardado diferido): preview local; el
       // contenido se persiste recién en el commit (Save) del manager.
@@ -342,7 +350,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
     if (cmsKey.startsWith('hero.wave')) syncWaveGroups()
 
     recordAudit({
-      section: meta.section, label: meta.label, kind: meta.kind === 'video' ? 'video' : 'image',
+      section: meta.section, label: meta.label, kind: resolveMediaKind(meta.kind, src),
       summary: moveFromOld ? `Content moved from previous container (${selected.name || 'existing file'})` : `Content assigned/reused from repository (${selected.name || 'existing file'})`,
     })
     toast(moveFromOld ? 'Content moved successfully' : 'Content assigned successfully')

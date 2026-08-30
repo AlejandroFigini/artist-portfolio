@@ -1,0 +1,365 @@
+/* ============================================================
+   GAME DEV SHOWCASE — muro de material con deriva horizontal.
+   Una sola superficie clara para toda la sección: el header, los bloques de
+   texto y las bandas comparten fondo. (La primera versión metía un slab
+   oscuro bajo las piezas y el corte contra la cabecera clara se leía como
+   dos secciones distintas.)
+
+   El marco vacío (.cms-empty-overlay / .cms-empty-slot) es global
+   (legacy/style.css) y NO se redefine acá — uniformidad de contenedores.
+   ============================================================ */
+
+.gd-showcase {
+  position: relative;
+  background: #ffffff;
+  isolation: isolate;
+  overflow: hidden;
+  /* Padding propio y explícito: sin esto hereda el
+     `section { padding: clamp(3.5rem, 8vw, 6rem) 0 }` global de legacy, que
+     son 170px muertos arriba y abajo. */
+  padding: clamp(2.4rem, 4.5vw, 3.6rem) 0;
+}
+
+/* Trama de puntos violeta apenas visible (paridad con Animations / 3D) */
+.gd-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1px at center, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+}
+
+/* --- Frame interior --- */
+.gd-showcase__frame {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin: 0 auto;
+}
+
+/* --- Fila superior: cabecera + proyecto destacado --- */
+.gd-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  gap: clamp(1.4rem, 3vw, 2.6rem);
+  align-items: start;
+}
+
+/* --- Header --- */
+.gd-showcase__header {
+  margin-bottom: clamp(1.6rem, 3.2vw, 2.4rem);
+  max-width: 70ch;
+}
+.gd-showcase__fig {
+  display: inline-block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  position: relative;
+  padding-left: 1.4rem;
+}
+.gd-showcase__fig::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+.gd-showcase__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: #000;
+  margin: 0;
+}
+.gd-showcase__desc {
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-weight: 200;
+  line-height: 1.75;
+  color: #000;
+  letter-spacing: 0.005em;
+  max-width: 56ch;
+  margin: 1.3rem 0 0;
+}
+
+/* --- Bloques de texto (3 en fila; misma marca-cota que los de 3D) --- */
+.gd-texts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.2rem, 2.6vw, 2.2rem);
+  /* Mínimo 2.4rem: es la separación contra la primera banda y tiene que
+     absorber los 20px de parallax del frame (ver GameDevShowcase.tsx). */
+  margin-bottom: clamp(2.4rem, 3.4vw, 2.8rem);
+}
+.gd-text {
+  position: relative;
+  padding-left: 1.2rem;
+}
+.gd-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.gd-text__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 0 0.4rem;
+}
+.gd-text__body {
+  font-size: clamp(0.85rem, 1.05vw, 0.95rem);
+  font-weight: 200;
+  line-height: 1.6;
+  color: #000;
+  margin: 0;
+  max-width: 40ch;
+}
+
+/* ============================================================
+   PROYECTO DESTACADO — la pieza importante de la sección: tarjeta con su
+   propia ficha y enlace a la tienda. Comparte el contenedor polimórfico de
+   las celdas, así que acepta captura o animación.
+   ============================================================ */
+.gd-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+  gap: clamp(0.8rem, 1.6vw, 1.2rem);
+  align-items: center;
+  padding: clamp(0.7rem, 1.2vw, 1rem);
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.04);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.gd-feature__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f1fb;
+}
+.gd-feature__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.gd-feature__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.gd-feature__title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: clamp(1.1rem, 1.8vw, 1.55rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0;
+  min-height: 1em; /* la tarjeta no salta mientras el título está vacío */
+}
+.gd-feature__desc {
+  font-size: clamp(0.82rem, 1.05vw, 0.94rem);
+  font-weight: 200;
+  line-height: 1.55;
+  color: #000;
+  margin: 0;
+}
+.gd-feature__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.gd-feature__link:hover {
+  background: var(--accent-hover, #7c3aed);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   CINTAS DE MATERIAL — dos rieles que se mueven solos en sentidos opuestos y
+   se pueden arrastrar (ver GameDevShowcase.tsx).
+   Todas las celdas comparten ALTO; el ratio les da el ancho, así la banda no
+   se lee como una grilla regular.
+   ============================================================ */
+.gd-rows {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.7rem, 1.4vw, 1.1rem);
+  /* Alto de celda. Sin pin la sección ya no tiene que entrar en una pantalla,
+     así que se dimensiona solo contra el ancho. */
+  --gd-tile-h: clamp(140px, 15vw, 260px);
+}
+/* Mismo ancho que el frame: la cinta respeta los márgenes de la sección en vez
+   de ir a sangre. `touch-action: pan-y` deja pasar el scroll vertical del dedo
+   y reserva el gesto horizontal para el arrastre. */
+.gd-rail {
+  overflow: hidden;
+  width: min(100% - 2 * var(--page-gutter), 1320px);
+  margin-inline: auto;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.gd-rail.is-dragging { cursor: grabbing; }
+.gd-row {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(0.7rem, 1.4vw, 1.1rem);
+  width: max-content;
+  will-change: transform;
+}
+/* La copia mantiene el visual pero no duplica las herramientas de edición
+   (!important para ganarle al `.cms-tools` de legacy/style.css). */
+.gd-tile--clone .cms-tools { display: none !important; }
+
+.gd-tile {
+  position: relative;
+  flex: 0 0 auto;
+  height: var(--gd-tile-h);
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f3f1fb;
+}
+/* Sombra SOLO con contenido (vacío = neutralizado por .cms-empty-slot). */
+.gd-tile:not(.cms-empty-slot) {
+  box-shadow:
+    0 10px 30px -12px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+/* Envoltorio registrado en el motor: no cambia cuando cambia el tipo de
+   contenido, así que el marco de contenedor vacío siempre tiene dónde montarse. */
+.gd-tile__media {
+  position: absolute;
+  inset: 0;
+}
+/* Solo una imagen con contenido abre el lightbox. */
+.gd-tile:not(.gd-tile--clip):not(.cms-empty-slot) .gd-tile__media { cursor: pointer; }
+
+.gd-tile__img,
+.gd-tile__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gd-tile:not(.cms-empty-slot):hover .gd-tile__img { transform: scale(1.05); }
+
+/* Lupa de pantalla completa (imagen) o marca de reproducción (animación) */
+.gd-tile__hud {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 8px;
+  background: rgba(11, 11, 18, 0.66);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #fff;
+  font-size: 0.62rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gd-tile:hover .gd-tile__hud { opacity: 1; }
+/* La marca de reproducción se queda a la vista: avisa que la pieza es una
+   animación aunque el puntero no esté encima (y en táctil no hay hover). */
+.gd-tile--clip .gd-tile__hud { opacity: 0.9; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1023px) {
+  .gd-top { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .gd-texts { grid-template-columns: minmax(0, 1fr); gap: clamp(1.1rem, 4vw, 1.6rem); }
+}
+
+/* En móvil el destacado seguía a UNA columna, con la media a ancho completo:
+   358px de alto sobre una pantalla de 812 — casi medio viewport para una sola
+   tarjeta. Vuelve a dos columnas con la media chica: se lee igual y ocupa la
+   mitad. La descripción se recorta a 3 líneas para que un texto largo no
+   devuelva el problema. */
+@media (max-width: 600px) {
+  .gd-feature {
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.6rem;
+    border-radius: 12px;
+  }
+  .gd-feature__media { aspect-ratio: 4 / 3; }
+  .gd-feature__body { gap: 0.35rem; }
+  .gd-feature__tag { font-size: 0.52rem; padding: 0.2rem 0.45rem; letter-spacing: 0.14em; }
+  .gd-feature__title { font-size: clamp(0.95rem, 4vw, 1.1rem); }
+  .gd-feature__desc {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .gd-feature__link { padding: 0.4rem 0.75rem; font-size: 0.72rem; }
+}
+
+@media (max-width: 600px) {
+  /* Celdas más altas en proporción: a 375px una banda de 130px se vuelve
+     ilegible, y el recorrido horizontal sobra igual. */
+  .gd-rows { --gd-tile-h: clamp(150px, 42vw, 200px); }
+}
+
+/* Movimiento apagado (media query o toggle "Pausar animaciones"): sin scrub
+   las bandas quedan quietas, así que se les devuelve el scroll manual para
+   que el material no quede inalcanzable fuera de pantalla. */
+/* Movimiento apagado (media query o toggle "Pausar animaciones"): el loop de
+   rAF no avanza —lo decide el JS— pero el arrastre manual sigue disponible y
+   es la única forma de llegar al material de la derecha. */
+@media (prefers-reduced-motion: reduce) {
+  .gd-row { will-change: auto; }
+  .gd-tile__img, .gd-tile__video { transition: none; }
+}
+html.motion-off .gd-row { will-change: auto; }
