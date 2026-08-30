@@ -317,6 +317,10 @@
 .anim-card__meta i {
   margin-right: 0.25rem;
   font-size: 0.55rem;
+  /* Acento, igual que el resto de las fichas al hover (.media-caption,
+     .illu-cell__meta) y que el panel del lightbox. Sin esto heredaba el gris
+     del texto de meta y era el único overlay con los iconos apagados. */
+  color: var(--accent);
 }
 
 /* --- Controls row --- */
