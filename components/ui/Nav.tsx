@@ -64,6 +64,28 @@ export default function Nav() {
     return () => document.body.classList.remove('nav-open')
   }, [navOpen])
 
+  /* Cascada de entrada del drawer: cada opción recibe su posición en `--nav-i`
+     y el CSS la convierte en `transition-delay` (styles/nav.css).
+
+     Va por JS y no con `nth-child` porque en el drawer los desplegables son
+     `display: contents`: sus opciones se VEN como hermanas de las principales
+     pero son hijas de otro nodo, así que ningún selector estructural las
+     numera en el orden en que se leen. `querySelectorAll` sí devuelve el orden
+     del documento, que acá es el orden visual.
+
+     Si esto no llegara a correr, el `var(--nav-i, 0)` del CSS hace que entren
+     todas juntas — nunca quedan invisibles. */
+  useEffect(() => {
+    if (!navOpen) return
+    const root = linksRef.current
+    if (!root) return
+    root
+      .querySelectorAll<HTMLElement>(
+        '.nav-menu-scrollable > a, .nav-menu-scrollable .dropbtn, .nav-menu-scrollable .dropdown-content a, .mobile-drawer-actions > *',
+      )
+      .forEach((el, i) => el.style.setProperty('--nav-i', String(i)))
+  }, [navOpen])
+
   useEffect(() => {
     const handler = () => { setContactOpen(true); setNavOpen(false); setDropdown(null); }
     window.addEventListener('open-contact', handler)

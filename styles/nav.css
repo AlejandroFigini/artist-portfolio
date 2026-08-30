@@ -75,21 +75,20 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
 
 
 
-/* --- Drawer móvil: los links entran en cascada --- */
+/* --- Drawer móvil: el encabezado y el decorado entran con el panel ---
+   Las OPCIONES tienen su propia cascada, al final de este archivo: hay reglas
+   del drawer más abajo que la pisan si va acá. --- */
 @media (max-width: 992px) {
-  .nav-links > * {
+  .nav-links > .mobile-drawer-logo,
+  .nav-links > .nav-anim-slot {
     opacity: 0;
     transform: translateX(-14px);
     transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  body.nav-open .nav-links > * { opacity: 1; transform: translateX(0); }
-  body.nav-open .nav-links > *:nth-child(1) { transition-delay: 0.06s; }
-  body.nav-open .nav-links > *:nth-child(2) { transition-delay: 0.11s; }
-  body.nav-open .nav-links > *:nth-child(3) { transition-delay: 0.16s; }
-  body.nav-open .nav-links > *:nth-child(4) { transition-delay: 0.21s; }
-  body.nav-open .nav-links > *:nth-child(5) { transition-delay: 0.26s; }
-  body.nav-open .nav-links > *:nth-child(6) { transition-delay: 0.31s; }
-  body.nav-open .nav-links > *:nth-child(7) { transition-delay: 0.36s; }
+  body.nav-open .nav-links > .mobile-drawer-logo,
+  body.nav-open .nav-links > .nav-anim-slot { opacity: 1; transform: translateX(0); }
+  body.nav-open .nav-links > .mobile-drawer-logo { transition-delay: 0.06s; }
+  body.nav-open .nav-links > .nav-anim-slot { transition-delay: 0.4s; }
 }
 
 /* ============================================================
@@ -577,7 +576,13 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      queda tapada. */
   .nav-menu-scrollable {
     justify-content: safe center !important;
-    gap: clamp(0.3rem, calc(6.4dvh - 31px), 1.75rem) !important;
+    /* Dos topes bajados para absorber la fila que sumó la sección Game Dev,
+       que dejaba un scroll de 30px en el drawer:
+         · `-34px` (antes -31) manda en pantallas cortas;
+         · el techo `1.6rem` (antes 1.75) manda en las altas — a 430x932 era el
+           clamp, no la fórmula, el que dejaba 8px de desborde.
+       Medido sin scroll a 320x568, 375x667, 375x812 y 430x932. */
+    gap: clamp(0.3rem, calc(6.4dvh - 34px), 1.6rem) !important;
     padding: clamp(0.35rem, 1.5dvh, 1.1rem) 0 !important;
   }
 
@@ -693,9 +698,54 @@ header.scrolled .nav-progress::before { opacity: 0.6; }
      misma voz que el resto del drawer. */
 }
 
+/* ============================================================
+   DRAWER MÓVIL — cascada de entrada de las OPCIONES.
+
+   Va al FINAL del archivo a propósito: más arriba hay dos reglas del drawer
+   que la anularían, y las dos existen por buenos motivos —
+     · `.nav-links a { transition: none !important }` mata el hover pegajoso
+       que deja el tap en táctil;
+     · `.nav-links .dropdown-content a { opacity: 1 !important }` neutraliza la
+       animación del desplegable de escritorio, que en el drawer no aplica.
+   Con la misma especificidad, gana la última: por eso este bloque va acá y
+   lleva `!important` en lo justo.
+
+   Se transiciona SOLO la opacidad. Habilitar `transform` devolvería los saltos
+   al arrastrar el dedo que la primera de esas reglas evita.
+
+   El índice `--nav-i` lo estampa Nav.tsx al abrir; sin él, el fallback `0`
+   hace que entren todas juntas — nunca quedan invisibles.
+   ============================================================ */
+@media (max-width: 992px) {
+  .nav-menu-scrollable > a,
+  .nav-menu-scrollable .dropbtn,
+  .nav-menu-scrollable .dropdown-content a,
+  .mobile-drawer-actions > * {
+    opacity: 0 !important;
+    transition: opacity 0.38s ease !important;
+  }
+  body.nav-open .nav-menu-scrollable > a,
+  body.nav-open .nav-menu-scrollable .dropbtn,
+  body.nav-open .nav-menu-scrollable .dropdown-content a,
+  body.nav-open .mobile-drawer-actions > * {
+    opacity: 1 !important;
+    /* 22ms por fila: con 22 opciones, la última entra a los 0.55s. Con 38ms
+       el menú tardaba 0.86s en terminar de aparecer y se sentía lento. */
+    transition-delay: calc(var(--nav-i, 0) * 0.022s + 0.05s) !important;
+  }
+}
+
 /* --- Reduced motion / pausa del sitio --- */
 @media (prefers-reduced-motion: reduce) {
   .nav-links > * { transition: none !important; transform: none !important; opacity: 1 !important; }
   .nav-progress-fill { transition: none; }
+  .nav-menu-scrollable > a,
+  .nav-menu-scrollable .dropbtn,
+  .nav-menu-scrollable .dropdown-content a,
+  .mobile-drawer-actions > * { transition: none !important; opacity: 1 !important; }
 }
 .motion-off .nav-links > * { transition: none !important; }
+.motion-off .nav-menu-scrollable > a,
+.motion-off .nav-menu-scrollable .dropbtn,
+.motion-off .nav-menu-scrollable .dropdown-content a,
+.motion-off .mobile-drawer-actions > * { transition: none !important; opacity: 1 !important; }
