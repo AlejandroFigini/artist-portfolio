@@ -17,7 +17,7 @@ import {
 } from '@/lib/cms/store'
 import { buildPageTree, getPageAndSectionInfo } from '@/lib/cms/pages'
 import {
-  computeFields, elementsByKey, ensureCollectionMeta, metaByKey, persistOverrideKeys,
+  acceptsMediaKind, computeFields, elementsByKey, ensureCollectionMeta, metaByKey, persistOverrideKeys,
 } from '@/components/cms/engine'
 import { cloudinaryAssetUrl, cloudinarySearchUrl } from '@/lib/cloudinary-console'
 import { Thumb, type AnyEntry } from './cards'
@@ -122,8 +122,8 @@ export function AssociateContainerModal({ item, isUnused, unusedIdx, onClose }: 
                       {page.count === 0
                         ? <p className="cms-admin-sub admin-tree-empty">No containers in this page.</p>
                         : page.items.map((c) => {
-                          // Un contenedor  acepta imagen y video: nunca es incompatible.
-                          const isCompat = c.meta.kind === 'media' || c.meta.kind === itemKind
+                          // Regla única de compatibilidad (engine.ts).
+                          const isCompat = acceptsMediaKind(c.meta.kind, itemKind)
                           return (
                           <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', minWidth: 0, flex: 1 }}>

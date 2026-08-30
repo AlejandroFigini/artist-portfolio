@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { isVideoSrc, videoPosterSrc } from '@/lib/utils'
-import { resolveMediaKind } from '@/components/cms/engine'
+import { acceptsMediaKind, resolveMediaKind } from '@/components/cms/engine'
 import { storeHref } from '@/components/home/GameDevShowcase'
 
 describe('videoPosterSrc', () => {
@@ -72,5 +72,29 @@ describe('storeHref', () => {
   it('descarta esquemas ejecutables', () => {
     expect(storeHref('javascript:alert(1)')).toBe('')
     expect(storeHref('data:text/html,<script>')).toBe('')
+  })
+})
+
+/* Compatibilidad archivo ↔ contenedor. El bug: en un contenedor `media` la
+   comparación cruda marcaba TODO el video como incompatible, y como en ese
+   caso la grilla no se ordena por compatibilidad, la cabecera "Incompatible
+   content" se repetía en cada tramo de la lista. */
+describe('acceptsMediaKind', () => {
+  it('un contenedor `media` acepta las dos cosas', () => {
+    expect(acceptsMediaKind('media', 'video')).toBe(true)
+    expect(acceptsMediaKind('media', 'image')).toBe(true)
+    expect(acceptsMediaKind('media', undefined)).toBe(true)
+  })
+  it('un contenedor de video solo acepta video', () => {
+    expect(acceptsMediaKind('video', 'video')).toBe(true)
+    expect(acceptsMediaKind('video', 'image')).toBe(false)
+  })
+  it('un contenedor de imagen solo acepta imagen', () => {
+    expect(acceptsMediaKind('image', 'image')).toBe(true)
+    expect(acceptsMediaKind('image', 'video')).toBe(false)
+  })
+  it('sin tipo de archivo se trata como imagen', () => {
+    expect(acceptsMediaKind('image', undefined)).toBe(true)
+    expect(acceptsMediaKind('video', undefined)).toBe(false)
   })
 })

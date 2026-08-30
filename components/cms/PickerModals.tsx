@@ -19,7 +19,7 @@ import { getCloudinaryFolder, getPageAndSectionInfo } from '@/lib/cms/pages'
 import { isSettingsMediaKey } from '@/lib/settings'
 import {
   elementsByKey, metaByKey, applyMedia, persistOverrideKeys, clearEmptySlot, computeFields,
-  syncWaveGroups, refreshTools, refreshContainerLabel, resolveMediaKind,
+  syncWaveGroups, refreshTools, refreshContainerLabel, resolveMediaKind, acceptsMediaKind,
 } from './engine'
 
 // ----- Content Picker ---------------------------------------------------------
@@ -146,6 +146,12 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const isVideoSlot = meta?.kind === 'video'
   // Un contenedor `media` acepta las dos cosas: nada baja al final por tipo.
   const acceptsAnyMedia = meta?.kind === 'media'
+  /* Regla única de compatibilidad (engine.ts). Antes esto se recalculaba a
+     mano en cada punto y uno se quedó sin la rama de `media`: todo el video
+     salía atenuado e inseleccionable, y como en ese caso la grilla no se
+     ordena por compatibilidad, la cabecera "Incompatible content" se repetía
+     en cada tramo. */
+  const isCompatibleKind = (kind?: string) => acceptsMediaKind(meta?.kind ?? 'image', kind)
   const [filter, setFilter] = useState<'all' | 'usado' | 'sin usar'>('all')
   const [selected, setSelected] = useState<RepoEntry | null>(null)
   const [confirmEntry, setConfirmEntry] = useState<RepoEntry | null>(null)
@@ -291,7 +297,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const filtered = acceptsAnyMedia
     ? grouped
     : [...grouped].sort(
-        (a, b) => (((a.kind === 'video') === isVideoSlot ? 0 : 1) - ((b.kind === 'video') === isVideoSlot ? 0 : 1)),
+        (a, b) => ((isCompatibleKind(a.kind) ? 0 : 1) - (isCompatibleKind(b.kind) ? 0 : 1)),
       )
 
   const performAssign = (moveFromOld: boolean) => {
@@ -361,7 +367,7 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
   const assign = (): void | false => {
     if (!selected) { toast('Select a content first', 'error'); return false }
 
-    if ((selected.kind === 'video') !== isVideoSlot) {
+    if (!isCompatibleKind(selected.kind)) {
       toast(`This content is incompatible (requires ${isVideoSlot ? 'video' : 'image'})`, 'error')
       return false
     }
@@ -473,8 +479,8 @@ export function RepoPickerModal({ cmsKey, onClose, onSuccess }: RepoPickerProps)
                 </div>
               )}
               {filtered.map((entry, i) => {
-              const isCompat = (entry.kind === 'video') === isVideoSlot
-              const prevCompat = i > 0 && (filtered[i - 1].kind === 'video') === isVideoSlot
+              const isCompat = isCompatibleKind(entry.kind)
+              const prevCompat = i > 0 && isCompatibleKind(filtered[i - 1].kind)
               const showHeader = !isCompat && (i === 0 || prevCompat)
               return (
                 /* Clave por archivo: la grilla se reordena desde la barra y con

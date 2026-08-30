@@ -390,6 +390,19 @@ export function resolveMediaKind(kind: Meta['kind'], src?: string | null): 'imag
   return isVideoSrc(src) ? 'video' : 'image'
 }
 
+/* ¿Este archivo entra en este contenedor? Regla ÚNICA de compatibilidad: la
+   usan el picker del repositorio (grilla, orden y guarda de asignación) y el
+   árbol de contenedores de Gestión.
+
+   La rama de `media` es imprescindible y es la que faltaba: su kind no es
+   'video', así que la comparación cruda `(archivo === 'video') === (contenedor
+   === 'video')` marcaba TODO el video del repositorio como incompatible en un
+   contenedor que en realidad acepta las dos cosas. */
+export function acceptsMediaKind(containerKind: Meta['kind'], fileKind?: string): boolean {
+  if (containerKind === 'media') return true
+  return (fileKind === 'video') === (containerKind === 'video')
+}
+
 export function currentSrcOf(el: HTMLElement | null): string {
   if (!el) return ''
   if (el.dataset.cmsSrc) return el.dataset.cmsSrc
