@@ -4,528 +4,898 @@
    `[data-theme="dark"]`, sin tocar ningún archivo CSS existente.
    Importado desde globals.css DESPUÉS de todas las hojas de sección.
 
-   PALETA: oscuros neutros (sin tinte azul/violeta), acentos
-   apagados, contraste bajo. La idea es un dark mode "editorial",
-   sobrio y cómodo — no vibrante.
+   PALETA: violeta-tinta. Las superficies NO son grises neutros: llevan
+   tinte violeta (hue ~258) y suben croma con la elevación, que es lo que
+   hace que el modo oscuro se lea como una identidad y no como "apagar la
+   luz".
+
+   Contraste medido. Sobre --bg-primary (#0c0a14):
+     --text-primary 15.9:1   --text-secondary 6.8:1
+     --accent-text  10.6:1   --accent         5.1:1
+   Sobre --surface-1 (#1a1530), el piso más claro que lleva texto:
+     --text-secondary 6.1:1  --text-muted 5.0:1  --accent 4.5:1
+   Todos por encima de AA (4.5:1). Al agregar un color nuevo acá, medirlo:
+   una regresión de contraste en dark no se ve en las capturas de admin.
    ============================================================ */
 
-/* --- 1. ROOT VARIABLES (paleta desaturada) ----------------------- */
+/* --- 1. TOKENS --------------------------------------------------- */
 
 [data-theme="dark"] {
-  --bg-primary: #111113;
-  --bg-secondary: #19191c;
-  --text-primary: #d4d3d8;
-  --text-secondary: #7a7980;
-  --accent: #9385a6;
-  --accent-text: #a99dba;
-  --accent-hover: #a99dba;
-  --border: rgba(255, 255, 255, 0.06);
-  --header-bg: rgba(17, 17, 19, 0.90);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  /* Superficies: escala de elevación. Cada peldaño sube luminosidad Y
+     croma — es lo que separa una tarjeta de su sección sin necesidad de
+     bordes duros. */
+  --bg-primary: #0c0a14;   /* lienzo de página */
+  --bg-secondary: #13101f; /* sección alterna */
+  --surface-1: #1a1530;    /* tarjeta */
+  --surface-2: #221b3d;    /* elevada / hover */
+  --surface-3: #2a2249;    /* popover, dropdown, modal */
+
+  --text-primary: #e9e5f5;
+  --text-secondary: #9b93b4;
+  --text-muted: #8b83a8;
+
+  /* El violeta de marca del tema claro es #8b5cf6. Acá va apenas más claro
+     (145,101,247 vs 139,92,246 — indistinguible a ojo) porque `--accent` se
+     usa como COLOR DE TEXTO en 72 lugares del CSS, y #8b5cf6 da 4.16:1
+     sobre --surface-1 y 4.42:1 sobre --bg-secondary: por debajo de AA. Con
+     este valor el peor caso queda en 4.54:1.
+     No se aclara más: `--accent` también es relleno de botón con texto
+     blanco encima, y ahí subir la luminosidad EMPEORA el contraste.
+     Para texto muy chico o de bajo peso está `--accent-text`.
+     El hover ACLARA en vez de oscurecer: es el inverso del tema claro, y el
+     correcto sobre un lienzo oscuro. */
+  --accent: #9165f7;
+  --accent-text: #c4b5fd;
+  --accent-hover: #b18bff;
+
+  /* Relleno de botón primario. Es el mismo violeta que `--accent-hover` del
+     tema claro (#7c3aed), y existe porque `--accent` y el relleno tiran para
+     lados opuestos: el texto quiere el acento CLARO, y el blanco encima de
+     un relleno quiere el acento OSCURO. Con un solo valor uno de los dos
+     pierde — con #9165f7 el blanco encima daba 3.9:1. Acá da 5.7:1. */
+  --accent-solid: #7c3aed;
+
+  --border: rgba(167, 139, 250, 0.14);
+  --header-bg: rgba(12, 10, 20, 0.85);
+
+  /* Sombras con tinte violeta: negro puro sobre un lienzo violeta se lee
+     como un agujero. */
+  --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(60, 20, 140, 0.25);
+  --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(76, 29, 149, 0.35);
 }
 
-/* --- 2. SMOOTH THEME TRANSITIONS --------------------------------- */
-
-html {
-  transition: background-color 0.4s ease, color 0.4s ease;
+/* Variables locales del tema. Fuera de `:root` a propósito: son detalle de
+   implementación de esta hoja, no tokens del sistema. */
+[data-theme="dark"] {
+  --dk-line: rgba(167, 139, 250, 0.055);  /* grilla blueprint */
+  --dk-hairline: rgba(167, 139, 250, 0.10);
+  --dk-edge: rgba(167, 139, 250, 0.22);   /* borde marcado / hover */
+  --dk-tint: rgba(145, 101, 247, 0.06);    /* velo de superficie */
+  --dk-tint-2: rgba(145, 101, 247, 0.12);
+  --dk-glow: 0 0 24px -6px rgba(145, 101, 247, 0.45);
 }
+
+/* --- 2. TRANSICIÓN DE TEMA --------------------------------------- */
+
+/* Sin `[data-theme]`: la transición tiene que existir en AMBOS sentidos,
+   si no el paso a claro es un corte seco. */
+html,
 body {
   transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* --- 3. HEADER / NAV --------------------------------------------- */
+/* --- 3. BASE / SCROLLBAR ----------------------------------------- */
+
+[data-theme="dark"] body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"]::-webkit-scrollbar-track { background: var(--bg-primary); }
+[data-theme="dark"]::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-color: var(--bg-primary);
+}
+[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
+
+[data-theme="dark"] ::selection {
+  background: rgba(145, 101, 247, 0.35);
+  color: var(--text-primary);
+}
+
+/* --- 3b. RELLENOS DE ACENTO CON TEXTO BLANCO --------------------- */
+
+/* Lista cerrada: son TODAS las reglas del CSS de secciones que pintan
+   `background: var(--accent)` y encima ponen `color: #fff`. Salen de un
+   escaneo del CSS, no de ir viendo pantallazos — con `--accent` aclarado
+   para que el texto acentuado pase AA, el blanco sobre el relleno caía a
+   3.9:1. Si se agrega un botón primario nuevo, va también acá.
+   Los que rellenan en :hover llevan el hover en el selector: en reposo su
+   fondo es fantasma y ahí el acento claro es el correcto. */
+[data-theme="dark"] .ab-cta,
+[data-theme="dark"] .ab-social a:hover,
+[data-theme="dark"] .about-social a:hover,
+[data-theme="dark"] .anim-card__btn:hover,
+[data-theme="dark"] .anim-lightbox__close:hover,
+[data-theme="dark"] .anim-lightbox__info-btn:hover,
+[data-theme="dark"] .ch-lightbox__info-btn,
+/* `.cms-btn` vive en admin.css, que NO es solo de admin: `Modal.tsx` lo
+   importa on-demand al montar cualquier modal, y los de contacto y login son
+   públicos. El botón de enviar del modal de contacto es `.cms-btn--primary`. */
+[data-theme="dark"] .cms-btn--primary,
+[data-theme="dark"] .cms-btn:hover,
+[data-theme="dark"] .contact-success-btn-minimal,
+[data-theme="dark"] .ct-cv-card__btn,
+[data-theme="dark"] .ct-form-success__btn,
+[data-theme="dark"] .ct-info-card:hover .ct-info-card__icon,
+[data-theme="dark"] .cv-btn,
+[data-theme="dark"] .cv-btn:hover,
+[data-theme="dark"] .cv-min-btn:hover,
+[data-theme="dark"] .lightbox.info-open .info-toggle-btn,
+[data-theme="dark"] .settings-gear,
+[data-theme="dark"] .srail__flash {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: #fff;
+}
+
+/* --- 4. PANTALLA DE CARGA ---------------------------------------- */
+
+[data-theme="dark"] .page-loader {
+  background: var(--bg-primary);
+}
+[data-theme="dark"] .loader-media-glow {
+  background: radial-gradient(circle, rgba(145, 101, 247, 0.28) 0%, transparent 68%);
+}
+[data-theme="dark"] .loader-title,
+[data-theme="dark"] .loader-text { color: var(--text-primary); }
+[data-theme="dark"] .loader-subtitle,
+[data-theme="dark"] .loader-status { color: var(--text-secondary); }
+[data-theme="dark"] .loader-bar {
+  background: rgba(167, 139, 250, 0.12);
+}
+[data-theme="dark"] .loader-preview-close {
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
+}
+
+/* --- 5. HEADER / NAV --------------------------------------------- */
 
 [data-theme="dark"] header {
   background-color: var(--bg-primary);
-  border-bottom-color: rgba(255, 255, 255, 0.04);
+  border-bottom-color: var(--dk-hairline);
 }
 [data-theme="dark"] header.scrolled {
-  background-color: var(--bg-primary);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  background-color: rgba(12, 10, 20, 0.92);
+  border-bottom-color: var(--dk-edge);
+  box-shadow: 0 2px 24px -6px rgba(0, 0, 0, 0.8);
 }
+[data-theme="dark"] header::after { background: rgba(12, 10, 20, 0.96); }
 
-/* Velo del header */
-[data-theme="dark"] header::after {
-  background: rgba(17, 17, 19, 0.96);
-}
+/* `:not([class*="min-btn"])`: el drawer móvil mete las píldoras de acción
+   (`.cv-min-btn`, `.login-min-btn`) DENTRO de .nav-links, y algunas son
+   `<a>`. Esas se pintan solas con el acento; sin la exclusión esta regla
+   les gana por especificidad y quedan como un link más. */
+[data-theme="dark"] .nav-links a:not([class*="min-btn"]),
+[data-theme="dark"] .dropdown > a { color: var(--text-secondary); }
+[data-theme="dark"] .nav-links a:not([class*="min-btn"]):hover,
+[data-theme="dark"] .dropdown > a:hover { color: var(--text-primary); }
 
-/* Dropdown */
 [data-theme="dark"] .dropdown-content {
-  background-color: rgba(25, 25, 28, 0.96);
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  background-color: rgba(42, 34, 73, 0.97);
+  border-color: var(--dk-edge);
+  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(167, 139, 250, 0.06);
 }
+[data-theme="dark"] .dropdown-content a { color: var(--text-secondary); }
 [data-theme="dark"] .dropdown-content a:hover {
-  background: rgba(147, 133, 166, 0.08);
+  background: rgba(145, 101, 247, 0.16);
+  color: var(--text-primary);
 }
 
-/* Mobile drawer */
+/* Regla de progreso del nav */
+[data-theme="dark"] .nav-progress { background: rgba(167, 139, 250, 0.12); }
+[data-theme="dark"] .nav-progress-fill {
+  background: var(--accent);
+  box-shadow: 0 0 10px -2px rgba(145, 101, 247, 0.7);
+}
+
+/* Drawer móvil */
 @media (max-width: 992px) {
   [data-theme="dark"] .nav-links {
-    background: var(--bg-primary);
-    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.65);
+    background: var(--bg-secondary);
+    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.75);
   }
+  [data-theme="dark"] .nav-menu-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.22);
+  }
+  [data-theme="dark"] .hamburger span { background: var(--text-primary); }
 }
 
-/* --- 4. HERO (LEGACY SLIDES) ------------------------------------- */
+/* --- 6. RIEL LATERAL DE SECCIONES (.srail) ----------------------- */
 
-[data-theme="dark"] .slide::after {
-  background: rgba(10, 8, 16, 0.6);
+[data-theme="dark"] .srail__label { color: var(--text-secondary); }
+[data-theme="dark"] .srail__item.is-active .srail__label { color: var(--text-primary); }
+[data-theme="dark"] .srail__dot { background: rgba(167, 139, 250, 0.28); }
+[data-theme="dark"] .srail__item.is-active .srail__dot {
+  background: var(--accent);
+  box-shadow: var(--dk-glow);
 }
+[data-theme="dark"] .srail__cap { background: rgba(167, 139, 250, 0.16); }
 
-[data-theme="dark"] .hero-overlay h1 {
-  color: rgba(212, 211, 216, 0.85);
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
+/* --- 7. HERO ----------------------------------------------------- */
 
-[data-theme="dark"] .hero-overlay p {
-  color: rgba(212, 211, 216, 0.6);
-}
+[data-theme="dark"] .hero-bg-carousel { background: var(--bg-primary); }
 
-/* Hero background carousel */
-[data-theme="dark"] .hero-bg-carousel {
-  background: var(--bg-primary);
-}
+/* Velo sobre el carrusel de fondo. En claro es rgba(255,255,255,.03): un
+   toque de luz sobre ilustraciones ya claras. Acá tiene que hacer el
+   trabajo inverso y es la ÚNICA pieza que lo hace — sin scrim la portada
+   queda blanca sobre un sitio violeta y el título del hero, ilegible.
+   Va más denso a la izquierda, que es donde vive el texto, y se abre en el
+   centro-derecha para que la ilustración siga viéndose.
+   Solo gradientes: un `filter` sobre una imagen a pantalla completa se
+   recompone en cada frame del carrusel. */
 [data-theme="dark"] .carousel-overlay {
-  background: rgba(255, 255, 255, 0.02);
+  background:
+    linear-gradient(
+      100deg,
+      rgba(12, 10, 20, 0.95) 0%,
+      rgba(12, 10, 20, 0.80) 34%,
+      rgba(12, 10, 20, 0.50) 62%,
+      rgba(12, 10, 20, 0.66) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(12, 10, 20, 0.62) 0%,
+      rgba(12, 10, 20, 0.18) 34%,
+      rgba(12, 10, 20, 0.82) 100%
+    );
 }
 
-/* --- 5. HERO PREMIUM GRID ---------------------------------------- */
+[data-theme="dark"] .hero-overlay h1,
+[data-theme="dark"] .hero-title { color: var(--text-primary); }
+[data-theme="dark"] .hero-overlay h1,
+[data-theme="dark"] .hero-title .line {
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.75);
+}
+[data-theme="dark"] .hero-overlay p { color: var(--text-secondary); }
+
+/* Segunda línea del título: es un contorno de 1px (`-webkit-text-stroke`),
+   no texto relleno, y encima respira hasta opacidad 0.62. Con el acento
+   puro sobre el lienzo oscuro el trazo se apaga; toma la variante clara. */
+[data-theme="dark"] .hero-title .line-wrap:nth-child(2) .line {
+  -webkit-text-stroke-color: var(--accent-hover);
+  text-stroke-color: var(--accent-hover);
+}
+
+[data-theme="dark"] .badge { color: var(--accent-text); }
+[data-theme="dark"] .badge .badge-dot {
+  background: var(--accent);
+  box-shadow: var(--dk-glow);
+}
 
 [data-theme="dark"] .hero-identity-card {
   background: linear-gradient(
     to right,
-    rgba(17, 17, 19, 0.95) 0%,
-    rgba(17, 17, 19, 0.75) 50%,
-    rgba(17, 17, 19, 0) 100%
+    rgba(12, 10, 20, 0.96) 0%,
+    rgba(12, 10, 20, 0.78) 50%,
+    rgba(12, 10, 20, 0) 100%
   );
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
-[data-theme="dark"] .hero-gallery-pane {
-  border-color: rgba(255, 255, 255, 0.04);
+[data-theme="dark"] .hero-gallery-frame { border-color: var(--dk-hairline); }
+
+/* Instrumentos blueprint del hero */
+[data-theme="dark"] .bp-tick,
+[data-theme="dark"] .bp-corner { border-color: var(--dk-edge); }
+[data-theme="dark"] .bp-fig,
+[data-theme="dark"] .bp-measure-label { color: var(--text-muted); }
+[data-theme="dark"] .bp-scanline {
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.35), transparent);
 }
 
-/* --- 6. ABOUT SECTION -------------------------------------------- */
+/* --- 8. BURBUJAS DE SOFTWARE DEL HERO (.wave-*) ------------------ */
 
-[data-theme="dark"] .about-section {
-  background: var(--bg-secondary);
+/* En claro son vidrio esmerilado blanco. Sobre el lienzo violeta eso son
+   ~48 manchas blancas duras: el defecto visual más grande del dark viejo.
+   Pasan a vidrio violeta. Los logos de software son a color y siguen
+   leyéndose; el borde claro les da el filo que perdían contra el fondo. */
+[data-theme="dark"] .wave-item {
+  background: rgba(34, 27, 61, 0.86);
+  border-color: rgba(167, 139, 250, 0.20);
+  box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.55), 0 2px 10px -2px rgba(145, 101, 247, 0.18);
+}
+[data-theme="dark"] .wave-item.wave-has-content:hover,
+[data-theme="dark"] .wave-item:not(.wave-has-content):hover {
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 10px 28px -4px rgba(145, 101, 247, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .wave-text { color: var(--text-primary); }
+[data-theme="dark"] .wave-item:not(.wave-has-content) {
+  border-color: rgba(167, 139, 250, 0.34);
+  background: rgba(145, 101, 247, 0.10);
+}
+[data-theme="dark"] .wave-item .cms-empty-overlay:hover {
+  background: rgba(145, 101, 247, 0.16);
 }
 
-/* Grid blueprint de fondo — casi invisible en dark */
+/* --- 9. DESPLEGABLE DE SOFTWARE (.sw-*) -------------------------- */
+
+/* Compartido por Animations / Character Design / 3D. En claro es blanco
+   sólido; acá pasa a la superficie de popover. */
+[data-theme="dark"] .sw-trigger {
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border-color: var(--dk-edge);
+}
+[data-theme="dark"] .sw-trigger:hover,
+[data-theme="dark"] .sw-dropdown:hover .sw-trigger,
+[data-theme="dark"] .sw-dropdown:focus-within .sw-trigger,
+[data-theme="dark"] .sw-dropdown.is-open .sw-trigger {
+  background: var(--surface-3);
+  border-color: rgba(167, 139, 250, 0.48);
+  box-shadow: 0 6px 18px -8px rgba(145, 101, 247, 0.5);
+}
+[data-theme="dark"] .sw-list {
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
+  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.75);
+}
+[data-theme="dark"] .sw-item,
+[data-theme="dark"] .sw-name { color: var(--text-secondary); }
+[data-theme="dark"] .sw-item:hover .sw-name { color: var(--accent-text); }
+
+/* --- 10. SOBRE MÍ (sección de portada) --------------------------- */
+
+[data-theme="dark"] .about-section { background: var(--bg-secondary); }
+
+/* Grilla blueprint y focos: en la versión anterior estaban a 0.025/0.04,
+   descritos como "casi imperceptibles" — por eso la sección se leía muerta.
+   Suben lo justo para que el lienzo tenga textura sin competir con el
+   contenido. */
 [data-theme="dark"] .about-section::before {
   background-image:
-    linear-gradient(rgba(147, 133, 166, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(147, 133, 166, 0.025) 1px, transparent 1px);
+    linear-gradient(var(--dk-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dk-line) 1px, transparent 1px);
 }
-
-/* Spotlights — casi imperceptibles */
 [data-theme="dark"] .about-section::after {
   background:
-    radial-gradient(ellipse 55% 45% at 30% 35%, rgba(147, 133, 166, 0.04) 0%, transparent 70%),
-    radial-gradient(ellipse 45% 40% at 75% 70%, rgba(147, 133, 166, 0.03) 0%, transparent 70%);
+    radial-gradient(ellipse 55% 45% at 30% 35%, rgba(145, 101, 247, 0.11) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 70%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
 }
 
-/* --- 7. CHARACTERS SHOWCASE -------------------------------------- */
+/* Los textos de esta sección son `color: #000` en claro (uno con
+   !important), así que cada uno necesita su override explícito. */
+[data-theme="dark"] .about-title { color: var(--text-primary); }
+[data-theme="dark"] .about-lede { color: var(--text-secondary) !important; }
+[data-theme="dark"] .about-fig,
+[data-theme="dark"] .about-meta-head { color: var(--accent-text); }
+[data-theme="dark"] .about-spec-k { color: var(--text-muted); }
+[data-theme="dark"] .about-spec-v { color: var(--text-primary); }
+[data-theme="dark"] .about-bio p { color: var(--text-secondary); }
+[data-theme="dark"] .about-corner { border-color: var(--dk-edge); }
 
-[data-theme="dark"] .ch-showcase {
-  background-color: var(--bg-primary);
-}
-
-[data-theme="dark"] .ch-showcase__rail-fig {
+[data-theme="dark"] .about-social a {
   color: var(--text-secondary);
+  background: var(--dk-tint);
+  border-color: var(--dk-hairline);
 }
-[data-theme="dark"] .ch-showcase__rail-track {
-  background: rgba(147, 133, 166, 0.15);
+[data-theme="dark"] .about-social a:hover {
+  color: var(--text-primary);
+  background: var(--dk-tint-2);
+  border-color: var(--dk-edge);
 }
-[data-theme="dark"] .ch-showcase__rail-fill {
+
+[data-theme="dark"] .about-portrait,
+[data-theme="dark"] .about-video-container { border-color: var(--dk-hairline); }
+[data-theme="dark"] .about-media-blob {
+  background: radial-gradient(circle, rgba(145, 101, 247, 0.22), transparent 70%);
+}
+
+/* --- 11. PÁGINA /about ------------------------------------------- */
+
+[data-theme="dark"] .ab-main,
+[data-theme="dark"] .ab-hero { background: var(--bg-primary); }
+
+[data-theme="dark"] .ab-aurora--a {
+  background: radial-gradient(circle, rgba(145, 101, 247, 0.34), rgba(124, 58, 237, 0.12) 55%, transparent 74%);
+}
+[data-theme="dark"] .ab-aurora--b {
+  background: radial-gradient(circle, rgba(109, 40, 217, 0.30), rgba(76, 29, 149, 0.10) 52%, transparent 70%);
+}
+[data-theme="dark"] .ab-aurora--c {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.22), rgba(145, 101, 247, 0.08) 55%, transparent 72%);
+}
+
+[data-theme="dark"] .ab-hero-name,
+[data-theme="dark"] .ab-section-title,
+[data-theme="dark"] .ab-contact-title { color: var(--text-primary); }
+[data-theme="dark"] .ab-hero-eyebrow,
+[data-theme="dark"] .ab-eyebrow { color: var(--accent-text); }
+[data-theme="dark"] .ab-hero-lede,
+[data-theme="dark"] .ab-bio-text,
+[data-theme="dark"] .ab-contact-lede { color: var(--text-secondary); }
+[data-theme="dark"] .ab-hero-meta span { color: var(--text-muted); }
+[data-theme="dark"] .ab-corner { border-color: var(--dk-edge); }
+[data-theme="dark"] .ab-portrait,
+[data-theme="dark"] .ab-tool,
+[data-theme="dark"] .ab-spec {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
+}
+[data-theme="dark"] .ab-tool:hover {
+  background: var(--surface-2);
+  border-color: var(--dk-edge);
+}
+[data-theme="dark"] .ab-portrait-cap,
+[data-theme="dark"] .ab-tool-idx,
+[data-theme="dark"] .ab-tool-cat,
+[data-theme="dark"] .ab-spec-k { color: var(--text-muted); }
+[data-theme="dark"] .ab-tool-name,
+[data-theme="dark"] .ab-spec-v { color: var(--text-primary); }
+
+/* Linea de tiempo */
+[data-theme="dark"] .ab-tl-track { background: rgba(167, 139, 250, 0.14); }
+[data-theme="dark"] .ab-tl-fill { background: var(--accent); }
+[data-theme="dark"] .ab-tl-node {
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(147, 133, 166, 0.25);
+  box-shadow: var(--dk-glow);
 }
+[data-theme="dark"] .ab-tl-year { color: var(--accent-text); }
+[data-theme="dark"] .ab-tl-role { color: var(--text-primary); }
+[data-theme="dark"] .ab-tl-place,
+[data-theme="dark"] .ab-tl-desc { color: var(--text-secondary); }
 
-[data-theme="dark"] .ch-showcase__fig {
+[data-theme="dark"] .ab-social {
+  background: var(--dk-tint);
+  border-color: var(--dk-hairline);
   color: var(--text-secondary);
 }
-[data-theme="dark"] .ch-showcase__fig::before {
-  background: var(--text-secondary);
-}
-[data-theme="dark"] .ch-showcase__title {
-  color: var(--text-primary);
-}
-[data-theme="dark"] .ch-showcase__desc {
-  color: var(--text-secondary);
-}
-
-/* Manage button */
-[data-theme="dark"] .ch-showcase__manage {
-  border-color: rgba(147, 133, 166, 0.18);
-  background: rgba(147, 133, 166, 0.04);
-  color: var(--text-secondary);
-}
-[data-theme="dark"] .ch-showcase__manage:hover {
-  background: rgba(147, 133, 166, 0.08);
-  border-color: rgba(147, 133, 166, 0.3);
+[data-theme="dark"] .ab-social:hover {
+  background: var(--dk-tint-2);
+  border-color: var(--dk-edge);
   color: var(--text-primary);
 }
 
-/* Software dropdown */
-[data-theme="dark"] .ch-showcase .sw-trigger {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .ch-showcase .sw-trigger:hover,
-[data-theme="dark"] .ch-showcase .sw-dropdown:hover .sw-trigger,
-[data-theme="dark"] .ch-showcase .sw-dropdown:focus-within .sw-trigger,
-[data-theme="dark"] .ch-showcase .sw-dropdown.is-open .sw-trigger {
-  background: rgba(147, 133, 166, 0.08);
-  border-color: rgba(147, 133, 166, 0.25);
-  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.3);
-}
-[data-theme="dark"] .ch-showcase .sw-list {
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 18px 45px -12px rgba(0, 0, 0, 0.55);
-}
-[data-theme="dark"] .ch-showcase .sw-item {
-  color: var(--text-secondary);
-}
-[data-theme="dark"] .ch-showcase .sw-item:hover {
-  color: var(--text-primary);
-}
+/* --- 12. ANIMATIONS SHOWCASE ------------------------------------- */
 
-/* Character panel card */
-[data-theme="dark"] .ch-panel {
-  background: var(--bg-secondary);
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
-}
-[data-theme="dark"] .ch-panel.is-hovered,
-[data-theme="dark"] .ch-panel:hover {
-  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.55), 0 6px 14px -4px rgba(0, 0, 0, 0.35);
-}
-
-/* Portrait/concept borders */
-[data-theme="dark"] .ch-portrait-wrap {
-  background: rgba(147, 133, 166, 0.04);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .ch-concept-cell {
-  background: rgba(147, 133, 166, 0.04);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-/* Info text */
-[data-theme="dark"] .ch-counter { color: var(--text-secondary); }
-[data-theme="dark"] .ch-counter b { color: var(--accent); }
-[data-theme="dark"] .ch-name { color: var(--text-primary); }
-[data-theme="dark"] .ch-role { color: var(--text-secondary); }
-[data-theme="dark"] .ch-desc { color: var(--text-secondary); }
-
-/* Corner ticks — muy sutiles */
-[data-theme="dark"] .ch-corner { border-color: rgba(147, 133, 166, 0.18); }
-
-/* --- 8. MODELS SHOWCASE (3D) ------------------------------------- */
-
-[data-theme="dark"] .m3d-showcase {
-  background: var(--bg-primary);
-}
-
-[data-theme="dark"] .m3d-showcase::before {
-  background-image: radial-gradient(circle 1px at center, rgba(147, 133, 166, 0.04) 1px, transparent 1px);
-}
-
-[data-theme="dark"] .m3d-showcase__title {
-  color: var(--text-primary);
-}
-[data-theme="dark"] .m3d-showcase__desc {
-  color: var(--text-secondary);
-}
-
-/* --- 9. ILLUSTRATIONS SHOWCASE ----------------------------------- */
-
-[data-theme="dark"] .illu-showcase {
-  background: var(--bg-secondary);
-}
-
-[data-theme="dark"] .illu-showcase__desc {
-  color: var(--text-secondary);
-}
-
-/* --- 10. ANIMATIONS SHOWCASE ------------------------------------- */
-
-[data-theme="dark"] .anim-showcase {
-  background: var(--bg-primary);
-}
-
+[data-theme="dark"] .anim-showcase { background: var(--bg-primary); }
 [data-theme="dark"] .anim-showcase::before {
-  background-image: radial-gradient(circle 1px at center, rgba(147, 133, 166, 0.04) 1px, transparent 1px);
+  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
 }
+[data-theme="dark"] .anim-showcase__title { color: var(--text-primary); }
+[data-theme="dark"] .anim-showcase__desc { color: var(--text-secondary); }
+[data-theme="dark"] .anim-showcase__fig { color: var(--accent-text); }
 
-[data-theme="dark"] .anim-showcase__desc {
-  color: var(--text-secondary);
+[data-theme="dark"] .anim-card,
+[data-theme="dark"] .animation-item.video-container {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
 }
-
-/* Carousel arrows */
+[data-theme="dark"] .anim-card:hover {
+  border-color: var(--dk-edge);
+  box-shadow: var(--shadow-lg);
+}
 [data-theme="dark"] .anim-carousel__arrow {
-  background: rgba(25, 25, 28, 0.92);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
+}
+[data-theme="dark"] .anim-carousel__arrow:hover {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: #fff;
 }
 
-/* --- 11. PROJECTS SHOWCASE --------------------------------------- */
+/* --- 13. PROJECTS SHOWCASE --------------------------------------- */
 
-[data-theme="dark"] .proj-showcase {
-  background-color: var(--bg-secondary);
-}
+[data-theme="dark"] .proj-showcase { background-color: var(--bg-secondary); }
+[data-theme="dark"] .proj-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .proj-showcase__rail-fig { color: var(--text-muted); }
 
-[data-theme="dark"] .proj-showcase__rail-fig {
-  color: rgba(147, 133, 166, 0.3);
-}
-
-/* Project card */
+/* La tarjeta ya lee `--surface-1` desde el componente; acá solo el aro y
+   la sombra, que en claro son utilidades de Tailwind sin token. */
 [data-theme="dark"] .proj-showcase .project-item {
-  background: var(--bg-primary) !important;
-  border-color: rgba(255, 255, 255, 0.04) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: var(--shadow);
 }
 [data-theme="dark"] .proj-showcase .project-item:hover {
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  border-color: var(--dk-edge);
+  box-shadow: var(--shadow-lg);
 }
+[data-theme="dark"] .proj-card-date { color: var(--accent-text); }
 
-/* Manage button */
 [data-theme="dark"] .proj-showcase__manage {
-  border-color: rgba(147, 133, 166, 0.18);
-  background: rgba(147, 133, 166, 0.04);
+  border-color: var(--dk-edge);
+  background: var(--dk-tint);
   color: var(--text-secondary);
 }
 [data-theme="dark"] .proj-showcase__manage:hover {
-  background: rgba(147, 133, 166, 0.08);
-  border-color: rgba(147, 133, 166, 0.3);
+  background: var(--dk-tint-2);
+  border-color: rgba(167, 139, 250, 0.42);
   color: var(--text-primary);
 }
 
-/* --- 12. FOOTER -------------------------------------------------- */
+/* --- 14. CHARACTER DESIGN SHOWCASE ------------------------------- */
 
-[data-theme="dark"] .main-footer {
-  background-color: #0a0a0c;
-  border-top-color: rgba(255, 255, 255, 0.04);
+[data-theme="dark"] .ch-showcase { background-color: var(--bg-primary); }
+[data-theme="dark"] .ch-showcase__header { background-color: transparent; }
+[data-theme="dark"] .ch-showcase__title { color: var(--text-primary); }
+[data-theme="dark"] .ch-showcase__desc { color: var(--text-secondary); }
+[data-theme="dark"] .ch-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .ch-showcase__fig::before { background: var(--accent); }
+
+[data-theme="dark"] .ch-showcase__rail-fig { color: var(--text-muted); }
+[data-theme="dark"] .ch-showcase__rail-track { background: rgba(167, 139, 250, 0.14); }
+[data-theme="dark"] .ch-showcase__rail-fill {
+  background: var(--accent);
+  box-shadow: var(--dk-glow);
 }
 
-/* --- 13. SETTINGS PANEL ------------------------------------------ */
-
-[data-theme="dark"] .settings-gear {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+[data-theme="dark"] .ch-showcase__manage {
+  border-color: var(--dk-edge);
+  background: var(--dk-tint);
+  color: var(--text-secondary);
 }
-[data-theme="dark"] .settings-gear:hover {
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-}
-
-/* Slider unchecked */
-[data-theme="dark"] .slider {
-  background-color: #333138;
-}
-
-/* --- 14. CONTACT MODAL ------------------------------------------- */
-
-[data-theme="dark"] .cms-modal.contact-modal {
-  background: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border) !important;
-}
-
-[data-theme="dark"] .contact-input,
-[data-theme="dark"] .contact-textarea {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-[data-theme="dark"] .contact-input:focus,
-[data-theme="dark"] .contact-textarea:focus {
-  border-color: var(--accent);
-}
-
-[data-theme="dark"] .contact-select {
-  background: var(--bg-secondary);
+[data-theme="dark"] .ch-showcase__manage:hover {
+  background: var(--dk-tint-2);
+  border-color: rgba(167, 139, 250, 0.42);
   color: var(--text-primary);
 }
 
-/* --- 15. LIGHTBOX ------------------------------------------------ */
+[data-theme="dark"] .ch-panel {
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
+}
+[data-theme="dark"] .ch-panel.is-hovered,
+[data-theme="dark"] .ch-panel:hover { box-shadow: var(--shadow-lg); }
 
-[data-theme="dark"] .lightbox {
-  background: rgba(4, 4, 6, 0.96);
+[data-theme="dark"] .ch-portrait-wrap,
+[data-theme="dark"] .ch-concept-cell {
+  background: var(--dk-tint);
+  border-color: var(--dk-hairline);
+}
+[data-theme="dark"] .ch-counter { color: var(--text-muted); }
+[data-theme="dark"] .ch-counter b { color: var(--accent-text); }
+[data-theme="dark"] .ch-name { color: var(--text-primary); }
+[data-theme="dark"] .ch-role { color: var(--accent-text); }
+[data-theme="dark"] .ch-desc { color: var(--text-secondary); }
+[data-theme="dark"] .ch-ghost { color: rgba(167, 139, 250, 0.06); }
+[data-theme="dark"] .ch-corner { border-color: var(--dk-edge); }
+
+/* Lightbox de personajes: ya es oscuro en claro; solo se le ajusta el
+   fondo para que no sea negro puro sobre un sitio violeta. */
+[data-theme="dark"] .ch-lightbox { background: rgba(8, 6, 16, 0.97); }
+[data-theme="dark"] .ch-lightbox__meta {
+  background: rgba(26, 21, 48, 0.72);
+  border-color: var(--dk-edge);
 }
 
-[data-theme="dark"] .lightbox-info-panel {
-  background: rgba(20, 20, 24, 0.9);
-  border-color: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
-}
-[data-theme="dark"] .info-title { color: var(--text-primary); }
-[data-theme="dark"] .info-desc { color: var(--text-secondary); }
-[data-theme="dark"] .info-meta { color: var(--text-secondary); }
-[data-theme="dark"] .info-inspiration { color: var(--text-secondary); }
-[data-theme="dark"] .info-inspiration i { color: var(--text-secondary); }
-[data-theme="dark"] .info-inspiration b { color: var(--text-primary); }
-[data-theme="dark"] .info-divider { background: rgba(255, 255, 255, 0.06); }
-[data-theme="dark"] .info-footer { color: var(--text-secondary); }
-[data-theme="dark"] .info-link { color: var(--accent); }
+/* --- 15. 3D MODELS SHOWCASE -------------------------------------- */
 
-/* --- 16. SCROLLBAR ----------------------------------------------- */
-
-[data-theme="dark"]::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+[data-theme="dark"] .m3d-showcase { background: var(--bg-secondary); }
+[data-theme="dark"] .m3d-showcase::before {
+  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
 }
-[data-theme="dark"]::-webkit-scrollbar-thumb {
-  border-color: var(--bg-primary);
+[data-theme="dark"] .m3d-showcase__title { color: var(--text-primary); }
+[data-theme="dark"] .m3d-showcase__desc { color: var(--text-secondary); }
+[data-theme="dark"] .m3d-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .m3d-text__title { color: var(--text-primary); }
+[data-theme="dark"] .m3d-text__body { color: var(--text-secondary); }
+[data-theme="dark"] .m3d-slide__media,
+[data-theme="dark"] .m3d-gallery-cell,
+[data-theme="dark"] .model-video-card {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
+}
+[data-theme="dark"] .m3d-slide__fig,
+[data-theme="dark"] .m3d-showcase__rail-fig { color: var(--text-muted); }
+[data-theme="dark"] .m3d-showcase__rail-track { background: rgba(167, 139, 250, 0.14); }
+[data-theme="dark"] .m3d-showcase__rail-fill {
+  background: var(--accent);
+  box-shadow: var(--dk-glow);
+}
+[data-theme="dark"] .m3d-dot { background: rgba(167, 139, 250, 0.28); }
+
+/* --- 15b. GAME DEV SHOWCASE -------------------------------------- */
+
+[data-theme="dark"] .gd-showcase { background: var(--bg-primary); }
+[data-theme="dark"] .gd-showcase::before {
+  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
+}
+[data-theme="dark"] .gd-showcase__title { color: var(--text-primary); }
+[data-theme="dark"] .gd-showcase__desc { color: var(--text-secondary); }
+[data-theme="dark"] .gd-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .gd-text__title { color: var(--text-primary); }
+[data-theme="dark"] .gd-text__body { color: var(--text-secondary); }
+[data-theme="dark"] .gd-tile {
+  background: var(--surface-1);
+}
+[data-theme="dark"] .gd-feature {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
+}
+[data-theme="dark"] .gd-feature__media { background: var(--surface-2); }
+[data-theme="dark"] .gd-feature__title { color: var(--text-primary); }
+[data-theme="dark"] .gd-feature__desc { color: var(--text-secondary); }
+[data-theme="dark"] .gd-feature__tag { color: var(--accent-text); }
+[data-theme="dark"] .gd-feature__link {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: #fff;
+}
+[data-theme="dark"] .gd-tile:not(.cms-empty-slot) {
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--dk-hairline);
 }
 
-/* --- 17. SECTION TITLES / TYPEWRITER ----------------------------- */
+/* --- 16. ILLUSTRATIONS SHOWCASE ---------------------------------- */
+
+[data-theme="dark"] .illu-showcase { background: var(--bg-secondary); }
+[data-theme="dark"] .illu-showcase__title { color: var(--text-primary); }
+[data-theme="dark"] .illu-showcase__desc { color: var(--text-secondary); }
+[data-theme="dark"] .illu-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .illu-cell {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
+}
+[data-theme="dark"] .illu-cell:hover {
+  border-color: var(--dk-edge);
+  box-shadow: var(--shadow-lg);
+}
+
+/* --- 17. TÍTULOS DE SECCIÓN / TYPEWRITER ------------------------- */
 
 [data-theme="dark"] .section-typewriter,
 [data-theme="dark"] .section-title h2 {
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+  color: var(--text-primary);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
+[data-theme="dark"] .section-title p { color: var(--text-secondary); }
 
-/* --- 18. 3D CUBE ------------------------------------------------- */
+/* --- 18. CUBO 3D ------------------------------------------------- */
 
 [data-theme="dark"] .cube .face {
-  border-color: rgba(147, 133, 166, 0.15);
-  background: rgba(147, 133, 166, 0.06);
+  border-color: rgba(167, 139, 250, 0.26);
+  background: rgba(145, 101, 247, 0.09);
 }
 
-/* --- 19. CMS UI -------------------------------------------------- */
+/* --- 19. PIE --------------------------------------------------- */
 
-[data-theme="dark"] .cms-confirm-overlay {
-  background: rgba(6, 6, 8, 0.85);
+/* El pie ya es oscuro en claro (#12141c). Acá baja por debajo del lienzo
+   para seguir cerrando la página, y toma el tinte violeta. */
+[data-theme="dark"] .main-footer {
+  background-color: #07060d;
+  border-top-color: var(--dk-hairline);
 }
-[data-theme="dark"] .cms-confirm-dialog {
-  background: var(--bg-secondary);
-  border-color: var(--border);
+[data-theme="dark"] .footer-name {
+  background: linear-gradient(to right, var(--text-primary), var(--accent-hover));
+}
+[data-theme="dark"] .footer-col h4 { color: var(--text-primary); }
+/* `:not(.cv-btn)`: el botón de CV es un `a` dentro de .footer-col y se pinta
+   solo (borde de acento en reposo, relleno de acento + texto blanco en
+   hover). Sin la exclusión esta regla le gana por especificidad y deja el
+   texto secundario sobre el relleno violeta — 1.5:1. */
+[data-theme="dark"] .footer-col a:not(.cv-btn) { color: var(--text-secondary); }
+[data-theme="dark"] .footer-col a:not(.cv-btn):hover { color: var(--accent-text); }
+
+/* En claro el pie de legales va a rgba(255,255,255,.3) sobre #12141c: 2.6:1.
+   Sobre un pie más oscuro empeoraba, así que sube a AA. */
+[data-theme="dark"] .footer-copyright,
+[data-theme="dark"] .legal-dots { color: rgba(233, 229, 245, 0.62); }
+
+/* --- 20. PANEL DE AJUSTES / TUERCA ------------------------------- */
+
+[data-theme="dark"] .settings-dock__handle {
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
   color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
 }
-
-[data-theme="dark"] .cms-modal-overlay {
-  background: rgba(6, 6, 8, 0.82);
+/* El relleno de la tuerca lo pone el bloque de acentos solidos (seccion 3b);
+   aca solo la sombra, que en claro es negra plana. */
+[data-theme="dark"] .settings-gear {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
 }
-[data-theme="dark"] .cms-modal {
-  background: var(--bg-primary);
-  border-color: var(--border);
+[data-theme="dark"] .settings-gear:hover {
+  box-shadow: 0 6px 22px rgba(124, 58, 237, 0.55);
+}
+[data-theme="dark"] .settings-panel {
+  background: var(--surface-1);
+  border-color: var(--dk-edge);
   color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
 }
+[data-theme="dark"] .settings-panel h4 { color: var(--text-primary); }
+[data-theme="dark"] .settings-divider { background: var(--border); }
 
-/* --- 20. MISC ---------------------------------------------------- */
+/* Interruptores */
+[data-theme="dark"] .slider { background-color: #38315a; }
+[data-theme="dark"] input:checked + .slider { background-color: var(--accent); }
 
-[data-theme="dark"] .about-page-section {
-  background: var(--bg-primary);
-}
-
-[data-theme="dark"] .toast-container {
-  background: var(--bg-secondary);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .cv-btn-settings { color: var(--text-primary); }
-[data-theme="dark"] .cv-btn-settings.is-disabled { color: var(--text-secondary); }
-
+[data-theme="dark"] .cv-btn-settings,
 [data-theme="dark"] .lang-btn-settings { color: var(--text-primary); }
+[data-theme="dark"] .cv-btn-settings.is-disabled { color: var(--text-muted); }
 [data-theme="dark"] .lang-dropdown-settings {
-  background: var(--bg-secondary);
-  border-color: var(--border);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
+  box-shadow: var(--shadow-lg);
 }
+[data-theme="dark"] .lang-option { color: var(--text-secondary); }
 [data-theme="dark"] .lang-option:hover {
-  background: rgba(147, 133, 166, 0.08);
+  background: rgba(145, 101, 247, 0.16);
+  color: var(--text-primary);
 }
 
-/* --- 21. CONTACT PAGE (/contact) --------------------------------- */
+/* --- 21. TOASTS -------------------------------------------------- */
 
-[data-theme="dark"] .ct-main {
+[data-theme="dark"] .cms-toast {
+  background: var(--surface-3);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+/* --- 22. MODAL DE CONTACTO --------------------------------------- */
+
+[data-theme="dark"] .cms-modal.contact-modal {
+  background: var(--surface-1) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--dk-edge) !important;
+}
+[data-theme="dark"] .contact-modal h3,
+[data-theme="dark"] .contact-label { color: var(--text-primary); }
+[data-theme="dark"] .contact-input,
+[data-theme="dark"] .contact-textarea {
   background: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--dk-edge);
 }
+[data-theme="dark"] .contact-input::placeholder,
+[data-theme="dark"] .contact-textarea::placeholder { color: var(--text-muted); }
+/* El campo País es un `<select>` nativo con la clase .contact-input. La lista
+   desplegable la pinta el sistema, no la hoja: sin color propio las opciones
+   salen sobre el fondo blanco del popup del SO con el texto claro heredado. */
+[data-theme="dark"] select.contact-input option {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+[data-theme="dark"] .contact-input:focus,
+[data-theme="dark"] .contact-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(145, 101, 247, 0.22);
+}
+[data-theme="dark"] .contact-charcount,
+[data-theme="dark"] .contact-optional { color: var(--text-muted); }
+[data-theme="dark"] .contact-field-error,
+[data-theme="dark"] .contact-error { color: #fca5a5; }
+[data-theme="dark"] .contact-success-title { color: var(--text-primary); }
+[data-theme="dark"] .contact-success-subtitle { color: var(--text-secondary); }
 
+/* --- 23. PÁGINA /contact ----------------------------------------- */
+
+[data-theme="dark"] .ct-main { background: var(--bg-primary); }
 [data-theme="dark"] .ct-grid-bg {
   background-image:
-    linear-gradient(rgba(147, 133, 166, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(147, 133, 166, 0.025) 1px, transparent 1px);
+    linear-gradient(var(--dk-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dk-line) 1px, transparent 1px);
 }
 
+/* Las auroras son el único movimiento de color de la página: apagadas se
+   pierde el motivo por el que existen. */
 [data-theme="dark"] .ct-aurora--a {
-  background: radial-gradient(circle, rgba(147, 133, 166, 0.25), rgba(124, 58, 237, 0.08) 60%, transparent 75%);
+  background: radial-gradient(circle, rgba(145, 101, 247, 0.38), rgba(124, 58, 237, 0.14) 55%, transparent 74%);
 }
 [data-theme="dark"] .ct-aurora--b {
-  background: radial-gradient(circle, rgba(91, 33, 182, 0.2), rgba(59, 7, 100, 0.08) 55%, transparent 70%);
+  background: radial-gradient(circle, rgba(109, 40, 217, 0.34), rgba(76, 29, 149, 0.12) 52%, transparent 70%);
 }
 [data-theme="dark"] .ct-aurora--c {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.05) 55%, transparent 70%);
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.26), rgba(145, 101, 247, 0.09) 55%, transparent 72%);
 }
 
+/* El panel del hero es el único respaldo del título: detrás hay una
+   ilustración de la artista a sangre, y son claras. En claro el velo va al
+   50% y alcanza porque texto oscuro sobre velo blanco sube de contraste con
+   la imagen clara; acá pasa lo contrario y el 50% deja el texto a merced de
+   qué zona de la imagen le toque. Sube a 0.74 — la ilustración se sigue
+   viendo alrededor del panel, que es donde tiene que lucirse. */
+[data-theme="dark"] .ct-hero-wrap {
+  background: rgba(12, 10, 20, 0.74);
+}
+[data-theme="dark"] .ct-hero__title { color: var(--text-primary); }
+[data-theme="dark"] .ct-hero__lede { color: var(--text-secondary); }
 [data-theme="dark"] .ct-hero__file {
-  border-color: rgba(147, 133, 166, 0.2);
-  background: rgba(147, 133, 166, 0.04);
+  border-color: var(--dk-edge);
+  background: var(--dk-tint);
+  color: var(--accent-text);
 }
 
-[data-theme="dark"] .ct-info-card {
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
+[data-theme="dark"] .ct-info-card,
+[data-theme="dark"] .ct-form-wrap,
+[data-theme="dark"] .ct-social-card,
+[data-theme="dark"] .ct-cv-card {
+  background: var(--surface-1);
+  border-color: var(--dk-hairline);
 }
-[data-theme="dark"] .ct-info-card:hover {
-  border-color: rgba(147, 133, 166, 0.3);
-  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.4);
+[data-theme="dark"] .ct-info-card:hover,
+[data-theme="dark"] .ct-social-card:hover,
+[data-theme="dark"] .ct-cv-card:hover {
+  border-color: rgba(167, 139, 250, 0.42);
+  background: var(--surface-2);
+  box-shadow: 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(145, 101, 247, 0.5);
 }
-[data-theme="dark"] .ct-info-card__icon {
-  background: rgba(147, 133, 166, 0.08);
-  border-color: rgba(147, 133, 166, 0.15);
+[data-theme="dark"] .ct-form-wrap__fig { background: var(--surface-1); color: var(--accent-text); }
+
+[data-theme="dark"] .ct-info-card__icon,
+[data-theme="dark"] .ct-cv-card__icon-wrap,
+[data-theme="dark"] .ct-form-success__icon {
+  background: var(--dk-tint-2);
+  border-color: var(--dk-edge);
+  color: var(--accent-text);
 }
 [data-theme="dark"] .ct-info-card:hover .ct-info-card__icon {
   background: var(--accent);
+  color: #fff;
 }
-
-[data-theme="dark"] .ct-form-wrap {
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .ct-form-wrap__fig {
-  background: var(--bg-secondary);
-}
-
-[data-theme="dark"] .ct-social-card {
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .ct-social-card:hover {
-  border-color: rgba(147, 133, 166, 0.3);
-  background: rgba(147, 133, 166, 0.06);
-  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .ct-cv-card {
-  background: var(--bg-secondary);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .ct-cv-card__icon-wrap {
-  background: rgba(147, 133, 166, 0.08);
-  border-color: rgba(147, 133, 166, 0.15);
-}
-
-[data-theme="dark"] .ct-cv-card__btn {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-}
+[data-theme="dark"] .ct-info-card__label { color: var(--text-muted); }
+[data-theme="dark"] .ct-info-card__value { color: var(--text-primary); }
+[data-theme="dark"] .ct-cv-card__btn { box-shadow: 0 4px 18px -4px rgba(145, 101, 247, 0.5); }
 
 [data-theme="dark"] .ct-info-card .bp-corner,
 [data-theme="dark"] .ct-form-wrap .bp-corner,
 [data-theme="dark"] .ct-social-card .bp-corner,
-[data-theme="dark"] .ct-cv-card .bp-corner {
-  border-color: rgba(147, 133, 166, 0.18);
-}
+[data-theme="dark"] .ct-cv-card .bp-corner { border-color: var(--dk-edge); }
 
-[data-theme="dark"] .ct-form-success__icon {
-  background: rgba(147, 133, 166, 0.08);
-}
+/* --- 24. LIGHTBOX ------------------------------------------------ */
 
-@media (max-width: 992px) {
-  [data-theme="dark"] .nav-menu-scrollable::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-  }
+[data-theme="dark"] .lightbox { background: rgba(6, 5, 12, 0.97); }
+[data-theme="dark"] .lightbox-info-panel {
+  background: rgba(26, 21, 48, 0.92);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
 }
+[data-theme="dark"] .info-title {
+  background: linear-gradient(90deg, var(--text-primary), var(--accent-hover));
+}
+[data-theme="dark"] .info-desc,
+[data-theme="dark"] .info-meta,
+[data-theme="dark"] .info-inspiration,
+[data-theme="dark"] .info-inspiration i,
+[data-theme="dark"] .info-footer { color: var(--text-secondary); }
+[data-theme="dark"] .info-inspiration b { color: var(--text-primary); }
+[data-theme="dark"] .info-divider { background: var(--border); }
+[data-theme="dark"] .info-link { color: var(--accent-text); }
+
+/* --- 25. CHROME DEL CMS ------------------------------------------ */
+
+/* El contenedor vacío es idéntico para admin y visitante (solo cambia si
+   se ven el icono y el nombre). El marco violeta translúcido está calibrado
+   contra blanco: sobre el lienzo oscuro hay que subirlo o desaparece. */
+[data-theme="dark"] .cms-empty-overlay {
+  border-color: rgba(167, 139, 250, 0.42);
+  background: rgba(145, 101, 247, 0.10);
+  color: var(--accent-text);
+}
+[data-theme="dark"] .cms-empty-overlay:hover { background: rgba(145, 101, 247, 0.20); }
+
+[data-theme="dark"] .cms-confirm-overlay,
+[data-theme="dark"] .cms-modal-overlay { background: rgba(6, 5, 12, 0.86); }
+[data-theme="dark"] .cms-confirm-dialog,
+[data-theme="dark"] .cms-modal {
+  background: var(--surface-1);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="dark"] .cms-modal input,
+[data-theme="dark"] .cms-modal textarea,
+[data-theme="dark"] .cms-modal select {
+  background: var(--bg-primary);
+  border-color: var(--dk-edge);
+  color: var(--text-primary);
+}
+[data-theme="dark"] .cms-check::after,
+[data-theme="dark"] .cms-multi-check::after { background: var(--text-primary); }
+
+/* --- 26. ESTADOS VACÍOS DE COMPONENTE ---------------------------- */
+
+/* Los marcadores de "todavía no hay proyectos / personajes" ya leen sus
+   tokens desde el JSX; acá solo el icono grande, que es decorativo. */
+[data-theme="dark"] .cms-placeholder-inner { color: var(--text-muted); }

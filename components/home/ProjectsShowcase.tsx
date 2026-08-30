@@ -83,13 +83,13 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
   return (
     <div
       data-content-id={key}
-      className="project-item h-full group flex flex-col justify-between w-full bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
+      className="project-item h-full group flex flex-col justify-between w-full bg-[var(--surface-1)] rounded-lg shadow-sm hover:shadow-xl border border-[var(--border)] overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); setActiveSlide(0) }}
     >
       {/* 1. Contenedor de Imagen (Formato apaisado 3:2 elegante con borde divisorio inferior) */}
       <div
-        className="w-full aspect-[16/10] sm:aspect-[3/2] bg-gray-50 relative block shrink-0 overflow-hidden border-b border-gray-100/80"
+        className="w-full aspect-[16/10] sm:aspect-[3/2] bg-[var(--surface-2)] relative block shrink-0 overflow-hidden border-b border-[var(--border)]"
       >
         {galleryKeys.map((gKey, idx) => {
           const src = items[gKey]
@@ -125,7 +125,7 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
         {!hasImage && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100 z-0">
+          <div className="absolute inset-0 flex items-center justify-center text-[var(--text-muted)] bg-[var(--surface-2)] z-0">
             <span className="text-sm tracking-widest uppercase" data-i18n="no_image">No image</span>
           </div>
         )}
@@ -143,20 +143,20 @@ function ProjectCard({ id, index }: { id: string; index: number }) {
           </div>
 
           {/* 2. Título (con altura mínima para alinear las tarjetas de al lado) */}
-          <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-normal font-[family-name:var(--font)] text-gray-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
+          <h3 className="proj-card-title min-h-[3.6rem] text-xl md:text-2xl font-normal font-[family-name:var(--font)] text-[var(--text-primary)] tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-300 mb-3" style={{ marginBottom: '0.75rem', minHeight: '3.6rem' }}>
             {title || `Project Title ${index + 1}`}
           </h3>
 
           {/* 3. Breve descriptivo (altura fija para que los botones de pie queden alineados) */}
-          <p className="proj-card-summary min-h-[4.2rem] text-gray-500 text-[0.9rem] leading-relaxed line-clamp-3 mb-5" style={{ marginBottom: '1.25rem', minHeight: '4.2rem' }}>
+          <p className="proj-card-summary min-h-[4.2rem] text-[var(--text-secondary)] text-[0.9rem] leading-relaxed line-clamp-3 mb-5" style={{ marginBottom: '1.25rem', minHeight: '4.2rem' }}>
             {summary || "This is a brief descriptive placeholder text for the project. The actual summary will appear here once you add content from the panel."}
           </p>
         </div>
 
         {/* 4. Pie con Botón Leer Más y borde divisorio */}
-        <div className="mt-auto pt-3 border-t border-gray-100/80 flex items-center justify-start" style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(229, 231, 235, 0.8)' }}>
+        <div className="mt-auto pt-3 border-t border-[var(--border)] flex items-center justify-start" style={{ marginTop: 'auto', paddingTop: '1rem' }}>
           <button 
-            className="group/link inline-flex items-center gap-2 text-[11px] font-semibold text-gray-400 tracking-[0.16em] uppercase relative pb-2 transition-colors duration-300 hover:text-[var(--accent)] cursor-pointer bg-transparent border-none shadow-none outline-none"
+            className="group/link inline-flex items-center gap-2 text-[11px] font-semibold text-[var(--text-muted)] tracking-[0.16em] uppercase relative pb-2 transition-colors duration-300 hover:text-[var(--accent)] cursor-pointer bg-transparent border-none shadow-none outline-none"
             type="button"
             onClick={(e) => e.preventDefault()}
           >
@@ -320,11 +320,11 @@ export default function ProjectsShowcase() {
           <span className="proj-showcase__fig text-xs tracking-[0.22em] text-[var(--accent)] uppercase mb-3 block">
             FIG. 03.5 — Work
           </span>
-          <h2 className="proj-showcase__title text-3xl md:text-4xl text-gray-900 leading-none tracking-tight" style={{ fontFamily: 'var(--font-display)', fontWeight: 200, marginBottom: '2rem' }}>
+          <h2 className="proj-showcase__title text-3xl md:text-4xl text-[var(--text-primary)] leading-none tracking-tight" style={{ fontFamily: 'var(--font-display)', fontWeight: 200, marginBottom: '2rem' }}>
             Featured Projects
           </h2>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <p className="proj-showcase__desc text-gray-900 max-w-2xl text-base leading-relaxed" style={{ fontWeight: 200 }}>
+            <p className="proj-showcase__desc text-[var(--text-primary)] max-w-2xl text-base leading-relaxed" style={{ fontWeight: 200 }}>
               A curated selection of my featured projects and artwork.
             </p>
             {isAdmin && (
@@ -344,11 +344,11 @@ export default function ProjectsShowcase() {
         {/* Carrusel de proyectos / Estado vacío (Equilibrado como sub-sección horizontal) */}
         <div className="w-full relative mt-3">
           {ids.length === 0 ? (
-            <div className="w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300/80 rounded-lg bg-white/60 shadow-sm transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-3 shadow-inner">
+            <div className="w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--accent)]/40 rounded-lg bg-[var(--surface-1)]/60 shadow-sm transition-all duration-300">
+              <div className="w-16 h-16 rounded-full bg-[var(--accent)]/12 border border-[var(--accent)]/30 flex items-center justify-center text-[var(--accent-text)] mb-3 shadow-inner">
                 <i className="fa-solid fa-layer-group text-xl opacity-80" />
               </div>
-              <h3 className="text-lg font-bold text-gray-800">{ui('no_projects')}</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">{ui('no_projects')}</h3>
             </div>
           ) : (
             <Carousel
@@ -393,7 +393,7 @@ export default function ProjectsShowcase() {
                 type="button"
                 onClick={() => carouselApi?.scrollPrev()}
                 aria-label="Previous slide"
-                className="hidden md:flex absolute -left-16 lg:-left-20 xl:-left-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+                className="hidden md:flex absolute -left-16 lg:-left-20 xl:-left-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-[var(--surface-3)]/95 border border-[var(--border)] text-[var(--text-primary)] shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
               >
                 <i className="fa-solid fa-arrow-left text-xs transition-transform duration-300 group-hover/side:-translate-x-0.5" />
               </button>
@@ -402,7 +402,7 @@ export default function ProjectsShowcase() {
                 type="button"
                 onClick={() => carouselApi?.scrollNext()}
                 aria-label="Next slide"
-                className="hidden md:flex absolute -right-16 lg:-right-20 xl:-right-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/95 border border-gray-200 text-gray-700 shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
+                className="hidden md:flex absolute -right-16 lg:-right-20 xl:-right-24 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-[var(--surface-3)]/95 border border-[var(--border)] text-[var(--text-primary)] shadow-sm transition-all duration-300 items-center justify-center group/side active:scale-95 cursor-pointer outline-none"
               >
                 <i className="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover/side:translate-x-0.5" />
               </button>

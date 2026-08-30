@@ -420,11 +420,11 @@ export default function CharactersShowcase() {
 
         <div className="ch-showcase__cards-container">
           {completedIds.length === 0 ? (
-            <div className="w-full min-h-[520px] md:min-h-[580px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-violet-300/60 rounded-2xl bg-white/60 shadow-sm transition-all duration-300">
-              <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-violet-50 border border-violet-200/60 flex items-center justify-center text-violet-600 mb-4 shadow-inner">
+            <div className="w-full min-h-[520px] md:min-h-[580px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--accent)]/40 rounded-2xl bg-[var(--surface-1)]/60 shadow-sm transition-all duration-300">
+              <div className="cms-placeholder-inner w-16 h-16 rounded-full bg-[var(--accent)]/12 border border-[var(--accent)]/30 flex items-center justify-center text-[var(--accent-text)] mb-4 shadow-inner">
                 <i className="fa-solid fa-user-astronaut text-xl opacity-80" />
               </div>
-              <h3 className="cms-placeholder-inner text-lg font-bold text-gray-800">{ui('no_characters')}</h3>
+              <h3 className="cms-placeholder-inner text-lg font-bold text-[var(--text-primary)]">{ui('no_characters')}</h3>
             </div>
           ) : (
             <Carousel

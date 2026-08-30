@@ -15,6 +15,14 @@
     --accent-hover: #7c3aed;
     --border: #e2e8f0;
     --header-bg: rgba(255, 255, 255, 0.85);
+
+    /* Superficies por elevacion. El tema claro las resuelve casi todas a
+       blanco: existen para que los componentes no hardcodeen `bg-white` y el
+       tema oscuro pueda separarlas (allá SI hay jerarquia de elevacion). */
+    --surface-1: #ffffff;   /* tarjeta */
+    --surface-2: #f8fafc;   /* pozo de media / elevada */
+    --surface-3: #ffffff;   /* popover, dropdown, modal */
+    --text-muted: #9ca3af;  /* meta, pies de tarjeta */
     --c-uso: #10b981;
     --c-nouso: #f59e0b;
     --c-repo: #3b82f6;

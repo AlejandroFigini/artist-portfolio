@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import { openLightbox } from '@/components/ui/lightbox'
+import { useCmsText } from '@/lib/cms/content-context'
 import { sendGAEvent } from '@next/third-parties/google'
 const CELL_COUNT = 15
 /* Abrir lightbox solo si la celda tiene contenido (img con src real). Vacía →
@@ -27,7 +28,17 @@ function onCellClick(e: React.MouseEvent<HTMLElement>) {
   sendGAEvent('event', 'fullscreen_open')
 }
 
-function Cell() {
+/* Ficha al hover — misma lectura que la tarjeta de Animations, pero resuelta
+   con `t()` y no leyendo los `data-*`: así sale ya en el HTML del servidor y
+   sigue el idioma activo sin depender de que el motor mute el DOM. */
+function Cell({ index }: { index: number }) {
+  const text = useCmsText()
+  const key = `illustration#${index}`
+  const title = text(`${key}::title`)
+  const date = text(`${key}::date`)
+  const project = text(`${key}::project`)
+  const hasMeta = !!(title || date || project)
+
   return (
     <figure className="illu-cell" onClick={onCellClick}>
       {/* Sin src: contenedor vacío. El engine setea .src al subir contenido. */}
@@ -36,6 +47,25 @@ function Cell() {
       <span className="illu-cell__hud" aria-hidden="true">
         <i className="fa-solid fa-up-right-and-down-left-from-center" />
       </span>
+      {hasMeta && (
+        <figcaption className="illu-cell__info">
+          {title && <span className="illu-cell__title">{title}</span>}
+          {(date || project) && (
+            <span className="illu-cell__meta">
+              {project && (
+                <span className="illu-cell__project">
+                  <i className="fa-solid fa-folder" aria-hidden="true" /> <span className="val">{project}</span>
+                </span>
+              )}
+              {date && (
+                <span className="illu-cell__date">
+                  <i className="fa-regular fa-calendar" aria-hidden="true" /> <span className="val">{date}</span>
+                </span>
+              )}
+            </span>
+          )}
+        </figcaption>
+      )}
     </figure>
   )
 }
@@ -105,7 +135,7 @@ export default function IllustrationsShowcase() {
 
         <div className="illu-masonry">
           {Array.from({ length: CELL_COUNT }, (_, i) => (
-            <Cell key={i} />
+            <Cell key={i} index={i} />
           ))}
         </div>
       </div>
