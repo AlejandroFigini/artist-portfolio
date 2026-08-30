@@ -194,14 +194,30 @@
   overflow: hidden;
   background: #0e1821;
 }
-/* La vista previa va COMO CAPA encima y no reemplazando el contenedor:
-   `.gd-feature__media` es el nodo registrado en el motor del CMS y tiene que
-   seguir montado para que el admin lo pueda editar. */
+/* Capas de vista previa: una por captura, todas montadas y apiladas. Solo
+   cambia la opacidad, asi que pasar de una miniatura a otra es un fundido
+   cruzado —la que sale y la que entra animan a la vez— y al soltar el hover se
+   funden todas dejando ver la media del destacado. Montarlas y desmontarlas
+   daba un corte seco.
+
+   Van COMO CAPA encima y no reemplazando el contenedor: `.gd-feature__media`
+   es el nodo registrado en el motor del CMS y tiene que seguir montado para
+   que el admin lo pueda editar.
+
+   `ease-out` un poco largo a la entrada y mas corto al salir: es la curva que
+   hace que el cambio se sienta suave en vez de un parpadeo. */
 .gd-feature__preview {
   position: absolute;
   inset: 0;
   z-index: 2;
   background: #0e1821;
+  opacity: 0;
+  transition: opacity 0.28s ease-out;
+  pointer-events: none;
+}
+.gd-feature__preview.is-on {
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
 }
 .gd-feature__preview img,
 .gd-feature__preview video {
@@ -461,12 +477,24 @@
   font-size: 0.62rem;
   opacity: 0;
   transform: scale(0.7);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  /* El click lo maneja el contenedor (lightbox o, en admin, el picker). */
+  transition: opacity 0.3s ease, transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  /* El click lo maneja el contenedor (lightbox o, en admin, el picker); el
+     puntero se habilita solo con el boton a la vista, para no robarle el click
+     al picker cuando la celda esta vacia. */
   pointer-events: none;
   z-index: 4;
 }
-.gd-tile:not(.cms-empty-slot):hover .gd-tile__hud { opacity: 1; transform: scale(1); }
+.gd-tile:not(.cms-empty-slot):hover .gd-tile__hud {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.gd-tile__hud:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.12);
+}
 /* La marca de reproducción se queda a la vista: avisa que la pieza es una
    animación aunque el puntero no esté encima (y en táctil no hay hover). */
 .gd-tile--clip .gd-tile__hud { opacity: 0.9; transform: scale(1); }
@@ -534,5 +562,7 @@
 @media (prefers-reduced-motion: reduce) {
   .gd-row { will-change: auto; }
   .gd-tile__img, .gd-tile__video { transition: none; }
+  .gd-feature__preview { transition: none; }
+  .gd-feature__preview.is-on { transition: none; }
 }
 html.motion-off .gd-row { will-change: auto; }

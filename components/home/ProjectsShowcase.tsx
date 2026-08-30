@@ -358,6 +358,10 @@ export default function ProjectsShowcase() {
                 align: 'start',
                 loop: true,
                 dragFree: true,
+                /* Velocidad del desplazamiento entre tarjetas (embla: menor =
+                   más rápido; por defecto 25). El INTERVALO entre pasadas es
+                   otra cosa y lo edita el admin en Gestionar proyectos. */
+                duration: 16,
               }}
               plugins={prefersReducedMotion() ? [] : [
                 Autoplay({

@@ -311,7 +311,16 @@ export default function CmsRoot() {
           )}
 
           {cmd?.type === 'login' && (
-            <LoginModal onClose={close} onSuccess={(username, role, needsSetup) => setAdmin(true, username, role, needsSetup)} />
+            <LoginModal
+              onClose={close}
+              onSuccess={(username, role, needsSetup) => {
+                setAdmin(true, username, role, needsSetup)
+                /* Solo en el LOGIN, no al restaurar la sesión al recargar: el
+                   panel de ajustes activa "Hide Edit actions" al recibirlo, así
+                   la sesión arranca viendo el sitio como el visitante. */
+                window.dispatchEvent(new CustomEvent('cms:login'))
+              }}
+            />
           )}
           {cmd?.type === 'editText' && <EditTextModal cmsKey={cmd.key} onClose={close} />}
           {cmd?.type === 'editInfo' && <EditInfoModal cmsKey={cmd.key} onClose={close} />}

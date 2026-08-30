@@ -184,12 +184,25 @@
   backdrop-filter: blur(8px);
   opacity: 0;
   transform: scale(0.7);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.25s ease, background 0.25s ease, color 0.25s ease;
   pointer-events: none;
   /* Por encima de la ficha (z-index 2), o el degradado se lo come. */
   z-index: 3;
 }
-.illu-cell:not(.cms-empty-slot):hover .illu-cell__hud { opacity: 1; transform: scale(1); }
+/* `pointer-events` se habilita SOLO con el boton a la vista: en la celda vacia
+   el hud sigue en opacidad 0 y con puntero activo se comeria el click que abre
+   el picker del CMS. El click sobre el boton burbujea a la celda, que es quien
+   abre el lightbox. */
+.illu-cell:not(.cms-empty-slot):hover .illu-cell__hud {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.illu-cell__hud:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.12);
+}
 
 /* ============================================================
    FICHA AL HOVER — mismo lenguaje que la tarjeta de Animations

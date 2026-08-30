@@ -1383,6 +1383,48 @@ footer {
     pointer-events: none;
 }
 
+/* --- Cascada de entrada de las opciones ---
+   Misma voz que el drawer del menu principal (styles/nav.css): las filas
+   entran una atras de otra en lugar de aparecer el bloque entero de golpe.
+
+   Escrito al reves de lo intuitivo A PROPOSITO: el estado VISIBLE es el valor
+   por defecto (sin `opacity` declarada) y solo el estado oculto declara la
+   propiedad. Si dependiera de que corra la transicion, en una pestana en
+   segundo plano las filas quedarian invisibles para siempre.
+
+   El indice sale de `nth-child` y no de una variable estampada por JS: los dos
+   paneles (general y admin) tienen sus filas escritas literales en el JSX, asi
+   que no hay un `map` donde colgar el contador. */
+.settings-panel > * {
+    transition: opacity 0.34s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--set-i, 0) * 0.045s + 0.06s);
+}
+.settings-panel > *:nth-child(2)  { --set-i: 1; }
+.settings-panel > *:nth-child(3)  { --set-i: 2; }
+.settings-panel > *:nth-child(4)  { --set-i: 3; }
+.settings-panel > *:nth-child(5)  { --set-i: 4; }
+.settings-panel > *:nth-child(6)  { --set-i: 5; }
+.settings-panel > *:nth-child(7)  { --set-i: 6; }
+.settings-panel > *:nth-child(8)  { --set-i: 7; }
+.settings-panel > *:nth-child(9)  { --set-i: 8; }
+.settings-panel > *:nth-child(n+10) { --set-i: 9; }
+/* Al cerrar se van todas juntas: escalonar la salida deja filas colgando
+   sobre un panel que ya se fue. */
+.settings-panel.hidden > *,
+.settings-panel.is-away > * {
+    opacity: 0;
+    transform: translateX(10px);
+    transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+    .settings-panel > *,
+    .settings-panel.hidden > *,
+    .settings-panel.is-away > * { transition: none; opacity: 1; transform: none; }
+}
+.motion-off .settings-panel > *,
+.motion-off .settings-panel.hidden > *,
+.motion-off .settings-panel.is-away > * { transition: none; opacity: 1; transform: none; }
+
 /* Tuerca + panel admin ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â segunda tuerca a la derecha de la general, color
    distinto (ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ndigo oscuro) para diferenciar de la violeta general. */
 .settings-gear--admin {

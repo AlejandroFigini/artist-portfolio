@@ -95,19 +95,24 @@ export default function AboutSection() {
 
       /* Orden pedido: primero el TÍTULO, después el SUB-TEXTO (lede). Posiciones
          absolutas para que la secuencia sea explícita y no dependa del encadenado
-         relativo. La instrumentación (fig/media/portrait/bio/meta) mantiene sus
-         tiempos previos. */
-      const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
-      tl.to('.about-fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
-        .to('.about-title', { autoAlpha: 1, y: 0, duration: 0.9 }, 0)
-        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.5)
-        .to('.about-bio p', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, 1.0)
-        .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, 0.1)
-        .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }, 0.5)
-        .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.6)' }, 0.85)
-        .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04 }, 1.35)
+         relativo.
 
-      /* SPECS y CONTACT cierran la coreografia (t=1.3s..1.7s contados desde que
+         Las posiciones están comprimidas a propósito: cada pieza arranca apenas
+         despegó la anterior (0.08–0.15s de separación), de modo que se lea como
+         una cascada uno-a-uno y no como bloques sueltos. Antes el bloque de
+         SPECS abría a los 1.45s — con el resto ya quieto se percibía como un
+         hueco que tardaba de más en llenarse. */
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
+      tl.to('.about-fig', { autoAlpha: 1, y: 0, duration: 0.35 }, 0)
+        .to('.about-title', { autoAlpha: 1, y: 0, duration: 0.7 }, 0)
+        .to('.about-video-container', { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.9, ease: 'expo.out' }, 0.08)
+        .to('.about-lede', { autoAlpha: 1, y: 0, duration: 0.55 }, 0.3)
+        .to('.about-corner', { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.04, ease: 'power3.out' }, 0.4)
+        .to('.about-bio p', { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.09 }, 0.5)
+        .to('.about-portrait', { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.6, ease: 'back.out(1.6)' }, 0.6)
+        .to('.about-portrait .bp-corner', { autoAlpha: 1, scale: 1, duration: 0.25, stagger: 0.035 }, 0.9)
+
+      /* SPECS y CONTACT cierran la coreografia (t=0.75s..1.0s contados desde que
          asoma el TECHO de la seccion). En dos columnas funciona: entran junto
          con el resto, todo dentro del mismo viewport.
 
@@ -121,9 +126,9 @@ export default function AboutSection() {
       const META_SELECTOR = '.about-meta-row, .about-spec, .about-social'
 
       if (!stacked) {
-        tl.to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' }, 1.3)
-          .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, 1.45)
-          .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.05, ease: 'power3.out' }, 1.7)
+        tl.to('.about-meta-row', { autoAlpha: 1, x: 0, duration: 0.4, stagger: 0.05, ease: 'power3.out' }, 0.75)
+          .to('.about-spec', { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power3.out' }, 0.85)
+          .to('.about-social', { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.045, ease: 'power3.out' }, 1.0)
       }
 
       let played = false

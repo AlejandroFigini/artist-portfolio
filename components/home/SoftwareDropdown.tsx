@@ -7,7 +7,7 @@
    (keys {prefix}.soft#i / {prefix}.softname#i registradas en engine.ts).
 
    El hover (abrir/cerrar) lo maneja CSS puro; el estado React es solo para
-   apertura por click (sticky), que se cierra al clickear fuera. */
+   apertura por click, que se cierra al clickear fuera o al salir el puntero. */
 
 import { useEffect, useRef, useState } from 'react'
 import DecorAnim from '@/components/ui/DecorAnim'
@@ -84,7 +84,11 @@ export default function SoftwareDropdown({ prefix, count = 6 }: { prefix: string
       ref={ref}
       className={`sw-dropdown${open ? ' is-open' : ''}`}
       onMouseEnter={() => { if (hoverCapable.current) setPointerOpen(true) }}
-      onMouseLeave={() => setPointerOpen(false)}
+      /* Sacar el puntero cierra también la apertura sticky por click: con
+         puntero fino el hover ya alcanza para consultarlo, así que dejarlo
+         clavado sólo obliga a un segundo click. En táctil no hay mouseleave
+         real, así que la apertura por tap sigue siendo sticky. */
+      onMouseLeave={() => { setPointerOpen(false); if (hoverCapable.current) setOpen(false) }}
       onFocus={() => setPointerOpen(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPointerOpen(false) }}
     >

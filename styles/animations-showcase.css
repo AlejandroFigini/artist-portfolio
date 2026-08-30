@@ -579,5 +579,4 @@
   box-shadow: none !important;
 }
 .anim-card--empty .anim-card__placeholder,
-.anim-card--empty .bp-corner,
 .anim-card--empty .cms-tools { display: none !important; }

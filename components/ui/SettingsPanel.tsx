@@ -173,6 +173,15 @@ export default function SettingsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /* Al iniciar sesión, "Hide Edit actions" arranca activado. Lo dispara CmsRoot
+     al confirmar el login — no al restaurar la sesión en una recarga, donde la
+     elección guardada tiene que sobrevivir. */
+  useEffect(() => {
+    const onLogin = () => { setHideCms(true); applyHideCms(true) }
+    window.addEventListener('cms:login', onLogin)
+    return () => window.removeEventListener('cms:login', onLogin)
+  }, [])
+
   useEffect(() => {
     if (!open && !adminOpen && !dockOpen) return
     const onClick = (e: MouseEvent) => {

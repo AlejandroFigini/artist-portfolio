@@ -64,7 +64,7 @@ function CharMedia({
   )
 }
 
-function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: string; index: number; total: number; onOpen: (lb: Lightbox) => void; isHoveringRef?: React.MutableRefObject<boolean> }) {
+function CharacterPanel({ id, index, total, onOpen }: { id: string; index: number; total: number; onOpen: (lb: Lightbox) => void }) {
   useCmsStore()
   const ui = useUiText()
   const [isHovered, setIsHovered] = useState(false)
@@ -125,24 +125,21 @@ function CharacterPanel({ id, index, total, onOpen, isHoveringRef }: { id: strin
 
   const open = (src: string) => onOpen({ src, name: name || `Character ${num}`, role, desc })
 
-  /* El ciclo de concepts es una interacción de puntero fino. En táctil el
+  /* El ciclo de concepts es una interacción de puntero fino: en táctil el
      navegador dispara mouseenter de compatibilidad al tocar/arrastrar pero
-     nunca el mouseleave: `isHoveringRef` quedaba en true para siempre y, como
-     es el freno del auto-scroll, el carrusel no volvía a moverse después de
-     mover las tarjetas con el dedo. Sin hover real, no se entra al estado. */
+     nunca el mouseleave, así que sin hover real no se entra al estado. Este
+     estado es SOLO visual — el auto-scroll no se frena con el hover. */
   const handleMouseEnter = () => {
     if (!canHover()) return
     setIsHovered(true)
     // Siempre arranca mostrando la imagen principal y deja que el ciclo avance a las subimágenes
     setActiveSlide(0)
-    if (isHoveringRef) isHoveringRef.current = true
   }
 
   const handleMouseLeave = () => {
     if (!canHover()) return
     setIsHovered(false)
     setActiveSlide(0) // vuelve a la imagen principal en el contenedor grande y quita el destacado
-    if (isHoveringRef) isHoveringRef.current = false
   }
 
   return (
@@ -215,7 +212,6 @@ export default function CharactersShowcase() {
   const ui = useUiText()
   const isAdmin = state.isAdmin
   const sectionRef = useRef<HTMLElement>(null)
-  const isHoveringRef = useRef(false)
   const [api, setApi] = useState<CarouselApi>()
   const [lightbox, setLightbox] = useState<Lightbox>(null)
   const [showInfo, setShowInfo] = useState(false)
@@ -232,7 +228,7 @@ export default function CharactersShowcase() {
     if (!api || !autoScroll) return
     const apply = () => {
       if (!inViewRef.current) autoScroll.stop()
-      else if (!isHoveringRef.current) autoScroll.play()
+      else autoScroll.play()
     }
     apply()
     // `useCarouselSync` hace reInit al montar y al cambiar el contenido, y el
@@ -277,7 +273,7 @@ export default function CharactersShowcase() {
     const resumeFast = () => {
       clearTimeout(timer)
       timer = setTimeout(() => {
-        if (isHoveringRef.current || isModalOpen() || !inViewRef.current) return // NUNCA reanudar si el usuario está hover, hay modal abierto o la sección no se ve
+        if (isModalOpen() || !inViewRef.current) return // solo se frena con modal abierto o fuera de cuadro; el hover NO detiene el carrusel
         autoScroll.play()
       }, 0)
     }
@@ -287,7 +283,7 @@ export default function CharactersShowcase() {
     }
     const onModalClose = () => {
       try {
-        if (!isHoveringRef.current && !isModalOpen() && inViewRef.current) {
+        if (!isModalOpen() && inViewRef.current) {
           autoScroll.play()
         }
       } catch {}
@@ -431,15 +427,21 @@ export default function CharactersShowcase() {
               key={`${ids.length}-${signature}`}
               setApi={setApi}
               opts={{ align: 'start', loop: isLoopable, dragFree: true, watchDrag: true }}
+              /* `startDelay: 0` y `stopOnFocusIn: false`: el plugin reanuda por
+                 su cuenta tras el `settle` del arrastre, pero por defecto se
+                 tomaba 1s más, y un click sobre un panel lo frenaba hasta el
+                 focusout. Con dragFree el `settle` ya llega tarde (hay que
+                 esperar la inercia) — sumarle esperas era lo que se sentía como
+                 "no vuelve a arrancar". */
               plugins={isLoopable && !prefersReducedMotion() ? [
-                AutoScroll({ speed: 0.75, stopOnInteraction: false, stopOnMouseEnter: false }),
+                AutoScroll({ speed: 0.75, startDelay: 0, stopOnInteraction: false, stopOnMouseEnter: false, stopOnFocusIn: false }),
               ] : []}
               className="ch-carousel"
             >
               <CarouselContent className="-ml-3 md:-ml-4">
                 {renderIds.map((id, i) => (
                   <CarouselItem key={`${id}-${i}`} className="pl-3 md:pl-4 basis-[88%] sm:basis-[340px] md:basis-[370px] lg:basis-[395px] xl:basis-[415px] flex">
-                    <CharacterPanel id={id} index={i % completedIds.length} total={completedIds.length} onOpen={openLightbox} isHoveringRef={isHoveringRef} />
+                    <CharacterPanel id={id} index={i % completedIds.length} total={completedIds.length} onOpen={openLightbox} />
                   </CarouselItem>
                 ))}
               </CarouselContent>

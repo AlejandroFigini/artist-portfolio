@@ -20,17 +20,6 @@ const CARD_COUNT = 6
 const CARDS_PER_PAGE = 2
 const PAGE_COUNT = Math.ceil(CARD_COUNT / CARDS_PER_PAGE)
 
-function Corners() {
-  return (
-    <>
-      <span className="bp-corner tl" />
-      <span className="bp-corner tr" />
-      <span className="bp-corner bl" />
-      <span className="bp-corner br" />
-    </>
-  )
-}
-
 type CardFields = { title: string; project: string; date: string; inspiration: string; desc: string }
 
 function AnimCard({ index }: { index: number }) {
@@ -200,7 +189,6 @@ function AnimCard({ index }: { index: number }) {
         onMouseLeave={handleMouseLeave}
         style={{ '--card-i': index } as React.CSSProperties}
       >
-        <Corners />
         <div className="anim-card__media">
           <video
             ref={videoRef}

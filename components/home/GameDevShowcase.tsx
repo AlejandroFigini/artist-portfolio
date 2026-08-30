@@ -322,7 +322,7 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
 
 /* Miniatura de la tira. Al pasar el puntero reemplaza la vista grande; si lo
    cargado es una animación lleva la chapa de reproducir, como en Steam. */
-function FeatureShot({ index, onHover }: { index: number; onHover: (src: string) => void }) {
+function FeatureShot({ index, onHover }: { index: number; onHover: (index: number) => void }) {
   const key = `gamedev.hero.shot#${index}`
   const raw = useCmsItems()[key] || ''
   const isClip = isVideoSrc(raw)
@@ -330,8 +330,8 @@ function FeatureShot({ index, onHover }: { index: number; onHover: (src: string)
   return (
     <figure
       className={`gd-feature__thumb${raw ? ' has-media' : ''}`}
-      onMouseEnter={() => raw && onHover(raw)}
-      onFocus={() => raw && onHover(raw)}
+      onMouseEnter={() => raw && onHover(index)}
+      onFocus={() => raw && onHover(index)}
       tabIndex={raw ? 0 : -1}
     >
       <div className="gd-feature__thumbmedia" data-cms-key={key} data-full={raw}>
@@ -363,32 +363,43 @@ function FeatureShot({ index, onHover }: { index: number; onHover: (src: string)
   )
 }
 
-/* Vista grande. Muestra la media del destacado salvo que el puntero esté sobre
-   una miniatura, y ahí pinta la de esa. Va como CAPA encima y no reemplazando
-   el contenedor: `.gd-feature__media` es el nodo registrado en el motor del
-   CMS y tiene que seguir montado para que el admin lo pueda editar. */
-function FeaturePreview({ src }: { src: string }) {
+/* Capa de vista previa: UNA por captura, siempre montada, y se funde con
+   opacidad. Montarla y desmontarla al vuelo daba un corte seco; con todas
+   presentes el paso de una miniatura a otra es un fundido cruzado —las dos
+   animan a la vez— y al salir se funden todas dejando ver la media del
+   destacado, que es como se siente en Steam.
+
+   Va COMO CAPA encima y no reemplazando el contenedor: `.gd-feature__media` es
+   el nodo registrado en el motor del CMS y tiene que seguir montado para que
+   el admin lo pueda editar. */
+function FeaturePreview({ index, active }: { index: number; active: boolean }) {
+  const src = useCmsItems()[`gamedev.hero.shot#${index}`] || ''
   const isClip = isVideoSrc(src)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  /* Solo reproduce la capa activa: las otras siguen montadas (invisibles) y un
+     video montado sigue decodificando si nadie lo para. */
   useEffect(() => {
     const v = videoRef.current
     if (!v || !isClip) return
+    if (!active) { v.pause(); return }
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) void v.play().catch(() => {}); else v.pause() },
       { threshold: 0.2 },
     )
     io.observe(v)
     return () => { io.disconnect(); v.pause() }
-  }, [isClip, src])
+  }, [isClip, active])
+
+  if (!src) return null
 
   return (
-    <div className="gd-feature__preview" aria-hidden="true">
+    <div className={`gd-feature__preview${active ? ' is-on' : ''}`} aria-hidden="true">
       {isClip ? (
         <video ref={videoRef} className="gd-tile__video" muted loop playsInline preload="metadata" src={optimizedMediaSrc(src)} poster={videoPosterSrc(src) || undefined} />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img className="gd-tile__img" src={optimizedMediaSrc(src, 1200)} alt="" decoding="async" draggable={false} />
+        <img className="gd-tile__img" src={optimizedMediaSrc(src, 1200)} alt="" loading="lazy" decoding="async" draggable={false} />
       )}
     </div>
   )
@@ -398,7 +409,7 @@ function FeaturePreview({ src }: { src: string }) {
    captura o animación— pero acá la ficha SÍ se pinta: es el contenido de la
    tarjeta. */
 function FeaturedGame() {
-  const [preview, setPreview] = useState('')
+  const [shot, setShot] = useState(-1)
   const text = useCmsText()
   const ui = useUiText()
   const key = 'gamedev.hero#0'
@@ -434,17 +445,19 @@ function FeaturedGame() {
     >
       {/* Columna izquierda: vista grande + tira de capturas, como la ficha de
           un juego en Steam. */}
-      <div className="gd-feature__left" onMouseLeave={() => setPreview('')}>
+      <div className="gd-feature__left" onMouseLeave={() => setShot(-1)} onBlur={() => setShot(-1)}>
         <div className="gd-feature__stage">
           <div className="gd-feature__media">
             <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
           </div>
-          {preview && <FeaturePreview src={preview} />}
+          {Array.from({ length: SHOT_COUNT }, (_, i) => (
+            <FeaturePreview key={i} index={i} active={shot === i} />
+          ))}
         </div>
 
         <div className="gd-feature__thumbs">
           {Array.from({ length: SHOT_COUNT }, (_, i) => (
-            <FeatureShot key={i} index={i} onHover={setPreview} />
+            <FeatureShot key={i} index={i} onHover={setShot} />
           ))}
         </div>
       </div>
