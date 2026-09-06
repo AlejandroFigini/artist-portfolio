@@ -616,6 +616,11 @@ export const deduplicateMedia = <T extends { src?: string; dataUrl?: string; url
 
 // ----- Metadata de contenedores (port de admin.js getContainerMeta) ---------
 
+/* Capturas por ficha de juego. Espejo de SHOT_COUNT en GameDevShowcase.tsx:
+   las miniaturas son correlativas en todo el sitio y esto las agrupa por
+   juego en las etiquetas del admin. */
+const GAMEDEV_SHOTS = 4
+
 const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => string; kind: 'image' | 'video' | 'text' | 'media' }> = {
   'loader.gallop': { section: 'Site Configuration', label: () => 'Loading Screen', kind: 'video' },
   'settings.faviconUrl': { section: 'Site Configuration', label: () => 'Favicon', kind: 'image' },
@@ -673,8 +678,11 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
   'gamedev.title': { section: 'Game Dev', label: (n) => `Block Title #${n} — Game Dev`, kind: 'text' },
   'gamedev.desc': { section: 'Game Dev', label: (n) => `Block Text #${n} — Game Dev`, kind: 'text' },
   'gamedev': { section: 'Game Dev', label: (n) => `Game Material #${n}`, kind: 'media' },
-  'gamedev.hero': { section: 'Game Dev', label: () => 'Featured Game', kind: 'media' },
-  'gamedev.hero.shot': { section: 'Game Dev', label: (n) => `Featured Screenshot #${n}`, kind: 'media' },
+  'gamedev.hero': { section: 'Game Dev', label: (n) => `Game #${n}`, kind: 'media' },
+  /* Las miniaturas son correlativas en todo el sitio (juego 1 → 1..4, juego 2
+     → 5..8): la etiqueta las devuelve a su juego. GAMEDEV_SHOTS es espejo de
+     SHOT_COUNT en GameDevShowcase.tsx. */
+  'gamedev.hero.shot': { section: 'Game Dev', label: (n) => `Game #${Math.floor((n - 1) / GAMEDEV_SHOTS) + 1} — Screenshot #${((n - 1) % GAMEDEV_SHOTS) + 1}`, kind: 'media' },
 }
 
 export function getContainerMeta(key: string): { label: string; section: string; kind: 'image' | 'video' | 'text' | 'media' } {

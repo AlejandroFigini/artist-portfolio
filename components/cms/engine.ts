@@ -159,6 +159,11 @@ const GAMEDEV_FIELDS: FieldDef[] = [
 
 /* Proyecto destacado. Mismos `data-*` que una pieza suelta, pero acá el título
    y la descripción SÍ se pintan (la ficha es el contenido de la tarjeta). */
+/* Capturas por ficha de juego (misma tira que en Steam). Espejo de
+   SHOT_COUNT en GameDevShowcase.tsx: es lo que agrupa las miniaturas por
+   juego en el listado del admin. */
+const GAMEDEV_SHOTS = 4
+
 const GAMEDEV_FEATURE_FIELDS: FieldDef[] = [
   { key: 'title', label: 'Game Title',
     get: (c) => c.getAttribute('data-title') || '',
@@ -324,12 +329,15 @@ const REGISTRY: RegistryEntry[] = [
      y el tipo lo define el archivo. El elemento registrado es el envoltorio
      (`.gd-tile__media`), que no cambia; adentro React pinta <img> o <video>. */
   { base: 'gamedev', sel: '.gd-row .gd-tile__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-tile', fields: GAMEDEV_FIELDS, label: (el, i) => `Game Material #${i + 1}` },
-  /* Proyecto destacado: mismo contenedor polimórfico, con su ficha (el enlace
-     va como campo `::link` para que el export de traducciones lo excluya). */
-  { base: 'gamedev.hero', sel: '.gd-feature__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-feature', fields: GAMEDEV_FEATURE_FIELDS, label: 'Featured Game' },
-  /* Tira de capturas del destacado, como la de una ficha de Steam. Cada una
-     acepta imagen o animación; al pasar el puntero reemplazan la vista grande. */
-  { base: 'gamedev.hero.shot', sel: '.gd-feature__thumb .gd-feature__thumbmedia', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', label: (el, i) => `Featured Screenshot #${i + 1}` },
+  /* Una ficha por juego publicado: mismo contenedor polimórfico, con sus datos
+     (el enlace va como campo `::link` para que el export de traducciones lo
+     excluya). El índice sigue el orden de DOM = el del array GAMES. */
+  { base: 'gamedev.hero', sel: '.gd-feature__media', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', container: '.gd-feature', fields: GAMEDEV_FEATURE_FIELDS, label: (el, i) => `Game #${i + 1}` },
+  /* Tira de capturas, como la de una ficha de Steam. Cada una acepta imagen o
+     animación; al pasar el puntero reemplazan la vista grande. Las miniaturas
+     son correlativas en todo el sitio, así que la etiqueta dice a qué juego
+     pertenece cada una — si no, el admin ve ocho numeradas sin dueño. */
+  { base: 'gamedev.hero.shot', sel: '.gd-feature__thumb .gd-feature__thumbmedia', kind: 'media', accept: 'webp,png,jpg,jpeg,gif,webm', mount: 'self', section: 'Game Dev', label: (el, i) => `Game #${Math.floor(i / GAMEDEV_SHOTS) + 1} — Screenshot #${(i % GAMEDEV_SHOTS) + 1}` },
 ]
 
 // ----- Índices del motor ------------------------------------------------------

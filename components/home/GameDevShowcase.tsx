@@ -3,7 +3,8 @@
 /* GAME DEV SHOWCASE — muro de material de juegos en dos cintas.
    Ref. visual: bandas de material que se cruzan (Awwwards / estudios de juego).
    No es una lista de proyectos: son piezas sueltas —capturas, arte, UI,
-   sprites, animaciones— mostradas todas juntas, más un proyecto destacado.
+   sprites, animaciones— mostradas todas juntas, más una ficha por juego
+   publicado.
 
    Las cintas se mueven SOLAS y se pueden arrastrar con el mouse o el dedo; el
    auto-scroll se retoma al soltar. Es el mismo mecanismo que la cinta de la
@@ -43,8 +44,21 @@ const DRAG_THRESHOLD = 5  // px antes de considerar arrastre (deja pasar los cli
 const TILE_SIZES = '(max-width: 1023px) 60vw, 30vw'
 const FEATURE_SIZES = '(max-width: 1023px) 90vw, 32vw'
 const SHOT_SIZES = '(max-width: 1023px) 22vw, 8vw'
-/* Capturas del destacado, como la tira de una ficha de Steam. */
+/* Capturas por ficha, como la tira de una ficha de Steam. */
 const SHOT_COUNT = 4
+
+/* Tiendas soportadas. Cada una aporta su icono y su verbo — el skin de la
+   tarjeta lo pone la clase `gd-feature--<store>` en la hoja. */
+type StoreKind = 'steam' | 'itch'
+const STORES: Record<StoreKind, { icon: string; key: string; fallback: string }> = {
+  steam: { icon: 'fa-steam', key: 'gd_store', fallback: 'Available on Steam' },
+  itch: { icon: 'fa-itch-io', key: 'gd_store_itch', fallback: 'Download on itch.io' },
+}
+
+/* Juegos publicados, en orden de DOM. El índice ES la clave del CMS
+   (`gamedev.hero#i`), así que agregar un juego se hace al FINAL del array: dar
+   vuelta el orden reasignaría el contenido ya cargado a la otra ficha. */
+const GAMES: StoreKind[] = ['steam', 'itch']
 
 /* Bloques de texto (3). Contenido por defecto, editable desde el CMS. */
 const TEXT_BLOCKS: { title: string; body: string }[] = [
@@ -382,7 +396,9 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
 }
 
 /* Miniatura de la tira. Al pasar el puntero reemplaza la vista grande; si lo
-   cargado es una animación lleva la chapa de reproducir, como en Steam. */
+   cargado es una animación lleva la chapa de reproducir, como en Steam.
+   `index` es ABSOLUTO en todo el sitio (juego 1 → 0..3, juego 2 → 4..7): el
+   motor indexa las miniaturas por orden de DOM y las claves tienen que darle. */
 function FeatureShot({ index, onHover }: { index: number; onHover: (index: number) => void }) {
   const key = `gamedev.hero.shot#${index}`
   const raw = useCmsItems()[key] || ''
@@ -466,14 +482,16 @@ function FeaturePreview({ index, active }: { index: number; active: boolean }) {
   )
 }
 
-/* Proyecto destacado. Mismo contenedor polimórfico que una celda —acepta
-   captura o animación— pero acá la ficha SÍ se pinta: es el contenido de la
-   tarjeta. */
-function FeaturedGame() {
+/* Ficha de juego. Mismo contenedor polimórfico que una celda —acepta captura o
+   animación— pero acá la ficha SÍ se pinta: es el contenido de la tarjeta.
+   Hay una por juego publicado; `store` decide el skin y el botón. */
+function GameCard({ index, store }: { index: number; store: StoreKind }) {
   const [shot, setShot] = useState(-1)
   const text = useCmsText()
   const ui = useUiText()
-  const key = 'gamedev.hero#0'
+  const key = `gamedev.hero#${index}`
+  const shotBase = index * SHOT_COUNT
+  const st = STORES[store]
 
   const title = text(`${key}::title`)
   const desc = text(`${key}::desc`)
@@ -496,7 +514,7 @@ function FeaturedGame() {
 
   return (
     <article
-      className="gd-feature"
+      className={`gd-feature gd-feature--${store}`}
       data-title={title}
       data-desc={desc}
       data-release={release}
@@ -512,13 +530,13 @@ function FeaturedGame() {
             <CmsMedia cmsKey={key} sizes={FEATURE_SIZES} />
           </div>
           {Array.from({ length: SHOT_COUNT }, (_, i) => (
-            <FeaturePreview key={i} index={i} active={shot === i} />
+            <FeaturePreview key={i} index={shotBase + i} active={shot === shotBase + i} />
           ))}
         </div>
 
         <div className="gd-feature__thumbs">
           {Array.from({ length: SHOT_COUNT }, (_, i) => (
-            <FeatureShot key={i} index={i} onHover={setShot} />
+            <FeatureShot key={i} index={shotBase + i} onHover={setShot} />
           ))}
         </div>
       </div>
@@ -552,7 +570,7 @@ function FeaturedGame() {
 
         {href && (
           <a className="gd-feature__link" href={href} target="_blank" rel="noopener noreferrer">
-            <i className="fa-brands fa-steam" aria-hidden="true" /> {ui('gd_store', 'Available on Steam')}
+            <i className={`fa-brands ${st.icon}`} aria-hidden="true" /> {ui(st.key, st.fallback)}
           </a>
         )}
       </div>
@@ -591,7 +609,7 @@ export default function GameDevShowcase() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true })
       tl.to('.gd-showcase__fig', { autoAlpha: 1, y: 0, duration: 0.4 }, 0)
         .to('.gd-showcase__desc', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.45)
-        .to('.gd-feature', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.6)
+        .to('.gd-feature', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, 0.6)
         .to('.gd-text', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, '-=0.4')
         .to('.gd-rail', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.14, ease: 'power3.out' }, '-=0.4')
 
@@ -620,18 +638,24 @@ export default function GameDevShowcase() {
   return (
     <section ref={sectionRef} className="gd-showcase" id="gamedev" aria-labelledby="gd-showcase-title">
       <div className="gd-showcase__frame">
-        <div className="gd-top">
-          <div className="gd-showcase__header">
-            <span className="gd-showcase__fig">FIG. 05.5 — Play</span>
-            <h2 id="gd-showcase-title" className="gd-showcase__title">Game Dev</h2>
-            <p className="gd-showcase__desc">
-              Material from playable work — screens, interface, sprites and gameplay
-              captures, gathered as it comes out of production.
-            </p>
-            <SoftwareDropdown prefix="gamedev" count={4} />
-          </div>
+        <div className="gd-showcase__header">
+          <span className="gd-showcase__fig">FIG. 05.5 — Play</span>
+          <h2 id="gd-showcase-title" className="gd-showcase__title">Game Dev</h2>
+          <p className="gd-showcase__desc">
+            Material from playable work — screens, interface, sprites and gameplay
+            captures, gathered as it comes out of production.
+          </p>
+          <SoftwareDropdown prefix="gamedev" count={4} />
+        </div>
 
-          <FeaturedGame />
+        {/* Una ficha por juego. Antes el destacado compartía fila con la
+            cabecera; con dos juegos esa columna se quedaba sin ancho, así que
+            la cabecera pasa a ocupar el ancho del frame y las fichas van en su
+            propia fila debajo. */}
+        <div className="gd-games">
+          {GAMES.map((store, i) => (
+            <GameCard key={i} index={i} store={store} />
+          ))}
         </div>
 
         <div className="gd-texts">

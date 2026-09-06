@@ -46,12 +46,16 @@
   margin: 0 auto;
 }
 
-/* --- Fila superior: cabecera + proyecto destacado --- */
-.gd-top {
+/* --- Fila de juegos: una ficha por juego publicado ---
+   Antes el destacado compartia fila con la cabecera. Con dos juegos esa
+   columna quedaba sin ancho, asi que la cabecera pasa a ocupar el frame y las
+   fichas van en su propia fila debajo, repartidas en partes iguales. */
+.gd-games {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(1.4rem, 3vw, 2.6rem);
   align-items: start;
+  margin-bottom: clamp(1.6rem, 3.2vw, 2.4rem);
 }
 
 /* --- Header --- */
@@ -123,14 +127,14 @@
 }
 .gd-text__title {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-size: clamp(0.95rem, 1.25vw, 1.05rem);
   font-weight: 400;
   letter-spacing: -0.01em;
   color: var(--text-primary);
   margin: 0 0 0.4rem;
 }
 .gd-text__body {
-  font-size: clamp(0.85rem, 1.05vw, 0.95rem);
+  font-size: clamp(0.84rem, 0.92vw, 0.86rem);
   font-weight: 200;
   line-height: 1.6;
   color: #000;
@@ -157,12 +161,14 @@
    ============================================================ */
 .gd-feature {
   /* Paleta Steam. Valores de su hoja de estilos, no aproximados a ojo. */
-  --steam-bg: #1b2838;        /* panel */
-  --steam-bg-2: #16202d;      /* fondo del bloque de datos */
-  --steam-title: #ffffff;
-  --steam-text: #c6d4df;      /* cuerpo */
-  --steam-label: #8f98a0;     /* etiqueta de dato */
-  --steam-link: #67c1f5;      /* valor / enlace */
+  --gdstore-bg: #1b2838;        /* panel */
+  --gdstore-bg-2: #16202d;      /* fondo del bloque de datos */
+  --gdstore-title: #ffffff;
+  --gdstore-text: #c6d4df;      /* cuerpo */
+  --gdstore-label: #8f98a0;     /* etiqueta de dato */
+  --gdstore-link: #67c1f5;      /* valor / enlace */
+  --gdstore-btn: linear-gradient(to right, #47bfff 0%, #1a44c2 60%);
+  --gdstore-well: #0e1821;    /* hueco de media, antes de que cargue */
 
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -172,7 +178,7 @@
   align-items: start;
   padding: clamp(0.7rem, 1.2vw, 1rem);
   border-radius: 6px;   /* Steam apenas redondea */
-  background: linear-gradient(to bottom, var(--steam-bg) 0%, var(--steam-bg-2) 100%);
+  background: linear-gradient(to bottom, var(--gdstore-bg) 0%, var(--gdstore-bg-2) 100%);
   border: 1px solid rgba(0, 0, 0, 0.4);
   /* Panel oscuro sobre seccion clara: la sombra es lo que lo despega del
      fondo. Negra y no violeta — la tarjeta esta fuera de la paleta del sitio. */
@@ -181,6 +187,21 @@
     0 14px 30px -14px rgba(0, 0, 0, 0.48),
     0 4px 10px -6px rgba(0, 0, 0, 0.38);
 }
+/* Ficha de itch.io. Misma decision que con Steam: la tarjeta se lee como
+   sacada de su tienda, asi que solo cambia los tokens de paleta por los de
+   itch (fondo grafito, acento rojo, boton plano). El resto del bloque —grilla,
+   tira de capturas, ficha de datos— es compartido. */
+.gd-feature--itch {
+  --gdstore-bg: #2b2b2b;
+  --gdstore-bg-2: #222222;
+  --gdstore-title: #ffffff;
+  --gdstore-text: #dadada;
+  --gdstore-label: #9a9a9a;
+  --gdstore-link: #fa5c5c;
+  --gdstore-btn: #fa5c5c;
+  --gdstore-well: #1a1a1a;
+}
+
 /* Columna izquierda: vista grande + tira de capturas. */
 .gd-feature__left {
   display: flex;
@@ -198,7 +219,7 @@
   aspect-ratio: 16 / 9;
   border-radius: 3px;
   overflow: hidden;
-  background: #0e1821;
+  background: var(--gdstore-well);
 }
 /* Capas de vista previa: una por captura, todas montadas y apiladas. Solo
    cambia la opacidad, asi que pasar de una miniatura a otra es un fundido
@@ -216,7 +237,7 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: #0e1821;
+  background: var(--gdstore-well);
   opacity: 0;
   transition: opacity 0.28s ease-out;
   pointer-events: none;
@@ -246,7 +267,7 @@
   aspect-ratio: 16 / 9;
   border-radius: 2px;
   overflow: hidden;
-  background: #0e1821;
+  background: var(--gdstore-well);
   /* Steam marca la miniatura activa con un borde claro; acá el hover sube el
      brillo y baja la opacidad del resto. */
   opacity: 0.65;
@@ -259,7 +280,7 @@
 .gd-feature__thumbs .gd-feature__thumb.has-media:hover,
 .gd-feature__thumbs .gd-feature__thumb.has-media:focus-visible {
   opacity: 1;
-  outline-color: var(--steam-link);
+  outline-color: var(--gdstore-link);
 }
 .gd-feature__thumbmedia { position: absolute; inset: 0; }
 .gd-feature__thumbimg {
@@ -304,7 +325,7 @@
   font-size: clamp(1.05rem, 1.7vw, 1.45rem);
   font-weight: 400;
   letter-spacing: -0.02em;
-  color: var(--steam-title);
+  color: var(--gdstore-title);
   margin: 0;
   min-height: 1em; /* la tarjeta no salta mientras el título está vacío */
 }
@@ -312,7 +333,7 @@
   font-size: clamp(0.78rem, 1vw, 0.88rem);
   font-weight: 300;
   line-height: 1.5;
-  color: var(--steam-text);
+  color: var(--gdstore-text);
   margin: 0;
 }
 
@@ -334,7 +355,7 @@
   font-size: 0.62rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--steam-label);
+  color: var(--gdstore-label);
   white-space: nowrap;
 }
 /* Los dos puntos van por CSS: son puntuación de la etiqueta, no contenido. */
@@ -344,7 +365,7 @@
   font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.35;
-  color: var(--steam-link);
+  color: var(--gdstore-link);
   overflow-wrap: anywhere;
 }
 
@@ -358,10 +379,10 @@
 .gd-feature__genre {
   padding: 0.05rem 0.4rem;
   border-radius: 2px;
-  background: rgba(103, 193, 245, 0.2);
+  background: color-mix(in srgb, var(--gdstore-link) 20%, transparent);
   font-size: 0.7rem;
   line-height: 1.5;
-  color: var(--steam-link);
+  color: var(--gdstore-link);
 }
 
 /* Boton azul de Steam. */
@@ -373,7 +394,7 @@
   margin-top: 0.15rem;
   padding: 0.4rem 0.9rem;
   border-radius: 2px;
-  background: linear-gradient(to right, #47bfff 0%, #1a44c2 60%);
+  background: var(--gdstore-btn);
   border: none;
   color: #fff;
   font-size: 0.78rem;
@@ -398,8 +419,9 @@
   /* Alto de celda. Sin pin la sección ya no tiene que entrar en una pantalla,
      así que se dimensiona solo contra el ancho. Un punto por debajo de lo que
      estaba (15vw / 260px): la tarjeta del destacado crecio con su ficha y las
-     cintas le robaban presencia. */
-  --gd-tile-h: clamp(130px, 13.5vw, 230px);
+     cintas le robaban presencia. Y otro mas al pasar a dos fichas de juego:
+     el peso de la seccion tiene que estar en los juegos, no en las bandas. */
+  --gd-tile-h: clamp(112px, 11vw, 186px);
 }
 /* Mismo ancho que el frame: la cinta respeta los márgenes de la sección en vez
    de ir a sangre. `touch-action: pan-y` deja pasar el scroll vertical del dedo
@@ -526,7 +548,7 @@
    ============================================================ */
 
 @media (max-width: 1023px) {
-  .gd-top { grid-template-columns: minmax(0, 1fr); }
+  .gd-games { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 900px) {
@@ -572,7 +594,7 @@
 @media (max-width: 600px) {
   /* Celdas más altas en proporción: a 375px una banda de 130px se vuelve
      ilegible, y el recorrido horizontal sobra igual. */
-  .gd-rows { --gd-tile-h: clamp(150px, 42vw, 200px); }
+  .gd-rows { --gd-tile-h: clamp(128px, 35vw, 168px); }
 }
 
 /* Movimiento apagado (media query o toggle "Pausar animaciones"): sin scrub
