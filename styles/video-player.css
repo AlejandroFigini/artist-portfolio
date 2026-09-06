@@ -1,0 +1,160 @@
+/* ============================================================
+   REPRODUCTOR PROPIO (.cvp) — components/ui/VideoPlayer.tsx
+   Controles minimal sobre el video: play/pause + línea de avance violeta.
+   Sin volumen ni menú de 3 puntos (no existen: no hay `controls` nativos).
+   Ref visual: barra de Vimeo minimal, teñida con el violeta del blueprint.
+   ============================================================ */
+
+.cvp {
+    position: relative;
+    display: block;
+    /* El contenedor manda: toma el ratio real del clip al leer su metadata y
+       cae en 16/9 mientras tanto. Con `width: fit-content` un `max-height`
+       del consumidor se transfiere al ancho y el encuadre no se deforma. */
+    aspect-ratio: var(--cvp-ar, 16 / 9);
+    width: fit-content;
+    height: auto;
+    max-width: 100%;
+    margin-inline: auto;
+    overflow: hidden;
+    background: #000;
+}
+
+.cvp__video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    cursor: pointer;
+}
+
+.cvp__bar {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.6rem, 1.6vw, 1rem);
+    padding: clamp(0.6rem, 1.8vw, 1rem);
+    background: linear-gradient(to top, rgba(4, 4, 10, 0.92), rgba(4, 4, 10, 0.45) 60%, transparent);
+}
+
+/* Play / pause */
+.cvp__btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(2rem, 5vw, 2.5rem);
+    height: clamp(2rem, 5vw, 2.5rem);
+    padding: 0;
+    border: 1px solid rgba(139, 92, 246, 0.55);
+    border-radius: 50%;
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cvp__btn:hover,
+.cvp__btn:focus-visible {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.08);
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.55);
+    outline: none;
+}
+
+/* El icono de play óptico queda centrado corriéndolo 1px */
+.cvp__btn .fa-play { transform: translateX(1px); }
+
+/* Línea de avance */
+.cvp__seek {
+    flex: 1;
+    min-width: 0;
+    height: 14px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.cvp__seek:focus-visible { outline: none; }
+
+/* El relleno viaja en el gradiente del track: --cvp-p lo escribe el componente */
+.cvp__seek::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        #a78bfa var(--cvp-p, 0%),
+        rgba(255, 255, 255, 0.35) var(--cvp-p, 0%)
+    );
+}
+
+.cvp__seek::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.cvp__seek::-moz-range-progress {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent), #a78bfa);
+}
+
+.cvp__seek::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: -4px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(139, 92, 246, 0.7);
+    transition: transform 0.2s ease;
+}
+
+.cvp__seek::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(139, 92, 246, 0.7);
+    transition: transform 0.2s ease;
+}
+
+.cvp__seek:hover::-webkit-slider-thumb,
+.cvp__seek:focus-visible::-webkit-slider-thumb { transform: scale(1.25); }
+.cvp__seek:hover::-moz-range-thumb,
+.cvp__seek:focus-visible::-moz-range-thumb { transform: scale(1.25); }
+
+.cvp__time {
+    flex-shrink: 0;
+    font-family: var(--font-mono), monospace;
+    font-size: clamp(0.62rem, 1.6vw, 0.72rem);
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.72);
+    font-variant-numeric: tabular-nums;
+}
+
+/* En pantallas chicas el reloj se come la línea de avance */
+@media (max-width: 400px) {
+    .cvp__time { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvp__btn,
+    .cvp__seek::-webkit-slider-thumb,
+    .cvp__seek::-moz-range-thumb { transition: none; }
+    .cvp__btn:hover,
+    .cvp__btn:focus-visible { transform: none; }
+}

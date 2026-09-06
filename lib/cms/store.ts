@@ -627,9 +627,13 @@ const CONTAINER_BASES: Record<string, { section: string; label: (n: number) => s
       { section: 'Site Configuration', label: () => animLabel(slot, i), kind: 'video' as const },
     ]),
   )),
+  /* Contenedor único de la portada de /contact, hoy reemplazado por la
+     colección `contact-hero`. Se conserva porque el contenido archivado en
+     "sin usar" y en la papelera sigue keyeado así. */
   'contact.hero.bg': { section: 'Contact', label: () => 'Background Image — Contact', kind: 'image' },
   'contact.hero.title': { section: 'Contact', label: () => 'Title — Contact', kind: 'text' },
   'contact.hero.lede': { section: 'Contact', label: () => 'Subtitle — Contact', kind: 'text' },
+  'contact.status': { section: 'Contact', label: () => 'Status — Contact', kind: 'text' },
   'contact.social.anim': { section: 'Contact', label: () => 'Video / Animation — Contact', kind: 'video' },
   'hero.wave': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
   'hero.marquee': { section: 'Hero', label: (n) => `Wave Tool #${n}`, kind: 'image' },
@@ -730,7 +734,6 @@ export function getAllKnownContainerKeys(): string[] {
     'settings.faviconUrl',
     'settings.appleIconUrl',
     ...ANIM_FIELDS.map(animKey),
-    'contact.hero.bg',
     'contact.social.anim',
     'anim.bg',
     'about.video',

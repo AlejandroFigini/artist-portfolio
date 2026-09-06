@@ -1,0 +1,211 @@
+/* ============================================================
+   CONTACT FORM — campos compartidos por el modal del nav y la
+   página /contact.
+
+   Por qué existe esta hoja. El markup del formulario es uno solo
+   (components/contact/ContactFormFields.tsx) pero sus estilos vivían enteros
+   en contact-modal.css, que importa ContactModal — y ContactModal es un
+   `lazy()` del nav. En /contact ese módulo nunca se monta, así que la hoja
+   nunca bajaba: el formulario de la página salía con los campos nativos del
+   navegador mientras el del desplegable de email se veía bien. Mismo markup,
+   distinto aspecto.
+
+   La regla: todo lo que pinte a `ContactFormFields` va acá y se importa desde
+   ese componente, para que viaje con cualquier chunk que lo renderice. En
+   contact-modal.css queda solo el chrome del modal (ventana, overlay, ritmo
+   comprimido, pantalla de éxito propia).
+   ============================================================ */
+
+/* ── Campo ────────────────────────────────────────────────── */
+
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contact-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.contact-label {
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e1e24);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.contact-label i {
+  color: var(--accent);
+  font-size: 0.78rem;
+  width: 1rem;
+  text-align: center;
+}
+
+.contact-required {
+  color: #ef4444;
+  font-weight: 700;
+}
+.contact-optional {
+  color: var(--text-secondary, #64748b);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+
+.contact-field-error {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #ef4444;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: contact-shake 0.3s ease;
+  white-space: nowrap;
+}
+
+/* ── Input / Textarea ─────────────────────────────────────── */
+
+.contact-input {
+  width: 100%;
+  padding: 0.5rem 0.8rem;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  color: var(--text-primary, #1e1e24);
+  background: var(--bg-secondary, #f8fafc);
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-sizing: border-box;
+}
+.contact-input::placeholder {
+  color: var(--text-secondary, #64748b);
+  opacity: 0.6;
+}
+.contact-input:focus {
+  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 76px;
+  max-height: 260px;
+  line-height: 1.55;
+}
+
+/* ── Contador de caracteres ───────────────────────────────── */
+
+/* Vive en el renglón de la etiqueta (ver FieldRow): no ocupa una línea propia
+   debajo del textarea. */
+.contact-charcount {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #64748b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Aviso de Turnstile ───────────────────────────────────── */
+
+.contact-turnstile-disclaimer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  gap: 0.4rem;
+  padding: 0.1rem 0;
+}
+.contact-turnstile-disclaimer i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.contact-turnstile-disclaimer.success {
+  opacity: 0.9;
+}
+
+/* ── Mensaje de error ─────────────────────────────────────── */
+
+.contact-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  animation: contact-shake 0.35s ease;
+}
+.contact-error i { color: #ef4444; }
+
+@keyframes contact-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Entrada del icono de la pantalla de éxito. Vive acá y no en el chrome de
+   cada superficie: la usan tanto el éxito del modal como el de la página. */
+@keyframes contact-fly-in {
+  0% { transform: scale(0.5) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ── Botón de enviar ──────────────────────────────────────── */
+
+/* Se estila completo, sin apoyarse en `.cms-btn--primary`: esa clase vive en
+   admin.css, que se importa bajo demanda (sesión de admin o al abrir CUALQUIER
+   modal). El modal la traía de arrastre; la página, no. Va con selector de
+   elemento para ganarle a `.cms-btn` sin importar el orden de las hojas —
+   ambas superficies tienen que verse igual. */
+button.contact-submit {
+  margin-top: 0.3rem;
+  padding: 0.75rem 1.4rem;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #ffffff;
+  background: var(--accent, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+}
+/* El color del hover NO se toca acá: en oscuro lo pone dark-theme.css sobre
+   `.cms-btn--primary`, que sigue en el botón. Redeclararlo con más peso
+   dejaría el botón violeta claro sobre el tema oscuro. */
+button.contact-submit:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+button.contact-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .contact-input {
+    font-size: 16px; /* evita el zoom automático en iOS */
+  }
+}

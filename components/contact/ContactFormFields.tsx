@@ -5,6 +5,8 @@
    pueden coexistir en el DOM), clases del <form>/intro y el autofocus (solo el
    modal, que abre con foco propio). La lógica vive en useContactForm(). */
 
+import '@/styles/contact-form.css'
+
 import type { ContactFormApi } from '@/hooks/useContactForm'
 import DecorAnim from '@/components/ui/DecorAnim'
 import { animSources } from '@/lib/settings'

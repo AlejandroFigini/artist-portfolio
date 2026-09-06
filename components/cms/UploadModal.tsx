@@ -7,6 +7,7 @@
 import { useRef, useState } from 'react'
 import { CmsModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import VideoPlayer from '@/components/ui/VideoPlayer'
 import { uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, getFileBasename, getFileExtension, ensureExtension, isVideo } from '@/lib/utils'
 import { cloudinaryAssetUrl } from '@/lib/cloudinary-console'
@@ -276,7 +277,7 @@ export default function UploadModal({ cmsKey, file, onClose }: Props) {
           <div className="cms-upload-done__grid">
             <div className="cms-upload-done__preview">
               {isVid ? (
-                <video src={result.secure_url} controls style={{ width: '100%', maxHeight: '34vh', objectFit: 'contain', borderRadius: 6, display: 'block', background: '#000' }}></video>
+                <VideoPlayer src={result.secure_url} style={{ maxHeight: '34vh', borderRadius: 6 }} />
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={result.secure_url} alt="Upload" style={{ width: '100%', maxHeight: '34vh', objectFit: 'contain', borderRadius: 6, display: 'block' }} />

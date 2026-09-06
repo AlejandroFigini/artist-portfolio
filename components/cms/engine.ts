@@ -277,9 +277,12 @@ const REGISTRY: RegistryEntry[] = [
   { base: 'about.spec', sel: '.about-spec', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SPEC_FIELDS, label: (el, i) => `Spec #${i + 1} — About me` },
   { base: 'about.social', sel: '.about-social', kind: 'text', mount: 'self', section: 'About me', fields: ABOUT_SOCIAL_FIELDS, label: (el, i) => `Social Network #${i + 1} — About me` },
   { base: 'about.video', sel: '.about-video', kind: 'video', accept: 'webm', mount: 'parent', section: 'About me', label: 'Video / Animation — About me' },
-  { base: 'contact.hero.bg', sel: '.ct-hero__bg', kind: 'image', accept: 'webp,jpg,png', mount: 'self', section: 'Contact', label: 'Background Image — Contact' },
+  /* La portada de /contact ya no es un contenedor único: es la colección
+     `contact-hero` (ver lib/cms/collections.ts), que se gestiona desde el
+     engranaje como la de la portada. Por eso no hay entrada de `contact.hero.bg`. */
   { base: 'contact.hero.title', sel: '.ct-hero__title', kind: 'text', mount: 'self', section: 'Contact', label: 'Title — Contact' },
   { base: 'contact.hero.lede', sel: '.ct-hero__lede', kind: 'text', mount: 'self', section: 'Contact', label: 'Subtitle — Contact' },
+  { base: 'contact.status', sel: '.ct-status-text', kind: 'text', mount: 'self', section: 'Contact', label: 'Status — Contact' },
   { base: 'contact.social.anim', sel: '.ct-social-anim', kind: 'video', accept: 'webm', mount: 'parent', section: 'Contact', label: 'Video / Animation — Contact' },
   { base: 'subtitle', sel: '.section-title p', kind: 'text', mount: 'self', section: 'Subtitles', label: (el) => {
     const sec = el.closest('section')

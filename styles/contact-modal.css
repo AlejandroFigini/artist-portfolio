@@ -82,121 +82,11 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
   transform: scale(1.1);
 }
 
-/* ── Field ────────────────────────────────────────────────── */
-
-.contact-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.contact-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.contact-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary, #1e1e24);
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.contact-label i {
-  color: var(--accent);
-  font-size: 0.78rem;
-  width: 1rem;
-  text-align: center;
-}
-
-.contact-required {
-  color: #ef4444;
-  font-weight: 700;
-}
-.contact-optional {
-  color: var(--text-secondary, #64748b);
-  font-weight: 400;
-  font-size: 0.78rem;
-}
-
-.contact-field-error {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: #ef4444;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  animation: contact-shake 0.3s ease;
-  white-space: nowrap;
-}
-
-/* ── Input / Textarea ─────────────────────────────────────── */
-
-.contact-input {
-  width: 100%;
-  padding: 0.5rem 0.8rem;
-  font-family: var(--font);
-  font-size: 0.9rem;
-  color: var(--text-primary, #1e1e24);
-  background: var(--bg-secondary, #f8fafc);
-  border: 1.5px solid var(--border, #e2e8f0);
-  border-radius: 8px;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-  box-sizing: border-box;
-}
-.contact-input::placeholder {
-  color: var(--text-secondary, #64748b);
-  opacity: 0.6;
-}
-.contact-input:focus {
-  background: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-}
-
-.contact-textarea {
-  resize: vertical;
-  min-height: 76px;
-  max-height: 260px;
-  line-height: 1.55;
-}
-
-/* ── Character counter ────────────────────────────────────── */
-
-/* Vive en el renglón de la etiqueta (ver FieldRow): no ocupa una línea propia
-   debajo del textarea. */
-.contact-charcount {
-  font-size: 0.72rem;
-  color: var(--text-secondary, #64748b);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* ── Turnstile Disclaimer ───────────────────────────────────── */
-
-.contact-turnstile-disclaimer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  color: var(--text-secondary, #64748b);
-  gap: 0.4rem;
-  padding: 0.1rem 0;
-}
-.contact-turnstile-disclaimer i {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.contact-turnstile-disclaimer.success {
-  opacity: 0.9;
-}
+/* Los campos (label, input, textarea, contador, aviso de Turnstile, errores y
+   botón de enviar) viven en styles/contact-form.css, que importa
+   ContactFormFields: son los mismos en el modal y en /contact, y esta hoja no
+   llega a la página (la carga ContactModal, que es un lazy() del nav). Acá
+   queda solo lo que es propio de la ventana. */
 
 /* La decoración se mide contra el ALTO de la ventana, no contra el ancho del
    modal: es lo único elástico que queda entre los campos y el botón de enviar.
@@ -210,53 +100,6 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
    formulario entre con su botón a la vista; la animación es lo prescindible. */
 @media (max-height: 760px) {
   .cms-modal.contact-modal .contact-anim { display: none; }
-}
-
-/* ── Error message ────────────────────────────────────────── */
-
-.contact-error {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.9rem;
-  font-size: 0.85rem;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-  animation: contact-shake 0.35s ease;
-}
-.contact-error i { color: #ef4444; }
-
-@keyframes contact-shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  60% { transform: translateX(-2px); }
-  80% { transform: translateX(2px); }
-}
-
-/* ── Submit button ────────────────────────────────────────── */
-
-.contact-submit {
-  margin-top: 0.3rem;
-  padding: 0.75rem 1.4rem !important;
-  font-size: 0.95rem !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  border-radius: 8px !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-.contact-submit:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-}
-.contact-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ── Success state (Minimalist) ───────────────────────────── */
@@ -298,11 +141,6 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
   font-size: 1.8rem;
   color: var(--accent);
   transform: translate(-1px, 1px);
-}
-
-@keyframes contact-fly-in {
-  0% { transform: scale(0.5) translateY(20px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .contact-success-title {
@@ -349,8 +187,5 @@ body.cms-modal-open *:not(.cms-modal-overlay *)::after {
   }
   .contact-form {
     gap: 0.9rem;
-  }
-  .contact-input {
-    font-size: 16px; /* prevent zoom on iOS */
   }
 }

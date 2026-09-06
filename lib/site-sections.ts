@@ -28,8 +28,14 @@ export const SITE_SECTIONS: SiteSection[] = [
   { id: 'illustrations', icon: 'fa-paintbrush', label: 'Illustrations', i18n: 'nav_illustrations' },
 ]
 
+/* Anclas válidas que NO van en el desplegable de galerías. `about` era una
+   ruta propia (/about) y hoy es la sección del feed: el menú, el pie y los
+   enlaces viejos apuntan a `/#about`, así que `SectionHashScroll` tiene que
+   poder resolverlo aunque no sea una galería. */
+export const ANCHOR_ONLY_SECTION_IDS: readonly string[] = ['about']
+
 export const isSiteSectionId = (id: string): boolean =>
-  SITE_SECTIONS.some((s) => s.id === id)
+  SITE_SECTIONS.some((s) => s.id === id) || ANCHOR_ONLY_SECTION_IDS.includes(id)
 
 /** Fragmento leído de la URL, ya validado contra la lista. */
 export function sectionIdFromHash(hash: string): string {

@@ -4,23 +4,38 @@
    Operan imperativamente sobre el markup de Lightboxes.tsx (ids fijos),
    igual que el original. En Sesión 3 esto puede pasar a CommandContext. */
 
+import { ui } from '@/lib/i18n'
+import { state } from '@/lib/cms/store'
+import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
+
 export type LightboxMeta = { date?: string; project?: string; inspiration?: string }
 
-function applyLightboxMeta(lb: HTMLElement, meta: LightboxMeta = {}) {
-  const setField = (selector: string, value?: string) => {
-    const el = lb.querySelector(selector)
-    if (!el) return
-    const valEl = el.querySelector('.val') || el
-    if (value) {
-      valEl.textContent = value
-      el.classList.remove('hidden')
-    } else {
-      el.classList.add('hidden')
-    }
+/* Qué lightbox tiene tomado el bloqueo de scroll. Sin este registro, un cierre
+   repetido (click de fondo + Escape, o cerrar sin haber abierto) desbalancearía
+   el contador de lockPageScroll y dejaría la página trabada. */
+const scrollLocked = new Set<string>()
+
+function lockFor(id: string) {
+  if (scrollLocked.has(id)) return
+  scrollLocked.add(id)
+  lockPageScroll()
+}
+
+function unlockFor(id: string) {
+  if (!scrollLocked.delete(id)) return
+  unlockPageScroll()
+}
+
+function setField(lb: HTMLElement, selector: string, value?: string) {
+  const el = lb.querySelector(selector)
+  if (!el) return
+  const valEl = el.querySelector('.val') || el
+  if (value) {
+    valEl.textContent = value
+    el.classList.remove('hidden')
+  } else {
+    el.classList.add('hidden')
   }
-  setField('.info-date', meta.date)
-  setField('.info-project', meta.project)
-  setField('.info-inspiration', meta.inspiration)
 }
 
 function showLightbox(lb: HTMLElement, after?: () => void) {
@@ -28,6 +43,7 @@ function showLightbox(lb: HTMLElement, after?: () => void) {
   if (panel) panel.classList.add('hidden')
   lb.classList.remove('info-open')
   document.body.classList.add('lightbox-open')
+  lockFor(lb.id)
   lb.style.display = 'flex'
   setTimeout(() => {
     lb.style.opacity = '1'
@@ -48,11 +64,12 @@ export function openLightbox(src: string, title?: string, desc?: string, link?: 
   if (!lb || !img) return
   img.src = src
   const titleEl = lb.querySelector<HTMLElement>('.info-title')
-  const descEl = lb.querySelector<HTMLElement>('.info-desc')
   const linkSlot = lb.querySelector<HTMLElement>('.info-link-slot')
   if (titleEl) titleEl.innerText = title || 'Illustration'
-  if (descEl) descEl.innerText = desc || 'A piece from my collection.'
-  applyLightboxMeta(lb, meta)
+  setField(lb, '.lb-desc', desc || 'A piece from my collection.')
+  setField(lb, '.lb-date', meta?.date)
+  setField(lb, '.lb-project', meta?.project)
+  setField(lb, '.lb-inspiration', meta?.inspiration)
   /* El ancla se construye acá y no viaja en el markup: sin URL no existe, así
      no queda un enlace sin href para los rastreadores. Se acepta solo http(s)
      — el valor lo escribe el admin desde el CMS, y un `javascript:` en un href
@@ -74,7 +91,7 @@ export function openLightbox(src: string, title?: string, desc?: string, link?: 
       a.href = safe
       const icon = document.createElement('i')
       icon.className = 'fa-solid fa-up-right-from-square'
-      a.append(icon, document.createTextNode(' View original post'))
+      a.append(icon, document.createTextNode(` ${ui('view_original_post', state.lang)}`))
       linkSlot.appendChild(a)
     }
   }
@@ -86,6 +103,7 @@ export function closeLightbox() {
   if (!lb) return
   lb.style.opacity = '0'
   document.body.classList.remove('lightbox-open')
+  unlockFor(lb.id)
   setTimeout(() => { lb.style.display = 'none' }, 300)
 }
 
@@ -95,10 +113,11 @@ export function openVideoLightbox(src: string, title?: string, desc?: string, me
   if (!lb || !vid) return
   vid.src = src
   const titleEl = lb.querySelector<HTMLElement>('.info-title')
-  const descEl = lb.querySelector<HTMLElement>('.info-desc')
   if (titleEl) titleEl.innerText = title || 'Animation'
-  if (descEl) descEl.innerText = desc || 'Action sequence study.'
-  applyLightboxMeta(lb, meta)
+  setField(lb, '.lb-desc', desc || 'Action sequence study.')
+  setField(lb, '.lb-date', meta?.date)
+  setField(lb, '.lb-project', meta?.project)
+  setField(lb, '.lb-inspiration', meta?.inspiration)
   showLightbox(lb, () => { vid.play().catch(() => {}) })
 }
 
@@ -107,6 +126,7 @@ export function closeVideoLightbox() {
   if (!lb) return
   lb.style.opacity = '0'
   document.body.classList.remove('lightbox-open')
+  unlockFor(lb.id)
   setTimeout(() => {
     lb.style.display = 'none'
     const vid = document.getElementById('lightbox-video') as HTMLVideoElement | null

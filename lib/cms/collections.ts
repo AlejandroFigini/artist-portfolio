@@ -44,6 +44,13 @@ export const COLLECTIONS: Record<string, CollectionSpec> = {
   'hero-main': carousel('hero-main', 'Main Carousel', 'Hero (Main)'),
   'hero-sub': carousel('hero-sub', 'Secondary Carousel', 'Hero (Secondary)'),
   'about-carousel': carousel('about-carousel', 'About me Carousel', 'About me'),
+  /* Portada de /contact. `legacyBase` apunta al contenedor único que la portada
+     tenía antes (`contact.hero.bg#0`): la migración lo convierte en la primera
+     slide, así que la imagen ya cargada no se pierde al pasar a carrusel. */
+  'contact-hero': {
+    ...carousel('contact-hero', 'Contact Background Carousel', 'Contact'),
+    legacyBase: 'contact.hero.bg',
+  },
   'proj': {
     prefix: 'proj',
     legacyBase: 'proj',

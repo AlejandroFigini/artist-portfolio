@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { CmsModal, useModal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import VideoPlayer from '@/components/ui/VideoPlayer'
 import { fetchAssetId, uploadMedia, type UploadResponse } from '@/lib/api'
 import { fmtBytes, fmtDateOnly, fmtTimeOnly, isVideo, getFileBasename, getFileExtension, ensureExtension } from '@/lib/utils'
 import {
@@ -422,7 +423,7 @@ export function ViewMediaModal({ e, cardType, menu, onClose }: ViewProps) {
     >
       <div>
         {vid ? (
-          <video src={src} controls autoPlay style={{ maxWidth: '100%', maxHeight: '40vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+          <VideoPlayer src={src} autoPlay style={{ maxHeight: '40vh', borderRadius: 8 }} />
         ) : (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '40vh', borderRadius: 8, display: 'block', margin: '0 auto' }} />
@@ -822,7 +823,7 @@ export function AdminUploadModal({ files, onClose }: CloseProp & { files: File[]
                       <div><strong style={{ color: 'var(--text-primary)' }}>Format:</strong> {result.final_format}</div>
                     </div>
                     {result.isVid ? (
-                      <video src={result.secure_url} controls preload="none" style={{ maxWidth: '100%', maxHeight: '30vh', borderRadius: 8, display: 'block', margin: '0 auto' }}></video>
+                      <VideoPlayer src={result.secure_url} preload="none" style={{ maxHeight: '30vh', borderRadius: 8 }} />
                     ) : (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={result.secure_url} alt="Upload" loading="lazy" style={{ maxWidth: '100%', maxHeight: '30vh', objectFit: 'contain', borderRadius: 8, display: 'block', margin: '0 auto' }} />

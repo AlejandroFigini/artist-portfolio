@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import SoftwareDropdown from '@/components/home/SoftwareDropdown'
+import LightboxInfoPanel from '@/components/ui/LightboxInfoPanel'
+import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
+import VideoPlayer from '@/components/ui/VideoPlayer'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
@@ -135,6 +138,14 @@ function AnimCard({ index }: { index: number }) {
     return () => { if (infoTimerRef.current) clearTimeout(infoTimerRef.current) }
   }, [expanded])
 
+  /* Fondo trabado mientras la vista en pantalla completa esta abierta: no
+     alcanza con `overflow: hidden`, Lenis escucha la rueda sobre window. */
+  useEffect(() => {
+    if (!expanded) return
+    lockPageScroll()
+    return () => unlockPageScroll()
+  }, [expanded])
+
   const handleMouseEnter = useCallback(() => {
     if (!hasContent) return
     const v = videoRef.current
@@ -245,15 +256,13 @@ function AnimCard({ index }: { index: number }) {
           <span className="lightbox-close" onClick={closeExpanded}>&times;</span>
 
           <div className="lightbox-wrapper">
-            <video
+            <VideoPlayer
               src={videoSrc}
               className="lightbox-content"
               autoPlay
               muted
               loop
-              playsInline
-              controls
-              onClick={(e) => e.stopPropagation()}
+              labels={{ play: ui('play'), pause: ui('pause'), seek: ui('seek') }}
             />
 
             <button
@@ -265,19 +274,15 @@ function AnimCard({ index }: { index: number }) {
               <i className="fa-solid fa-info" />
             </button>
 
-            <div className={`lightbox-info-panel ${showInfo ? '' : 'hidden'}`} onClick={(e) => e.stopPropagation()}>
-              {fields.title && <h3 className="info-title">{fields.title}</h3>}
-              <div className="info-divider"></div>
-              <div className="info-meta">
-                {fields.date && <span className="info-date"><i className="fa-regular fa-calendar"></i> <span className="val">{fields.date}</span></span>}
-                {fields.project && <span className="info-project"><i className="fa-solid fa-folder-open"></i> <span className="val">{fields.project}</span></span>}
-              </div>
-              {fields.desc && <p className="info-desc">{fields.desc}</p>}
-              {fields.inspiration && <p className="info-inspiration"><i className="fa-solid fa-wand-magic-sparkles"></i> <b>{ui('inspiration')}:</b> <span className="val">{fields.inspiration}</span></p>}
-              <div className="info-footer">
-                <span><i className="fa-solid fa-palette"></i> LUCIA MONTAÑA</span>
-              </div>
-            </div>
+            <LightboxInfoPanel
+              className={showInfo ? '' : 'hidden'}
+              onClick={(e) => e.stopPropagation()}
+              title={fields.title}
+              date={fields.date}
+              project={fields.project}
+              desc={fields.desc}
+              inspiration={fields.inspiration}
+            />
           </div>
         </div>,
         document.body

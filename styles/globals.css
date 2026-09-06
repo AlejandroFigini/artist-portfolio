@@ -15,10 +15,6 @@
 @import "./legacy/style.css";
 @import "./hero.css"; /* capa de mejora del hero (instrumentos blueprint) */
 @import "./about.css"; /* sección About: editorial + storytelling on-scroll */
-/* about-page.css NO se importa acá: solo lo usa la ruta /about, así que lo
-   importa components/about/AboutPage.tsx y no viaja en la hoja que bloquea el
-   render del resto del sitio. El media query de ritmo móvil del final apunta
-   solo a secciones de la home, así que no se cruzan. */
 @import "./animations-showcase.css"; /* sección Animations: 6-card grid hover-to-play */
 @import "./projects-showcase.css"; /* sección Projects: carrusel horizontal de proyectos */
 @import "./characters-showcase.css"; /* sección Character Design: stage + carrusel */
@@ -30,6 +26,7 @@
 @import "./nav.css"; /* capa de mejora del nav (visor + regla de progreso) */
 @import "./section-rail.css"; /* riel lateral de secciones de la portada (.srail) */
 @import "./motion-pending.css"; /* estado inicial de los reveals mientras baja el chunk de GSAP */
+@import "./video-player.css"; /* reproductor propio (.cvp): play/pause + avance violeta */
 /* contact-page.css NO se importa acá: solo lo usa la ruta /contact, así que lo
    importa components/contact/ContactPage.tsx y no viaja en la hoja que bloquea
    el render del resto del sitio. */

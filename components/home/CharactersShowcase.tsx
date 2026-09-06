@@ -24,6 +24,8 @@ import { useInViewRef } from '@/hooks/useInView'
 import { canHover, optimizedMediaSrc } from '@/lib/utils'
 import { useCmsStore, state, useUiText } from '@/lib/cms/store'
 import { useCarouselSync } from '@/components/ui/useCarouselSync'
+import LightboxInfoPanel from '@/components/ui/LightboxInfoPanel'
+import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
 import { sendGAEvent } from '@next/third-parties/google'
 import { COLLECTIONS } from '@/lib/cms/collections'
 import { isEmptyMedia, itemKey, readSettings } from '@/lib/cms/collection'
@@ -354,6 +356,14 @@ export default function CharactersShowcase() {
     return () => clearTimeout(t)
   }, [lightbox])
 
+  /* Fondo trabado mientras la vista en pantalla completa esta abierta: no
+     alcanza con `overflow: hidden`, Lenis escucha la rueda sobre window. */
+  useEffect(() => {
+    if (!lightbox) return
+    lockPageScroll()
+    return () => unlockPageScroll()
+  }, [lightbox])
+
   const openLightbox = useCallback((lb: Lightbox) => {
     setLightbox(lb)
     setShowInfo(false)
@@ -464,17 +474,13 @@ export default function CharactersShowcase() {
             >
               <i className="fa-solid fa-info" />
             </button>
-            <div className={`lightbox-info-panel ${showInfo ? '' : 'hidden'}`} onClick={(e) => e.stopPropagation()}>
-              <h3 className="info-title">{lightbox.name}</h3>
-              <div className="info-divider"></div>
-              <div className="info-meta">
-                {lightbox.role && <span className="info-project"><i className="fa-solid fa-folder-open"></i> <span className="val">{lightbox.role}</span></span>}
-              </div>
-              <p className="info-desc">{lightbox.desc}</p>
-              <div className="info-footer">
-                <span><i className="fa-solid fa-palette"></i> LUCIA MONTAÑA</span>
-              </div>
-            </div>
+            <LightboxInfoPanel
+              className={showInfo ? '' : 'hidden'}
+              onClick={(e) => e.stopPropagation()}
+              title={lightbox.name}
+              role={lightbox.role}
+              desc={lightbox.desc}
+            />
           </div>
         </div>,
         document.body,

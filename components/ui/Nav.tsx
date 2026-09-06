@@ -188,7 +188,6 @@ export default function Nav() {
 
     const activeEl = (): HTMLElement | null => {
       if (pathname === '/') return links.querySelector<HTMLElement>('a[href="/"]')
-      if (pathname === '/about') return links.querySelector<HTMLElement>('a[href="/about"]')
       if (pathname === '/contact') return links.querySelector<HTMLElement>('a[href="/contact"]')
       return null
     }
@@ -348,7 +347,20 @@ export default function Nav() {
                   ))}
                 </div>
               </div>
-              <Link href="/about" onClick={closeNav} className="highlight-link">{ui('nav_about')}</Link>
+              {/* "Sobre mí" dejó de ser una ruta: es la sección del feed. Mismo
+                  gesto que las galerías — ancla en el acto si ya estamos en la
+                  portada, navega si no. */}
+              <Link
+                href="/#about"
+                className="highlight-link"
+                onClick={(e) => {
+                  closeNav()
+                  if (pathname !== '/') return
+                  e.preventDefault()
+                  window.history.replaceState(null, '', '/#about')
+                  scrollToSection('about', prefersReducedMotion())
+                }}
+              >{ui('nav_about')}</Link>
               <Link href="/contact" onClick={closeNav} className="highlight-link">{ui('nav_contact')}</Link>
               {/* Gestión movido al dropdown de administrador en CmsRoot.tsx */}
               {/* visor blueprint: GSAP lo desliza entre links (styles/nav.css) */}

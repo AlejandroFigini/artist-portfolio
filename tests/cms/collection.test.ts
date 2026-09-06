@@ -11,9 +11,9 @@ import {
 } from '@/lib/cms/collection'
 
 describe('COLLECTIONS', () => {
-  it('declara las seis colecciones dinámicas', () => {
+  it('declara las siete colecciones dinámicas', () => {
     expect(Object.keys(COLLECTIONS).sort()).toEqual([
-      'about-carousel', 'char', 'hero', 'hero-main', 'hero-sub', 'proj',
+      'about-carousel', 'char', 'contact-hero', 'hero', 'hero-main', 'hero-sub', 'proj',
     ])
   })
 

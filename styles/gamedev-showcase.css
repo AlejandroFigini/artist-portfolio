@@ -177,8 +177,9 @@
   /* Panel oscuro sobre seccion clara: la sombra es lo que lo despega del
      fondo. Negra y no violeta — la tarjeta esta fuera de la paleta del sitio. */
   box-shadow:
-    0 14px 34px -14px rgba(0, 0, 0, 0.55),
-    0 4px 10px -6px rgba(0, 0, 0, 0.35);
+    0 34px 70px -24px rgba(0, 0, 0, 0.62),
+    0 14px 30px -14px rgba(0, 0, 0, 0.48),
+    0 4px 10px -6px rgba(0, 0, 0, 0.38);
 }
 /* Columna izquierda: vista grande + tira de capturas. */
 .gd-feature__left {
@@ -427,15 +428,16 @@
   flex: 0 0 auto;
   height: var(--gd-tile-h);
   margin: 0;
-  border-radius: 14px;
+  border-radius: 6px;   /* al ras de la tarjeta de Steam */
   overflow: hidden;
   background: #f3f1fb;
 }
 /* Sombra SOLO con contenido (vacío = neutralizado por .cms-empty-slot). */
 .gd-tile:not(.cms-empty-slot) {
   box-shadow:
-    0 10px 30px -12px rgba(0, 0, 0, 0.22),
-    0 0 0 1px rgba(0, 0, 0, 0.06);
+    0 18px 40px -16px rgba(0, 0, 0, 0.4),
+    0 6px 14px -8px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 /* Envoltorio registrado en el motor: no cambia cuando cambia el tipo de
    contenido, así que el marco de contenedor vacío siempre tiene dónde montarse. */

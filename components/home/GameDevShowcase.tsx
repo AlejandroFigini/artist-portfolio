@@ -37,7 +37,7 @@ const ROW_A = ['16 / 9', '4 / 3', '1 / 1', '16 / 9', '4 / 3', '16 / 9', '1 / 1',
 const ROW_B = ['4 / 3', '16 / 9', '16 / 9', '1 / 1', '4 / 3', '16 / 9', '4 / 3', '1 / 1']
 const ROWS = [ROW_A, ROW_B]
 
-const AUTO_SPEED = 0.04   // px/ms (~40px/s) de desplazamiento automático
+const AUTO_SPEED = 0.025  // px/ms (~25px/s) de desplazamiento automático
 const DRAG_THRESHOLD = 5  // px antes de considerar arrastre (deja pasar los clicks)
 
 const TILE_SIZES = '(max-width: 1023px) 60vw, 30vw'

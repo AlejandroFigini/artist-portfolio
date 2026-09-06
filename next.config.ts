@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
       { source: '/animations', destination: '/#animations', permanent: true },
       { source: '/characters', destination: '/#characters', permanent: true },
       { source: '/models-3d', destination: '/#models-3d', permanent: true },
+      // "Sobre mí" siguió el mismo camino: la página dedicada se retira y el
+      // contenido vive en la sección del feed.
+      { source: '/about', destination: '/#about', permanent: true },
       // Nunca llegó a implementarse: no hay sección equivalente.
       { source: '/multimedia', destination: '/', permanent: true },
     ];

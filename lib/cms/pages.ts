@@ -43,7 +43,7 @@ export const SITE_PAGES: PageDef[] = [
   {
     id: 'contact', label: 'Contact', route: '/contact', icon: 'fa-envelope',
     sections: ['Contact', 'Contacto'],
-    keys: ['contact.hero.bg', 'contact.hero.title', 'contact.hero.lede', 'contact.social.anim'],
+    keys: ['contact.hero.bg', 'contact.hero.title', 'contact.hero.lede', 'contact.status', 'contact.social.anim'],
   },
 ]
 

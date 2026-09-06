@@ -394,71 +394,6 @@ body {
   background: radial-gradient(circle, rgba(145, 101, 247, 0.22), transparent 70%);
 }
 
-/* --- 11. PÁGINA /about ------------------------------------------- */
-
-[data-theme="dark"] .ab-main,
-[data-theme="dark"] .ab-hero { background: var(--bg-primary); }
-
-[data-theme="dark"] .ab-aurora--a {
-  background: radial-gradient(circle, rgba(145, 101, 247, 0.34), rgba(124, 58, 237, 0.12) 55%, transparent 74%);
-}
-[data-theme="dark"] .ab-aurora--b {
-  background: radial-gradient(circle, rgba(109, 40, 217, 0.30), rgba(76, 29, 149, 0.10) 52%, transparent 70%);
-}
-[data-theme="dark"] .ab-aurora--c {
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.22), rgba(145, 101, 247, 0.08) 55%, transparent 72%);
-}
-
-[data-theme="dark"] .ab-hero-name,
-[data-theme="dark"] .ab-section-title,
-[data-theme="dark"] .ab-contact-title { color: var(--text-primary); }
-[data-theme="dark"] .ab-hero-eyebrow,
-[data-theme="dark"] .ab-eyebrow { color: var(--accent-text); }
-[data-theme="dark"] .ab-hero-lede,
-[data-theme="dark"] .ab-bio-text,
-[data-theme="dark"] .ab-contact-lede { color: var(--text-secondary); }
-[data-theme="dark"] .ab-hero-meta span { color: var(--text-muted); }
-[data-theme="dark"] .ab-corner { border-color: var(--dk-edge); }
-[data-theme="dark"] .ab-portrait,
-[data-theme="dark"] .ab-tool,
-[data-theme="dark"] .ab-spec {
-  background: var(--surface-1);
-  border-color: var(--dk-hairline);
-}
-[data-theme="dark"] .ab-tool:hover {
-  background: var(--surface-2);
-  border-color: var(--dk-edge);
-}
-[data-theme="dark"] .ab-portrait-cap,
-[data-theme="dark"] .ab-tool-idx,
-[data-theme="dark"] .ab-tool-cat,
-[data-theme="dark"] .ab-spec-k { color: var(--text-muted); }
-[data-theme="dark"] .ab-tool-name,
-[data-theme="dark"] .ab-spec-v { color: var(--text-primary); }
-
-/* Linea de tiempo */
-[data-theme="dark"] .ab-tl-track { background: rgba(167, 139, 250, 0.14); }
-[data-theme="dark"] .ab-tl-fill { background: var(--accent); }
-[data-theme="dark"] .ab-tl-node {
-  background: var(--accent);
-  box-shadow: var(--dk-glow);
-}
-[data-theme="dark"] .ab-tl-year { color: var(--accent-text); }
-[data-theme="dark"] .ab-tl-role { color: var(--text-primary); }
-[data-theme="dark"] .ab-tl-place,
-[data-theme="dark"] .ab-tl-desc { color: var(--text-secondary); }
-
-[data-theme="dark"] .ab-social {
-  background: var(--dk-tint);
-  border-color: var(--dk-hairline);
-  color: var(--text-secondary);
-}
-[data-theme="dark"] .ab-social:hover {
-  background: var(--dk-tint-2);
-  border-color: var(--dk-edge);
-  color: var(--text-primary);
-}
-
 /* --- 12. ANIMATIONS SHOWCASE ------------------------------------- */
 
 [data-theme="dark"] .anim-showcase { background: var(--bg-primary); }
@@ -785,13 +720,31 @@ body {
 }
 
 /* El panel del hero es el único respaldo del título: detrás hay una
-   ilustración de la artista a sangre, y son claras. En claro el velo va al
-   50% y alcanza porque texto oscuro sobre velo blanco sube de contraste con
-   la imagen clara; acá pasa lo contrario y el 50% deja el texto a merced de
-   qué zona de la imagen le toque. Sube a 0.74 — la ilustración se sigue
-   viendo alrededor del panel, que es donde tiene que lucirse. */
+   ilustración de la artista a sangre, y son claras. Quien separa el texto de
+   la imagen es el desenfoque, no la opacidad — el velo solo aporta el tinte
+   oscuro que hace legible el texto claro. El realce es más tenue que en claro:
+   sobre fondo oscuro un filo blanco al 45% se lee como un borde, no como
+   vidrio. */
 [data-theme="dark"] .ct-hero-wrap {
-  background: rgba(12, 10, 20, 0.74);
+  border-color: rgba(167, 139, 250, 0.24);
+  background:
+    linear-gradient(
+      160deg,
+      rgba(145, 101, 247, 0.16),
+      rgba(12, 10, 20, 0.24) 45%,
+      rgba(12, 10, 20, 0.34)
+    ),
+    rgba(12, 10, 20, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 22px 60px -24px rgba(0, 0, 0, 0.8);
+}
+
+/* Sin `backdrop-filter` no hay separación posible salvo el velo opaco. */
+@supports not (backdrop-filter: blur(1px)) {
+  [data-theme="dark"] .ct-hero-wrap {
+    background: rgba(12, 10, 20, 0.82);
+  }
 }
 [data-theme="dark"] .ct-hero__title { color: var(--text-primary); }
 [data-theme="dark"] .ct-hero__lede { color: var(--text-secondary); }
@@ -848,12 +801,14 @@ body {
 [data-theme="dark"] .info-title {
   background: linear-gradient(90deg, var(--text-primary), var(--accent-hover));
 }
-[data-theme="dark"] .info-desc,
-[data-theme="dark"] .info-meta,
-[data-theme="dark"] .info-inspiration,
-[data-theme="dark"] .info-inspiration i,
-[data-theme="dark"] .info-footer { color: var(--text-secondary); }
-[data-theme="dark"] .info-inspiration b { color: var(--text-primary); }
+[data-theme="dark"] .lb-meta,
+[data-theme="dark"] .lb-inspiration,
+[data-theme="dark"] .lb-desc > p { color: var(--text-secondary); }
+[data-theme="dark"] .lb-meta__item > i,
+[data-theme="dark"] .lb-inspiration > i,
+[data-theme="dark"] .lb-desc__label { color: var(--accent-text); }
+[data-theme="dark"] .lb-inline-label { color: var(--text-primary); }
+[data-theme="dark"] .lb-desc { border-top-color: var(--dk-edge); }
 [data-theme="dark"] .info-divider { background: var(--border); }
 [data-theme="dark"] .info-link { color: var(--accent-text); }
 

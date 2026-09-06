@@ -20,10 +20,6 @@
    subtítulo es el elemento LCP y no puede depender de que llegue el bundle.
    ============================================================ */
 
-html.motion-pending .ab-hero-eyebrow,
-html.motion-pending .ab-hero-lede,
-html.motion-pending .ab-hero-meta span,
-html.motion-pending .ab-hero-name .ab-line,
 html.motion-pending .about-bio p,
 html.motion-pending .about-corner,
 html.motion-pending .about-fig,

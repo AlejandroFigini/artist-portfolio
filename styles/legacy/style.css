@@ -2384,7 +2384,9 @@ input:checked+.slider:before {
    asÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ el medio se re-centra en el ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rea libre (sin taparse, a cualquier tamaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±o)
    y le sumamos un leve achicado. */
 .lightbox.info-open .lightbox-wrapper {
-    padding-right: 180px;
+    /* Ancho del panel (340px) + su separacion del borde: asi la ficha nunca
+       queda encima del medio, solo lo empuja. */
+    padding-right: calc(340px + 3rem);
 }
 
 .lightbox.info-open .lightbox-content {
@@ -2395,7 +2397,8 @@ input:checked+.slider:before {
     /* En mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil el panel va abajo: reservamos espacio inferior */
     .lightbox.info-open .lightbox-wrapper {
         padding-right: 0;
-        padding-bottom: 240px;
+        /* Alto de la hoja (32dvh) + el disco de info, que sube por encima. */
+        padding-bottom: calc(32dvh + 2rem);
     }
 }
 
@@ -2451,28 +2454,42 @@ input:checked+.slider:before {
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
 }
 
-/* Info Panel / Drawer */
+/* Info Panel / Drawer — se despliega DESDE el disco de info: mismo borde
+   derecho y apoyado justo encima del botón. Antes compartían anclaje
+   (bottom/right 2rem) y el botón quedaba encimado sobre la esquina del panel. */
 .lightbox-info-panel {
     position: absolute;
-    bottom: 2rem;
+    bottom: 5.5rem;
     right: 2rem;
-    width: 320px;
-    padding: 2rem;
+    width: 340px;
+    max-width: calc(100% - 4rem);
+    max-height: calc(100% - 9rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.6rem 1.7rem;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(25px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     color: #fff;
     z-index: 90;
-    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    transform: translateX(0) scale(1);
+    transform-origin: bottom right;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, visibility 0.45s;
+    transform: translate(0, 0) scale(1);
     opacity: 1;
     pointer-events: auto;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
 }
 
+/* Oculto = colapsado hacia el disco de info (esquina inferior derecha).
+   `.hidden` es la utilidad de Tailwind y trae `display: none`; un elemento sin
+   caja no transiciona, asi que se le devuelve la caja y el ocultado lo hacen
+   `opacity` + `visibility` (que si transicionan y ademas lo sacan del foco y
+   de los lectores de pantalla). */
 .lightbox-info-panel.hidden {
-    transform: translateX(50px) scale(0.9);
+    display: block;
+    visibility: hidden;
+    transform: translate(1.5rem, 3rem) scale(0.72);
     opacity: 0;
     pointer-events: none;
 }
@@ -2495,54 +2512,72 @@ input:checked+.slider:before {
     border-radius: 10px;
 }
 
-.info-desc {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: #cbd5e1;
-    margin-bottom: 2rem;
-}
-
-.info-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.8rem;
-    color: #a78bfa;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 600;
-}
-
-/* Meta del panel (fecha + proyecto) y lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea de inspiraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
-.info-meta {
+/* Metadatos cortos (fecha / proyecto / rol) en UN renglon: el icono hace de
+   etiqueta y el nombre del campo viaja en un `.sr-only` para lectores de
+   pantalla. `flex-wrap` para que en pantallas angostas o con valores largos
+   baje en vez de desbordar. */
+.lb-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1.2rem;
-    margin-bottom: 1.2rem;
-    font-size: 0.8rem;
-    color: #a78bfa;
-    letter-spacing: 0.04em;
+    gap: 0.35rem 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #cbd5e1;
 }
-.info-meta span > i { margin-right: 0.35rem; }
 
-.info-inspiration {
-    font-size: 0.88rem;
+.lb-meta__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    overflow-wrap: anywhere;
+}
+
+.lb-meta__item.hidden { display: none; }
+.lb-meta__item > i { color: #a78bfa; }
+
+/* Inspiracion: icono + su texto (el campo lo pide, no se adivina por icono). */
+.lb-inspiration {
+    margin: 0.9rem 0 0;
+    font-size: 0.85rem;
     line-height: 1.55;
     color: #cbd5e1;
-    margin-bottom: 1.5rem;
+    overflow-wrap: anywhere;
 }
-.info-inspiration i { color: #a78bfa; margin-right: 0.4rem; }
-.info-inspiration b { color: #e2e8f0; }
 
-/* Campos opcionales: ocultos si no hay dato */
-.info-date.hidden,
-.info-project.hidden,
-.info-inspiration.hidden { display: none; }
+.lb-inspiration.hidden { display: none; }
+.lb-inspiration > i { color: #a78bfa; margin-right: 0.45rem; }
 
-[data-theme="light"] .info-meta { color: #6d28d9; }
-[data-theme="light"] .info-inspiration { color: #475569; }
-[data-theme="light"] .info-inspiration i { color: #6d28d9; }
-[data-theme="light"] .info-inspiration b { color: #1e1b4b; }
+.lb-inline-label {
+    color: #e2e8f0;
+    margin-right: 0.35rem;
+}
+
+/* La descripcion va ultima y en su propio bloque, con titulo: es el campo mas
+   largo y necesita area propia. */
+.lb-desc {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lb-desc.hidden { display: none; }
+
+.lb-desc__label {
+    margin: 0 0 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a78bfa;
+}
+
+.lb-desc > p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #cbd5e1;
+    overflow-wrap: anywhere;
+}
 
 /* BotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de info en estado abierto ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ violeta (al abrirse o togglear) */
 .lightbox.info-open .info-toggle-btn {
@@ -2575,12 +2610,22 @@ body.lightbox-open { overflow: hidden; }
     -webkit-text-fill-color: transparent;
 }
 
-[data-theme="light"] .info-desc {
+[data-theme="light"] .lb-meta,
+[data-theme="light"] .lb-inspiration,
+[data-theme="light"] .lb-desc > p {
     color: #475569;
 }
 
-[data-theme="light"] .info-footer {
+[data-theme="light"] .lb-meta__item > i,
+[data-theme="light"] .lb-inspiration > i,
+[data-theme="light"] .lb-desc__label {
     color: #6d28d9;
+}
+
+[data-theme="light"] .lb-inline-label { color: #1e1b4b; }
+
+[data-theme="light"] .lb-desc {
+    border-top-color: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="light"] .info-divider {
@@ -2589,22 +2634,42 @@ body.lightbox-open { overflow: hidden; }
 
 /* Mobile Adjustments */
 @media (max-width: 768px) {
-    /* Panel mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s compacto: se superpone un poco al contenido sin ocupar tanto. */
+    /* El panel pasa a hoja inferior de ancho completo: el medio queda ARRIBA y
+       la ficha ABAJO, sin taparse (el wrapper reserva el alto de la hoja). */
     .lightbox-info-panel {
-        width: min(74%, 300px);
-        right: 4%;
-        bottom: 5.5rem;
-        padding: 1.1rem 1.25rem;
+        /* Fija al viewport, no al wrapper: el wrapper mide 90% del alto y
+           centrado deja un hueco abajo, asi la hoja no llegaba al borde. */
+        position: fixed;
+        width: 100%;
+        max-width: none;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        /* Alto FIJO, no maximo: el disco se apoya justo encima de la hoja y
+           necesita saber cuanto mide sin medirla por JS. Lo que no entra
+           scrollea dentro. */
+        height: 32dvh;
+        padding: 1.1rem 1.25rem 1.4rem;
+        border-radius: 20px 20px 0 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        transform-origin: bottom center;
     }
+    .lightbox-info-panel.hidden { transform: translateY(100%) scale(1); }
     .lightbox-info-panel .info-title { font-size: 1.15rem; margin-bottom: 0.6rem; }
     .lightbox-info-panel .info-divider { margin-bottom: 0.85rem; }
-    .lightbox-info-panel .info-meta { margin-bottom: 0.75rem; }
-    .lightbox-info-panel .info-desc { font-size: 0.85rem; margin-bottom: 0.85rem; }
-    .lightbox-info-panel .info-inspiration { font-size: 0.8rem; margin-bottom: 0.85rem; }
+    .lightbox-info-panel .lb-meta { gap: 0.3rem 0.9rem; }
+    .lightbox-info-panel .lb-inspiration { margin-top: 0.7rem; }
+    .lightbox-info-panel .lb-desc { margin-top: 0.85rem; padding-top: 0.8rem; }
+    /* El disco acompana a la hoja: tambien fijo al viewport. */
     .info-toggle-btn {
+        position: fixed;
         bottom: 2rem;
         right: 2rem;
     }
+    /* Con la hoja abierta el disco sube por encima de ella. */
+    .lightbox.info-open .info-toggle-btn { bottom: calc(32dvh + 0.9rem); }
 }
 
 /* Compact Violet Disc HUD ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Precise Expansion */
@@ -3871,7 +3936,8 @@ html.motion-off #animBlobCanvas {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1.2rem;
+    /* Cierra el panel: va debajo de la grilla de campos, no antes. */
+    margin-top: 1.3rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: #a78bfa;

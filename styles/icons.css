@@ -137,10 +137,10 @@
 .fa-magnifying-glass::before { content: "\f002"; }
 .fa-magnifying-glass-chart::before { content: "\e522"; }
 .fa-magnifying-glass-plus::before { content: "\f00e"; }
+.fa-masks-theater::before { content: "\f630"; }
 .fa-message::before { content: "\f27a"; }
 .fa-mobile-screen-button::before { content: "\f3cd"; }
 .fa-paintbrush::before { content: "\f1fc"; }
-.fa-palette::before { content: "\f53f"; }
 .fa-paper-plane::before { content: "\f1d8"; }
 .fa-pause::before { content: "\f04c"; }
 .fa-pen::before { content: "\f304"; }

@@ -9,8 +9,9 @@ import '@/styles/contact-page.css'
 
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion } from '@/hooks/useGSAP'
-import { useUiText } from '@/lib/cms/store'
+import { state, useCmsStore, useUiText } from '@/lib/cms/store'
 import { useCmsText } from '@/lib/cms/content-context'
+import HeroMediaCarousel from '@/components/home/HeroMediaCarousel'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
@@ -24,6 +25,12 @@ const CT_TITLE = 'Get in touch'
 const CT_LEDE =
   "Have a project in mind or just want to say hello? I'd love to hear from you. " +
   'Reach out through any of the channels below.'
+const CT_STATUS = 'Available for projects'
+
+/* Mismo gesto que el hero de la portada: el gestor de la colección se abre por
+   evento, no por props (lo escucha CmsRoot). */
+const openCarousel = (prefix: string) =>
+  window.dispatchEvent(new CustomEvent('cms:carouselManager', { detail: { prefix } }))
 
 function Corners() {
   return (
@@ -39,6 +46,8 @@ function Corners() {
 export default function ContactPage() {
   const motion = useMotionReady()
   const ui = useUiText()
+  useCmsStore() // re-render al entrar/salir de admin (muestra/oculta el engranaje)
+  const isAdmin = state.isAdmin
   // Resuelve contra el contenido del servidor: el hero de /contact sale escrito
   // en el HTML en vez de esperar a que hidrate.
   const text = useCmsText()
@@ -194,13 +203,22 @@ export default function ContactPage() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="ct-hero" aria-labelledby="ct-title">
-        {/* El engine monta el estado vacío sobre el PADRE del contenedor. Sin este
-            envoltorio ese padre sería <section class="ct-hero"> entera y el
-            neutralizador global de `.cms-empty-slot` apagaría el fondo, las
-            sombras y las animaciones de todo el hero. */}
+        {/* Portada por colección, igual que el hero de la portada: N slides con
+            crossfade y el gestor detrás del engranaje. El contenedor es el slot;
+            las slides se pintan adentro y se reemplazan sin tocarlo. */}
         <div className="ct-hero__bg-slot" aria-hidden="true">
-          <div className="ct-hero__bg cms-media" data-cms-key="contact.hero.bg" />
+          <HeroMediaCarousel prefix="contact-hero" label="Background Carousel — Contact" />
         </div>
+        {isAdmin && (
+          <button
+            className="cms-hero-gear ct-hero__gear"
+            title="Configure the Background Carousel — Contact"
+            aria-label="Configure the Background Carousel — Contact"
+            onClick={(e) => { e.preventDefault(); openCarousel('contact-hero') }}
+          >
+            <i className="fa-solid fa-layer-group" />
+          </button>
+        )}
         <div className="ct-container">
           <div className="ct-hero-wrap">
             <Corners />
@@ -258,7 +276,10 @@ export default function ContactPage() {
               <span className="ct-info-card__label" data-i18n="ct_status_label">{ui('ct_status_label')}</span>
               <span className="ct-info-card__value ct-info-card__value--status">
                 <span className="ct-status-dot" />
-                {ui('ct_available')}
+                {/* Contenedor de texto propio: el estado lo edita la artista desde
+                    el CMS, así que no puede salir de UI_TRANSLATIONS. El punto
+                    verde queda fuera — el engine escribe el textContent entero. */}
+                <span className="ct-status-text">{text('contact.status#0', CT_STATUS)}</span>
               </span>
             </div>
           </div>

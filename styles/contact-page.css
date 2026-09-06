@@ -8,12 +8,14 @@
 /* --- Main container ----------------------------------------------- */
 
 .ct-main {
+  /* Medio hueco por sección: dos secciones contiguas suman uno completo. */
+  --ct-gap: clamp(1.25rem, 2.5vw, 2rem);
   position: relative;
   background: var(--bg-primary);
   overflow: clip;
   isolation: isolate;
   min-height: 100vh;
-  padding-bottom: clamp(4rem, 8vw, 8rem);
+  padding-bottom: clamp(2.5rem, 5vw, 4.5rem);
 }
 
 /* Grid blueprint sutil (patrón del sitio) */
@@ -101,7 +103,7 @@
 /* --- Section chrome (shared) ------------------------------------- */
 
 .ct-section__head {
-  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
 .ct-section__fig {
@@ -141,37 +143,84 @@
    1. HERO
    ============================================================ */
 
+/* Ritmo vertical de la página: las secciones respiran con un solo valor
+   (`--ct-gap`) en vez de un padding propio cada una. Antes info y social
+   sumaban sus dos paddings y dejaban un hueco de hasta 9rem entre bloques que
+   no tienen nada en el medio. */
 .ct-hero {
   position: relative;
   z-index: 2;
-  padding: clamp(6rem, 12vw, 10rem) 0 clamp(3rem, 6vw, 5rem);
+  padding: clamp(6rem, 12vw, 10rem) 0 var(--ct-gap);
   text-align: center;
 }
 
+/* Cristal, no panel: el velo se apoya en el desenfoque —que es lo que separa
+   el texto de la ilustración— y no en la opacidad. Un velo denso tapaba la
+   portada justo donde tiene que lucirse. El realce superior y el filo interno
+   son lo que hace leer la superficie como vidrio y no como una capa plana. */
 .ct-hero-wrap {
   position: relative;
   padding: clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 2rem);
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--bg-primary) 50%, transparent);
-  backdrop-filter: blur(8px);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 28%, transparent),
+      color-mix(in srgb, #fff 8%, transparent) 45%,
+      color-mix(in srgb, var(--accent) 6%, transparent)
+    ),
+    color-mix(in srgb, var(--bg-primary) 22%, transparent);
+  /* Solo la propiedad estándar: el prefijado lo pone el build (Lightning CSS,
+     vía Tailwind v4) según browserslist. Declarar `-webkit-` a mano hacía que
+     Lightning colapsara las dos en la prefijada SOLA, y Chrome ya retiró ese
+     alias (`CSS.supports('-webkit-backdrop-filter', …)` → false): el panel se
+     quedaba sin desenfoque, con el texto sobre la ilustración a un 22% de
+     velo. Misma convención que styles/contact-modal.css. */
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 45%, transparent),
+    0 18px 50px -20px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
 
+/* Sin `backdrop-filter` (Firefox con la bandera apagada, navegadores viejos) el
+   texto quedaría sobre la ilustración a pelo. Ahí y solo ahí se vuelve al velo
+   opaco: el contraste no puede depender de una capacidad opcional. */
+@supports not (backdrop-filter: blur(1px)) {
+  .ct-hero-wrap {
+    background: color-mix(in srgb, var(--bg-primary) 78%, transparent);
+  }
+}
+
+/* Contenedor del carrusel de portada. Las slides son absolutas (las pinta
+   HeroMediaCarousel), así que el slot es el que define el espacio y el recorte;
+   la opacidad vive acá y no en cada slide para que el crossfade no la pise. */
 .ct-hero__bg-slot {
   position: absolute;
   inset: 0;
   z-index: 0;
   border-radius: 4px;
   overflow: hidden;
+  opacity: 0.8;
 }
 
-.ct-hero__bg {
+/* Vacío: manda el marco punteado estándar, sin el velo de opacidad que se le
+   aplica a una portada con contenido. */
+.ct-hero__bg-slot:has(.hero-carousel-empty) {
+  opacity: 1;
+}
+
+/* El engranaje del gestor va sobre el hero, nunca bajo el panel del título.
+   Va con el ancestro en el selector para ganarle a `.cms-hero-gear` (admin.css),
+   que fija `top: 100px; right: 40px` y se importa DESPUÉS de esta hoja: con la
+   misma especificidad ganaría el orden de carga y el engranaje se plantaría
+   sobre el título en pantallas chicas. */
+.ct-hero .ct-hero__gear {
   position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.8;
+  top: clamp(5.5rem, 11vw, 7.5rem);
+  right: clamp(1rem, 4vw, 2.5rem);
+  z-index: 1100;
 }
 
 .ct-hero .ct-container {
@@ -219,7 +268,7 @@
 .ct-info-section {
   position: relative;
   z-index: 2;
-  padding: clamp(2rem, 4vw, 4rem) 0;
+  padding: var(--ct-gap) 0;
 }
 
 .ct-info-grid {
@@ -302,6 +351,13 @@
   gap: 0.45rem;
 }
 
+/* Contenedor de texto del CMS: el engine le cuelga sus herramientas adentro
+   (mount 'self'), así que necesita ser su propia caja de posicionamiento. */
+.ct-status-text {
+  position: relative;
+  display: inline-block;
+}
+
 .ct-status-dot {
   width: 8px;
   height: 8px;
@@ -324,7 +380,7 @@
 .ct-form-section {
   position: relative;
   z-index: 2;
-  padding: clamp(3rem, 6vw, 5rem) 0;
+  padding: var(--ct-gap) 0;
 }
 
 .ct-form-wrap {
@@ -445,7 +501,7 @@
 .ct-social-section {
   position: relative;
   z-index: 2;
-  padding: clamp(3rem, 6vw, 5rem) 0;
+  padding: var(--ct-gap) 0;
 }
 
 .ct-social-layout {
@@ -555,7 +611,7 @@
 .ct-cv-section {
   position: relative;
   z-index: 2;
-  padding: clamp(2rem, 5vw, 4rem) 0;
+  padding: var(--ct-gap) 0;
 }
 
 .ct-cv-card {
