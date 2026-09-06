@@ -310,7 +310,10 @@ export default function ProjectsShowcase() {
   }, [motion])
 
   return (
-    <section ref={sectionRef} className="proj-showcase w-full" id="projects">
+    /* `data-warm-near`: las tarjetas viven en un carrusel y las slides corridas
+       fuera de pantalla no intersecan, así que su `loading="lazy"` no pedía un
+       byte hasta moverlas. HomeFx las pasa a `eager` al acercarse la sección. */
+    <section ref={sectionRef} className="proj-showcase w-full" id="projects" data-warm-near="">
       {/* Riel vertical decorativo */}
 
 

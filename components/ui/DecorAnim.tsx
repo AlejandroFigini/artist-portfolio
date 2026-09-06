@@ -36,6 +36,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { prefersReducedMotion } from '@/hooks/motion-flags'
+import { afterLoadIdle, canWarmMedia, warmVideoOnce } from '@/lib/media-warm'
 
 const LS_ROTATION = 'cms_decor_anim_rot_v1'
 
@@ -171,6 +172,35 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
     io.observe(box)
     return () => io.disconnect()
   }, [nearObserved, active])
+
+  /* Precalentado de los contenedores de PANEL. A los de arriba los cubre el
+     observer; a estos no los alcanza ninguno, porque cerrados no tienen caja y
+     nunca intersecan. Hasta acá el archivo empezaba a bajar recién al ABRIR:
+     medido con el panel desplegándose, el clip seguía en `readyState` 0, así
+     que la regla `has-frame` lo dejaba invisible y el hueco se veía vacío
+     alrededor de un segundo.
+
+     Va directo a `warm` (o sea `preload="auto"`), no a `metadata`: `metadata`
+     deja `readyState` en 1 —hay datos pero NO frame decodificado— y `has-frame`
+     pide 2, así que con "metadata" el contenedor seguiría vacío igual.
+
+     El costo (medido en la portada: ~3 MB entre el desplegable de software, el
+     panel de ajustes y el menú móvil) se paga en el primer hueco de idle
+     después de `load`, donde ya no le compite al primer pintado, y nunca con
+     ahorro de datos activo. */
+  useEffect(() => {
+    if (active === undefined || warm || !current) return
+    let cancelled = false
+    const cancelIdle = afterLoadIdle(() => {
+      if (!canWarmMedia()) return
+      /* `warmVideoOnce` y no un `setWarm` directo: el mismo clip vive en los
+         cuatro desplegables de software, y cuatro `preload="auto"` a la vez son
+         cuatro descargas del mismo archivo. Acá se baja una sola y el resto
+         sube su preload cuando ya está en caché. */
+      void warmVideoOnce(current).then(() => { if (!cancelled) setWarm(true) })
+    })
+    return () => { cancelled = true; cancelIdle() }
+  }, [active, warm, current])
 
   useEffect(() => {
     const v = videoRef.current

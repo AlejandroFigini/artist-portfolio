@@ -8,6 +8,7 @@
 
 import { useEffect } from 'react'
 import { whenLoaderDone } from '@/lib/loader-ready'
+import { afterLoadIdle, canWarmMedia } from '@/lib/media-warm'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -73,12 +74,6 @@ export function revealAllNow() {
 
 const motionOff = () => document.documentElement.classList.contains('motion-off')
 
-/** Cancela el precalentado, sea `requestIdleCallback` o el `setTimeout` de respaldo. */
-function cancelWarm(id: number) {
-  if (window.cancelIdleCallback) window.cancelIdleCallback(id)
-  else window.clearTimeout(id)
-}
-
 export default function HomeFx() {
   /* Precalentado de las secciones code-split (next/dynamic en page.tsx): se
      bajan sus chunks antes de que el visitante scrollee, así hidratan en vez de
@@ -93,34 +88,17 @@ export default function HomeFx() {
      teléfono son segundos con la barra clavada en el mismo punto.
      Esperar a `load` los saca de esa ventana sin perder el precalentado: el
      visitante todavía no llegó a scrollear. */
-  useEffect(() => {
-    let idleId: number | undefined
-    const warm = () => {
-      void Promise.all([
-        import('@/components/home/AboutSection'),
-        import('@/components/home/AnimationsShowcase'),
-        import('@/components/home/ProjectsShowcase'),
-        import('@/components/home/CharactersShowcase'),
-        import('@/components/home/ModelsShowcase'),
-        import('@/components/home/GameDevShowcase'),
-        import('@/components/home/IllustrationsShowcase'),
-      ]).catch(() => {})
-    }
-    const schedule = () => {
-      const ric = window.requestIdleCallback
-      idleId = ric ? ric(warm, { timeout: 2000 }) : window.setTimeout(warm, 200)
-    }
-
-    if (document.readyState === 'complete') {
-      schedule()
-      return () => { if (idleId !== undefined) cancelWarm(idleId) }
-    }
-    window.addEventListener('load', schedule, { once: true })
-    return () => {
-      window.removeEventListener('load', schedule)
-      if (idleId !== undefined) cancelWarm(idleId)
-    }
-  }, [])
+  useEffect(() => afterLoadIdle(() => {
+    void Promise.all([
+      import('@/components/home/AboutSection'),
+      import('@/components/home/AnimationsShowcase'),
+      import('@/components/home/ProjectsShowcase'),
+      import('@/components/home/CharactersShowcase'),
+      import('@/components/home/ModelsShowcase'),
+      import('@/components/home/GameDevShowcase'),
+      import('@/components/home/IllustrationsShowcase'),
+    ]).catch(() => {})
+  }, { timeout: 2000, fallbackMs: 200 }), [])
 
   // Reveals (.visible) + typewriter de section-typewriter
   useEffect(() => {
@@ -182,20 +160,46 @@ export default function HomeFx() {
      layout de (site): acá solo cubría las rutas que montan HomeFx y dejaba
      /about, /contact y /multimedia animando fuera de cuadro. */
 
-  // preload diferido: los <video> arrancan en preload="none" (12 en la portada
-  // = 12 fetches parciales de archivos de hasta 5 MB antes de que nadie los
-  // mire). Al acercarse al viewport pasan a "metadata" y pintan su 1er frame.
+  /* preload diferido: los <video> arrancan en preload="none" (12 en la portada
+     = 12 fetches parciales de archivos de hasta 5 MB antes de que nadie los
+     mire). Al acercarse al viewport se los sube de nivel.
+
+     El destino es "auto", no "metadata". Con "metadata" el `readyState` se
+     queda en 1: hay metadata pero NO frame decodificado, y la regla `has-frame`
+     pide 2 — o sea que la tarjeta seguía invisible hasta que el hover la
+     reproducía, que es exactamente el segundo de espera que se veía. "auto" es
+     lo único que garantiza un frame antes de la interacción.
+     Con ahorro de datos se queda en "metadata": el comportamiento de antes. */
   useEffect(() => {
     const vids = document.querySelectorAll<HTMLVideoElement>('video[data-preload-defer]')
     if (!vids.length || !('IntersectionObserver' in window)) return
+    const target = canWarmMedia() ? 'auto' : 'metadata'
+    /* Dos contenedores pueden compartir archivo (las celdas de GameDev repiten
+       clip). Con "auto" eso son dos descargas COMPLETAS del mismo video si
+       entran juntos en cuadro, así que solo el primero de cada fuente arranca;
+       el segundo espera a que el primero tenga frame y sale de la caché. */
+    const firstBySrc = new Map<string, HTMLVideoElement>()
+    const pending: (() => void)[] = []
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
         if (!e.isIntersecting) return
         const v = e.target as HTMLVideoElement
         io.unobserve(v)
-        if (v.preload === 'none') {
-          v.preload = 'metadata'
+        if (v.preload !== 'none') return
+        const bump = () => {
+          v.preload = target
           if (v.currentSrc || v.src || v.querySelector('source[src]')) v.load()
+        }
+        const src = v.getAttribute('src') || ''
+        const first = src ? firstBySrc.get(src) : undefined
+        if (!first) {
+          if (src) firstBySrc.set(src, v)
+          bump()
+        } else if (first.readyState >= 2) {
+          bump()
+        } else {
+          first.addEventListener('loadeddata', bump, { once: true })
+          pending.push(() => first.removeEventListener('loadeddata', bump))
         }
       }),
       /* Un viewport completo de anticipación, no 300px fijos: en un teléfono
@@ -204,6 +208,29 @@ export default function HomeFx() {
       { rootMargin: '100% 0px' },
     )
     vids.forEach((v) => io.observe(v))
+    return () => { io.disconnect(); pending.forEach((off) => off()) }
+  }, [])
+
+  /* Imágenes que viven dentro de un carrusel. Una slide desplazada fuera de
+     pantalla NO está en el viewport, así que `loading="lazy"` no pide un byte
+     hasta que el carrusel la trae al centro — y ahí se ve el hueco mientras
+     baja. El observer no puede ir sobre la imagen (una slide corrida a la
+     derecha nunca interseca): va sobre el CONTENEDOR marcado con
+     `data-warm-near`, y al acercarse pasa a `eager` todo lo que tenga adentro,
+     clones de embla incluidos. Cambiar `loading` de lazy a eager reanuda la
+     carga diferida en el acto. */
+  useEffect(() => {
+    const hosts = document.querySelectorAll<HTMLElement>('[data-warm-near]')
+    if (!hosts.length || !('IntersectionObserver' in window) || !canWarmMedia()) return
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (!e.isIntersecting) return
+        io.unobserve(e.target)
+        e.target.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((img) => { img.loading = 'eager' })
+      }),
+      { rootMargin: '100% 0px' },
+    )
+    hosts.forEach((h) => io.observe(h))
     return () => io.disconnect()
   }, [])
 
