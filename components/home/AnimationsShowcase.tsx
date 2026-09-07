@@ -10,7 +10,7 @@ import VideoPlayer from '@/components/ui/VideoPlayer'
 import { state, useUiText } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 
 /* 6 contenedores = 2 filas de 3 en la grilla de escritorio. Al cambiar este
    número hay que acompañarlo en FIXED_SLOTS (`lib/cms/collections.ts`), que es

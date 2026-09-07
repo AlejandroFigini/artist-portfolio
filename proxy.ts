@@ -182,7 +182,14 @@ export const config = {
 
        Lo que se pierde acá se cubre en otro lado: los security headers los
        aplica igual `next.config.ts` (source '/(.*)'), y el acceso lo corta
-       `requireRole` dentro del propio handler, antes de leer un solo byte. */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|uploads/|api/upload-test).*)',
+       `requireRole` dentro del propio handler, antes de leer un solo byte.
+
+       `fonts/` e `images/` quedan afuera por el mismo argumento: son archivos
+       estáticos de `public/`. Cada pedido despertaba el proxy —resolver la IP,
+       barrer el Map entero de rate limit, armar y unir las 12 directivas del
+       CSP— y el subset de iconos está precargado en el <head> de todas las
+       páginas, o sea en el camino crítico. El limitador nunca los tocó: solo
+       se aplica a `/api/`. */
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|uploads/|fonts/|images/|api/upload-test).*)',
   ],
 }

@@ -82,6 +82,15 @@ export default function CmsRoot() {
       engine.indexEditables()
       engine.seedUsedContent()
       engine.attachEditControls()
+      /* El inventario de medios (used_content, unused, trash, media_meta) lo
+         mira SOLO gestión, así que se trae acá, con la sesión ya confirmada, y
+         no en el arranque de todo el mundo. */
+      loadServerState().then(() => {
+        cleanOrphanOverrides()
+        engine.refreshRetired()
+        engine.seedUsedContent()
+        emit()
+      })
     } else {
       engine.removeEditControls()
     }
@@ -141,8 +150,12 @@ export default function CmsRoot() {
     }
 
     /* El resto de cms_state (media_meta, audit, unused, trash) son ~96 KB que
-       solo mira gestión. Se trae siempre, pero con el payload embebido ya no
-       retiene la pantalla de carga. */
+       solo mira gestión. Con el payload embebido ya no retiene la pantalla de
+       carga, y para el VISITANTE ni siquiera se pide: `/api/app-state` le
+       responde únicamente `retired`, que es un dato que ya venía en el
+       bootstrap del servidor. Era un XHR y una consulta a Postgres por visita
+       para recibir algo que ya estaba en memoria. Con sesión sí se trae —lo
+       dispara `setAdmin`, que es donde se confirma la sesión de verdad. */
     const finishServerState = () => {
       cleanOrphanOverrides()
       engine.refreshRetired()
@@ -162,7 +175,7 @@ export default function CmsRoot() {
       markLoaderGate('i18n')
       state.serverReady = true
       emit()
-      loadServerState().then(finishServerState)
+      finishServerState()
     } else {
       getContent()
         .catch(() => ({}))

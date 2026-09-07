@@ -51,6 +51,22 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
         ],
       },
+      {
+        /* `public/` se sirve con `Cache-Control: public, max-age=0`, así que
+           cada carga completa revalidaba el subset de Font Awesome — y el
+           <head> lo precarga en TODAS las páginas, con `font-display: swap`
+           detrás: hasta que vuelve el 304, los iconos del menú y de los
+           contenedores vacíos son cuadros en blanco.
+           `immutable` NO: el subset se regenera en cada build con el mismo
+           nombre (scripts/build-icon-subset.mjs), y un cliente con la versión
+           vieja cacheada se quedaría sin los iconos nuevos todo el max-age.
+           Con stale-while-revalidate, en el peor caso ve el subset anterior
+           durante una vista. */
+        source: '/fonts/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=31536000' },
+        ],
+      },
     ];
   },
   // bcryptjs funciona mejor cuando Node.js lo resuelve fuera del bundle de webpack.

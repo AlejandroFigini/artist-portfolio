@@ -39,43 +39,6 @@
     radial-gradient(ellipse 45% 40% at 75% 70%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
 }
 
-/* --- Riel-cota vertical (decorativo, scrubbed con scroll) --- */
-.about-rail {
-  position: absolute;
-  top: clamp(4rem, 8vw, 6rem);
-  bottom: clamp(4rem, 8vw, 6rem);
-  right: clamp(0.9rem, 2vw, 1.8rem);
-  left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  z-index: 2;
-  pointer-events: none;
-}
-.about-rail-fig {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  color: var(--text-secondary);
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  opacity: 0.6;
-}
-.about-rail-fig--end { transform: rotate(180deg); opacity: 0.4; }
-.about-rail-track {
-  position: relative;
-  flex: 1;
-  width: 1px;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.about-rail-fill {
-  position: absolute;
-  inset: 0;
-  background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-
 /* --- Frame interior --- */
 .about-frame {
   position: relative;
@@ -155,7 +118,6 @@
 
 @media (max-width: 960px) {
   .about-grid { grid-template-columns: 1fr; gap: 3rem; }
-  .about-rail { display: none; }
 }
 
 /* --- Columna izquierda: copy --- */

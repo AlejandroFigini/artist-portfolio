@@ -13,7 +13,7 @@ import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/u
 import { openLightbox } from '@/components/ui/lightbox'
 import { useCmsText } from '@/lib/cms/content-context'
 import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 const CELL_COUNT = 15
 /* Abrir lightbox solo si la celda tiene contenido (img con src real). Vacía →
    el overlay del engine maneja el click (picker en admin). */

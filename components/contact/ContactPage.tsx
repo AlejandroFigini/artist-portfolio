@@ -16,7 +16,7 @@ import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 import ContactForm from './ContactForm'
 
 /* Texto base de los contenedores CMS del hero. `t()` devuelve esto mientras el

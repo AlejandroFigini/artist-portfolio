@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
@@ -91,7 +91,6 @@ export default function AboutSection() {
       gsap.set('.about-meta-row', { autoAlpha: 0, x: -16 })
       gsap.set('.about-spec', { autoAlpha: 0, y: 14 })
       gsap.set('.about-social', { autoAlpha: 0, y: 10 })
-      gsap.set('.about-rail-fill', { scaleY: 0, transformOrigin: 'top center' })
 
       /* Orden pedido: primero el TÍTULO, después el SUB-TEXTO (lede). Posiciones
          absolutas para que la secuencia sea explícita y no dependa del encadenado
@@ -167,19 +166,30 @@ export default function AboutSection() {
         metaIo.observe(metaEl)
       }
 
-      gsap.to('.about-video', {
-        scale: 1.05, duration: 7, ease: 'sine.inOut',
-        yoyo: true, repeat: -1, delay: 1.8,
-      })
-      gsap.to('.about-portrait', {
-        y: -10, rotate: 1.2, duration: 4.5, ease: 'sine.inOut',
-        yoyo: true, repeat: -1, delay: 2.2,
-      })
+      /* Respiración de fondo: SOLO mientras la sección está en cuadro.
+         Sueltos, estos dos `repeat: -1` eran los ÚNICOS tweens infinitos de la
+         app, y con un hijo activo en la timeline global el ticker de GSAP no
+         llama nunca a `_ticker.sleep()`: quedaba un rAF a la frecuencia de la
+         pantalla toda la sesión, escribiendo transform sobre dos nodos —uno es
+         un <video>, o sea re-raster de su capa— con la sección fuera de vista.
+         Pausados tienen `_ts` en 0 y el ticker puede dormirse. */
+      const idle = [
+        gsap.to('.about-video', {
+          scale: 1.05, duration: 7, ease: 'sine.inOut',
+          yoyo: true, repeat: -1, delay: 1.8, paused: true,
+        }),
+        gsap.to('.about-portrait', {
+          y: -10, rotate: 1.2, duration: 4.5, ease: 'sine.inOut',
+          yoyo: true, repeat: -1, delay: 2.2, paused: true,
+        }),
+      ]
+      const idleIo = new IntersectionObserver(
+        ([e]) => idle.forEach((tw) => (e.isIntersecting ? tw.play() : tw.pause())),
+        { threshold: 0 },
+      )
+      idleIo.observe(sec)
 
-
-
-
-      return () => { metaIo?.disconnect() }
+      return () => { metaIo?.disconnect(); idleIo.disconnect() }
     }, sectionRef)
     return () => { clearTimeout(twTimeout); ledeTw?.kill(); ctx.revert() }
   }, [motion])

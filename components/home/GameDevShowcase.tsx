@@ -32,7 +32,7 @@ import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { isVideoSrc, mediaSrcSet, optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
 import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 
 /* Composición de las dos cintas. Todas las celdas comparten ALTO: el ratio es
    lo que les da ancho distinto y evita que la banda se lea como una grilla. */

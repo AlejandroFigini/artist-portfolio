@@ -13,7 +13,7 @@ import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import { useToast } from '@/components/ui/Toast'
 import { uploadCvFile, deleteCvFile } from '@/lib/api'
-import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
+import { useSaveSettings, CV_MAX_BYTES } from '@/lib/settings-save'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
 import DecorAnim from '@/components/ui/DecorAnim'
 import { animSources } from '@/lib/settings'
@@ -197,21 +197,25 @@ export default function SettingsPanel() {
   // Retiro de la tuerca sobre la portada y sobre el footer (ver `gearAway`).
   useEffect(() => {
     let ticking = false
+    /* Cacheados: son dos búsquedas en todo el documento por frame de scroll
+       sobre nodos que, una vez montados, ya no cambian de identidad. Se
+       reintenta mientras falte alguno — "About me" baja por next/dynamic. */
+    let footerEl: Element | null = null
+    let aboutEl: Element | null = null
     const onScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
-          const footer = document.querySelector('footer.main-footer')
-          const footerTop = footer ? footer.getBoundingClientRect().top : Infinity
+          if (!footerEl) footerEl = document.querySelector('footer.main-footer')
+          const footerTop = footerEl ? footerEl.getBoundingClientRect().top : Infinity
           /* La tuerca entra al ENTRAR en "About me": hasta ahí sobra sobre la
              portada. Se mide contra el borde superior de la sección y no
              contra el inferior — con el inferior había que recorrer los 1300px
-             de About enteros antes de que apareciera. Se consulta el DOM en
-             cada tick porque la sección solo existe en la home: en el resto de
-             las rutas no hay nada que esperar y la tuerca queda visible desde
-             el arranque. */
-          const about = document.querySelector('.about-section')
-          const beforeAbout = !!about
-            && about.getBoundingClientRect().top > window.innerHeight * GEAR_AWAY_ENTER_RATIO
+             de About enteros antes de que apareciera. La sección solo existe en
+             la home: en el resto de las rutas `aboutEl` queda en null y la
+             tuerca está visible desde el arranque. */
+          if (!aboutEl) aboutEl = document.querySelector('.about-section')
+          const beforeAbout = !!aboutEl
+            && aboutEl.getBoundingClientRect().top > window.innerHeight * GEAR_AWAY_ENTER_RATIO
           /* El footer cierra el recorrido: ahí la tuerca ya no tiene contenido
              debajo al que aplicar y se superpone al bloque de contacto, así
              que se retira igual que sobre la portada. */

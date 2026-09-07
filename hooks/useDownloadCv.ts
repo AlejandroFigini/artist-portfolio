@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useUiText } from '@/lib/cms/store'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 
 export function useDownloadCv(cvUrl: string, cvName: string) {
   const toast = useToast()

@@ -7,7 +7,7 @@
    vivo vía setSettings tras guardar en Ajustes → Gestión. */
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { EMPTY_SETTINGS, SETTINGS_KEYS, ANIM_FIELDS, ANIM_EVERY_FIELDS, animKey, type AnimEveryField, type AnimField, type SiteSettings } from '@/lib/settings'
+import { EMPTY_SETTINGS, SETTINGS_KEYS, ANIM_FIELDS, ANIM_EVERY_FIELDS, animKey, type SiteSettings } from '@/lib/settings'
 import { syncSettingsUsedContent } from '@/components/cms/engine'
 
 const SiteSettingsContext = createContext<{
@@ -75,7 +75,15 @@ function applyFaviconToDOM(targetUrl: string, forceCacheBuster = false) {
   }
 }
 
-export function SiteSettingsProvider({ children, initialSettings }: { children: React.ReactNode; initialSettings?: SiteSettings }) {
+export function SiteSettingsProvider({
+  children,
+  initialSettings,
+  serverAuthoritative,
+}: {
+  children: React.ReactNode
+  initialSettings?: SiteSettings
+  serverAuthoritative?: boolean
+}) {
   const [settings, setSettings] = useState<SiteSettings>(initialSettings || EMPTY_SETTINGS)
 
   useEffect(() => {
@@ -84,33 +92,19 @@ export function SiteSettingsProvider({ children, initialSettings }: { children: 
        el backend (`local || server`): en producción eso resucitaba contenido ya
        removido —el server lo devolvía vacío pero el cache local viejo ganaba— y
        era el flash del loader. Ahora: con DB el server manda (aunque vacío); solo
-       sin DB (dev/mock) se cae a los overrides locales. */
-    fetch('/api/site', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: (SiteSettings & { hasDb?: boolean }) | null) => {
-        if (!d) return
-        if (d.hasDb) {
-          setSettings({
-            loaderVideo: d.loaderVideo || '',
-            loaderImage: d.loaderImage || '',
-            loaderDuration: d.loaderDuration || '',
-            cvUrl: d.cvUrl || '',
-            cvName: d.cvName || '',
-            faviconUrl: d.faviconUrl || '',
-            appleIconUrl: d.appleIconUrl || '',
-            ...(Object.fromEntries(ANIM_FIELDS.map((f) => [f, d[f] || ''])) as Record<AnimField, string>),
-            ...(Object.fromEntries(ANIM_EVERY_FIELDS.map((f) => [f, d[f] || ''])) as Record<AnimEveryField, string>),
-          })
-        } else {
-          const local = fromLocalOverrides()
-          setSettings((s) => ({ ...s, ...local }))
-        }
-      })
-      .catch(() => {
-        // Red caída: último recurso, overrides locales.
-        setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
-      })
-  }, [])
+       sin DB (dev/mock) se cae a los overrides locales.
+
+       Con base de datos ya no hay nada que pedir. `/api/site` llamaba a la MISMA
+       función que produjo `initialSettings`, así que el fetch al hidratar solo
+       servía para enterarse de `hasDb` — y eso el servidor lo sabe y ahora lo
+       manda por prop. Un XHR y una consulta a Postgres menos por visita,
+       justo en la ventana en que el loader espera el evento `load`. */
+    if (serverAuthoritative) return
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage
+       es un sistema externo y solo existe en el cliente: leerlo en el render
+       daría un HTML distinto al del servidor. Corre una vez, sin DB. */
+    setSettings((s) => ({ ...s, ...fromLocalOverrides() }))
+  }, [serverAuthoritative])
 
   useEffect(() => {
     syncSettingsUsedContent(settings)

@@ -12,155 +12,20 @@
 import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useSiteSettings } from '@/components/ui/SiteSettingsProvider'
-import { saveContent, uploadCvFile, deleteCvFile } from '@/lib/api'
-import { state, persistOverridesLocal, recordAudit, useCmsStore, persistUsed, persistUnused, retireUsedEntryToUnused } from '@/lib/cms/store'
-import { applyMedia, triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
+import { uploadCvFile, deleteCvFile } from '@/lib/api'
+import { state, useCmsStore } from '@/lib/cms/store'
+import { triggerContentPicker, indexEditables, attachEditControls, showEmptySlot, refreshTools, elementsByKey } from '@/components/cms/engine'
 import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translations-io'
 import {
-  SETTINGS_KEYS, ANIM_SLOTS, ANIM_FIELDS, ANIM_EVERY_FIELDS, ANIM_EVERY_DEFAULT,
+  ANIM_SLOTS, ANIM_EVERY_DEFAULT,
   LOADER_DURATION_MIN, LOADER_DURATION_MAX, LOADER_DURATION_DEFAULT, clampLoaderDuration,
-  animFields, animKey, animLabel, animPreviewClass,
+  animFields, animKey, animPreviewClass,
   type AnimSlot, type SiteSettings,
 } from '@/lib/settings'
 import SocialSettings from './SocialSettings'
+import { CV_MAX_BYTES, useSaveSettings } from '@/lib/settings-save'
 
-export const CV_MAX_BYTES = 10 * 1024 * 1024
-
-// Mapea el patch (camelCase) a claves cms_data settings.*
-function toItems(patch: Partial<SiteSettings>): Record<string, string> {
-  const items: Record<string, string> = {}
-  if (patch.loaderVideo !== undefined) {
-    items[SETTINGS_KEYS.loaderVideo] = patch.loaderVideo
-    items['loader.gallop'] = patch.loaderVideo
-    items[SETTINGS_KEYS.loaderImage] = '' // limpiar imagen estática heredada
-  }
-  if (patch.loaderImage !== undefined) items[SETTINGS_KEYS.loaderImage] = patch.loaderImage
-  if (patch.loaderDuration !== undefined) items[SETTINGS_KEYS.loaderDuration] = patch.loaderDuration
-  if (patch.cvUrl !== undefined) items[SETTINGS_KEYS.cvUrl] = patch.cvUrl
-  if (patch.cvName !== undefined) items[SETTINGS_KEYS.cvName] = patch.cvName
-  if (patch.faviconUrl !== undefined) items[SETTINGS_KEYS.faviconUrl] = patch.faviconUrl
-  if (patch.appleIconUrl !== undefined) items[SETTINGS_KEYS.appleIconUrl] = patch.appleIconUrl
-  ANIM_FIELDS.forEach((f) => { if (patch[f] !== undefined) items[animKey(f)] = patch[f] as string })
-  ANIM_EVERY_FIELDS.forEach((f) => { if (patch[f] !== undefined) items[animKey(f)] = patch[f] as string })
-  return items
-}
-
-/* Ajustes que ADEMÁS son media: al guardar hay que reflejar el archivo en
-   "Contenido en uso". El bloque era idéntico por ajuste (loader, favicon,
-   icono de búsqueda) y con la animación del menú serían cuatro copias, así
-   que la variación vive en la tabla y el cuerpo es uno solo.
-   `imageAware`: el loader acepta imagen o video — el tipo real del archivo
-   manda sobre el de la tabla. */
-type SettingsMediaSync = {
-  field: keyof SiteSettings
-  key: string
-  label: string
-  name: string
-  kind: 'image' | 'video'
-  type: string
-  imageAware?: boolean
-  imageName?: string
-}
-
-const SETTINGS_MEDIA_SYNC: SettingsMediaSync[] = [
-  { field: 'loaderVideo', key: 'loader.gallop', label: 'Loading Screen (.loader-gallop)', name: 'video', kind: 'video', type: 'video/webm', imageAware: true, imageName: 'loader-image' },
-  { field: 'faviconUrl', key: SETTINGS_KEYS.faviconUrl, label: 'Favicon (.favicon-preview-img)', name: 'favicon', kind: 'image', type: 'image/webp' },
-  { field: 'appleIconUrl', key: SETTINGS_KEYS.appleIconUrl, label: 'Apple Touch Icon (.apple-icon-preview-img)', name: 'apple-icon', kind: 'image', type: 'image/webp' },
-  // Animaciones: principal + rotación, generadas desde ANIM_SLOTS.
-  ...ANIM_SLOTS.flatMap((slot) =>
-    animFields(slot.base).map((field, i): SettingsMediaSync => ({
-      field,
-      key: animKey(field),
-      label: `${animLabel(slot, i)} (.${animPreviewClass(slot, i)})`,
-      name: animLabel(slot, i).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-      kind: 'video',
-      type: 'video/webm',
-    })),
-  ),
-]
-
-/* Persiste un patch de ajustes: POST /api/content (sube dataURLs → URLs),
-   canonicaliza desde /api/site (para no dejar base64 en localStorage) y
-   refleja en vivo vía setSettings. Devuelve los valores finales. */
-export function useSaveSettings() {
-  const { settings, setSettings } = useSiteSettings()
-  const toast = useToast()
-
-  return async (patch: Partial<SiteSettings>, summary: string): Promise<SiteSettings | null> => {
-    try {
-      await saveContent(toItems(patch))
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error saving settings', 'error')
-      return null
-    }
-    // canonicalizar (URLs finales del backend); fallback a lo optimista
-    let server: SiteSettings | null = null
-    try {
-      const r = await fetch('/api/site', { cache: 'no-store' })
-      server = r.ok ? await r.json() : null
-    } catch { /* sin DB → usar patch optimista */ }
-
-    /* Resolución por campo, distinguiendo ASIGNAR de QUITAR (la clave de los dos
-       bugs):
-       - Campo tocado por el patch con valor '' → QUITAR: se honra el vacío. Antes
-         `server || patch` dejaba que un eco viejo de /api/site RESUCITARA el CV
-         recién removido ("Remove CV no funciona").
-       - Campo tocado con valor → ASIGNAR: gana la URL canónica del server si vino,
-         si no el propio patch (así un vacío desincronizado del server NO borra lo
-         recién elegido — el bug del loader).
-       - Campo NO tocado → lo del server, o lo actual. */
-    const pick = (field: keyof SiteSettings): string => {
-      const p = patch[field]
-      if (p !== undefined) return p === '' ? '' : (server?.[field] || p)
-      return (server?.[field] ?? settings[field] ?? '')
-    }
-    const final: SiteSettings = {
-      loaderVideo: pick('loaderVideo'),
-      loaderImage: pick('loaderImage'),
-      loaderDuration: pick('loaderDuration'),
-      cvUrl: pick('cvUrl'),
-      cvName: pick('cvName'),
-      faviconUrl: pick('faviconUrl'),
-      appleIconUrl: pick('appleIconUrl'),
-      ...(Object.fromEntries(ANIM_FIELDS.map((f) => [f, pick(f)])) as Pick<SiteSettings, (typeof ANIM_FIELDS)[number]>),
-      ...(Object.fromEntries(ANIM_EVERY_FIELDS.map((f) => [f, pick(f)])) as Pick<SiteSettings, (typeof ANIM_EVERY_FIELDS)[number]>),
-    }
-    setSettings(final)
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cms:favicon-updated', { detail: final.faviconUrl || '' }))
-    }
-    // persistir valores finales (URLs, no base64) en el store home + localStorage
-    Object.assign(state.items, toItems(final))
-    SETTINGS_MEDIA_SYNC.forEach((m) => {
-      const src = final[m.field]
-      if (src === undefined) return
-      applyMedia(m.key, src)
-      const prev = state.usedContent[m.key]
-      if (!src) {
-        if (prev) {
-          retireUsedEntryToUnused(prev, 'retired', [m.key])
-          delete state.usedContent[m.key]
-        }
-        return
-      }
-      if (prev && prev.src !== src) retireUsedEntryToUnused(prev, 'replaced', [m.key])
-      const mm = state.mediaMeta[m.key] || state.mediaMeta[src]
-      const asImage = !!m.imageAware && (mm?.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(src))
-      state.usedContent[m.key] = {
-        key: m.key, label: m.label, section: 'Site Configuration', kind: asImage ? 'image' : m.kind,
-        src, name: mm?.name || (asImage ? m.imageName! : m.name), size: mm?.size ?? null, original: false,
-        ts: Date.now(), type: mm?.type || (asImage ? 'image/webp' : m.type),
-      }
-      const idx = state.unused.findIndex((u) => u.src === src)
-      if (idx !== -1) state.unused.splice(idx, 1)
-    })
-    persistUsed(); persistUnused()
-    persistOverridesLocal()
-    recordAudit({ section: 'Site Settings', label: 'Settings', summary })
-    toast('Saved')
-    return final
-  }
-}
+export { CV_MAX_BYTES, useSaveSettings }
 
 /* Vista previa en hover de las tarjetas con video. `pause()` mientras el
    `play()` anterior sigue pendiente aborta esa promesa y el navegador lo

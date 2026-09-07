@@ -1,10 +1,15 @@
 'use client'
 
 /* Provee los enlaces sociales (id → url) a Nav y Footer en TODAS las páginas.
-   Carga una vez desde /api/social (lectura liviana). El admin actualiza el mapa
-   en vivo vía setLinks tras guardar en Gestión. */
+   El valor inicial VIENE DEL SERVIDOR: las claves `social.*` son contenido
+   normal, así que ya viajan dentro del bootstrap que el layout embebe en el
+   HTML. Antes se pedían otra vez por `/api/social` al hidratar — un XHR más y
+   una consulta más a Postgres por visita, en la ventana en que el loader
+   todavía está esperando el evento `load`.
+   `/api/social` sigue existiendo: lo usa Gestión para releer después de
+   guardar. El admin también actualiza el mapa en vivo vía setLinks. */
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 type SocialMap = Record<string, string>
 
@@ -15,15 +20,8 @@ const SocialContext = createContext<{ links: SocialMap; setLinks: (m: SocialMap)
 
 export const useSocial = () => useContext(SocialContext)
 
-export function SocialProvider({ children }: { children: React.ReactNode }) {
-  const [links, setLinks] = useState<SocialMap>({})
-
-  useEffect(() => {
-    fetch('/api/social', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { items: {} }))
-      .then((d) => setLinks(d.items || {}))
-      .catch(() => {})
-  }, [])
+export function SocialProvider({ initial, children }: { initial?: SocialMap; children: React.ReactNode }) {
+  const [links, setLinks] = useState<SocialMap>(initial ?? {})
 
   return <SocialContext.Provider value={{ links, setLinks }}>{children}</SocialContext.Provider>
 }

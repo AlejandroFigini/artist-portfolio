@@ -1,6 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
-import { getPool, hasDb, ensureDb } from '@/lib/db'
+import { getCmsBootstrapServer } from '@/lib/cms-bootstrap-server'
 import { itemKey, readSettings } from '@/lib/cms/collection'
 import { COLLECTIONS } from '@/lib/cms/collections'
 
@@ -20,38 +20,28 @@ export type HeroPreload = { backdrop: string; panel: string }
 
 const EMPTY: HeroPreload = { backdrop: '', panel: '' }
 
+/* Se resuelve contra el bootstrap y no con consultas propias. Antes eran DOS
+   `SELECT` en serie —el segundo depende de las ids que devuelve el primero—
+   sobre la misma tabla que `getCmsBootstrapServer` ya trae ENTERA en paralelo
+   con el resto. Con Postgres en otro servicio eso era latencia de red pura
+   sumada al TTFB de un documento que todavía no mandó un byte, y encima
+   retrasando el `<link rel=preload>` que esperan los gates `heroBackdrop` y
+   `heroPanel`. `cache()` de React deduplica la llamada dentro del request, así
+   que reusarla no repite ninguna consulta. */
 export const getHeroPreloadServer = cache(async (): Promise<HeroPreload> => {
-  if (!hasDb) return EMPTY
-  try {
-    await ensureDb()
-    const pool = getPool()!
-    const settings = await pool.query(
-      'SELECT key, value FROM cms_data WHERE key = ANY($1)',
-      [['hero.settings', 'hero-main.settings']],
-    )
-    const byKey: Record<string, string> = {}
-    for (const row of settings.rows as { key: string; value: string }[]) byKey[row.key] = row.value
+  const { items } = await getCmsBootstrapServer()
 
-    // readSettings espera el mapa de items: alcanza con las dos claves .settings.
-    const firstKeyOf = (prefix: string) => {
-      const id = readSettings(byKey, prefix).ids[0]
-      return id ? itemKey(COLLECTIONS[prefix], id) : ''
-    }
-    const backdropKey = firstKeyOf('hero')
-    const panelKey = firstKeyOf('hero-main')
-    const wanted = [backdropKey, panelKey].filter(Boolean)
-    if (!wanted.length) return EMPTY
+  // readSettings espera el mapa de items: las dos claves .settings están ahí.
+  const firstKeyOf = (prefix: string) => {
+    const id = readSettings(items, prefix).ids[0]
+    return id ? itemKey(COLLECTIONS[prefix], id) : ''
+  }
+  const backdropKey = firstKeyOf('hero')
+  const panelKey = firstKeyOf('hero-main')
+  if (!backdropKey && !panelKey) return EMPTY
 
-    const items = await pool.query('SELECT key, value FROM cms_data WHERE key = ANY($1)', [wanted])
-    const srcByKey: Record<string, string> = {}
-    for (const row of items.rows as { key: string; value: string }[]) srcByKey[row.key] = row.value
-
-    return {
-      backdrop: srcByKey[backdropKey] || '',
-      panel: srcByKey[panelKey] || '',
-    }
-  } catch (err) {
-    console.error('[hero-server] error:', err)
-    return EMPTY
+  return {
+    backdrop: items[backdropKey] || '',
+    panel: items[panelKey] || '',
   }
 })

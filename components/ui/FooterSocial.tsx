@@ -5,7 +5,7 @@
 
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from './SocialProvider'
-import { sendGAEvent } from '@next/third-parties/google'
+import { sendGAEvent } from '@/lib/ga'
 
 export default function FooterSocial() {
   const { links } = useSocial()

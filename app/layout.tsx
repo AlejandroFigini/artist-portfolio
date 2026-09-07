@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import '@/styles/globals.css'
 import Providers from '@/components/ui/Providers'
 import DeferredAnalytics from '@/components/ui/DeferredAnalytics'
+import { hasDb } from '@/lib/db'
 import { getSiteSettingsServer } from '@/lib/site-server'
 import { fontVariables } from '@/lib/fonts'
 import { CMS_BOOTSTRAP_ID, getCmsBootstrapServer, serializeCmsBootstrap } from '@/lib/cms-bootstrap-server'
@@ -142,7 +143,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: serializeCmsBootstrap(cmsBootstrap) }}
         />
-        <Providers initialSettings={initialSettings} initialContent={cmsBootstrap}>{children}</Providers>
+        <Providers initialSettings={initialSettings} initialContent={cmsBootstrap} serverAuthoritative={hasDb}>{children}</Providers>
         <DeferredAnalytics gaId="G-SPJEZ45JR0" />
       </body>
     </html>

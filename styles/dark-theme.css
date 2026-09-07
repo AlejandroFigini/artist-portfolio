@@ -121,8 +121,6 @@ body {
 [data-theme="dark"] .ab-social a:hover,
 [data-theme="dark"] .about-social a:hover,
 [data-theme="dark"] .anim-card__btn:hover,
-[data-theme="dark"] .anim-lightbox__close:hover,
-[data-theme="dark"] .anim-lightbox__info-btn:hover,
 [data-theme="dark"] .ch-lightbox__close:hover,
 [data-theme="dark"] .ch-lightbox__info-btn,
 /* `.cms-btn` vive en admin.css, que NO es solo de admin: `Modal.tsx` lo

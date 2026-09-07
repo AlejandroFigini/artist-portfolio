@@ -309,11 +309,16 @@ export default function MessagesSection({ onUnreadChange }: { onUnreadChange?: (
     setAutoDeleteDays(days)
     if (state.role === 'demo') { toast('Settings saved'); return }
     try {
-      await fetch('/api/content/batch', {
+      /* `/api/content/batch` no existe: la respuesta era el 404 de Next y,
+         como nadie miraba `res.ok`, el panel avisaba "guardado" sin haber
+         guardado nunca. El endpoint que sí existe es POST /api/content, que
+         espera `{ items: {...} }`. */
+      const res = await fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 'messages.trashAutoDeleteDays': days }),
+        body: JSON.stringify({ items: { 'messages.trashAutoDeleteDays': days } }),
       })
+      if (!res.ok) throw new Error('save failed')
       toast('Settings saved')
     } catch {
       toast('Failed to save settings', 'error')

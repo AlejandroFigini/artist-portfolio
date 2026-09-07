@@ -47,21 +47,30 @@ export default function SectionRail() {
   const lastProgress = useRef(-1)
 
   useEffect(() => {
+    /* Los nodos se resuelven UNA vez, no en cada frame. Antes `measure()` hacía
+       nueve `document.querySelector` por frame de scroll —a 60 fps son ~540
+       recorridos del documento por segundo— sobre nodos que después de montar
+       no cambian de identidad. Se reintenta mientras falte alguno: las
+       secciones bajan por `next/dynamic` y montan tarde. */
+    const nodes: (Element | null)[] = SECTIONS.map(() => null)
+    let footerEl: Element | null = null
+    const resolve = () => {
+      SECTIONS.forEach((s, i) => { if (!nodes[i]) nodes[i] = document.querySelector(s.selector) })
+      if (!footerEl) footerEl = document.querySelector('.main-footer')
+    }
+
     const measure = () => {
+      resolve()
       const vh = window.innerHeight
-      const about = document.querySelector(SECTIONS[0].selector)
-      const footer = document.querySelector('.main-footer')
+      const about = nodes[0]
       if (!about) { setVisible(false); return }
 
       const started = about.getBoundingClientRect().top <= vh * ENTER_LINE
-      const reachedFooter = footer ? footer.getBoundingClientRect().top <= vh * EXIT_LINE : false
+      const reachedFooter = footerEl ? footerEl.getBoundingClientRect().top <= vh * EXIT_LINE : false
       setVisible(started && !reachedFooter)
 
       // Última sección cuyo techo ya pasó la línea activa
-      const tops = SECTIONS.map((s) => {
-        const el = document.querySelector(s.selector)
-        return el ? el.getBoundingClientRect().top : Infinity
-      })
+      const tops = nodes.map((el) => (el ? el.getBoundingClientRect().top : Infinity))
       let current = 0
       tops.forEach((top, i) => { if (top <= vh * ACTIVE_LINE) current = i })
       setActive(current)
