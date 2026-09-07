@@ -212,6 +212,16 @@ export default function ContactPage() {
     if (!section) return
 
     const ctx = gsap.context(() => {
+      /* Esconder es lo peligroso, no animar. Esta sección se monta TARDE
+         —espera al fetch—, así que para cuando corre esto el navegador ya pudo
+         haber restaurado el scroll de una recarga en cualquier punto de la
+         página. Si la sección ya está en pantalla, o ya quedó atrás, el
+         `autoAlpha: 0` la apaga y el observer no vuelve a disparar nunca: se
+         queda invisible para siempre. Es la regla del proyecto —un fallo no
+         puede dejar contenido oculto—, así que solo se prepara el reveal
+         cuando la sección está ÍNTEGRAMENTE por debajo del pliegue. */
+      if (section.getBoundingClientRect().top < window.innerHeight) return
+
       gsap.set('.ct-social-section .ct-section__head', { autoAlpha: 0, x: -16 })
       gsap.set('.ct-social-card', { autoAlpha: 0, y: 18, scale: 0.95 })
       /* El contenedor de la animación no va en el stagger de los cuadros: es un

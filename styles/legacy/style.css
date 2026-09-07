@@ -4482,7 +4482,12 @@ html.motion-off #animBlobCanvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-size: contain;
+    /* `cover`, NO `contain`. Con `contain` la portada se apoyaba en el eje que
+       le sobraba y el resto lo pintaba el blanco de `.hero-bg-carousel`: de ahi
+       las franjas a los costados. `cover` llena SIEMPRE los dos ejes —recorta
+       lo que sobra, que es el trato— y deja de depender del encuadre que suba
+       el admin: una portada apaisada, cuadrada o vertical se comporta igual. */
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0;
@@ -4498,15 +4503,16 @@ html.motion-off #animBlobCanvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    /* Velo sobre la ilustracion de fondo. Sube de 0.03 a 0.32 ahora que el texto
-       va sobre un panel de cristal: el panel desenfoca lo que tiene detras, y
-       con la ilustracion a plena fuerza el resultado competia con el titulo en
-       vez de acompanarlo. El oscuro NO se toca: ahi el velo es un gradiente
-       propio que ya hace este trabajo (ver dark-theme.css).
+    /* En claro NO lleva velo: la portada se ve a plena fuerza. Quien separa el
+       texto de la ilustracion es el panel de cristal, que para eso esta —el
+       velo era la solucion previa al panel y con los dos encima la portada
+       llegaba lavada. El oscuro SI conserva el suyo: ahi es un gradiente que
+       hace el trabajo inverso (ver dark-theme.css) y sin el la portada blanca
+       parte al medio un sitio violeta.
        Velo y no `filter`/`opacity`: la opacidad de las slides la maneja GSAP en
        el crossfade y un filtro sobre una imagen a pantalla completa se
        recompone en cada frame. */
-    background: rgba(255, 255, 255, 0.32);
+    background: transparent;
     /* El blur se movio a .carousel-slide (ver comentario ahi). */
     z-index: 1;
 }
@@ -4531,9 +4537,11 @@ html.motion-off #animBlobCanvas {
    desenfoque no inventa material, revela el de atras. Es un solo elemento, no
    una cinta de 48 -ver la nota de PERF en `.wave-item`.
 
-   El velo es fino a proposito: quien separa el texto de la ilustracion es el
-   desenfoque, no la opacidad. Un velo denso taparia la portada justo donde
-   tiene que lucirse. */
+   El velo es la mitad del trabajo y el desenfoque la otra. Era fino (11%)
+   mientras el carrusel llevaba encima su propio velo blanco; sacado ese velo
+   -la portada se ve a plena fuerza- el panel tiene que sostener solo la
+   legibilidad, y con 11% el titulo se perdia sobre una ilustracion de color.
+   Sigue siendo cristal: el desenfoque revela la forma de lo que hay detras. */
 .hero-content {
     position: relative;
     /* El panel se ajusta al texto en vez de estirarse a toda la columna: como
@@ -4547,16 +4555,16 @@ html.motion-off #animBlobCanvas {
     background:
         linear-gradient(
             160deg,
-            color-mix(in srgb, #fff 15%, transparent),
-            color-mix(in srgb, #fff 4%, transparent) 45%,
-            color-mix(in srgb, var(--accent) 4%, transparent)
+            color-mix(in srgb, #fff 34%, transparent),
+            color-mix(in srgb, #fff 14%, transparent) 45%,
+            color-mix(in srgb, var(--accent) 10%, transparent)
         ),
-        color-mix(in srgb, var(--bg-primary) 11%, transparent);
+        color-mix(in srgb, var(--bg-primary) 32%, transparent);
     /* Solo la propiedad estandar: el prefijado lo pone el build (Lightning CSS).
        Declarar -webkit- a mano hace que Lightning colapse las dos en la
        prefijada SOLA, y Chrome ya retiro ese alias: el panel se quedaria sin
        desenfoque. Misma convencion que styles/contact-page.css. */
-    backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(150%);
     box-shadow:
         inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent),
         0 18px 50px -20px rgba(0, 0, 0, 0.26);
@@ -4574,39 +4582,22 @@ html.motion-off #animBlobCanvas {
     .hero-content { background: color-mix(in srgb, var(--bg-primary) 78%, transparent); }
 }
 
-/* Movil. Dos correcciones sobre la receta de escritorio:
-
-   1) MAS CRISTAL. El velo fino funciona en una pantalla grande, donde el panel
-      ocupa media columna y la ilustracion se ve entera al lado. En un telefono
-      el panel ES la pantalla: con 11% de velo la portada pasa de largo por
-      debajo del texto y el material no se lee como vidrio. Sube el velo y el
-      desenfoque — sigue siendo cristal (se ve lo de atras), pero con cuerpo.
-   2) PEGADO AL TEXTO. El padding y los margenes internos son de escritorio y
-      en 375px dejaban casi media pantalla de aire dentro del panel. Se cierran
-      sobre el texto: mismo contenido, mucho menos caja. */
+/* Movil: PEGADO AL TEXTO. El material del panel es el mismo que en escritorio;
+   lo unico que cambia es la caja. El padding y los margenes internos estaban
+   calculados para una columna de 600px y en 375px dejaban casi media pantalla
+   de aire adentro del panel. Se cierran sobre el texto: mismo contenido, mucho
+   menos caja (medido: 580px de alto -> 242px). */
 @media (max-width: 768px) {
     .hero-content {
         padding: clamp(0.7rem, 2.4vw, 0.95rem) clamp(0.65rem, 2.2vw, 0.9rem);
-        background:
-            linear-gradient(
-                160deg,
-                color-mix(in srgb, #fff 34%, transparent),
-                color-mix(in srgb, #fff 14%, transparent) 45%,
-                color-mix(in srgb, var(--accent) 10%, transparent)
-            ),
-            color-mix(in srgb, var(--bg-primary) 32%, transparent);
-        backdrop-filter: blur(18px) saturate(150%);
     }
-    /* El velo del carrusel baja de 0.32 a 0.20. Es la otra mitad del mismo
-       problema: con la portada tan lavada no quedaba nada detras del panel que
-       desenfocar, y un vidrio sin nada atras es un rectangulo blanco. El panel
-       queda MAS denso que el velo, asi que sigue siendo el quien separa el
-       texto. El oscuro no entra: ahi el velo es un gradiente propio. */
-    .carousel-overlay { background: rgba(255, 255, 255, 0.2); }
     /* Los margenes del badge y del titulo son los que inflan el panel: adentro
        de una caja acotada no hacen falta 2rem. */
     .hero-content .badge { margin-bottom: 0.6rem; }
     .hero-content .hero-title { margin-bottom: 0.7rem; }
+    /* Sin desenfoque el panel es lo unico que separa del dibujo, y en un
+       telefono ocupa el ancho entero: el velo de respaldo va mas denso que el
+       de escritorio. */
     @supports not (backdrop-filter: blur(1px)) {
         .hero-content { background: color-mix(in srgb, var(--bg-primary) 88%, transparent); }
     }
