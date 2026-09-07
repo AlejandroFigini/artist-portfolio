@@ -170,10 +170,69 @@ export default function ContactPage() {
         }, { rootMargin: '0px 0px -8% 0px', threshold: 0.1 })
         cvIo.observe(cvSection)
       }
+      /* La portada casi no se mueve al scrollear: mientras el hero sube, la capa
+         baja una fracción de su propio alto y compensa la mayor parte de ese
+         desplazamiento. Sigue recortada por el cover, que sí se va con la página.
+
+         Arranca en 0 y no en un valor negativo: 0 es la posición en la que la
+         capa está centrada sobre el cover (ver `.ct-hero__bg-inner`), así que
+         la imagen se ve centrada al cargar y el recorrido gasta el margen
+         superior. Con un rango simétrico el centro caía en la mitad del scroll
+         y al entrar a la página se veía la mitad inferior de la imagen.
+
+         `yPercent` y no píxeles: se recalcula solo al cambiar el viewport, sin
+         medir el hero a mano ni refrescar el trigger en cada resize. */
+      const bgInner = main.querySelector<HTMLElement>('.ct-hero__bg-inner')
+      if (bgInner) {
+        /* El recorrido sale de la geometría real, no de un número acá. El margen
+           disponible es `|top|`, y gastarlo entero destaparía el borde superior,
+           así que se usa el 96%. Derivarlo del CSS permite que el media query de
+           móvil —que achica el margen para no recortar tanto la ilustración—
+           ajuste el efecto sin tener que tocar también este archivo, y que los
+           dos no se desincronicen. Como función, ScrollTrigger lo recalcula en
+           cada refresh, así que también sobrevive a un cambio de viewport. */
+        const recorrido = () => {
+          const cs = getComputedStyle(bgInner)
+          const alto = parseFloat(cs.height)
+          if (!alto) return 0
+          return (Math.abs(parseFloat(cs.top)) / alto) * 100 * 0.96
+        }
+        gsap.fromTo(
+          bgInner,
+          { yPercent: 0 },
+          {
+            yPercent: recorrido,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: '.ct-hero', start: 'top top', end: 'bottom top',
+              scrub: true, invalidateOnRefresh: true,
+            },
+          },
+        )
+      }
     }, mainRef)
 
     return () => ctx.revert()
   }, [motion])
+
+  /* Detiene el vaivén de la portada cuando el hero sale de cuadro: es una
+     animación infinita y no tiene por qué seguir corriendo donde nadie la ve.
+     Solo eso — la portada está acotada al hero, así que sale de pantalla sola
+     y no hace falta ocultar nada.
+
+     Efecto aparte y sin depender de `motion` a propósito: no puede quedar
+     supeditado a que el chunk de GSAP haya bajado. */
+  useEffect(() => {
+    const slot = mainRef.current?.querySelector<HTMLElement>('.ct-hero__bg-slot')
+    const hero = mainRef.current?.querySelector('.ct-hero')
+    if (!slot || !hero || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(
+      ([e]) => slot.classList.toggle('is-parked', !e.isIntersecting),
+      { rootMargin: '10% 0px' },
+    )
+    io.observe(hero)
+    return () => { io.disconnect(); slot.classList.remove('is-parked') }
+  }, [])
 
   /* Reel de la sección Social: reproduce solo en cuadro. Efecto aparte y sin
      depender de `motion` a propósito — el gate de reproducción no puede quedar
@@ -207,7 +266,9 @@ export default function ContactPage() {
             crossfade y el gestor detrás del engranaje. El contenedor es el slot;
             las slides se pintan adentro y se reemplazan sin tocarlo. */}
         <div className="ct-hero__bg-slot" aria-hidden="true">
-          <HeroMediaCarousel prefix="contact-hero" label="Background Carousel — Contact" />
+          <div className="ct-hero__bg-inner">
+            <HeroMediaCarousel prefix="contact-hero" label="Background Carousel — Contact" />
+          </div>
         </div>
         {isAdmin && (
           <button

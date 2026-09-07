@@ -37,6 +37,15 @@
     --radius-sm: 0.75rem;
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Sombra de los dos carruseles flotantes del hero. Token propio y no
+       --shadow-lg: esas dos piezas flotan SOBRE una ilustracion, no sobre un
+       fondo liso, y una sombra de 15px de radio contra un dibujo no se ve.
+       Como variable, la regla que apaga la sombra del contenedor vacio
+       (.media-container:has(.hero-carousel-empty)) le sigue ganando por
+       especificidad, que es lo que tiene que pasar. */
+    --hero-gallery-shadow:
+        0 2px 6px -2px rgba(0, 0, 0, 0.14),
+        0 28px 60px -24px rgba(0, 0, 0, 0.45);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --page-gutter: clamp(1rem, 5vw, 4rem);
@@ -4473,7 +4482,15 @@ html.motion-off #animBlobCanvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.03);
+    /* Velo sobre la ilustracion de fondo. Sube de 0.03 a 0.32 ahora que el texto
+       va sobre un panel de cristal: el panel desenfoca lo que tiene detras, y
+       con la ilustracion a plena fuerza el resultado competia con el titulo en
+       vez de acompanarlo. El oscuro NO se toca: ahi el velo es un gradiente
+       propio que ya hace este trabajo (ver dark-theme.css).
+       Velo y no `filter`/`opacity`: la opacidad de las slides la maneja GSAP en
+       el crossfade y un filtro sobre una imagen a pantalla completa se
+       recompone en cada frame. */
+    background: rgba(255, 255, 255, 0.32);
     /* El blur se movio a .carousel-slide (ver comentario ahi). */
     z-index: 1;
 }
@@ -4493,6 +4510,54 @@ html.motion-off #animBlobCanvas {
 
 /* Hero from demo */
 .hero { min-height: 100vh; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vh, 4rem); display: flex; align-items: center; }
+/* Panel de cristal del texto, misma receta que `.ct-hero-wrap` (/contact).
+   Aca SI hay `backdrop-filter`: detras esta el carrusel de portada, y el
+   desenfoque no inventa material, revela el de atras. Es un solo elemento, no
+   una cinta de 48 -ver la nota de PERF en `.wave-item`.
+
+   El velo es fino a proposito: quien separa el texto de la ilustracion es el
+   desenfoque, no la opacidad. Un velo denso taparia la portada justo donde
+   tiene que lucirse. */
+.hero-content {
+    position: relative;
+    /* El panel se ajusta al texto en vez de estirarse a toda la columna: como
+       celda del grid tomaba ~600px en escritorio y el cristal quedaba con
+       medio panel vacio a la derecha. Por debajo de 34rem de columna no hace
+       nada, asi que en movil sigue a lo ancho. */
+    max-width: 34rem;
+    padding: clamp(2.1rem, 4vw, 3.4rem) clamp(1.8rem, 3.4vw, 3rem);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+    border-radius: 4px;
+    background:
+        linear-gradient(
+            160deg,
+            color-mix(in srgb, #fff 15%, transparent),
+            color-mix(in srgb, #fff 4%, transparent) 45%,
+            color-mix(in srgb, var(--accent) 4%, transparent)
+        ),
+        color-mix(in srgb, var(--bg-primary) 11%, transparent);
+    /* Solo la propiedad estandar: el prefijado lo pone el build (Lightning CSS).
+       Declarar -webkit- a mano hace que Lightning colapse las dos en la
+       prefijada SOLA, y Chrome ya retiro ese alias: el panel se quedaria sin
+       desenfoque. Misma convencion que styles/contact-page.css. */
+    backdrop-filter: blur(14px) saturate(140%);
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent),
+        0 18px 50px -20px rgba(0, 0, 0, 0.26);
+}
+
+/* El margen inferior del ultimo bloque quedaba suelto dentro del panel: sumado
+   al padding dejaba un hueco muerto de casi 5rem. Es consecuencia directa de
+   meter el texto en una caja, asi que se corrige aca. */
+.hero-content > :last-child { margin-bottom: 0; }
+
+/* Sin `backdrop-filter` (Firefox con la bandera apagada, navegadores viejos) el
+   texto quedaria sobre la ilustracion a pelo. Ahi y solo ahi se vuelve al velo
+   opaco: el contraste no puede depender de una capacidad opcional. */
+@supports not (backdrop-filter: blur(1px)) {
+    .hero-content { background: color-mix(in srgb, var(--bg-primary) 78%, transparent); }
+}
+
 .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3rem, 8vw, 10rem); width: 100%; max-width: 1480px; margin: 0 auto; height: 100%; align-items: center; position: relative; z-index: 30; }
 
 @media (max-width: 1024px) {
@@ -4501,6 +4566,9 @@ html.motion-off #animBlobCanvas {
         gap: 4rem;
         text-align: center;
     }
+    /* Con el texto centrado, un panel con `max-width` se quedaria pegado a la
+       izquierda de la columna. */
+    .hero-content { margin-inline: auto; }
 }
 .badge {
     display: inline-block; padding: 0.5rem 1.5rem; border: 1px solid var(--container-border);
@@ -4518,8 +4586,8 @@ html.motion-off #animBlobCanvas {
 
 .hero-media-wrapper { position: relative; height: 80vh; width: 100%; perspective: 1000px; }
 .container-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(45deg, rgba(139,92,246,0.1), transparent); z-index: 2; pointer-events: none; }
-.hero-primary { width: 72%; height: 68%; position: absolute; top: 0%; right: 0; z-index: 5; box-shadow: var(--shadow-lg); }
-.hero-secondary { width: 45%; height: 45%; position: absolute; bottom: 15%; right: 50%; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--shadow-lg); }
+.hero-primary { width: 72%; height: 68%; position: absolute; top: 0%; right: 0; z-index: 5; box-shadow: var(--hero-gallery-shadow); }
+.hero-secondary { width: 52%; height: 50%; position: absolute; bottom: 15%; right: 50%; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--hero-gallery-shadow); }
 /* Los carruseles chicos NO reaccionan al click sobre el contenedor: sus acciones
    se disparan SOLO desde el engranaje (que vive fuera, como hijo del wrapper, y
    conserva pointer-events). */
@@ -4620,9 +4688,24 @@ html.motion-off #animBlobCanvas {
        (waveMarquee 55s infinite): el blur se recalculaba 48 veces por frame
        mientras la cinta corre. El relleno sube de 0.65 a 0.78 para que siga
        leyendose como vidrio esmerilado sin costo de GPU. */
-    background: rgba(255, 255, 255, 0.78);
+    /* Material del panel de cristal (`.ct-hero-wrap` / `.hero-content`) MENOS el
+       `backdrop-filter`, por la nota de PERF de arriba: el degrade y el filo
+       interno son lo que hace leer una superficie de vidrio, y esos no cuestan
+       composicion. El relleno baja de 0.78 a 0.66 porque el degrade suma por
+       encima: la opacidad efectiva queda donde estaba. */
+    background:
+        linear-gradient(
+            160deg,
+            rgba(255, 255, 255, 0.55),
+            rgba(255, 255, 255, 0.18) 45%,
+            color-mix(in srgb, var(--accent) 8%, transparent)
+        ),
+        rgba(255, 255, 255, 0.66);
     border: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.09), 0 2px 8px -2px rgba(124, 58, 237, 0.07);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        0 6px 20px -3px rgba(0, 0, 0, 0.09),
+        0 2px 8px -2px rgba(124, 58, 237, 0.07);
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -4641,7 +4724,9 @@ html.motion-off #animBlobCanvas {
     padding: 0 20px;
     transform: scale(1.08); /* Reduced scale since it becomes much wider */
     border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-    box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
     z-index: 40;
 }
 
@@ -4650,7 +4735,9 @@ html.motion-off #animBlobCanvas {
     animation: none;
     transform: scale(1.15);
     border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-    box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        0 10px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
     z-index: 40;
 }
 

@@ -10,6 +10,13 @@
 .ct-main {
   /* Medio hueco por sección: dos secciones contiguas suman uno completo. */
   --ct-gap: clamp(1.25rem, 2.5vw, 2rem);
+  /* Sombra unica de los contenedores. Dos capas porque una sola no da
+     profundidad: la corta y opaca apoya la pieza sobre la pagina, la larga y
+     muy difusa es la que la despega. Un solo token = las cinco familias de
+     contenedor no pueden quedar a distinta altura. */
+  --ct-shadow:
+    0 1px 2px rgba(30, 30, 36, 0.04),
+    0 14px 34px -18px rgba(30, 30, 36, 0.3);
   position: relative;
   background: var(--bg-primary);
   overflow: clip;
@@ -150,7 +157,13 @@
 .ct-hero {
   position: relative;
   z-index: 2;
-  padding: clamp(6rem, 12vw, 10rem) 0 var(--ct-gap);
+  /* Alto propio, no solo el que le da el panel: el tramo de scroll en el que la
+     portada se ve quieta es exactamente este alto. */
+  min-height: 64svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(6.5rem, 13vw, 11rem) 0 clamp(2rem, 4vw, 3.5rem);
   text-align: center;
 }
 
@@ -166,21 +179,21 @@
   background:
     linear-gradient(
       160deg,
-      color-mix(in srgb, #fff 28%, transparent),
-      color-mix(in srgb, #fff 8%, transparent) 45%,
-      color-mix(in srgb, var(--accent) 6%, transparent)
+      color-mix(in srgb, #fff 15%, transparent),
+      color-mix(in srgb, #fff 4%, transparent) 45%,
+      color-mix(in srgb, var(--accent) 4%, transparent)
     ),
-    color-mix(in srgb, var(--bg-primary) 22%, transparent);
+    color-mix(in srgb, var(--bg-primary) 11%, transparent);
   /* Solo la propiedad estándar: el prefijado lo pone el build (Lightning CSS,
      vía Tailwind v4) según browserslist. Declarar `-webkit-` a mano hacía que
      Lightning colapsara las dos en la prefijada SOLA, y Chrome ya retiró ese
      alias (`CSS.supports('-webkit-backdrop-filter', …)` → false): el panel se
      quedaba sin desenfoque, con el texto sobre la ilustración a un 22% de
      velo. Misma convención que styles/contact-modal.css. */
-  backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(140%);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 45%, transparent),
-    0 18px 50px -20px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent),
+    0 18px 50px -20px rgba(0, 0, 0, 0.26);
   overflow: hidden;
 }
 
@@ -193,9 +206,19 @@
   }
 }
 
-/* Contenedor del carrusel de portada. Las slides son absolutas (las pinta
-   HeroMediaCarousel), así que el slot es el que define el espacio y el recorte;
-   la opacidad vive acá y no en cada slide para que el crossfade no la pise. */
+/* Contenedor del carrusel de portada: el LÍMITE del cover.
+
+   Vuelve a estar acotado al hero (`absolute` + `overflow: hidden`), no a
+   viewport completo. Una portada `fixed` como la del feed no funciona en esta
+   página: en el feed, de su hero para abajo TODAS las secciones tienen fondo
+   propio opaco y la tapan, mientras que acá ninguna lo tiene —el color lo pone
+   `.ct-main`, que está por DEBAJO— así que la portada se veía por detrás del
+   formulario y de las tarjetas a lo largo de toda la página.
+
+   El efecto de quedarse quieta no lo da el `fixed`: lo da `.ct-hero__bg-inner`
+   compensando el scroll. Así se consiguen las dos cosas a la vez, que es lo
+   que hace falta: la imagen tiene un marco del que no se sale, y dentro de ese
+   marco no se mueve con la página. */
 .ct-hero__bg-slot {
   position: absolute;
   inset: 0;
@@ -205,10 +228,74 @@
   opacity: 0.8;
 }
 
-/* Vacío: manda el marco punteado estándar, sin el velo de opacidad que se le
-   aplica a una portada con contenido. */
+/* La capa que se desplaza.
+
+   El margen va ARRIBA, no repartido a los dos lados. Ese es el detalle que
+   decide el encuadre: la capa se desplaza hacia abajo, así que todo el material
+   de sobra tiene que estar por encima para que en reposo la imagen ya esté
+   centrada en el cover. Con el margen repartido, el centro caía recién en la
+   mitad del recorrido y al cargar se veía la mitad inferior de la imagen.
+
+   Las medidas van juntas: `top: -70%` + `height: 240%` dejan la capa centrada
+   sobre el cover cuando `yPercent` vale 0, y el recorrido hasta 28% (ver
+   ContactPage) consume ese margen sin llegar a descubrir el borde superior.
+   Cambiar una sola de las tres rompe el encuadre o destapa un borde.
+
+   El margen es también lo que fija cuánto se compensa el scroll (acá ~67%) y
+   cuánto recorta la imagen a los lados: la capa es más alta que el cover, y
+   `object-fit: cover` escala por el alto. Más margen = la portada se queda más
+   quieta pero se ve más ampliada. Este par es el punto de equilibrio.
+
+   `yPercent` 0 es además lo que se ve si GSAP no llega o con
+   `prefers-reduced-motion`: centrada y cubriendo. El estado visible no depende
+   de que la animación corra. */
+.ct-hero__bg-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -70%;
+  height: 240%;
+}
+
+/* En pantallas angostas el cover queda estrecho y alto, y como `object-fit:
+   cover` escala por el alto, el margen se paga en recorte LATERAL: con 240% la
+   ilustración se ampliaba tanto que solo quedaba una franja central. Menos
+   margen = menos compensación de scroll, pero se ve el dibujo. El par sigue
+   cumpliendo `top + height / 2 = 50%`, que es lo que la deja centrada. */
+@media (max-width: 768px) {
+  .ct-hero__bg-inner {
+    top: -40%;
+    height: 180%;
+  }
+}
+
+/* Vacío: el cover es el contenedor de edición, sin el velo de opacidad que
+   solo corresponde a una portada con contenido. */
 .ct-hero__bg-slot:has(.hero-carousel-empty) {
   opacity: 1;
+}
+
+/* Vaivén lento de la portada. Solo `transform` (nada de reflow) y solo mientras
+   el hero está en cuadro. Va en la imagen y no en `.ct-hero__bg-inner`, que
+   tiene su propio transform: son elementos distintos y no se pisan. El `scale`
+   base es lo que impide que el desplazamiento descubra los bordes. */
+@keyframes ct-hero-drift {
+  0%   { transform: scale(1.08) translate3d(0, 0, 0); }
+  50%  { transform: scale(1.14) translate3d(-1.6%, -1.2%, 0); }
+  100% { transform: scale(1.08) translate3d(1.4%, 0.8%, 0); }
+}
+
+.ct-hero__bg-slot img {
+  animation: ct-hero-drift 34s ease-in-out infinite alternate;
+}
+
+/* Fuera de cuadro el vaivén se detiene. */
+.ct-hero__bg-slot.is-parked img {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-hero__bg-slot img { animation: none; }
 }
 
 /* El engranaje del gestor va sobre el hero, nunca bajo el panel del título.
@@ -292,7 +379,9 @@
 
 .ct-info-card:hover {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  box-shadow: 0 8px 30px -8px color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow:
+    var(--ct-shadow),
+    0 8px 30px -8px color-mix(in srgb, var(--accent) 15%, transparent);
   transform: translateY(-3px);
 }
 
@@ -567,7 +656,9 @@
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 6%, var(--bg-primary));
   transform: translateY(-4px);
-  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow:
+    var(--ct-shadow),
+    0 10px 28px -8px color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--text-primary);
 }
 
@@ -692,6 +783,28 @@
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* ============================================================
+   SOMBRA DE CONTENEDOR
+   ============================================================ */
+
+/* Todas las piezas de la pagina se apoyan a la misma altura. Va en una regla
+   compartida y no repetida en cada seccion, que es como se desincronizan.
+
+   El contenedor VACIO queda afuera solo: el neutralizador global
+   `.cms-empty-slot { box-shadow: none !important }` (legacy/style.css) lo tapa,
+   porque un contenedor sin contenido no lleva efectos del contenido. No hace
+   falta excluirlo a mano aca -y no se debe, seria duplicar esa regla.
+
+   El panel del hero ya trae la suya, calibrada contra la ilustracion que tiene
+   detras; no se toca. */
+.ct-info-card,
+.ct-social-card,
+.ct-social-anim-container,
+.ct-form-wrap,
+.ct-cv-card {
+  box-shadow: var(--ct-shadow);
 }
 
 /* ============================================================

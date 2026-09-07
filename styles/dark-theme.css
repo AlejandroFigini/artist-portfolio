@@ -62,6 +62,11 @@
      como un agujero. */
   --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(60, 20, 140, 0.25);
   --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(76, 29, 149, 0.35);
+  /* Sobre lienzo casi negro la sombra tiene que ser mas negra y mas larga. */
+  --hero-gallery-shadow:
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 32px 70px -26px rgba(0, 0, 0, 0.85),
+    0 8px 26px -12px rgba(76, 29, 149, 0.4);
 }
 
 /* Variables locales del tema. Fuera de `:root` a propósito: son detalle de
@@ -303,16 +308,51 @@ body {
    Pasan a vidrio violeta. Los logos de software son a color y siguen
    leyéndose; el borde claro les da el filo que perdían contra el fondo. */
 [data-theme="dark"] .wave-item {
-  background: rgba(34, 27, 61, 0.86);
+  background:
+    linear-gradient(
+      160deg,
+      rgba(167, 139, 250, 0.16),
+      rgba(12, 10, 20, 0.10) 45%,
+      rgba(12, 10, 20, 0.14)
+    ),
+    rgba(34, 27, 61, 0.82);
   border-color: rgba(167, 139, 250, 0.20);
-  box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.55), 0 2px 10px -2px rgba(145, 101, 247, 0.18);
+  /* El filo es mucho mas tenue que en claro: sobre fondo oscuro un realce
+     blanco marcado se lee como borde, no como vidrio. Mismo criterio que
+     `.ct-hero-wrap`. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 6px 20px -3px rgba(0, 0, 0, 0.55), 0 2px 10px -2px rgba(145, 101, 247, 0.18);
 }
 [data-theme="dark"] .wave-item.wave-has-content:hover,
 [data-theme="dark"] .wave-item:not(.wave-has-content):hover {
   border-color: rgba(167, 139, 250, 0.55);
-  box-shadow: 0 10px 28px -4px rgba(145, 101, 247, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 10px 28px -4px rgba(145, 101, 247, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
 }
 [data-theme="dark"] .wave-text { color: var(--text-primary); }
+
+/* Panel de cristal del texto del hero. Espejo exacto de `.ct-hero-wrap`: el
+   velo solo aporta el tinte oscuro que hace legible el texto claro; quien
+   separa de la ilustracion es el desenfoque. */
+[data-theme="dark"] .hero-content {
+  border-color: rgba(167, 139, 250, 0.24);
+  background:
+    linear-gradient(
+      160deg,
+      rgba(145, 101, 247, 0.1),
+      rgba(12, 10, 20, 0.14) 45%,
+      rgba(12, 10, 20, 0.19)
+    ),
+    rgba(12, 10, 20, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 22px 60px -24px rgba(0, 0, 0, 0.7);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  [data-theme="dark"] .hero-content { background: rgba(12, 10, 20, 0.82); }
+}
 [data-theme="dark"] .wave-item:not(.wave-has-content) {
   border-color: rgba(167, 139, 250, 0.34);
   background: rgba(145, 101, 247, 0.10);
@@ -700,7 +740,14 @@ body {
 
 /* --- 23. PÁGINA /contact ----------------------------------------- */
 
-[data-theme="dark"] .ct-main { background: var(--bg-primary); }
+/* En oscuro la sombra tiene que ser mas negra y mas larga: sobre un lienzo casi
+   negro, la version de claro no separa nada. */
+[data-theme="dark"] .ct-main {
+  background: var(--bg-primary);
+  --ct-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 18px 44px -22px rgba(0, 0, 0, 0.8);
+}
 [data-theme="dark"] .ct-grid-bg {
   background-image:
     linear-gradient(var(--dk-line) 1px, transparent 1px),
@@ -730,14 +777,14 @@ body {
   background:
     linear-gradient(
       160deg,
-      rgba(145, 101, 247, 0.16),
-      rgba(12, 10, 20, 0.24) 45%,
-      rgba(12, 10, 20, 0.34)
+      rgba(145, 101, 247, 0.1),
+      rgba(12, 10, 20, 0.14) 45%,
+      rgba(12, 10, 20, 0.19)
     ),
-    rgba(12, 10, 20, 0.28);
+    rgba(12, 10, 20, 0.15);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 22px 60px -24px rgba(0, 0, 0, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 22px 60px -24px rgba(0, 0, 0, 0.7);
 }
 
 /* Sin `backdrop-filter` no hay separación posible salvo el velo opaco. */
@@ -766,7 +813,7 @@ body {
 [data-theme="dark"] .ct-cv-card:hover {
   border-color: rgba(167, 139, 250, 0.42);
   background: var(--surface-2);
-  box-shadow: 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(145, 101, 247, 0.5);
+  box-shadow: var(--ct-shadow), 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(145, 101, 247, 0.5);
 }
 [data-theme="dark"] .ct-form-wrap__fig { background: var(--surface-1); color: var(--accent-text); }
 
