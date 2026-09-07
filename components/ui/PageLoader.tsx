@@ -29,7 +29,7 @@ import {
   subscribeLoaderGates,
   trackWindowLoad,
 } from '@/lib/loader-ready'
-import { optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
+import { videoInlineSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
 
 declare global {
   interface Window {
@@ -316,7 +316,7 @@ export default function PageLoader() {
               // webm al resto desde el mismo archivo. Este <video> es
               // React-controlled (no pasa por engine.ts), así que se aplica
               // acá aparte.
-              src={optimizedMediaSrc(videoSrc) || undefined}
+              src={videoInlineSrc(videoSrc) || undefined}
               /* El <src> llega recién al hidratar y desde ahí hay que descargar
                  y decodificar: sin póster el recuadro se ve NEGRO ese rato, que
                  es justo el arranque del sitio. El póster es una imagen chica y

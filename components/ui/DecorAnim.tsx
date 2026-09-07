@@ -36,7 +36,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { prefersReducedMotion } from '@/hooks/motion-flags'
-import { afterLoadIdle, canWarmMedia, warmVideoOnce } from '@/lib/media-warm'
+import { afterLoadIdle, canWarmSpeculative, warmVideoOnce } from '@/lib/media-warm'
+import { videoInlineSrc } from '@/lib/utils'
 
 const LS_ROTATION = 'cms_decor_anim_rot_v1'
 
@@ -105,6 +106,14 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
   const signature = list.join('|')
   const current = total ? list[idx % total] : ''
   const upcoming = total > 1 ? list[(idx + 1) % total] : ''
+  /* URLs de ENTREGA. Este era el único componente de media que ponía el valor
+     guardado tal cual en el `src`: sin `f_auto`, Cloudinary devuelve el
+     contenedor como se subió —típicamente webm— y Safari/iOS nunca decodificó
+     webm en <video>, así que en cualquier iPhone estos recuadros quedaban
+     vacíos. Y sin ancho, el teléfono se bajaba el original para una caja
+     decorativa de unos cientos de píxeles. */
+  const currentSrc = videoInlineSrc(current)
+  const upcomingSrc = videoInlineSrc(upcoming)
 
   /* 'load': el índice sale del contador persistido y avanza para el próximo
      montaje. El guard es por instancia: en desarrollo StrictMode corre cada
@@ -189,18 +198,18 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
      después de `load`, donde ya no le compite al primer pintado, y nunca con
      ahorro de datos activo. */
   useEffect(() => {
-    if (active === undefined || warm || !current) return
+    if (active === undefined || warm || !currentSrc) return
     let cancelled = false
     const cancelIdle = afterLoadIdle(() => {
-      if (!canWarmMedia()) return
+      if (!canWarmSpeculative()) return
       /* `warmVideoOnce` y no un `setWarm` directo: el mismo clip vive en los
          cuatro desplegables de software, y cuatro `preload="auto"` a la vez son
          cuatro descargas del mismo archivo. Acá se baja una sola y el resto
          sube su preload cuando ya está en caché. */
-      void warmVideoOnce(current).then(() => { if (!cancelled) setWarm(true) })
+      void warmVideoOnce(currentSrc).then(() => { if (!cancelled) setWarm(true) })
     })
     return () => { cancelled = true; cancelIdle() }
-  }, [active, warm, current])
+  }, [active, warm, currentSrc])
 
   useEffect(() => {
     const v = videoRef.current
@@ -247,7 +256,7 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
         key={current}
         ref={videoRef}
         className="decor-anim__media"
-        src={current}
+        src={currentSrc}
         loop
         muted
         playsInline
@@ -256,7 +265,7 @@ export default function DecorAnim({ sources, className, active, rotateOn = 'togg
         disableRemotePlayback
       />
       {preloadNext && (
-        <video className="decor-anim__preload" src={upcoming} preload="auto" muted playsInline aria-hidden="true" />
+        <video className="decor-anim__preload" src={upcomingSrc} preload="auto" muted playsInline aria-hidden="true" />
       )}
     </div>
   )

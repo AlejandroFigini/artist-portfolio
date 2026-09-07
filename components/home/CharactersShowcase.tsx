@@ -54,13 +54,28 @@ function CharMedia({
   useCmsStore()
   const src = useCmsItems()[cmsKey] || ''
   const has = !isEmptyMedia(src)
+  const boxRef = useRef<HTMLDivElement>(null)
+  /* Ancho MEDIDO, no un literal. Antes era 1080 fijo, justificado por el panel
+     de escritorio (~480px CSS a DPR2) — pero el valor es el mismo en todos
+     lados, así que un teléfono con el panel casi a sangre (~350px CSS, ~700 a
+     DPR2) se bajaba igual la variante de 1200: casi tres veces los píxeles que
+     necesita, y un `background-image` no puede llevar srcSet para corregirlo.
+     El servidor NO conoce el viewport, así que no se emite ninguna URL hasta
+     medir: emitir una a ciegas haría que el teléfono baje DOS variantes. */
+  const [bgWidth, setBgWidth] = useState(0)
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const w = el.clientWidth || el.getBoundingClientRect().width || window.innerWidth
+    setBgWidth(Math.ceil(w * Math.min(window.devicePixelRatio || 1, 2)))
+  }, [])
   return (
     <div
+      ref={boxRef}
       className={`${className}${has ? ' has-media' : ''}`}
       data-cms-key={cmsKey}
       data-full={has ? src : ''}
-      // el panel nunca pasa de ~480px CSS → 1080 cubre DPR2 sin traer el original
-      style={has ? { backgroundImage: `url("${optimizedMediaSrc(src, 1080)}")` } : undefined}
+      style={has && bgWidth ? { backgroundImage: `url("${optimizedMediaSrc(src, bgWidth)}")` } : undefined}
       onClick={(e) => { e.stopPropagation(); if (has) onOpen(src) }}
     />
   )

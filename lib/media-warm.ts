@@ -32,6 +32,21 @@ export function canWarmMedia(): boolean {
   return conn.effectiveType !== '2g' && conn.effectiveType !== 'slow-2g'
 }
 
+/* Precalentado ESPECULATIVO: paneles que el visitante puede no abrir nunca (el
+   desplegable de software, el panel de ajustes, el menú móvil). Más estricto
+   que `canWarmMedia`, que sigue rigiendo la media que el visitante SÍ va a ver
+   al scrollear — bajarle el listón a esa rompería la marca `has-frame` y las
+   tarjetas quedarían invisibles hasta reproducirse (ver HomeFx).
+   Acá el criterio es al revés: en un teléfono son megabytes de pura
+   especulación compitiendo por el mismo caño 4G que la media que el visitante
+   está por mirar. El tier lo calcula el boot script antes del primer paint. */
+export function canWarmSpeculative(): boolean {
+  if (!canWarmMedia()) return false
+  const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection
+  if (conn?.effectiveType === '3g') return false
+  return !(window as Window & { PERF?: { lite?: boolean } }).PERF?.lite
+}
+
 /** Cancela el hueco reservado, sea `requestIdleCallback` o el `setTimeout`. */
 function cancelIdle(id: number) {
   if (window.cancelIdleCallback) window.cancelIdleCallback(id)

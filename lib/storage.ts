@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { CLOUDINARY_WIDTHS, VIDEO_POSTER_WIDTH } from '@/lib/utils'
+import { CLOUDINARY_WIDTHS, VIDEO_INLINE_WIDTH, VIDEO_POSTER_WIDTH } from '@/lib/utils'
 
 /* Almacenamiento de media por ENTORNO.
    - Prod (con credenciales Cloudinary) → sube a Cloudinary.
@@ -211,8 +211,12 @@ export async function uploadBuffer(
          pinta negro hasta que decodifica el primer frame. Misma transformación
          que arma `videoPosterSrc` (lib/utils.ts) — si divergen, el derivado que
          se pre-genera no es el que pide el sitio y no pre-calienta nada. */
+      /* Y la variante de ENTREGA embebida (`videoInlineSrc`, w_960): es la que
+         piden todas las tarjetas y celdas del sitio. Sin pre-generarla, la
+         primera visita después de subir dispara el transcode on-the-fly. */
       options.eager = [
         { fetch_format: 'auto', quality: 'auto' },
+        { fetch_format: 'auto', quality: 'auto', width: VIDEO_INLINE_WIDTH, crop: 'limit' },
         { fetch_format: 'auto', quality: 'auto', width: VIDEO_POSTER_WIDTH, crop: 'limit', start_offset: 0, format: 'jpg' },
       ]
       options.eager_async = true

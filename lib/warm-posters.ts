@@ -1,7 +1,7 @@
 import 'server-only'
 import type { Pool } from 'pg'
 import { hasCloudinary } from '@/lib/storage'
-import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 
 /* Pre-calienta las derivadas de los videos que YA estaban subidos.
  *
@@ -22,11 +22,13 @@ import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 
 const CONCURRENCY = 4
 
-/** Las dos URLs que el sitio pide de cada video. */
+/** Las URLs que el sitio pide de cada video. */
 function derivativesOf(src: string): { url: string; ranged: boolean }[] {
   return [
     // El video pesa megas y no hace falta bajarlo: con Range igual se genera.
     { url: optimizedMediaSrc(src), ranged: true },
+    // La variante embebida (w_960), que es la que piden tarjetas y celdas.
+    { url: videoInlineSrc(src), ranged: true },
     { url: videoPosterSrc(src), ranged: false },
   ].filter((d) => !!d.url)
 }
@@ -69,4 +71,29 @@ export async function warmVideoPosters(pool: Pool): Promise<void> {
      visita, que es exactamente el comportamiento que había antes. Se tira para
      que la migración no quede marcada y se reintente en el próximo arranque. */
   if (failed > 0) throw new Error(`${failed} video(s) sin pre-calentar`)
+}
+
+/* Mismo problema, del lado de las imágenes: `CLOUDINARY_WIDTHS` sumó el peldaño
+   de 828 y los assets que ya estaban subidos no lo tienen (el `eager` viaja en
+   la request de subida, que ya ocurrió). Sin este pase, el primer visitante en
+   un teléfono pide w_828, Cloudinary la genera on-the-fly y hasta que termina
+   devuelve 404 — el contenedor en negro que documenta lib/utils.ts. */
+export async function warmImageWidths(pool: Pool): Promise<void> {
+  if (!hasCloudinary) return
+
+  const { rows } = await pool.query<{ value: string }>(
+    "SELECT DISTINCT value FROM cms_data WHERE value LIKE '%res.cloudinary.com%/image/upload/%'",
+  )
+  const images = rows.map((r) => r.value)
+  if (images.length === 0) return
+
+  let failed = 0
+  await pool_(images, async (src) => {
+    const url = optimizedMediaSrc(src, 828)
+    if (!url || url === src) return
+    if (!(await warmOne(url, false))) failed++
+  })
+
+  console.log(`[warm-posters] ${images.length - failed}/${images.length} imágenes w_828 pre-calentadas`)
+  if (failed > 0) throw new Error(`${failed} imagen(es) sin pre-calentar`)
 }

@@ -1,6 +1,6 @@
 import 'server-only'
 import { Pool } from 'pg'
-import { warmVideoPosters } from '@/lib/warm-posters'
+import { warmImageWidths, warmVideoPosters } from '@/lib/warm-posters'
 
 /* Capa de base de datos (Postgres) para las route handlers de Next.
    - Prod (Railway): DATABASE_URL público/interno → SSL automático.
@@ -285,6 +285,13 @@ async function runMigrations(pool: Pool): Promise<void> {
    idempotentes); no correrla nunca, no. */
 const DATA_MIGRATIONS: { id: string; run: (pool: Pool) => Promise<void> }[] = [
   { id: '2026_08_warm_video_posters', run: warmVideoPosters },
+  /* Id NUEVO, no una edición del de arriba: aquel ya está marcado como
+     aplicado, así que editarlo no lo volvería a correr. Estas dos pre-generan
+     las derivadas que se agregaron después — la variante embebida de video
+     (w_960) y el peldaño w_828 de las imágenes — para los assets que ya
+     estaban subidos. */
+  { id: '2026_09_warm_video_inline', run: warmVideoPosters },
+  { id: '2026_09_warm_image_828', run: warmImageWidths },
 ]
 
 async function runDataMigrations(pool: Pool): Promise<void> {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isVideoSrc, videoPosterSrc } from '@/lib/utils'
+import { isVideoSrc, mediaSrcSet, snapCloudinaryWidth, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { acceptsMediaKind, resolveMediaKind } from '@/components/cms/engine'
 import { storeHref } from '@/components/home/GameDevShowcase'
 
@@ -105,5 +105,42 @@ describe('storeHref — valores pegados de más', () => {
       .toBe('https://store.steampowered.com/app/1/')
     expect(storeHref('store.steampowered.com/app/1/  nota suelta'))
       .toBe('https://store.steampowered.com/app/1/')
+  })
+})
+
+/* Entrega de video con ancho. La transformación tiene que coincidir EXACTO con
+   el `eager` de lib/storage.ts: si divergen, Cloudinary genera la derivada
+   on-the-fly y devuelve 404 mientras trabaja (contenedor en negro). */
+describe('videoInlineSrc', () => {
+  it('pide f_auto,q_auto y el ancho embebido', () => {
+    expect(videoInlineSrc('https://res.cloudinary.com/demo/video/upload/v1/a.webm'))
+      .toBe('https://res.cloudinary.com/demo/video/upload/f_auto,q_auto,w_960,c_limit/v1/a.webm')
+  })
+  it('no vuelve a transformar una URL que ya lo está', () => {
+    const already = 'https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/a.webm'
+    expect(videoInlineSrc(already)).toBe(already)
+  })
+  it('deja intacto lo que no es de Cloudinary', () => {
+    expect(videoInlineSrc('/uploads/reel.webm')).toBe('/uploads/reel.webm')
+    expect(videoInlineSrc('')).toBe('')
+    expect(videoInlineSrc(null)).toBe('')
+  })
+})
+
+/* El peldaño de 828: sin él un teléfono a DPR2 caía siempre en la variante de
+   1200 y `mediaSrcSet` anunciaba esa URL como si fuera de 828. */
+describe('snapCloudinaryWidth', () => {
+  it('tiene un peldaño para el ancho de un teléfono a DPR2', () => {
+    expect(snapCloudinaryWidth(780)).toBe(828)
+    expect(snapCloudinaryWidth(828)).toBe(828)
+    expect(snapCloudinaryWidth(860)).toBe(1200)
+  })
+  it('la escalera coincide con los anchos que pide mediaSrcSet', () => {
+    const set = mediaSrcSet('https://res.cloudinary.com/demo/image/upload/v1/a.webp') || ''
+    // Cada descriptor tiene que apuntar a una URL con SU mismo ancho.
+    for (const part of set.split(', ')) {
+      const [url, descriptor] = part.split(' ')
+      expect(url).toContain(`w_${parseInt(descriptor, 10)},`)
+    }
   })
 })

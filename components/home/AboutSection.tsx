@@ -19,7 +19,7 @@ import { sendGAEvent } from '@next/third-parties/google'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
-import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 
@@ -61,7 +61,7 @@ export default function AboutSection() {
      `indexEditables` (base + '#' + índice dentro del selector). */
   const cmsItems = useCmsItems()
   const aboutVideoRaw = cmsItems['about.video#0'] || ''
-  const aboutVideoSrc = aboutVideoRaw ? optimizedMediaSrc(aboutVideoRaw) : ''
+  const aboutVideoSrc = aboutVideoRaw ? videoInlineSrc(aboutVideoRaw) : ''
   const aboutVideoPoster = aboutVideoRaw ? videoPosterSrc(aboutVideoRaw) : ''
   const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
 

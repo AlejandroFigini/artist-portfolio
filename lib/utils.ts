@@ -93,7 +93,14 @@ export function isGalleryAsset(r: { resource_type?: string; public_id?: string }
   return !base.toLowerCase().startsWith('settings.')
 }
 
-export const CLOUDINARY_WIDTHS = [640, 1200, 1920] as const
+/* 828 es el escalón que faltaba. Un teléfono de 390-430px a DPR2 necesita
+   780-860px, y sin este peldaño `snapCloudinaryWidth` redondeaba TODO eso a
+   1200: el doble de píxeles, o sea aproximadamente el doble de bytes, en el
+   dispositivo con menos ancho de banda. Peor todavía, `mediaSrcSet` pide 828 y
+   recibía la URL de 1200 anunciada como si fuera de 828 — el navegador elegía
+   con un dato falso. Es el mismo ancho que usa el optimizador de Next
+   (NEXT_IMAGE_WIDTHS), así que las dos escaleras coinciden. */
+export const CLOUDINARY_WIDTHS = [640, 828, 1200, 1920] as const
 
 /** Ancho de la escalera inmediatamente >= al pedido (el mayor si se pasa). */
 export function snapCloudinaryWidth(width: number): number {
@@ -239,6 +246,27 @@ export function keepVideoMuted(el: HTMLVideoElement | null | undefined): void {
    póster es un placeholder que se pisa en cuanto llega el primer frame, así que
    640 alcanza para cualquier contenedor del sitio con `object-fit: cover`. */
 export const VIDEO_POSTER_WIDTH = 640
+
+/* Ancho de entrega de todo <video> EMBEBIDO (tarjetas, celdas, decorado, la
+   pantalla de carga). Hasta ahora ningún video pedía ancho: `f_auto,q_auto` sin
+   `w_` entrega el archivo en la resolución en que se subió, así que un teléfono
+   se bajaba un reel de 1080p —megabytes— para pintarlo en una caja de 150 a 350
+   px CSS. El contenedor embebido más ancho del sitio ronda los 480 px, así que
+   960 cubre DPR2 en escritorio y sobra en móvil; `c_limit` nunca agranda.
+   NO pasa por `snapCloudinaryWidth`: 960 no está en la escalera de imágenes (no
+   se le quiere sumar un `eager` sincrónico más a cada subida de imagen) y
+   redondearlo daría 1200. La transformación tiene que ser IDÉNTICA a la del
+   `eager` de lib/storage.ts, o Cloudinary la genera on-the-fly y devuelve 404
+   mientras trabaja. La pantalla completa NO usa esto: ahí se quiere el original.
+*/
+export const VIDEO_INLINE_WIDTH = 960
+
+export function videoInlineSrc(src?: string | null): string {
+  if (!src || typeof src !== 'string') return src || ''
+  if (!src.includes('res.cloudinary.com')) return src
+  if (src.includes('f_auto') && src.includes('q_auto')) return src
+  return src.replace('/upload/', `/upload/f_auto,q_auto,w_${VIDEO_INLINE_WIDTH},c_limit/`)
+}
 
 /* Primer frame del video, como imagen.
    Un <video> sin `poster` y sin frame decodificado pinta NEGRO — ese es el

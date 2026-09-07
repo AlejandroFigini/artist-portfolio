@@ -16,7 +16,7 @@ import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
-import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
 import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 const SLIDE_COUNT = 4
@@ -84,7 +84,7 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
      base + '#' + índice del elemento dentro del selector, y acá el índice de la
      slide es exactamente ese. */
   const cmsRaw = useCmsItems()[`model3d#${index}`] || ''
-  const cmsSrc = cmsRaw ? optimizedMediaSrc(cmsRaw) : ''
+  const cmsSrc = cmsRaw ? videoInlineSrc(cmsRaw) : ''
   const cmsPoster = cmsRaw ? videoPosterSrc(cmsRaw) : ''
   const [hasContent, setHasContent] = useState(!!cmsRaw)
 

@@ -9,7 +9,7 @@ import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
 import VideoPlayer from '@/components/ui/VideoPlayer'
 import { state, useUiText } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
-import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { sendGAEvent } from '@next/third-parties/google'
 
 /* 6 contenedores = 2 filas de 3 en la grilla de escritorio. Al cambiar este
@@ -31,7 +31,7 @@ function AnimCard({ index }: { index: number }) {
   const cmsRaw = useCmsItems()[`anim#${index}`] || ''
   // `useCmsItems` ya suscribe al store, así que esto repinta al iniciar sesión.
   const isAdmin = state.isAdmin
-  const cmsSrc = cmsRaw ? optimizedMediaSrc(cmsRaw) : ''
+  const cmsSrc = cmsRaw ? videoInlineSrc(cmsRaw) : ''
   const cmsPoster = cmsRaw ? videoPosterSrc(cmsRaw) : ''
   const ui = useUiText()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -289,7 +289,10 @@ function AnimCard({ index }: { index: number }) {
 
           <div className="lightbox-wrapper">
             <VideoPlayer
-              src={videoSrc}
+              /* Pantalla completa: la variante SIN recortar el ancho. La
+                 tarjeta usa `videoInlineSrc` (w_960, que le sobra para una
+                 celda), pero acá el clip ocupa la pantalla entera. */
+              src={cmsRaw ? optimizedMediaSrc(cmsRaw) : videoSrc}
               /* Desde `cmsRaw`, NO desde `videoSrc`: éste ya lleva f_auto/q_auto
                  y encadenar otra transformación pide una derivada que el
                  `eager` de lib/storage.ts no generó → 404 mientras Cloudinary la

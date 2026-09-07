@@ -29,7 +29,7 @@ import { openLightbox, openVideoLightbox } from '@/components/ui/lightbox'
 import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
-import { isVideoSrc, mediaSrcSet, optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { isVideoSrc, mediaSrcSet, optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
 import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -172,7 +172,7 @@ function CmsMedia({ cmsKey, sizes, onOpen, onExpand }: { cmsKey: string; sizes: 
           playsInline
           preload="none"
           data-preload-defer=""
-          src={optimizedMediaSrc(raw)}
+          src={videoInlineSrc(raw)}
           poster={videoPosterSrc(raw) || undefined}
         />
       ) : (
@@ -503,7 +503,7 @@ function FeaturePreview({ index, active }: { index: number; active: boolean }) {
   return (
     <div className={`gd-feature__preview${active ? ' is-on' : ''}`} aria-hidden="true">
       {isClip ? (
-        <video ref={videoRef} className="gd-tile__video" muted loop playsInline preload="metadata" src={optimizedMediaSrc(src)} poster={videoPosterSrc(src) || undefined} />
+        <video ref={videoRef} className="gd-tile__video" muted loop playsInline preload="none" data-preload-defer="" src={videoInlineSrc(src)} poster={videoPosterSrc(src) || undefined} />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img className="gd-tile__img" src={optimizedMediaSrc(src, 1200)} alt="" loading="lazy" decoding="async" draggable={false} />

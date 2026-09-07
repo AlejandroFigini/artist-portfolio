@@ -16,7 +16,7 @@ import {
 } from '@/lib/cms/store'
 import { BASE_LANG, isTranslatableEntry, applyStaticTranslations, type Lang } from '@/lib/i18n'
 export { applyStaticTranslations }
-import { basename, optimizedMediaSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted, isVideoSrc } from '@/lib/utils'
+import { basename, optimizedMediaSrc, videoInlineSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted, isVideoSrc } from '@/lib/utils'
 import {
   SETTINGS_MEDIA_CARDS, isSettingsMediaKey, isNonMediaSettingsKey,
   ANIM_SLOTS, animFields, animKey, animLabel, animPreviewClass,
@@ -560,8 +560,11 @@ function applyValue(el: HTMLElement, type: string, value: string) {
        soportó webm en <video> — con f_auto, Cloudinary detecta el user-agent
        en cada request y sirve mp4/h264 a Safari, webm al resto, desde el
        mismo archivo original. Mismo tratamiento que ya recibe la imagen unas
-       líneas arriba (optimizedMediaSrc); acá faltaba conectarlo. */
-    const optimized = optimizedMediaSrc(value)
+       líneas arriba (optimizedMediaSrc); acá faltaba conectarlo.
+       Con ancho (`videoInlineSrc`): estos <video> son celdas del sitio, nunca
+       la pantalla completa, y sin `w_` Cloudinary entregaba la resolución de
+       subida — un reel de 1080p para una caja de 150 a 350 px CSS. */
+    const optimized = videoInlineSrc(value)
     const target = optimized || null
     const actual = s ? s.getAttribute('src') : v.getAttribute('src')
 
