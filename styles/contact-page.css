@@ -648,7 +648,26 @@
   background: color-mix(in srgb, var(--accent) 2%, var(--bg-primary));
   text-decoration: none;
   color: var(--text-primary);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Propiedades concretas, NUNCA `all`, y sin `transform`. Dos cosas rompia:
+
+     1. Con `all` entraban `opacity` y `visibility`, que son las que escribe
+        `autoAlpha`: el `gsap.set` inicial dejaba de ser instantaneo y los
+        cuadros aparecian, se desvanecian durante 0.35s y recien entraban.
+     2. Transicionar `transform` mientras GSAP lo reescribe en cada frame no
+        converge NUNCA: cada escritura reinicia la transicion. Medido, los
+        cuadros quedaban clavados en `scale(0.95) translateY(17px)` con la
+        transicion `running` para siempre, aun con el tween ya terminado y el
+        inline en `translate(0,0)`.
+
+     El precio es que el hover levanta los 4px de golpe; borde, fondo y sombra
+     siguen suavizados. Las tarjetas de info sí pueden transicionar `transform`
+     porque su `gsap.set` corre en el efecto general y alcanza a asentarse
+     mucho antes del reveal. */
+  transition:
+    background 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 

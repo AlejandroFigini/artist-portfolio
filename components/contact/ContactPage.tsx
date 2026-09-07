@@ -82,10 +82,6 @@ export default function ContactPage() {
       gsap.set('.ct-form-section .ct-section__head', { autoAlpha: 0, x: -16 })
       gsap.set('.ct-form-wrap', { autoAlpha: 0, y: 30 })
 
-      /* Social */
-      gsap.set('.ct-social-section .ct-section__head', { autoAlpha: 0, x: -16 })
-      gsap.set('.ct-social-card', { autoAlpha: 0, y: 18, scale: 0.95 })
-
       /* CV */
       gsap.set('.ct-cv-section .ct-section__head', { autoAlpha: 0, x: -16 })
       gsap.set('.ct-cv-card', { autoAlpha: 0, y: 24 })
@@ -132,26 +128,6 @@ export default function ContactPage() {
           }
         }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 })
         formIo.observe(formSection)
-      }
-
-      /* Social section */
-      const socialSection = main.querySelector('.ct-social-section')
-      if (socialSection) {
-        let socialPlayed = false
-        const socialIo = new IntersectionObserver((entries) => {
-          for (const e of entries) {
-            if (e.isIntersecting && !socialPlayed) {
-              socialPlayed = true
-              gsap.to('.ct-social-section .ct-section__head', { autoAlpha: 1, x: 0, duration: 0.5, ease: 'power3.out' })
-              gsap.to('.ct-social-card', {
-                autoAlpha: 1, y: 0, scale: 1,
-                duration: 0.55, stagger: 0.08, ease: 'power3.out', delay: 0.15,
-              })
-              socialIo.disconnect()
-            }
-          }
-        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.1 })
-        socialIo.observe(socialSection)
       }
 
       /* CV section */
@@ -214,6 +190,59 @@ export default function ContactPage() {
 
     return () => ctx.revert()
   }, [motion])
+
+  /* Reveal de la sección Social, en su propio efecto y no en el general.
+
+     Sus enlaces vienen de un fetch a `/api/social`, así que la sección se monta
+     TARDE: medido en carga en frío, el chunk de GSAP está listo a los 682ms y
+     `/api/social` resuelve a los 909ms. Con el reveal adentro del efecto
+     general, `gsap.set` corría 227ms antes de que existiera un solo cuadro —no
+     encontraba nada— y el IntersectionObserver se colgaba de una sección que
+     todavía no estaba en el DOM. Resultado: la sección entera aparecía de
+     golpe, y que a veces se viera animada dependía de que el fetch le ganara
+     la carrera al chunk.
+
+     Atado a `socialNets.length` corre recién cuando la sección existe. */
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    if (!motion) return
+    if (!socialNets.length) return
+    const { gsap } = motion
+    const section = mainRef.current?.querySelector('.ct-social-section')
+    if (!section) return
+
+    const ctx = gsap.context(() => {
+      gsap.set('.ct-social-section .ct-section__head', { autoAlpha: 0, x: -16 })
+      gsap.set('.ct-social-card', { autoAlpha: 0, y: 18, scale: 0.95 })
+      /* El contenedor de la animación no va en el stagger de los cuadros: es un
+         bloque propio al lado de la grilla, no el séptimo de la fila. Arranca
+         con ellos y sube más despacio. */
+      gsap.set('.ct-social-anim-container', { autoAlpha: 0, y: 24 })
+
+      let played = false
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !played) {
+            played = true
+            gsap.to('.ct-social-section .ct-section__head', { autoAlpha: 1, x: 0, duration: 0.5, ease: 'power3.out' })
+            gsap.to('.ct-social-card', {
+              autoAlpha: 1, y: 0, scale: 1,
+              duration: 0.55, stagger: 0.08, ease: 'power3.out', delay: 0.15,
+            })
+            gsap.to('.ct-social-anim-container', {
+              autoAlpha: 1, y: 0,
+              duration: 0.8, ease: 'power3.out', delay: 0.15,
+            })
+            io.disconnect()
+          }
+        }
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.1 })
+      io.observe(section)
+      return () => io.disconnect()
+    }, mainRef)
+
+    return () => ctx.revert()
+  }, [motion, socialNets.length])
 
   /* Detiene el vaivén de la portada cuando el hero sale de cuadro: es una
      animación infinita y no tiene por qué seguir corriendo donde nadie la ve.
