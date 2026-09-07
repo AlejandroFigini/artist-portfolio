@@ -241,10 +241,17 @@
    ContactPage) consume ese margen sin llegar a descubrir el borde superior.
    Cambiar una sola de las tres rompe el encuadre o destapa un borde.
 
-   El margen es también lo que fija cuánto se compensa el scroll (acá ~67%) y
-   cuánto recorta la imagen a los lados: la capa es más alta que el cover, y
+   El margen es también lo que fija cuánto se compensa el scroll y cuánto
+   recorta la imagen a los lados: la capa es más alta que el cover, y
    `object-fit: cover` escala por el alto. Más margen = la portada se queda más
-   quieta pero se ve más ampliada. Este par es el punto de equilibrio.
+   quieta pero se ve más ampliada.
+
+   Medido con el cover en 1430x576 y una portada de 1.875: con 240% la capa
+   media 1382 de alto, la imagen se escalaba a 2591 de ancho contra 1430 y solo
+   quedaba el 55% del dibujo — 1.81x de aumento. El recorrido baja de 67% a 34%
+   del alto del cover y el aumento a 1.28x: se ve casi un tercio más de
+   ilustración. El movimiento que se cede acá lo devuelve el vaivén de abajo,
+   que además no cuesta encuadre.
 
    `yPercent` 0 es además lo que se ve si GSAP no llega o con
    `prefers-reduced-motion`: centrada y cubriendo. El estado visible no depende
@@ -253,19 +260,23 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -70%;
-  height: 240%;
+  top: -35%;
+  height: 170%;
 }
 
 /* En pantallas angostas el cover queda estrecho y alto, y como `object-fit:
-   cover` escala por el alto, el margen se paga en recorte LATERAL: con 240% la
-   ilustración se ampliaba tanto que solo quedaba una franja central. Menos
-   margen = menos compensación de scroll, pero se ve el dibujo. El par sigue
-   cumpliendo `top + height / 2 = 50%`, que es lo que la deja centrada. */
+   cover` escala por el alto, el margen se paga en recorte LATERAL. Acá el
+   margen es carísimo: medido en 375x520 con una portada de 1.875, el aumento
+   MÍNIMO posible —capa al 100%— ya es 2.6x, porque una ilustración apaisada en
+   un hueco vertical se escala por el alto sí o sí. Cada punto de margen se
+   suma encima de eso: con 180% eran 4.68x y solo quedaba una franja central.
+   120% deja 3.12x, casi el piso. Lo que se pierde de recorrido lo cubre el
+   vaivén. El par sigue cumpliendo `top + height / 2 = 50%`, que es lo que la
+   deja centrada. */
 @media (max-width: 768px) {
   .ct-hero__bg-inner {
-    top: -40%;
-    height: 180%;
+    top: -10%;
+    height: 120%;
   }
 }
 
@@ -275,18 +286,30 @@
   opacity: 1;
 }
 
-/* Vaivén lento de la portada. Solo `transform` (nada de reflow) y solo mientras
-   el hero está en cuadro. Va en la imagen y no en `.ct-hero__bg-inner`, que
-   tiene su propio transform: son elementos distintos y no se pisan. El `scale`
-   base es lo que impide que el desplazamiento descubra los bordes. */
+/* Vaivén de la portada. Solo `transform` (nada de reflow) y solo mientras el
+   hero está en cuadro. Va en la imagen y no en `.ct-hero__bg-inner`, que tiene
+   su propio transform: son elementos distintos y no se pisan.
+
+   Es la fuente de movimiento BARATA: a diferencia del recorrido de scroll, no
+   se paga en encuadre. Por eso acá se ensancha —recorrido más largo y ciclo de
+   34s a 20s— mientras la geometría de arriba se achica. El `scale` base baja de
+   1.08 a 1.07 y aun así el aumento total cae, porque el que pesaba era el de la
+   capa.
+
+   El `scale` es lo que impide que el desplazamiento descubra los bordes, y el
+   margen disponible es `(scale - 1) / 2`. Ojo con leer el desplazamiento a ojo:
+   `scale()` va ANTES en la lista, así que multiplica al `translate` — el
+   corrimiento real es `scale x translate`. Con 1.07 el margen es 3.5% y el
+   corrimiento 2.78%: entra, pero sin lugar para agrandar el translate sin
+   tocar también el scale. */
 @keyframes ct-hero-drift {
-  0%   { transform: scale(1.08) translate3d(0, 0, 0); }
-  50%  { transform: scale(1.14) translate3d(-1.6%, -1.2%, 0); }
-  100% { transform: scale(1.08) translate3d(1.4%, 0.8%, 0); }
+  0%   { transform: scale(1.07) translate3d(0, 0, 0); }
+  50%  { transform: scale(1.13) translate3d(-2.6%, -2%, 0); }
+  100% { transform: scale(1.07) translate3d(2.4%, 1.4%, 0); }
 }
 
 .ct-hero__bg-slot img {
-  animation: ct-hero-drift 34s ease-in-out infinite alternate;
+  animation: ct-hero-drift 20s ease-in-out infinite alternate;
 }
 
 /* Fuera de cuadro el vaivén se detiene. */

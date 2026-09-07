@@ -4498,7 +4498,36 @@ html.motion-off #animBlobCanvas {
        scroll de la portada. Aplicado a la slide, la textura se desenfoca una
        sola vez y despues solo se compone (opacidad). */
     filter: blur(2px);
+    animation: hero-slide-drift 24s ease-in-out infinite alternate;
 }
+
+/* Vaiven de la portada. El zoom se habia sacado de Slideshow.tsx con un motivo
+   que HOY YA NO CORRE: no se percibia porque la slide iba bajo un desenfoque
+   grande y un velo blanco. El velo ya no existe y el desenfoque es de 2px —la
+   portada se ve entera— asi que el movimiento si se percibe.
+
+   Va en CSS y no en el tween del crossfade: son dos propiedades distintas
+   -transform contra opacity- sobre el mismo nodo, y asi no compiten por el
+   mismo tween.
+
+   El `scale` base es lo que impide que el corrimiento descubra un borde: el
+   margen es `(scale - 1) / 2` y el corrimiento real es `scale x translate`
+   -`scale()` va antes en la lista y multiplica al `translate`-. Con 1.06 el
+   margen es 3% y el corrimiento 2.33%. */
+@keyframes hero-slide-drift {
+    0%   { transform: scale(1.06) translate3d(0, 0, 0); }
+    50%  { transform: scale(1.12) translate3d(-2.2%, -1.6%, 0); }
+    100% { transform: scale(1.06) translate3d(2%, 1.2%, 0); }
+}
+
+/* Aparcado = el hero salio de viewport. La capa ya esta oculta, pero un
+   `animation` vivo sigue siendo trabajo agendado en cada frame. */
+.hero-bg-carousel.is-parked .carousel-slide { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+    .carousel-slide { animation: none; }
+}
+
 .carousel-overlay {
     position: absolute;
     top: 0; left: 0;
@@ -4531,7 +4560,12 @@ html.motion-off #animBlobCanvas {
 }
 
 /* Hero from demo */
-.hero { min-height: 100vh; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vh, 4rem); display: flex; align-items: center; }
+/* La portada ocupaba el viewport entero. Baja a 82vh: sigue siendo la primera
+   pantalla y sigue tapando el pliegue, pero deja asomar la seccion siguiente
+   —que es lo que invita a bajar— y acorta el tramo en el que la capa `fixed`
+   del carrusel esta a la vista. El wrapper de los dos carruseles flotantes
+   baja con ella: estaba en 80vh, casi el alto entero de la seccion nueva. */
+.hero { min-height: 82vh; padding: clamp(4rem, 8vh, 6.5rem) clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vh, 4rem); display: flex; align-items: center; }
 /* Panel de cristal del texto, misma receta que `.ct-hero-wrap` (/contact).
    Aca SI hay `backdrop-filter`: detras esta el carrusel de portada, y el
    desenfoque no inventa material, revela el de atras. Es un solo elemento, no
@@ -4629,7 +4663,7 @@ html.motion-off #animBlobCanvas {
 .mouse { width: 24px; height: 36px; border: 2px solid var(--text-secondary); border-radius: 12px; position: relative; }
 @keyframes scroll { 0% { top: 6px; opacity: 1; } 100% { top: 20px; opacity: 0; } }
 
-.hero-media-wrapper { position: relative; height: 80vh; width: 100%; perspective: 1000px; }
+.hero-media-wrapper { position: relative; height: 66vh; width: 100%; perspective: 1000px; }
 .container-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(45deg, rgba(139,92,246,0.1), transparent); z-index: 2; pointer-events: none; }
 .hero-primary { width: 72%; height: 68%; position: absolute; top: 0%; right: 0; z-index: 5; box-shadow: var(--hero-gallery-shadow); }
 .hero-secondary { width: 52%; height: 50%; position: absolute; bottom: 15%; right: 50%; z-index: 10; border: 1px solid var(--container-border); box-shadow: var(--hero-gallery-shadow); }

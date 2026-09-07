@@ -154,8 +154,11 @@
    svh (no vh) → la barra de URL no provoca salto de alto. --- */
 @media (max-width: 768px) {
   .hero {
-    min-height: 100svh;
-    padding-top: clamp(4.5rem, 12svh, 6rem);
+    /* Acompaña el recorte de escritorio (82vh). En un teléfono se afloja menos
+       —88svh— porque acá abajo va la franja del wave marquee y el par de
+       carruseles ya está apretado contra ella. */
+    min-height: 88svh;
+    padding-top: clamp(3.5rem, 9svh, 5rem);
     padding-bottom: 7rem; /* deja libre la franja del wave marquee (absolute) */
   }
   .hero-grid { gap: clamp(1.5rem, 5svh, 2.5rem); }

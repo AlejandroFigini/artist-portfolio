@@ -146,10 +146,9 @@ export default function HeroSlideshow() {
         return
       }
       const next = (current + 1) % els.length
-      /* Solo crossfade de opacidad. El zoom lentísimo (scale 1 → 1.03) obligaba
-         a re-rasterizar la slide en cada frame ahora que el desenfoque vive en
-         ella (styles/legacy/style.css → .carousel-slide). Un 3% de zoom bajo
-         blur(8px) y un velo blanco al 70% no se percibe; el costo sí. */
+      /* Solo crossfade de opacidad. El vaivén de la portada NO va acá: vive en
+         CSS (`hero-slide-drift`, styles/legacy/style.css) y toca `transform`,
+         así que las dos animaciones no compiten por el mismo nodo. */
       gsap.fromTo(els[next], { opacity: 0 }, { opacity: 1, duration: 3, ease: 'power1.inOut' })
       gsap.to(els[current], { opacity: 0, duration: 3, ease: 'power1.inOut' })
       current = next
