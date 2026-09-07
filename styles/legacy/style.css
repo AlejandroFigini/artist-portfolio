@@ -1537,14 +1537,15 @@ footer {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
     }
-    /* Replegada es lo UNICO que queda en pantalla, y una flecha suelta sobre
-       una foto clara casi no se lee. Se le da una lengueta translucida que la
-       despega del fondo sin convertirla en un boton: apenas un apoyo. Abierta
+    /* Replegada es lo UNICO que queda en pantalla. La lengueta era translucida
+       y sobre una foto clara se perdia: pasa a ser SOLIDA, con el mismo relleno
+       de acento y el mismo glifo blanco que las tuercas que despliega. Abierta
        no lleva nada — ahi acompana a las tuercas, que ya tienen su caja. */
     .settings-dock:not(.is-open) .settings-dock__handle {
-        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        background: var(--accent);
+        color: #fff;
         border-radius: 0 10px 10px 0;
-        box-shadow: 0 2px 10px rgba(124, 58, 237, 0.18);
+        box-shadow: 0 2px 12px rgba(124, 58, 237, 0.4);
     }
 
     /* Con el drawer de navegacion abierto la flecha queda flotando encima del
@@ -2755,6 +2756,21 @@ html.perf-lite .carousel-slide {
       Es la unica animacion del sitio que escala contenido de video. */
 html.perf-lite .about-video {
     animation: none !important;
+}
+
+/* 2e. Segunda excepcion a la regla 1, mismo criterio que 2c: el panel de texto
+      de la portada.
+
+      El modo ligero se enciende para TODO telefono, asi que la regla 1 dejaba
+      al "panel de cristal" de la portada siendo, en movil, un rectangulo
+      blanco translucido: no habia vidrio, solo velo. Es exactamente lo que se
+      ve mal — el panel compite con la ilustracion en vez de revelarla.
+
+      Se restituye SOLO ese elemento. Es UNO y ocupa ~340x260 en un telefono,
+      no el viewport entero que motivo la regla 1, y lo que tiene detras es la
+      portada, que entre transiciones esta quieta. */
+html.perf-lite .hero-content {
+    backdrop-filter: blur(18px) saturate(150%) !important;
 }
 
 /* 4. Capas de GPU retenidas sin motivo.
@@ -4556,6 +4572,44 @@ html.motion-off #animBlobCanvas {
    opaco: el contraste no puede depender de una capacidad opcional. */
 @supports not (backdrop-filter: blur(1px)) {
     .hero-content { background: color-mix(in srgb, var(--bg-primary) 78%, transparent); }
+}
+
+/* Movil. Dos correcciones sobre la receta de escritorio:
+
+   1) MAS CRISTAL. El velo fino funciona en una pantalla grande, donde el panel
+      ocupa media columna y la ilustracion se ve entera al lado. En un telefono
+      el panel ES la pantalla: con 11% de velo la portada pasa de largo por
+      debajo del texto y el material no se lee como vidrio. Sube el velo y el
+      desenfoque — sigue siendo cristal (se ve lo de atras), pero con cuerpo.
+   2) PEGADO AL TEXTO. El padding y los margenes internos son de escritorio y
+      en 375px dejaban casi media pantalla de aire dentro del panel. Se cierran
+      sobre el texto: mismo contenido, mucho menos caja. */
+@media (max-width: 768px) {
+    .hero-content {
+        padding: clamp(0.7rem, 2.4vw, 0.95rem) clamp(0.65rem, 2.2vw, 0.9rem);
+        background:
+            linear-gradient(
+                160deg,
+                color-mix(in srgb, #fff 34%, transparent),
+                color-mix(in srgb, #fff 14%, transparent) 45%,
+                color-mix(in srgb, var(--accent) 10%, transparent)
+            ),
+            color-mix(in srgb, var(--bg-primary) 32%, transparent);
+        backdrop-filter: blur(18px) saturate(150%);
+    }
+    /* El velo del carrusel baja de 0.32 a 0.20. Es la otra mitad del mismo
+       problema: con la portada tan lavada no quedaba nada detras del panel que
+       desenfocar, y un vidrio sin nada atras es un rectangulo blanco. El panel
+       queda MAS denso que el velo, asi que sigue siendo el quien separa el
+       texto. El oscuro no entra: ahi el velo es un gradiente propio. */
+    .carousel-overlay { background: rgba(255, 255, 255, 0.2); }
+    /* Los margenes del badge y del titulo son los que inflan el panel: adentro
+       de una caja acotada no hacen falta 2rem. */
+    .hero-content .badge { margin-bottom: 0.6rem; }
+    .hero-content .hero-title { margin-bottom: 0.7rem; }
+    @supports not (backdrop-filter: blur(1px)) {
+        .hero-content { background: color-mix(in srgb, var(--bg-primary) 88%, transparent); }
+    }
 }
 
 .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3rem, 8vw, 10rem); width: 100%; max-width: 1480px; margin: 0 auto; height: 100%; align-items: center; position: relative; z-index: 30; }

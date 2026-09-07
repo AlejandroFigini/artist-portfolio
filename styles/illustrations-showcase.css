@@ -236,6 +236,22 @@
 /* Celda vacía: el marco punteado manda, la ficha no existe. */
 .illu-cell.cms-empty-slot .illu-cell__info { display: none; }
 
+/* Táctil: no hay hover, así que la ficha y el botón de expandir no aparecían
+   nunca y el toque abría la pantalla completa de una. Pasa a la regla táctil
+   del sitio (hooks/useTapReveal): un toque muestra el overlay, otro lo
+   esconde, y la pantalla completa la abre SOLO el botón. */
+@media (hover: none) {
+  .illu-cell:not(.cms-empty-slot).is-tap-revealed .illu-cell__hud {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  .illu-cell:not(.cms-empty-slot).is-tap-revealed .illu-cell__info {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .illu-cell__title {
   font-family: var(--font-display, 'Syne', sans-serif);
   font-size: clamp(0.85rem, 1.2vw, 1.1rem);

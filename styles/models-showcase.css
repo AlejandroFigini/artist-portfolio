@@ -212,7 +212,13 @@
     box-shadow 0.45s ease;
   will-change: transform, opacity;
   backface-visibility: hidden;
-  transform-style: preserve-3d;
+  /* `flat`, NO `preserve-3d`. Con preserve-3d cada hijo entra al contexto 3D
+     como plano propio y el compositor lo rasteriza por separado: en la GPU de
+     un teléfono, al mover la slide las cuatro esquinas del marco aparecían de
+     a una en vez de con la pieza. Nada acá adentro es 3D —la perspectiva vive
+     en `.m3d-coverflow__stage` y quien rota es la slide entera—, así que
+     aplanarla la deja como una sola capa y el marco entra completo. */
+  transform-style: flat;
 }
 /* La slide central resalta con glow de acento */
 .m3d-slide[aria-hidden='false'] {
@@ -376,6 +382,21 @@
 .m3d-slide.cms-empty-slot .media-caption { display: none; }
 /* La copia de la cinta no repite la ficha en admin, igual que sus tools. */
 .m3d-gallery-cell--clone .media-caption { pointer-events: none; }
+
+/* Táctil: la regla del sitio (hooks/useTapReveal) — un toque sobre la pieza
+   muestra la ficha, otro la esconde. La hoja compartida (media-caption.css) la
+   deja encendida para todo `@media (hover: none)`, y acá eso tapaba con el
+   degradado tanto la cinta como la slide central. Se apaga con selector propio
+   y se enciende con la clase que pone React. */
+@media (hover: none) {
+  .m3d-gallery-cell .media-caption,
+  .m3d-slide .media-caption { opacity: 0; transform: translateY(8px); }
+  .m3d-gallery-cell:not(.cms-empty-slot).is-tap-revealed .media-caption,
+  .m3d-slide:not(.cms-empty-slot).is-tap-revealed .media-caption {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* --- Responsive --- */
 @media (max-width: 900px) {

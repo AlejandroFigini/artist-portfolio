@@ -8,16 +8,16 @@
    como illustration#i, las marca cms-empty-slot (marco punteado + nube) y
    permite subir la ilustración después. */
 
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import { openLightbox } from '@/components/ui/lightbox'
 import { useCmsText } from '@/lib/cms/content-context'
+import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 import { sendGAEvent } from '@next/third-parties/google'
 const CELL_COUNT = 15
 /* Abrir lightbox solo si la celda tiene contenido (img con src real). Vacía →
    el overlay del engine maneja el click (picker en admin). */
-function onCellClick(e: React.MouseEvent<HTMLElement>) {
-  const cell = e.currentTarget
+function openCellLightbox(cell: HTMLElement) {
   const src = cell.querySelector('img')?.getAttribute('src')
   if (!src) return
   openLightbox(src, cell.dataset.title, cell.dataset.desc, cell.dataset.link, {
@@ -38,9 +38,23 @@ function Cell({ index }: { index: number }) {
   const date = text(`${key}::date`)
   const project = text(`${key}::project`)
   const hasMeta = !!(title || date || project)
+  const { ref, revealed, consumeTap } = useTapReveal<HTMLElement>()
+
+  /* Táctil: el primer toque sobre la celda solo muestra el overlay (ficha +
+     botón de expandir); la pantalla completa la abre SOLO ese botón. Con
+     puntero fino `consumeTap` devuelve false y el click abre como siempre.
+     El botón vive dentro de la celda y comparte este handler, así que se lo
+     detecta antes de alternar el overlay. */
+  const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const cell = e.currentTarget
+    if (!cell.querySelector('img')?.getAttribute('src')) return
+    const onHud = !!(e.target as Element).closest('.illu-cell__hud')
+    if (!onHud && consumeTap(e)) return
+    openCellLightbox(cell)
+  }, [consumeTap])
 
   return (
-    <figure className="illu-cell" onClick={onCellClick}>
+    <figure ref={ref} className={`illu-cell${revealed ? ` ${TAP_REVEAL_CLASS}` : ''}`} onClick={onClick}>
       {/* Sin src: contenedor vacío. El engine setea .src al subir contenido. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="illu-cell__img" loading="lazy" decoding="async" alt="" />

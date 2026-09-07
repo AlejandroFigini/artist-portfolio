@@ -30,6 +30,8 @@ import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { isVideoSrc, mediaSrcSet, optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
+import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 import { sendGAEvent } from '@next/third-parties/google'
 
 /* Composición de las dos cintas. Todas las celdas comparten ALTO: el ratio es
@@ -108,7 +110,7 @@ export function storeHref(value: string): string {
    adentro se pinta <img> o <video> según lo que haya cargado el admin.
    `cmsKey` va explícito porque las celdas están duplicadas: sin él el motor
    las indexaría por posición y la copia recibiría claves fantasma. */
-function CmsMedia({ cmsKey, sizes, onOpen, onExpand }: { cmsKey: string; sizes: string; onOpen?: () => void; onExpand?: () => void }) {
+function CmsMedia({ cmsKey, sizes, onOpen, onExpand }: { cmsKey: string; sizes: string; onOpen?: (e: React.MouseEvent) => void; onExpand?: () => void }) {
   const raw = useCmsItems()[cmsKey] || ''
   const isClip = isVideoSrc(raw)
   const ui = useUiText()
@@ -241,14 +243,22 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
     sendGAEvent('event', 'fullscreen_open')
   }, [raw, isClip, title, desc, link, project, date])
 
-  const openFull = useCallback(() => {
+  /* Táctil: el primer toque solo muestra el overlay (ficha + controles). La
+     pantalla completa la abre el botón, que corta la propagación y nunca llega
+     acá. Con puntero fino `consumeTap` devuelve false y el click sigue
+     abriendo la imagen como siempre. */
+  const { ref: tileRef, revealed, consumeTap } = useTapReveal<HTMLElement>(!!raw)
+
+  const openFull = useCallback((e: React.MouseEvent) => {
+    if (consumeTap(e)) return
     if (isClip) return
     expandMedia()
-  }, [isClip, expandMedia])
+  }, [consumeTap, isClip, expandMedia])
 
   return (
     <figure
-      className={`gd-tile${isClip ? ' gd-tile--clip' : ''}${clone ? ' gd-tile--clone' : ''}`}
+      ref={tileRef}
+      className={`gd-tile${isClip ? ' gd-tile--clip' : ''}${clone ? ' gd-tile--clone' : ''}${revealed ? ` ${TAP_REVEAL_CLASS}` : ''}`}
       style={{ aspectRatio: ratio }}
       aria-hidden={clone || undefined}
       data-title={title}
@@ -281,6 +291,9 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
   const startXRef = useRef(0)
   const lastXRef = useRef(0)
   const inViewRef = useRef(false)
+  // Inercia al soltar (lib/flick): velocidad del dedo y momento del último movimiento.
+  const velRef = useRef(0)
+  const lastTRef = useRef(0)
   /* El transform lo escribe SOLO el loop de rAF, así que agarrar la cinta
      tiene que garantizar que el loop esté vivo: si quedó aparcado (fuera de
      cuadro, o el navegador dejó de dar frames en una pestaña inactiva), el
@@ -310,15 +323,22 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
     const tick = (now: number) => {
       const dt = now - last
       last = now
-      // Auto salvo mientras se arrastra (al soltar vuelve a arrancar).
-      if (!draggingRef.current && !reduce) {
-        offsetRef.current -= AUTO_SPEED * dt * dir
+      // Auto salvo mientras se arrastra (al soltar vuelve a arrancar), más la
+      // inercia del último gesto, que se suma y frena sola.
+      if (!draggingRef.current) {
+        if (!reduce) offsetRef.current -= AUTO_SPEED * dt * dir
+        if (velRef.current) {
+          offsetRef.current += velRef.current * dt
+          velRef.current = decayFlick(velRef.current, dt)
+        }
         wrap()
       }
       track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`
       /* Fuera de viewport el loop SE APAGA, no hace early-return: un rAF vivo
-         despierta el hilo principal en cada frame aunque no pinte nada. */
-      if (!inViewRef.current && !draggingRef.current) { raf = 0; return }
+         despierta el hilo principal en cada frame aunque no pinte nada. La
+         inercia se descarta al aparcar: guardada, al reaparecer la cinta daría
+         un tirón heredado de un gesto que ya terminó. */
+      if (!inViewRef.current && !draggingRef.current) { velRef.current = 0; raf = 0; return }
       raf = requestAnimationFrame(tick)
     }
     const start = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick) } }
@@ -335,6 +355,9 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
     pointerDownRef.current = true
     startXRef.current = e.clientX
     lastXRef.current = e.clientX
+    // Agarrar la cinta la frena: la inercia anterior no sobrevive al gesto nuevo.
+    velRef.current = 0
+    lastTRef.current = performance.now()
     startLoopRef.current()
   }
   const onPointerMove = (e: React.PointerEvent) => {
@@ -343,11 +366,15 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
       if (Math.abs(e.clientX - startXRef.current) < DRAG_THRESHOLD) return
       draggingRef.current = true
       lastXRef.current = e.clientX
+      lastTRef.current = performance.now()
       railRef.current?.classList.add('is-dragging')
       try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch {}
       return
     }
+    const now = performance.now()
     const dx = e.clientX - lastXRef.current
+    velRef.current = trackFlick(velRef.current, dx, now - lastTRef.current)
+    lastTRef.current = now
     lastXRef.current = e.clientX
     offsetRef.current += dx
     wrap()
@@ -356,6 +383,7 @@ function MarqueeRow({ ratios, baseIndex, dir }: { ratios: string[]; baseIndex: n
     pointerDownRef.current = false
     if (!draggingRef.current) return
     draggingRef.current = false
+    velRef.current = releaseFlick(velRef.current, performance.now() - lastTRef.current)
     justDraggedRef.current = true   // suprime el click posterior al arrastre
     railRef.current?.classList.remove('is-dragging')
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch {}

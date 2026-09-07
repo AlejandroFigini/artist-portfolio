@@ -156,10 +156,19 @@ const CarouselContent = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const { carouselRef, orientation } = useCarousel()
 
+  /* `touchAction` no es cosmético: sin declararlo, el navegador se queda con el
+     gesto táctil y desde ahí los `touchmove` dejan de ser cancelables. Embla
+     solo arrastra mientras puede llamar a `preventDefault`, así que aborta el
+     arrastre en cuanto eso pasa — el carrusel se movía un par de dedos y se
+     plantaba. Declarando el eje del carrusel, el navegador conserva SOLO el eje
+     contrario (el scroll de la página) y el arrastre llega entero. `pinch-zoom`
+     se deja pasar: el zoom del sistema no se le quita a nadie. */
   return (
     <div
       ref={carouselRef}
-      style={orientation === "horizontal" ? { overflowX: "clip", overflowY: "visible" } : { overflowY: "clip", overflowX: "visible" }}
+      style={orientation === "horizontal"
+        ? { overflowX: "clip", overflowY: "visible", touchAction: "pan-y pinch-zoom" }
+        : { overflowY: "clip", overflowX: "visible", touchAction: "pan-x pinch-zoom" }}
       className={cn("cursor-grab active:cursor-grabbing", className)}
     >
       <div

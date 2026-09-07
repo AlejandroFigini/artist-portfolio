@@ -533,10 +533,23 @@
   color: #fff;
   transform: scale(1.1);
 }
-/* Sin puntero fino (táctil) no hay hover: los controles se quedan a la vista,
-   si no serían inalcanzables. Misma salida que la ficha (.media-caption). */
+/* Sin puntero fino (táctil) no hay hover. Antes la salida era dejar los
+   controles y la ficha SIEMPRE encendidos: en un teléfono eso tapaba la celda
+   entera con el degradado y los botones, que es justo lo que se quería ver.
+
+   Pasa a la regla táctil del sitio (hooks/useTapReveal): un toque sobre la
+   celda muestra el overlay, otro lo esconde, y la pantalla completa la abre
+   SOLO su botón. La clase la pone React sobre la figura.
+
+   La ficha se apaga acá con selector propio porque la hoja compartida
+   (media-caption.css) la enciende para todo `@media (hover: none)`. */
 @media (hover: none) {
-  .gd-tile:not(.cms-empty-slot) .gd-tile__controls {
+  .gd-tile .media-caption { opacity: 0; transform: translateY(8px); }
+  .gd-tile:not(.cms-empty-slot).is-tap-revealed .media-caption {
+    opacity: 1;
+    transform: none;
+  }
+  .gd-tile:not(.cms-empty-slot).is-tap-revealed .gd-tile__controls {
     opacity: 1;
     transform: none;
     pointer-events: auto;

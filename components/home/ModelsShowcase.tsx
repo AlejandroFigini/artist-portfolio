@@ -17,6 +17,8 @@ import MediaCaption from '@/components/ui/MediaCaption'
 import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
+import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
+import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
 const AUTOPLAY_MS = 5000
@@ -128,8 +130,17 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
     return () => { io.disconnect(); v.pause() }
   }, [isActive, hasContent])
 
+  // Ficha al tocar, igual que la cinta (ver GalleryCell).
+  const { ref: slideRef, revealed, consumeTap } = useTapReveal<HTMLElement>()
+
   return (
-    <figure className="m3d-slide" style={slideStyle(off)} aria-hidden={!isActive}>
+    <figure
+      ref={slideRef}
+      className={`m3d-slide${revealed ? ` ${TAP_REVEAL_CLASS}` : ''}`}
+      style={slideStyle(off)}
+      onClick={consumeTap}
+      aria-hidden={!isActive}
+    >
       <Corners />
       <div className="m3d-slide__media">
         <video
@@ -165,6 +176,7 @@ function Coverflow() {
   const stageRef = useRef<HTMLDivElement>(null)
   const hoverRef = useRef(false)
   const dragRef = useRef<{ x: number; active: boolean }>({ x: 0, active: false })
+  const justDraggedRef = useRef(false)
 
   const go = useCallback((dir: number) => {
     setActive((a) => (a + dir + SLIDE_COUNT) % SLIDE_COUNT)
@@ -205,7 +217,13 @@ function Coverflow() {
     if (!dragRef.current.active) return
     const dx = e.clientX - dragRef.current.x
     dragRef.current.active = false
-    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
+    if (Math.abs(dx) > 50) { justDraggedRef.current = true; go(dx < 0 ? 1 : -1) }
+  }
+  /* Un arrastre no debe contar como toque sobre la slide: sin esto, cambiar de
+     slide con el dedo encendía además la ficha de la que llegaba. Mismo corte
+     en captura que usan las dos cintas. */
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (justDraggedRef.current) { e.stopPropagation(); e.preventDefault(); justDraggedRef.current = false }
   }
 
   return (
@@ -218,6 +236,7 @@ function Coverflow() {
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
+        onClickCapture={onClickCapture}
       >
         {Array.from({ length: SLIDE_COUNT }, (_, i) => {
           const off = relOffset(i, active, SLIDE_COUNT)
@@ -259,9 +278,15 @@ function Coverflow() {
 function GalleryCell({ copy, index }: { copy: number; index: number }) {
   const text = useCmsText()
   const key = `model3d.gallery#${index}`
+  /* Táctil: la ficha aparece al tocar la celda y no de entrada (regla del
+     sitio, hooks/useTapReveal). Un arrastre no llega hasta acá: la cinta lo
+     corta en captura. Con puntero fino manda el `:hover` de la hoja. */
+  const { ref, revealed, consumeTap } = useTapReveal<HTMLDivElement>()
   return (
     <div
-      className={`m3d-gallery-cell${copy > 0 ? ' m3d-gallery-cell--clone' : ''}`}
+      ref={ref}
+      className={`m3d-gallery-cell${copy > 0 ? ' m3d-gallery-cell--clone' : ''}${revealed ? ` ${TAP_REVEAL_CLASS}` : ''}`}
+      onClick={consumeTap}
       aria-hidden={copy > 0 || undefined}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -295,6 +320,9 @@ function GalleryStrip() {
   const startXRef = useRef(0)
   const lastXRef = useRef(0)
   const inViewRef = useRef(false)
+  // Inercia al soltar (lib/flick): velocidad del dedo y momento del último movimiento.
+  const velRef = useRef(0)
+  const lastTRef = useRef(0)
 
   // Reposiciona el offset dentro de [-half, 0] → loop infinito sin salto (2 copias).
   const wrap = useCallback(() => {
@@ -319,14 +347,21 @@ function GalleryStrip() {
     const tick = (now: number) => {
       const dt = now - last
       last = now
-      // Auto-scroll salvo mientras se arrastra (al soltar, vuelve a arrancar).
-      if (!draggingRef.current && !reduce) {
-        offsetRef.current -= AUTO_SPEED * dt
+      // Auto-scroll salvo mientras se arrastra (al soltar, vuelve a arrancar),
+      // más la inercia del último gesto, que se suma y frena sola.
+      if (!draggingRef.current) {
+        if (!reduce) offsetRef.current -= AUTO_SPEED * dt
+        if (velRef.current) {
+          offsetRef.current += velRef.current * dt
+          velRef.current = decayFlick(velRef.current, dt)
+        }
         wrap()
       }
       track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`
-      // No animar fuera de viewport (perf); se reanuda al volver a verse.
-      if (!inViewRef.current && !draggingRef.current) { raf = 0; return }
+      /* No animar fuera de viewport (perf); se reanuda al volver a verse. La
+         inercia se descarta al aparcar: guardada, al reaparecer la cinta daría
+         un tirón heredado de un gesto que ya terminó. */
+      if (!inViewRef.current && !draggingRef.current) { velRef.current = 0; raf = 0; return }
       raf = requestAnimationFrame(tick)
     }
     const start = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick) } }
@@ -342,6 +377,9 @@ function GalleryStrip() {
     pointerDownRef.current = true
     startXRef.current = e.clientX
     lastXRef.current = e.clientX
+    // Agarrar la cinta la frena: la inercia anterior no sobrevive al gesto nuevo.
+    velRef.current = 0
+    lastTRef.current = performance.now()
   }
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pointerDownRef.current) return
@@ -349,11 +387,15 @@ function GalleryStrip() {
       if (Math.abs(e.clientX - startXRef.current) < DRAG_THRESHOLD) return
       draggingRef.current = true
       lastXRef.current = e.clientX
+      lastTRef.current = performance.now()
       galleryRef.current?.classList.add('is-dragging')
       try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch {}
       return
     }
+    const now = performance.now()
     const dx = e.clientX - lastXRef.current
+    velRef.current = trackFlick(velRef.current, dx, now - lastTRef.current)
+    lastTRef.current = now
     lastXRef.current = e.clientX
     offsetRef.current += dx
     wrap()
@@ -362,6 +404,7 @@ function GalleryStrip() {
     pointerDownRef.current = false
     if (!draggingRef.current) return
     draggingRef.current = false
+    velRef.current = releaseFlick(velRef.current, performance.now() - lastTRef.current)
     justDraggedRef.current = true     // suprime el click posterior al arrastre
     galleryRef.current?.classList.remove('is-dragging')
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch {}

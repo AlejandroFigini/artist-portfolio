@@ -353,6 +353,23 @@ body {
 @supports not (backdrop-filter: blur(1px)) {
   [data-theme="dark"] .hero-content { background: rgba(12, 10, 20, 0.82); }
 }
+/* Movil: mismo criterio que en claro (ver style.css). El velo de escritorio es
+   fino a proposito y en un telefono el panel deja de leerse como material. */
+@media (max-width: 768px) {
+  [data-theme="dark"] .hero-content {
+    background:
+      linear-gradient(
+        160deg,
+        rgba(145, 101, 247, 0.2),
+        rgba(12, 10, 20, 0.36) 45%,
+        rgba(12, 10, 20, 0.44)
+      ),
+      rgba(12, 10, 20, 0.4);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    [data-theme="dark"] .hero-content { background: rgba(12, 10, 20, 0.9); }
+  }
+}
 [data-theme="dark"] .wave-item:not(.wave-has-content) {
   border-color: rgba(167, 139, 250, 0.34);
   background: rgba(145, 101, 247, 0.10);
