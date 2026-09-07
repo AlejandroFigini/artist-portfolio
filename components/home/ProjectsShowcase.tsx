@@ -268,7 +268,7 @@ export default function ProjectsShowcase() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
+    const { gsap, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -304,7 +304,6 @@ export default function ProjectsShowcase() {
 
 
 
-      ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [motion])

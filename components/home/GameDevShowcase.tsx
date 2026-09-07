@@ -238,7 +238,9 @@ function MaterialTile({ index, ratio, clone }: { index: number; ratio: string; c
      un accidente. */
   const expandMedia = useCallback(() => {
     if (!raw) return
-    if (isClip) openVideoLightbox(optimizedMediaSrc(raw), title, desc, { project, date })
+    // El póster sale del valor CRUDO: `optimizedMediaSrc` ya le encadenó
+    // f_auto/q_auto y transformar sobre eso pide una derivada que no existe.
+    if (isClip) openVideoLightbox(optimizedMediaSrc(raw), title, desc, { project, date }, videoPosterSrc(raw))
     else openLightbox(optimizedMediaSrc(raw, 1600), title, desc, storeHref(link))
     sendGAEvent('event', 'fullscreen_open')
   }, [raw, isClip, title, desc, link, project, date])
@@ -615,7 +617,7 @@ export default function GameDevShowcase() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
+    const { gsap, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -657,7 +659,6 @@ export default function GameDevShowcase() {
       }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 })
       io.observe(sec)
 
-      ScrollTrigger.refresh()
     }, sectionRef)
 
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }

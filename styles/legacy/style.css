@@ -2366,6 +2366,17 @@ input:checked+.slider:before {
     cursor: zoom-out;
 }
 
+/* En táctil el desenfoque de pantalla completa se cae: el fondo ya es opaco al
+   94 %, así que no se ve, y obliga al compositor a snapshotear y desenfocar la
+   página entera en cada frame — justo mientras el <video> de la pantalla
+   completa pelea por decodificar su primer frame. */
+@media (hover: none) and (pointer: coarse) {
+    .lightbox {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
 .lightbox-wrapper {
     position: relative;
     width: 90%;

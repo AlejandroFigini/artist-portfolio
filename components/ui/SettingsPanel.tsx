@@ -14,8 +14,6 @@ import { exportTranslationPrompt, importTranslationsFile } from '@/lib/translati
 import { useToast } from '@/components/ui/Toast'
 import { uploadCvFile, deleteCvFile } from '@/lib/api'
 import { useSaveSettings, CV_MAX_BYTES } from '@/components/admin/SiteSettings'
-import { useSocial } from '@/components/ui/SocialProvider'
-import { sendGAEvent } from '@next/third-parties/google'
 import { useDownloadCv } from '@/hooks/useDownloadCv'
 import DecorAnim from '@/components/ui/DecorAnim'
 import { animSources } from '@/lib/settings'

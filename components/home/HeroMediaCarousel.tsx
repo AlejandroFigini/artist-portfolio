@@ -54,7 +54,6 @@ function SmoothImage({ src, className, onSettled, eager }: { src: string; classN
        SIEMPRE —medido: naturalWidth 442, o sea que habia cargado— porque el
        `onLoad` ya no vuelve a emitirse. Y no hay contra: un <img> roto con
        `alt=""` no pinta nada, asi que mostrarlo no muestra nada. */
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el estado real del <img>, no es estado derivable
     setPhase('instant');
     onSettled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar: reconcilia el evento que se perdio

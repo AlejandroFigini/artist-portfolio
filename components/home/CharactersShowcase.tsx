@@ -313,7 +313,7 @@ export default function CharactersShowcase() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
+    const { gsap, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
     let titleTw: LoopHandle | null = null
@@ -344,7 +344,6 @@ export default function CharactersShowcase() {
 
 
 
-      ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [motion])

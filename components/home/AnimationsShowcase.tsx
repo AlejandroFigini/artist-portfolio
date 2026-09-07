@@ -7,7 +7,7 @@ import SoftwareDropdown from '@/components/home/SoftwareDropdown'
 import LightboxInfoPanel from '@/components/ui/LightboxInfoPanel'
 import { lockPageScroll, unlockPageScroll } from '@/lib/smooth-scroll'
 import VideoPlayer from '@/components/ui/VideoPlayer'
-import { useUiText } from '@/lib/cms/store'
+import { state, useUiText } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoPosterSrc } from '@/lib/utils'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -29,6 +29,8 @@ function AnimCard({ index }: { index: number }) {
   /* `src` y `poster` desde el servidor: antes la tarjeta salía vacía y el motor
      del CMS le escribía la fuente después de hidratar. */
   const cmsRaw = useCmsItems()[`anim#${index}`] || ''
+  // `useCmsItems` ya suscribe al store, así que esto repinta al iniciar sesión.
+  const isAdmin = state.isAdmin
   const cmsSrc = cmsRaw ? optimizedMediaSrc(cmsRaw) : ''
   const cmsPoster = cmsRaw ? videoPosterSrc(cmsRaw) : ''
   const ui = useUiText()
@@ -39,6 +41,11 @@ function AnimCard({ index }: { index: number }) {
   const [hasContent, setHasContent] = useState(!!cmsRaw)
   const [videoSrc, setVideoSrc] = useState(cmsSrc)
   const [showInfo, setShowInfo] = useState(false)
+  /* Póster de emergencia para la pantalla completa: el frame que la tarjeta YA
+     tiene decodificado, copiado a un canvas. `videoPosterSrc` solo genera
+     derivada con Cloudinary, así que sin él —local, o media que no vino de
+     ahí— el <video> de la pantalla completa arranca sin nada que pintar. */
+  const [snapPoster, setSnapPoster] = useState('')
   const [fields, setFields] = useState<CardFields>({ title: '', project: '', date: '', inspiration: '', desc: '' })
   const infoTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   // Arranca alineado con lo que ya pinto el servidor: sin esto el primer sync
@@ -116,20 +123,20 @@ function AnimCard({ index }: { index: number }) {
 
     /* Red de seguridad del sondeo: cubre el caso que el observer no ve, pero
        el único que reemplaza el contenido de una tarjeta es el motor del CMS
-       con sesión abierta. Para el visitante eran seis temporizadores llamando
-       a dos setState cada 500 ms de por vida, sobre un DOM que ya nadie toca. */
-    const poll = setInterval(() => {
-      if (document.body.classList.contains('is-admin')) syncContent()
-    }, 500)
+       con sesión abierta. Para el visitante el temporizador NI SIQUIERA se
+       crea: uno que hace early-return igual despierta la CPU seis veces por
+       segundo, y en móvil ese despertar cae en medio del scroll. El efecto se
+       re-arma al iniciar sesión porque `isAdmin` está en las dependencias. */
+    const poll = isAdmin ? setInterval(syncContent, 500) : 0
 
     return () => {
       mo.disconnect()
       moFields.disconnect()
       v.removeEventListener('loadeddata', syncContent)
       v.removeEventListener('emptied', syncContent)
-      clearInterval(poll)
+      if (poll) clearInterval(poll)
     }
-  }, [])
+  }, [isAdmin])
 
   // Info timer for lightbox
   useEffect(() => {
@@ -150,7 +157,9 @@ function AnimCard({ index }: { index: number }) {
     if (!hasContent) return
     const v = videoRef.current
     if (!v) return
-    v.currentTime = 0
+    // Leerlo es gratis; ESCRIBIRLO obliga a resolver el recurso y anula el
+    // `preload="none"` de la tarjeta (mismo motivo que en syncContent).
+    try { if (v.currentTime > 0) v.currentTime = 0 } catch {}
     v.play().catch(() => {})
     setPlaying(true)
   }, [hasContent])
@@ -178,8 +187,30 @@ function AnimCard({ index }: { index: number }) {
     }
   }, [])
 
+  /* Antes de que monte la pantalla completa: copiar el frame que la tarjeta ya
+     decodificó y usarlo de póster. Va en `pointerdown` porque ocurre antes del
+     click, así el <video> nuevo nace con algo que pintar en vez de un hueco.
+     Todo camino de fallo (sin frame, canvas contaminado por origen cruzado)
+     deja el póster vacío y el comportamiento igual que hasta ahora. */
+  const warmExpand = useCallback(() => {
+    const v = videoRef.current
+    if (!v || v.readyState < 2 || !v.videoWidth) return
+    try {
+      const c = document.createElement('canvas')
+      c.width = v.videoWidth
+      c.height = v.videoHeight
+      c.getContext('2d')?.drawImage(v, 0, 0)
+      setSnapPoster(c.toDataURL('image/jpeg', 0.6))
+    } catch {}
+  }, [])
+
   const openExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    /* La tarjeta sigue en cuadro, así que ViewportGate no la pausa: su
+       decodificador competiría con el de la pantalla completa justo mientras
+       éste intenta sacar su primer frame. */
+    const v = videoRef.current
+    if (v) { v.pause(); setPlaying(false) }
     setExpanded(true)
     sendGAEvent('event', 'fullscreen_open')
   }, [])
@@ -241,6 +272,7 @@ function AnimCard({ index }: { index: number }) {
               <button
                 type="button"
                 className="anim-card__btn"
+                onPointerDown={warmExpand}
                 onClick={openExpand}
                 aria-label={ui('view_fullscreen')}
               >
@@ -258,6 +290,11 @@ function AnimCard({ index }: { index: number }) {
           <div className="lightbox-wrapper">
             <VideoPlayer
               src={videoSrc}
+              /* Desde `cmsRaw`, NO desde `videoSrc`: éste ya lleva f_auto/q_auto
+                 y encadenar otra transformación pide una derivada que el
+                 `eager` de lib/storage.ts no generó → 404 mientras Cloudinary la
+                 fabrica. El póster del canvas es el respaldo sin Cloudinary. */
+              poster={cmsPoster || snapPoster || undefined}
               className="lightbox-content"
               autoPlay
               muted
@@ -336,7 +373,7 @@ export default function AnimationsShowcase() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, typewriterRevealLoop, wordRevealLoop } = motion
+    const { gsap, typewriterRevealLoop, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -375,7 +412,6 @@ export default function AnimationsShowcase() {
 
 
 
-      ScrollTrigger.refresh()
     }, sectionRef)
     return () => { titleTw?.kill(); descTw?.kill(); ctx.revert() }
   }, [motion])

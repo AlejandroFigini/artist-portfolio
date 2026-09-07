@@ -39,6 +39,17 @@ declare global {
 }
 
 const FADE_MS = 800
+/* Póster de relleno, 1×1 transparente, cero bytes de red.
+   `videoPosterSrc` solo genera derivada con Cloudinary, así que fuera de
+   producción el <video> salía SIN atributo `poster` y caía bajo la regla
+   `html.video-frame-gate video:not([controls]):not(.has-frame):not([poster])`
+   de styles/legacy/style.css: negro desde el primer paint, opacity 0 al montar
+   ViewportGate y salto a 1 al decodificar el primer frame — los dos parpadeos
+   que se veían antes de que arranque la animación. Con un póster —aunque sea
+   vacío— el elemento pinta el póster en lugar de negro y la regla ya no lo
+   alcanza, así que no hay ningún salto de opacidad que ver. */
+const BLANK_POSTER =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 /* La barra tarda 0.45s (transición CSS) en llegar visualmente al 100%. Cerrar
    en el mismo frame en que resuelve el último gate haría que nunca se vea
    completarse. Es un retardo de pintado, no un techo de carga. */
@@ -310,7 +321,7 @@ export default function PageLoader() {
                  y decodificar: sin póster el recuadro se ve NEGRO ese rato, que
                  es justo el arranque del sitio. El póster es una imagen chica y
                  se pinta enseguida. */
-              poster={videoPosterSrc(videoSrc) || undefined}
+              poster={videoPosterSrc(videoSrc) || BLANK_POSTER}
               /* `metadata`, NO `auto`: un <video> con `auto` retiene el evento
                  `load` del documento hasta tener el primer frame decodificado.
                  Como ahora el loader ESPERA ese evento, con `auto` se quedaba

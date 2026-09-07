@@ -118,14 +118,23 @@ export default function ViewportGate() {
     /* Las secciones con `next/dynamic` y los <video> que pinta el motor del CMS
        aparecen después del montaje. Se re-escanea solo cuando la mutación
        agregó nodos —`childList`, nunca `attributes`: el motor reescribe `src` y
-       `poster` todo el tiempo y eso no cambia QUÉ hay que observar— y como
-       mucho una vez por frame. */
-    let queued = 0
+       `poster` todo el tiempo y eso no cambia QUÉ hay que observar—, y a lo
+       sumo una vez por tanda.
+       Se agrupa en un MICROTASK, no en un rAF: hasta que no corre el escaneo el
+       <video> nuevo no tiene `has-frame` y la regla de style.css lo deja en
+       opacity 0. Con rAF eso dependía de que el navegador pintara un frame — y
+       en móvil, justo al abrir una pantalla completa, un frame puede tardar
+       cientos de ms (medidos 757–2006 ms en el arranque): ése era el recuadro
+       vacío "por un segundo". El microtask corre en el mismo tick, y además
+       corre en pestaña oculta, donde rAF ni siquiera se agenda. */
+    let queued = false
+    let alive = true
     const mo = new MutationObserver((records) => {
       if (queued) return
       const added = records.some((r) => r.addedNodes.length > 0)
       if (!added) return
-      queued = requestAnimationFrame(() => { queued = 0; scan() })
+      queued = true
+      queueMicrotask(() => { queued = false; if (alive) scan() })
     })
     mo.observe(document.body, { childList: true, subtree: true })
 
@@ -147,11 +156,11 @@ export default function ViewportGate() {
     document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
+      alive = false
       sectionIo.disconnect()
       videoIo.disconnect()
       frameCleanups.forEach((fn) => fn())
       mo.disconnect()
-      if (queued) cancelAnimationFrame(queued)
       document.removeEventListener('visibilitychange', onVisibility)
       document.documentElement.classList.remove('video-frame-gate')
       document.querySelectorAll(SECTION_SEL).forEach((s) => s.classList.remove('section-inactive'))

@@ -15,6 +15,11 @@ export type VideoPlayerLabels = { play: string; pause: string; seek: string }
 
 const DEFAULT_LABELS: VideoPlayerLabels = { play: 'Play', pause: 'Pause', seek: 'Seek' }
 
+/* Los mismos que vigila ViewportGate: `loadeddata` es el que corresponde, pero
+   un video que ya venía decodificado no lo vuelve a emitir, y `emptied`/`error`
+   tienen que poder APAGAR la marca cuando el consumidor cambia la fuente. */
+const FRAME_EVENTS = ['loadeddata', 'canplay', 'playing', 'emptied', 'error'] as const
+
 function formatTime(t: number) {
   if (!Number.isFinite(t) || t <= 0) return '0:00'
   const m = Math.floor(t / 60)
@@ -69,9 +74,19 @@ export default function VideoPlayer({
       setDuration(Number.isFinite(v.duration) ? v.duration : 0)
       if (v.videoWidth && v.videoHeight) setRatio(`${v.videoWidth} / ${v.videoHeight}`)
     }
+    /* `has-frame` propia. ViewportGate también la pone, pero descubre los nodos
+       nuevos por MutationObserver coalescido en un rAF: este reproductor lo
+       monta un portal recién al abrirlo, y en móvil ese frame puede tardar
+       cientos de ms (medidos 757–2006 ms en el arranque). Hasta entonces la
+       regla `html.video-frame-gate ... :not(.has-frame)` lo dejaba invisible —
+       era el segundo de espera al abrir una animación. Acá se resuelve por
+       ESTADO (`readyState`) en el mismo montaje, sin esperar ningún frame. */
+    const syncFrame = () => v.classList.toggle('has-frame', v.readyState >= 2)
     // `emptied` = el consumidor vació el src (cierre del lightbox): resetear o
     // la barra queda mostrando el avance del clip anterior.
-    const onEmptied = () => { setPlaying(false); setTime(0); setDuration(0) }
+    const onEmptied = () => { setPlaying(false); setTime(0); setDuration(0); syncFrame() }
+    FRAME_EVENTS.forEach((ev) => v.addEventListener(ev, syncFrame))
+    syncFrame()
     v.addEventListener('play', onPlay)
     v.addEventListener('pause', onPause)
     v.addEventListener('ended', onPause)
@@ -91,6 +106,7 @@ export default function VideoPlayer({
       v.removeEventListener('loadedmetadata', onMeta)
       v.removeEventListener('durationchange', onMeta)
       v.removeEventListener('emptied', onEmptied)
+      FRAME_EVENTS.forEach((ev) => v.removeEventListener(ev, syncFrame))
     }
   }, [])
 

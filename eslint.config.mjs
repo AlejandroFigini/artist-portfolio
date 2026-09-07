@@ -42,6 +42,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    /* Herramientas: `.claude/worktrees` es una COPIA del repo (worktree de una
+       sesión anterior), así que `npm run lint` linteaba cada archivo dos veces
+       y reportaba 1004 errores que no existen en el código de verdad. */
+    ".claude/**",
+    "graphify-out/**",
   ]),
 ]);
 

@@ -107,10 +107,15 @@ export function closeLightbox() {
   setTimeout(() => { lb.style.display = 'none' }, 300)
 }
 
-export function openVideoLightbox(src: string, title?: string, desc?: string, meta?: LightboxMeta) {
+export function openVideoLightbox(src: string, title?: string, desc?: string, meta?: LightboxMeta, poster?: string) {
   const lb = document.getElementById('video-lightbox')
   const vid = document.getElementById('lightbox-video') as HTMLVideoElement | null
   if (!lb || !vid) return
+  /* El póster va ANTES del src: asignar `src` deja el elemento en readyState 0
+     y sin póster no hay nada que pintar hasta que decodifica el primer frame.
+     Sin póster se quita el anterior, que sería el del clip que se cerró. */
+  if (poster) vid.setAttribute('poster', poster)
+  else vid.removeAttribute('poster')
   vid.src = src
   const titleEl = lb.querySelector<HTMLElement>('.info-title')
   if (titleEl) titleEl.innerText = title || 'Animation'
@@ -133,6 +138,7 @@ export function closeVideoLightbox() {
     if (vid) {
       vid.pause()
       vid.src = ''
+      vid.removeAttribute('poster')
     }
   }, 300)
 }

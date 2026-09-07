@@ -17,7 +17,12 @@
     max-width: 100%;
     margin-inline: auto;
     overflow: hidden;
-    background: #000;
+    /* NUNCA #000. La regla `has-frame` (styles/legacy/style.css) deja el <video>
+       en opacity 0 mientras no hay frame decodificado, así que lo que ve el
+       visitante en ese rato es ESTE fondo — con negro, el recuadro negro que se
+       reportaba al abrir una animación en móvil era este contenedor, no el
+       video. Violeta translúcido: el mismo idioma que el contenedor vacío. */
+    background: rgba(124, 58, 237, 0.1);
 }
 
 .cvp__video {
@@ -25,7 +30,8 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: #000;
+    /* Las franjas del `object-fit: contain` muestran el fondo del contenedor. */
+    background: transparent;
     cursor: pointer;
 }
 

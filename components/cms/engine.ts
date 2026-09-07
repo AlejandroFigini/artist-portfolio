@@ -572,7 +572,10 @@ function applyValue(el: HTMLElement, type: string, value: string) {
        siquiera piden bytes hasta acercarse al viewport. */
     const poster = value ? videoPosterSrc(value) : ''
     if (poster) { if (v.getAttribute('poster') !== poster) v.setAttribute('poster', poster) }
-    else if (v.hasAttribute('poster')) v.removeAttribute('poster')
+    /* Un póster `data:` no vino de Cloudinary: lo pinta React (PageLoader) como
+       relleno para que el <video> no caiga bajo la regla `has-frame`. No hay
+       derivada que lo reemplace, y quitarlo devuelve el parpadeo. */
+    else if (!(v.getAttribute('poster') || '').startsWith('data:')) v.removeAttribute('poster')
 
     /* Salir si la fuente ya es la que corresponde. `load()` reinicia el video
        desde cero, así que llamarlo cuando no cambió nada lo hace parpadear:

@@ -68,7 +68,7 @@ export default function AboutSection() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     if (!motion) return
-    const { gsap, ScrollTrigger, wordRevealLoop } = motion
+    const { gsap, wordRevealLoop } = motion
     const sec = sectionRef.current
     if (!sec) return
 
@@ -178,7 +178,6 @@ export default function AboutSection() {
 
 
 
-      ScrollTrigger.refresh()
 
       return () => { metaIo?.disconnect() }
     }, sectionRef)
