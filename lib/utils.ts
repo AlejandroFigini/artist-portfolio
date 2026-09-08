@@ -259,13 +259,24 @@ export const VIDEO_POSTER_WIDTH = 640
    `eager` de lib/storage.ts, o Cloudinary la genera on-the-fly y devuelve 404
    mientras trabaja. La pantalla completa NO usa esto: ahí se quiere el original.
 */
-export const VIDEO_INLINE_WIDTH = 960
+/* Medido en produccion sobre un telefono de 390px: los 27 <video> del sitio se
+   pintan entre 207 y 292 px CSS y TODOS se servian a 960 — el ancho pensado
+   para el contenedor mas ancho de escritorio. Aun contando DPR2 les sobra con
+   640, y por area son el 44% de los pixeles. 640 pasa a ser el ancho por
+   defecto y 960 queda para el unico contenedor que de verdad lo necesita (el
+   reel de About, que en escritorio mide 460px CSS).
+   Las dos medidas tienen que existir en el `eager` de lib/storage.ts: pedir un
+   ancho que Cloudinary todavia no genero devuelve 404 mientras lo fabrica, y
+   eso es un contenedor negro. */
+export const VIDEO_INLINE_WIDTH = 640
+export const VIDEO_WIDE_WIDTH = 960
+export const VIDEO_WIDTHS = [VIDEO_INLINE_WIDTH, VIDEO_WIDE_WIDTH] as const
 
-export function videoInlineSrc(src?: string | null): string {
+export function videoInlineSrc(src?: string | null, width: number = VIDEO_INLINE_WIDTH): string {
   if (!src || typeof src !== 'string') return src || ''
   if (!src.includes('res.cloudinary.com')) return src
   if (src.includes('f_auto') && src.includes('q_auto')) return src
-  return src.replace('/upload/', `/upload/f_auto,q_auto,w_${VIDEO_INLINE_WIDTH},c_limit/`)
+  return src.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`)
 }
 
 /* Primer frame del video, como imagen.

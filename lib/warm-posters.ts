@@ -1,7 +1,7 @@
 import 'server-only'
 import type { Pool } from 'pg'
 import { hasCloudinary } from '@/lib/storage'
-import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
+import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc, VIDEO_WIDTHS } from '@/lib/utils'
 
 /* Pre-calienta las derivadas de los videos que YA estaban subidos.
  *
@@ -27,8 +27,8 @@ function derivativesOf(src: string): { url: string; ranged: boolean }[] {
   return [
     // El video pesa megas y no hace falta bajarlo: con Range igual se genera.
     { url: optimizedMediaSrc(src), ranged: true },
-    // La variante embebida (w_960), que es la que piden tarjetas y celdas.
-    { url: videoInlineSrc(src), ranged: true },
+    // Las variantes de entrega (640 para casi todo, 960 para el reel de About).
+    ...VIDEO_WIDTHS.map((w) => ({ url: videoInlineSrc(src, w), ranged: true })),
     { url: videoPosterSrc(src), ranged: false },
   ].filter((d) => !!d.url)
 }

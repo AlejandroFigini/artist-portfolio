@@ -292,6 +292,12 @@ const DATA_MIGRATIONS: { id: string; run: (pool: Pool) => Promise<void> }[] = [
      estaban subidos. */
   { id: '2026_09_warm_video_inline', run: warmVideoPosters },
   { id: '2026_09_warm_image_828', run: warmImageWidths },
+  /* La entrega de video baja de 960 a 640 (medido: ningun contenedor pasa de
+     292px CSS en un telefono). Hay que pre-generar la derivada nueva ANTES de
+     empezar a pedirla: si no, la primera visita despues del deploy dispara el
+     transcode on-the-fly, que devuelve 404 mientras trabaja — el contenedor
+     negro que este cambio viene a evitar. */
+  { id: '2026_09_warm_video_640', run: warmVideoPosters },
 ]
 
 async function runDataMigrations(pool: Pool): Promise<void> {

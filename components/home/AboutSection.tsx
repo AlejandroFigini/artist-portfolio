@@ -13,13 +13,13 @@
    El engine.ts indexa por selector y asigna data-cms-key automáticamente.
    Vacíos: cms-empty-overlay (solo icono, ver styles/about.css). */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMotionReady, prefersReducedMotion, type LoopHandle } from '@/hooks/useGSAP'
 import { sendGAEvent } from '@/lib/ga'
 import HeroMediaCarousel from './HeroMediaCarousel'
 import { useCmsStore, state } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
-import { videoInlineSrc, videoPosterSrc } from '@/lib/utils'
+import { videoInlineSrc, videoPosterSrc, VIDEO_INLINE_WIDTH, VIDEO_WIDE_WIDTH } from '@/lib/utils'
 import { SOCIAL_NETWORKS, socialHref } from '@/lib/social'
 import { useSocial } from '@/components/ui/SocialProvider'
 
@@ -51,6 +51,7 @@ const TITLE = 'About'
 export default function AboutSection() {
   const motion = useMotionReady() // GSAP llega en su propio chunk
   const sectionRef = useRef<HTMLElement>(null)
+  const videoBoxRef = useRef<HTMLDivElement>(null)
   useCmsStore()
   const isAdmin = state.isAdmin
   const { links } = useSocial()
@@ -61,7 +62,21 @@ export default function AboutSection() {
      `indexEditables` (base + '#' + índice dentro del selector). */
   const cmsItems = useCmsItems()
   const aboutVideoRaw = cmsItems['about.video#0'] || ''
-  const aboutVideoSrc = aboutVideoRaw ? videoInlineSrc(aboutVideoRaw) : ''
+  /* El unico <video> del sitio cuyo contenedor pasa de 460px CSS en escritorio:
+     ahi 640 se queda corto a DPR2 y hace falta la variante de 960. En un
+     telefono el mismo contenedor mide 225px y 640 le sobra.
+     El ancho se decide AL MONTAR —el servidor no conoce el viewport— y cambiar
+     el `src` despues no cuesta un byte porque el elemento es `preload="none"`:
+     todavia no pidio nada. Quien lo arranca es el observer de HomeFx. */
+  const [videoWidth, setVideoWidth] = useState(VIDEO_INLINE_WIDTH)
+  useEffect(() => {
+    const box = videoBoxRef.current
+    if (!box) return
+    const w = box.clientWidth || box.getBoundingClientRect().width
+    const need = w * Math.min(window.devicePixelRatio || 1, 2)
+    setVideoWidth(need > VIDEO_INLINE_WIDTH ? VIDEO_WIDE_WIDTH : VIDEO_INLINE_WIDTH)
+  }, [])
+  const aboutVideoSrc = aboutVideoRaw ? videoInlineSrc(aboutVideoRaw, videoWidth) : ''
   const aboutVideoPoster = aboutVideoRaw ? videoPosterSrc(aboutVideoRaw) : ''
   const nets = SOCIAL_NETWORKS.filter((n) => socialHref(n, links[n.id]))
 
@@ -281,7 +296,7 @@ export default function AboutSection() {
             <span className="about-media-blob about-media-blob--a" aria-hidden="true" />
             <span className="about-media-blob about-media-blob--b" aria-hidden="true" />
 
-            <div className="about-video-container">
+            <div className="about-video-container" ref={videoBoxRef}>
               {/* Sin `autoplay`: el atributo hace que el navegador baje y arranque
                   el archivo apenas monta, esté o no en cuadro — es el reel más
                   pesado de la portada (medido: 4,9 MB antes del primer scroll).

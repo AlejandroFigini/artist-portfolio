@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { CLOUDINARY_WIDTHS, VIDEO_INLINE_WIDTH, VIDEO_POSTER_WIDTH } from '@/lib/utils'
+import { CLOUDINARY_WIDTHS, VIDEO_POSTER_WIDTH, VIDEO_WIDTHS } from '@/lib/utils'
 
 /* Almacenamiento de media por ENTORNO.
    - Prod (con credenciales Cloudinary) → sube a Cloudinary.
@@ -216,7 +216,7 @@ export async function uploadBuffer(
          primera visita después de subir dispara el transcode on-the-fly. */
       options.eager = [
         { fetch_format: 'auto', quality: 'auto' },
-        { fetch_format: 'auto', quality: 'auto', width: VIDEO_INLINE_WIDTH, crop: 'limit' },
+        ...VIDEO_WIDTHS.map((width) => ({ fetch_format: 'auto', quality: 'auto', width, crop: 'limit' })),
         { fetch_format: 'auto', quality: 'auto', width: VIDEO_POSTER_WIDTH, crop: 'limit', start_offset: 0, format: 'jpg' },
       ]
       options.eager_async = true

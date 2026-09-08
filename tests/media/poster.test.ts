@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isVideoSrc, mediaSrcSet, snapCloudinaryWidth, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
+import { isVideoSrc, mediaSrcSet, snapCloudinaryWidth, videoInlineSrc, videoPosterSrc, VIDEO_WIDE_WIDTH, VIDEO_WIDTHS } from '@/lib/utils'
 import { acceptsMediaKind, resolveMediaKind } from '@/components/cms/engine'
 import { storeHref } from '@/components/home/GameDevShowcase'
 
@@ -114,7 +114,17 @@ describe('storeHref — valores pegados de más', () => {
 describe('videoInlineSrc', () => {
   it('pide f_auto,q_auto y el ancho embebido', () => {
     expect(videoInlineSrc('https://res.cloudinary.com/demo/video/upload/v1/a.webm'))
+      .toBe('https://res.cloudinary.com/demo/video/upload/f_auto,q_auto,w_640,c_limit/v1/a.webm')
+  })
+  it('acepta el ancho ancho para el unico contenedor que lo necesita', () => {
+    expect(videoInlineSrc('https://res.cloudinary.com/demo/video/upload/v1/a.webm', VIDEO_WIDE_WIDTH))
       .toBe('https://res.cloudinary.com/demo/video/upload/f_auto,q_auto,w_960,c_limit/v1/a.webm')
+  })
+  /* Cada ancho que el sitio puede pedir tiene que estar pre-generado en el
+     `eager` de lib/storage.ts: pedir uno que no existe devuelve 404 mientras
+     Cloudinary lo fabrica, y eso es un contenedor negro. */
+  it('solo pide anchos que el eager pre-genera', () => {
+    expect([...VIDEO_WIDTHS].sort()).toEqual([640, 960])
   })
   it('no vuelve a transformar una URL que ya lo está', () => {
     const already = 'https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/a.webm'
