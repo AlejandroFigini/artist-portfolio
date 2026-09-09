@@ -4,49 +4,69 @@
    `[data-theme="dark"]`, sin tocar ningún archivo CSS existente.
    Importado desde globals.css DESPUÉS de todas las hojas de sección.
 
-   PALETA: violeta-tinta. Las superficies NO son grises neutros: llevan
-   tinte violeta (hue ~258) y suben croma con la elevación, que es lo que
-   hace que el modo oscuro se lea como una identidad y no como "apagar la
-   luz".
+   PALETA: escala de grises con tinte violeta. Las superficies son GRISES
+   —el canal azul va apenas por encima del rojo (+5 a +13 sobre 255)— y el
+   croma NO sube con la elevación: sube la luminosidad. El violeta vive en
+   los acentos (figuras, rieles, bordes de foco, glows), no en la masa de
+   las superficies. Un lienzo violeta saturado compite con las
+   ilustraciones, que son el contenido.
 
-   Contraste medido. Sobre --bg-primary (#0c0a14):
-     --text-primary 15.9:1   --text-secondary 6.8:1
-     --accent-text  10.6:1   --accent         5.1:1
-   Sobre --surface-1 (#1a1530), el piso más claro que lleva texto:
-     --text-secondary 6.1:1  --text-muted 5.0:1  --accent 4.5:1
-   Todos por encima de AA (4.5:1). Al agregar un color nuevo acá, medirlo:
-   una regresión de contraste en dark no se ve en las capturas de admin.
+   Las superficies tampoco van al fondo del pozo: #17161c ya se distingue
+   del tema claro sin volverse un agujero negro. Bajar más solo apaga.
+
+   Contraste medido. Sobre --bg-primary (#17161c):
+     --text-primary 16.2:1  --text-secondary 11.3:1
+     --text-muted    8.1:1  --accent          5.8:1  --accent-text 9.7:1
+   Sobre --surface-3 (#393646), el piso MÁS CLARO —y por eso el peor caso
+   para el texto claro, que pierde contraste a medida que sube la superficie:
+     --text-secondary 7.4:1  --text-muted 5.3:1  --accent-text 6.4:1
+
+   EXCEPCIÓN, y es a propósito: `--accent` sobre --surface-3 da 3.8:1, por
+   debajo de AA. Hoy no pasa en ninguna parte —el acento como texto solo
+   aparece sobre --bg-primary (barra superior) y --surface-1 (tarjetas, ahí
+   da 4.91:1), y está medido, no supuesto—. Si algún día hace falta acento
+   sobre un popover, va `--accent-text`, no `--accent`.
+
+   Al agregar un color nuevo acá, medirlo contra la superficie MÁS CLARA
+   donde vaya a aparecer, no contra el lienzo: una regresión de contraste en
+   dark no se ve en las capturas de admin.
    ============================================================ */
 
 /* --- 1. TOKENS --------------------------------------------------- */
 
 [data-theme="dark"] {
-  /* Superficies: escala de elevación. Cada peldaño sube luminosidad Y
-     croma — es lo que separa una tarjeta de su sección sin necesidad de
-     bordes duros. */
-  --bg-primary: #0c0a14;   /* lienzo de página */
-  --bg-secondary: #13101f; /* sección alterna */
-  --surface-1: #1a1530;    /* tarjeta */
-  --surface-2: #221b3d;    /* elevada / hover */
-  --surface-3: #2a2249;    /* popover, dropdown, modal */
+  /* Superficies: escala de elevación. Cada peldaño sube SOLO luminosidad;
+     el tinte violeta (canal azul +5..+13 sobre el rojo) se mantiene
+     constante y mínimo. Es lo que separa una tarjeta de su sección sin
+     teñir de morado media pantalla. */
+  --bg-primary: #17161c;   /* lienzo de página */
+  --bg-secondary: #1e1d25; /* sección alterna */
+  --surface-1: #26242f;    /* tarjeta */
+  --surface-2: #2f2d3a;    /* elevada / hover */
+  --surface-3: #393646;    /* popover, dropdown, modal */
 
-  --text-primary: #e9e5f5;
-  --text-secondary: #9b93b4;
-  --text-muted: #8b83a8;
+  --text-primary: #f4f2f8;
+  --text-secondary: #cfcbd8;
+  --text-muted: #b0acbd;
 
-  /* El violeta de marca del tema claro es #8b5cf6. Acá va apenas más claro
-     (145,101,247 vs 139,92,246 — indistinguible a ojo) porque `--accent` se
-     usa como COLOR DE TEXTO en 72 lugares del CSS, y #8b5cf6 da 4.16:1
-     sobre --surface-1 y 4.42:1 sobre --bg-secondary: por debajo de AA. Con
-     este valor el peor caso queda en 4.54:1.
-     No se aclara más: `--accent` también es relleno de botón con texto
-     blanco encima, y ahí subir la luminosidad EMPEORA el contraste.
-     Para texto muy chico o de bajo peso está `--accent-text`.
-     El hover ACLARA en vez de oscurecer: es el inverso del tema claro, y el
+  /* Violeta de detalle. Mismo TONO que el violeta de marca del tema claro
+     (#8b5cf6, hue 258) y saturación al máximo: HSL(258, 100%, 74%). Lo que
+     cambia respecto del claro es la luminosidad, y solo porque tiene que
+     cambiar — `--accent` es COLOR DE TEXTO en 72 lugares y sobre oscuro un
+     violeta pleno y oscuro no se lee.
+     Cuánto se puede oscurecer lo fija la medición, no el gusto: el acento
+     como texto aparece sobre --bg-primary (barra superior) y --surface-1
+     (tarjetas), y nunca más claro que eso. Sobre --surface-1 este valor da
+     4.91:1; #8b5cf6 daría 2.5:1.
+     La versión anterior (#b09aef) bajaba la saturación a 73% para ganar
+     margen y se leía lavada. Subir la saturación a 100% en vez de subir la
+     luminosidad es lo que devuelve el color sin perder legibilidad.
+     Si hace falta acento sobre --surface-3 (popovers), va `--accent-text`.
+     El hover ACLARA en vez de oscurecer: inverso del tema claro, y el
      correcto sobre un lienzo oscuro. */
-  --accent: #9165f7;
-  --accent-text: #c4b5fd;
-  --accent-hover: #b18bff;
+  --accent: #a27aff;
+  --accent-text: #c9b3ff;
+  --accent-hover: #bb9bff;
 
   /* Relleno de botón primario. Es el mismo violeta que `--accent-hover` del
      tema claro (#7c3aed), y existe porque `--accent` y el relleno tiran para
@@ -55,29 +75,35 @@
      pierde — con #9165f7 el blanco encima daba 3.9:1. Acá da 5.7:1. */
   --accent-solid: #7c3aed;
 
-  --border: rgba(167, 139, 250, 0.14);
-  --header-bg: rgba(12, 10, 20, 0.85);
+  --border: rgba(198, 194, 214, 0.13);
+  --header-bg: rgba(23, 22, 28, 0.85);
 
-  /* Sombras con tinte violeta: negro puro sobre un lienzo violeta se lee
-     como un agujero. */
-  --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(60, 20, 140, 0.25);
-  --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(76, 29, 149, 0.35);
-  /* Sobre lienzo casi negro la sombra tiene que ser mas negra y mas larga. */
+  /* Sombras neutras. La versión anterior las teñía de violeta y sobre un
+     lienzo gris eso se leía como un halo morado alrededor de cada tarjeta —
+     una de las fuentes del "parece saturado". El violeta queda solo en el
+     glow de hover, que es un estado, no el reposo. */
+  --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, 0.62), 0 8px 20px -8px rgba(0, 0, 0, 0.44);
   --hero-gallery-shadow:
     0 2px 6px -2px rgba(0, 0, 0, 0.5),
-    0 32px 70px -26px rgba(0, 0, 0, 0.85),
-    0 8px 26px -12px rgba(76, 29, 149, 0.4);
+    0 32px 70px -26px rgba(0, 0, 0, 0.8),
+    0 8px 26px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Variables locales del tema. Fuera de `:root` a propósito: son detalle de
    implementación de esta hoja, no tokens del sistema. */
 [data-theme="dark"] {
-  --dk-line: rgba(167, 139, 250, 0.055);  /* grilla blueprint */
-  --dk-hairline: rgba(167, 139, 250, 0.10);
-  --dk-edge: rgba(167, 139, 250, 0.22);   /* borde marcado / hover */
-  --dk-tint: rgba(145, 101, 247, 0.06);    /* velo de superficie */
-  --dk-tint-2: rgba(145, 101, 247, 0.12);
-  --dk-glow: 0 0 24px -6px rgba(145, 101, 247, 0.45);
+  /* Líneas y bordes: gris lavanda, NO violeta. Son miles de píxeles de
+     hairline repartidos por toda la página (grillas blueprint, marcos,
+     esquinas, separadores); en violeta suman un velo morado sobre todo. */
+  --dk-line: rgba(198, 194, 214, 0.05);   /* grilla blueprint */
+  --dk-hairline: rgba(198, 194, 214, 0.10);
+  --dk-edge: rgba(198, 194, 214, 0.20);   /* borde marcado / hover */
+  /* Los velos SÍ son violeta: son manchas chicas y puntuales (pozos de
+     media, píldoras) donde el acento tiene que leerse. */
+  --dk-tint: rgba(162, 122, 255, 0.05);
+  --dk-tint-2: rgba(162, 122, 255, 0.11);
+  --dk-glow: 0 0 24px -6px rgba(162, 122, 255, 0.45);
 }
 
 /* --- 2. TRANSICIÓN DE TEMA --------------------------------------- */
@@ -104,7 +130,7 @@ body {
 [data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
 
 [data-theme="dark"] ::selection {
-  background: rgba(145, 101, 247, 0.35);
+  background: rgba(162, 122, 255, 0.35);
   color: var(--text-primary);
 }
 
@@ -117,8 +143,6 @@ body {
    3.9:1. Si se agrega un botón primario nuevo, va también acá.
    Los que rellenan en :hover llevan el hover en el selector: en reposo su
    fondo es fantasma y ahí el acento claro es el correcto. */
-[data-theme="dark"] .ab-cta,
-[data-theme="dark"] .ab-social a:hover,
 [data-theme="dark"] .about-social a:hover,
 [data-theme="dark"] .anim-card__btn:hover,
 [data-theme="dark"] .ch-lightbox__close:hover,
@@ -145,26 +169,14 @@ body {
   color: #fff;
 }
 
-/* --- 4. PANTALLA DE CARGA ---------------------------------------- */
+/* --- 4. PANTALLA DE CARGA — A PROPÓSITO SIN OVERRIDES ------------ */
 
-[data-theme="dark"] .page-loader {
-  background: var(--bg-primary);
-}
-[data-theme="dark"] .loader-media-glow {
-  background: radial-gradient(circle, rgba(145, 101, 247, 0.28) 0%, transparent 68%);
-}
-[data-theme="dark"] .loader-title,
-[data-theme="dark"] .loader-text { color: var(--text-primary); }
-[data-theme="dark"] .loader-subtitle,
-[data-theme="dark"] .loader-status { color: var(--text-secondary); }
-[data-theme="dark"] .loader-bar {
-  background: rgba(167, 139, 250, 0.12);
-}
-[data-theme="dark"] .loader-preview-close {
-  background: var(--surface-3);
-  border-color: var(--dk-edge);
-  color: var(--text-primary);
-}
+/* La pantalla de carga ya es oscura en el tema claro (fondo propio, título
+   en #a78bfa, textos en blanco translúcido) y se ve IGUAL en los dos modos.
+   Eso es deseado: es la primera impresión y no tiene que cambiar según un
+   ajuste que el visitante todavía no vio.
+   Había overrides acá que la repintaban con los tokens del tema y la hacían
+   distinta en oscuro. Se sacaron. No volver a agregarlos. */
 
 /* --- 5. HEADER / NAV --------------------------------------------- */
 
@@ -173,11 +185,11 @@ body {
   border-bottom-color: var(--dk-hairline);
 }
 [data-theme="dark"] header.scrolled {
-  background-color: rgba(12, 10, 20, 0.92);
+  background-color: rgba(23, 22, 28, 0.92);
   border-bottom-color: var(--dk-edge);
   box-shadow: 0 2px 24px -6px rgba(0, 0, 0, 0.8);
 }
-[data-theme="dark"] header::after { background: rgba(12, 10, 20, 0.96); }
+[data-theme="dark"] header::after { background: rgba(23, 22, 28, 0.96); }
 
 /* `:not([class*="min-btn"])`: el drawer móvil mete las píldoras de acción
    (`.cv-min-btn`, `.login-min-btn`) DENTRO de .nav-links, y algunas son
@@ -189,21 +201,21 @@ body {
 [data-theme="dark"] .dropdown > a:hover { color: var(--text-primary); }
 
 [data-theme="dark"] .dropdown-content {
-  background-color: rgba(42, 34, 73, 0.97);
+  background-color: rgba(57, 54, 70, 0.97);
   border-color: var(--dk-edge);
-  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(167, 139, 250, 0.06);
+  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(198, 194, 214, 0.06);
 }
 [data-theme="dark"] .dropdown-content a { color: var(--text-secondary); }
 [data-theme="dark"] .dropdown-content a:hover {
-  background: rgba(145, 101, 247, 0.16);
+  background: rgba(162, 122, 255, 0.16);
   color: var(--text-primary);
 }
 
 /* Regla de progreso del nav */
-[data-theme="dark"] .nav-progress { background: rgba(167, 139, 250, 0.12); }
+[data-theme="dark"] .nav-progress { background: rgba(198, 194, 214, 0.12); }
 [data-theme="dark"] .nav-progress-fill {
   background: var(--accent);
-  box-shadow: 0 0 10px -2px rgba(145, 101, 247, 0.7);
+  box-shadow: 0 0 10px -2px rgba(162, 122, 255, 0.7);
 }
 
 /* Drawer móvil */
@@ -213,7 +225,7 @@ body {
     box-shadow: 12px 0 48px rgba(0, 0, 0, 0.75);
   }
   [data-theme="dark"] .nav-menu-scrollable::-webkit-scrollbar-thumb {
-    background: rgba(167, 139, 250, 0.22);
+    background: rgba(198, 194, 214, 0.22);
   }
   [data-theme="dark"] .hamburger span { background: var(--text-primary); }
 }
@@ -222,12 +234,12 @@ body {
 
 [data-theme="dark"] .srail__label { color: var(--text-secondary); }
 [data-theme="dark"] .srail__item.is-active .srail__label { color: var(--text-primary); }
-[data-theme="dark"] .srail__dot { background: rgba(167, 139, 250, 0.28); }
+[data-theme="dark"] .srail__dot { background: rgba(198, 194, 214, 0.28); }
 [data-theme="dark"] .srail__item.is-active .srail__dot {
   background: var(--accent);
   box-shadow: var(--dk-glow);
 }
-[data-theme="dark"] .srail__cap { background: rgba(167, 139, 250, 0.16); }
+[data-theme="dark"] .srail__cap { background: rgba(198, 194, 214, 0.16); }
 
 /* --- 7. HERO ----------------------------------------------------- */
 
@@ -245,16 +257,16 @@ body {
   background:
     linear-gradient(
       100deg,
-      rgba(12, 10, 20, 0.95) 0%,
-      rgba(12, 10, 20, 0.80) 34%,
-      rgba(12, 10, 20, 0.50) 62%,
-      rgba(12, 10, 20, 0.66) 100%
+      rgba(23, 22, 28, 0.95) 0%,
+      rgba(23, 22, 28, 0.80) 34%,
+      rgba(23, 22, 28, 0.50) 62%,
+      rgba(23, 22, 28, 0.66) 100%
     ),
     linear-gradient(
       to bottom,
-      rgba(12, 10, 20, 0.62) 0%,
-      rgba(12, 10, 20, 0.18) 34%,
-      rgba(12, 10, 20, 0.82) 100%
+      rgba(23, 22, 28, 0.62) 0%,
+      rgba(23, 22, 28, 0.18) 34%,
+      rgba(23, 22, 28, 0.82) 100%
     );
 }
 
@@ -283,9 +295,9 @@ body {
 [data-theme="dark"] .hero-identity-card {
   background: linear-gradient(
     to right,
-    rgba(12, 10, 20, 0.96) 0%,
-    rgba(12, 10, 20, 0.78) 50%,
-    rgba(12, 10, 20, 0) 100%
+    rgba(23, 22, 28, 0.96) 0%,
+    rgba(23, 22, 28, 0.78) 50%,
+    rgba(23, 22, 28, 0) 100%
   );
 }
 [data-theme="dark"] .hero-gallery-frame { border-color: var(--dk-hairline); }
@@ -296,7 +308,7 @@ body {
 [data-theme="dark"] .bp-fig,
 [data-theme="dark"] .bp-measure-label { color: var(--text-muted); }
 [data-theme="dark"] .bp-scanline {
-  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(198, 194, 214, 0.35), transparent);
 }
 
 /* --- 8. BURBUJAS DE SOFTWARE DEL HERO (.wave-*) ------------------ */
@@ -309,25 +321,25 @@ body {
   background:
     linear-gradient(
       160deg,
-      rgba(167, 139, 250, 0.16),
-      rgba(12, 10, 20, 0.10) 45%,
-      rgba(12, 10, 20, 0.14)
+      rgba(198, 194, 214, 0.16),
+      rgba(23, 22, 28, 0.10) 45%,
+      rgba(23, 22, 28, 0.14)
     ),
-    rgba(34, 27, 61, 0.82);
-  border-color: rgba(167, 139, 250, 0.20);
+    rgba(47, 45, 58, 0.82);
+  border-color: rgba(198, 194, 214, 0.20);
   /* El filo es mucho mas tenue que en claro: sobre fondo oscuro un realce
      blanco marcado se lee como borde, no como vidrio. Mismo criterio que
      `.ct-hero-wrap`. */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    0 6px 20px -3px rgba(0, 0, 0, 0.55), 0 2px 10px -2px rgba(145, 101, 247, 0.18);
+    0 6px 20px -3px rgba(0, 0, 0, 0.55), 0 2px 10px -2px rgba(162, 122, 255, 0.18);
 }
 [data-theme="dark"] .wave-item.wave-has-content:hover,
 [data-theme="dark"] .wave-item:not(.wave-has-content):hover {
-  border-color: rgba(167, 139, 250, 0.55);
+  border-color: rgba(198, 194, 214, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    0 10px 28px -4px rgba(145, 101, 247, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+    0 10px 28px -4px rgba(162, 122, 255, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
 }
 [data-theme="dark"] .wave-text { color: var(--text-primary); }
 
@@ -335,21 +347,21 @@ body {
    velo solo aporta el tinte oscuro que hace legible el texto claro; quien
    separa de la ilustracion es el desenfoque. */
 [data-theme="dark"] .hero-content {
-  border-color: rgba(167, 139, 250, 0.24);
+  border-color: rgba(198, 194, 214, 0.24);
   background:
     linear-gradient(
       160deg,
-      rgba(145, 101, 247, 0.1),
-      rgba(12, 10, 20, 0.14) 45%,
-      rgba(12, 10, 20, 0.19)
+      rgba(162, 122, 255, 0.1),
+      rgba(23, 22, 28, 0.14) 45%,
+      rgba(23, 22, 28, 0.19)
     ),
-    rgba(12, 10, 20, 0.15);
+    rgba(23, 22, 28, 0.15);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 22px 60px -24px rgba(0, 0, 0, 0.7);
 }
 @supports not (backdrop-filter: blur(1px)) {
-  [data-theme="dark"] .hero-content { background: rgba(12, 10, 20, 0.82); }
+  [data-theme="dark"] .hero-content { background: rgba(23, 22, 28, 0.82); }
 }
 /* Movil: mismo criterio que en claro (ver style.css). El velo de escritorio es
    fino a proposito y en un telefono el panel deja de leerse como material. */
@@ -358,22 +370,25 @@ body {
     background:
       linear-gradient(
         160deg,
-        rgba(145, 101, 247, 0.2),
-        rgba(12, 10, 20, 0.36) 45%,
-        rgba(12, 10, 20, 0.44)
+        rgba(162, 122, 255, 0.2),
+        rgba(23, 22, 28, 0.36) 45%,
+        rgba(23, 22, 28, 0.44)
       ),
-      rgba(12, 10, 20, 0.4);
+      rgba(23, 22, 28, 0.4);
   }
   @supports not (backdrop-filter: blur(1px)) {
-    [data-theme="dark"] .hero-content { background: rgba(12, 10, 20, 0.9); }
+    [data-theme="dark"] .hero-content { background: rgba(23, 22, 28, 0.9); }
   }
 }
+/* Burbuja de software vacía: es un contenedor vacío, así que el aro
+   punteado va violeta como el resto (la excepción de la regla es que oculta
+   el nombre por falta de espacio, no que cambie de color). */
 [data-theme="dark"] .wave-item:not(.wave-has-content) {
-  border-color: rgba(167, 139, 250, 0.34);
-  background: rgba(145, 101, 247, 0.10);
+  border-color: rgba(162, 122, 255, 0.42);
+  background: rgba(162, 122, 255, 0.06);
 }
 [data-theme="dark"] .wave-item .cms-empty-overlay:hover {
-  background: rgba(145, 101, 247, 0.16);
+  background: rgba(162, 122, 255, 0.16);
 }
 
 /* --- 9. DESPLEGABLE DE SOFTWARE (.sw-*) -------------------------- */
@@ -390,8 +405,8 @@ body {
 [data-theme="dark"] .sw-dropdown:focus-within .sw-trigger,
 [data-theme="dark"] .sw-dropdown.is-open .sw-trigger {
   background: var(--surface-3);
-  border-color: rgba(167, 139, 250, 0.48);
-  box-shadow: 0 6px 18px -8px rgba(145, 101, 247, 0.5);
+  border-color: rgba(198, 194, 214, 0.48);
+  box-shadow: 0 6px 18px -8px rgba(162, 122, 255, 0.5);
 }
 [data-theme="dark"] .sw-list {
   background: var(--surface-3);
@@ -417,8 +432,8 @@ body {
 }
 [data-theme="dark"] .about-section::after {
   background:
-    radial-gradient(ellipse 55% 45% at 30% 35%, rgba(145, 101, 247, 0.11) 0%, transparent 70%),
-    radial-gradient(ellipse 45% 40% at 75% 70%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+    radial-gradient(ellipse 55% 45% at 30% 35%, rgba(162, 122, 255, 0.055) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 70%, rgba(162, 122, 255, 0.035) 0%, transparent 70%);
 }
 
 /* Los textos de esta sección son `color: #000` en claro (uno con
@@ -446,14 +461,14 @@ body {
 [data-theme="dark"] .about-portrait,
 [data-theme="dark"] .about-video-container { border-color: var(--dk-hairline); }
 [data-theme="dark"] .about-media-blob {
-  background: radial-gradient(circle, rgba(145, 101, 247, 0.22), transparent 70%);
+  background: radial-gradient(circle, rgba(162, 122, 255, 0.12), transparent 70%);
 }
 
 /* --- 12. ANIMATIONS SHOWCASE ------------------------------------- */
 
 [data-theme="dark"] .anim-showcase { background: var(--bg-primary); }
 [data-theme="dark"] .anim-showcase::before {
-  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
+  background-image: radial-gradient(circle 1px at center, rgba(198, 194, 214, 0.09) 1px, transparent 1px);
 }
 [data-theme="dark"] .anim-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .anim-showcase__desc { color: var(--text-secondary); }
@@ -487,12 +502,21 @@ body {
 
 /* La tarjeta ya lee `--surface-1` desde el componente; acá solo el aro y
    la sombra, que en claro son utilidades de Tailwind sin token. */
+/* `!important` no es preferencia: `projects-showcase.css` declara
+   `background: #ffffff !important` + `border: … !important` sobre este mismo
+   selector para blindar la maquetación de la celda del carrusel. El
+   componente ya pide `bg-[var(--surface-1)]`, pero una utilidad de Tailwind
+   sin `!important` pierde contra eso — la tarjeta salía BLANCA en oscuro.
+   Igualar la especificidad es la única forma de recuperarla sin tocar la
+   regla del carrusel, que es de layout y no debe moverse. */
 [data-theme="dark"] .proj-showcase .project-item {
-  box-shadow: var(--shadow);
+  background: var(--surface-1) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
 }
 [data-theme="dark"] .proj-showcase .project-item:hover {
-  border-color: var(--dk-edge);
-  box-shadow: var(--shadow-lg);
+  border-color: var(--dk-edge) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 [data-theme="dark"] .proj-card-date { color: var(--accent-text); }
 
@@ -503,7 +527,7 @@ body {
 }
 [data-theme="dark"] .proj-showcase__manage:hover {
   background: var(--dk-tint-2);
-  border-color: rgba(167, 139, 250, 0.42);
+  border-color: rgba(198, 194, 214, 0.42);
   color: var(--text-primary);
 }
 
@@ -517,7 +541,7 @@ body {
 [data-theme="dark"] .ch-showcase__fig::before { background: var(--accent); }
 
 [data-theme="dark"] .ch-showcase__rail-fig { color: var(--text-muted); }
-[data-theme="dark"] .ch-showcase__rail-track { background: rgba(167, 139, 250, 0.14); }
+[data-theme="dark"] .ch-showcase__rail-track { background: rgba(198, 194, 214, 0.14); }
 [data-theme="dark"] .ch-showcase__rail-fill {
   background: var(--accent);
   box-shadow: var(--dk-glow);
@@ -530,7 +554,7 @@ body {
 }
 [data-theme="dark"] .ch-showcase__manage:hover {
   background: var(--dk-tint-2);
-  border-color: rgba(167, 139, 250, 0.42);
+  border-color: rgba(198, 194, 214, 0.42);
   color: var(--text-primary);
 }
 
@@ -551,14 +575,14 @@ body {
 [data-theme="dark"] .ch-name { color: var(--text-primary); }
 [data-theme="dark"] .ch-role { color: var(--accent-text); }
 [data-theme="dark"] .ch-desc { color: var(--text-secondary); }
-[data-theme="dark"] .ch-ghost { color: rgba(167, 139, 250, 0.06); }
+[data-theme="dark"] .ch-ghost { color: rgba(198, 194, 214, 0.06); }
 [data-theme="dark"] .ch-corner { border-color: var(--dk-edge); }
 
 /* Lightbox de personajes: ya es oscuro en claro; solo se le ajusta el
    fondo para que no sea negro puro sobre un sitio violeta. */
-[data-theme="dark"] .ch-lightbox { background: rgba(8, 6, 16, 0.97); }
+[data-theme="dark"] .ch-lightbox { background: rgba(10, 10, 12, 0.97); }
 [data-theme="dark"] .ch-lightbox__meta {
-  background: rgba(26, 21, 48, 0.72);
+  background: rgba(38, 36, 47, 0.72);
   border-color: var(--dk-edge);
 }
 
@@ -566,7 +590,7 @@ body {
 
 [data-theme="dark"] .m3d-showcase { background: var(--bg-secondary); }
 [data-theme="dark"] .m3d-showcase::before {
-  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
+  background-image: radial-gradient(circle 1px at center, rgba(198, 194, 214, 0.09) 1px, transparent 1px);
 }
 [data-theme="dark"] .m3d-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .m3d-showcase__desc { color: var(--text-secondary); }
@@ -581,18 +605,18 @@ body {
 }
 [data-theme="dark"] .m3d-slide__fig,
 [data-theme="dark"] .m3d-showcase__rail-fig { color: var(--text-muted); }
-[data-theme="dark"] .m3d-showcase__rail-track { background: rgba(167, 139, 250, 0.14); }
+[data-theme="dark"] .m3d-showcase__rail-track { background: rgba(198, 194, 214, 0.14); }
 [data-theme="dark"] .m3d-showcase__rail-fill {
   background: var(--accent);
   box-shadow: var(--dk-glow);
 }
-[data-theme="dark"] .m3d-dot { background: rgba(167, 139, 250, 0.28); }
+[data-theme="dark"] .m3d-dot { background: rgba(198, 194, 214, 0.28); }
 
 /* --- 15b. GAME DEV SHOWCASE -------------------------------------- */
 
 [data-theme="dark"] .gd-showcase { background: var(--bg-primary); }
 [data-theme="dark"] .gd-showcase::before {
-  background-image: radial-gradient(circle 1px at center, rgba(167, 139, 250, 0.09) 1px, transparent 1px);
+  background-image: radial-gradient(circle 1px at center, rgba(198, 194, 214, 0.09) 1px, transparent 1px);
 }
 [data-theme="dark"] .gd-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .gd-showcase__desc { color: var(--text-secondary); }
@@ -637,8 +661,8 @@ body {
 /* --- 18. CUBO 3D ------------------------------------------------- */
 
 [data-theme="dark"] .cube .face {
-  border-color: rgba(167, 139, 250, 0.26);
-  background: rgba(145, 101, 247, 0.09);
+  border-color: rgba(198, 194, 214, 0.26);
+  background: rgba(162, 122, 255, 0.09);
 }
 
 /* --- 19. PIE --------------------------------------------------- */
@@ -646,11 +670,16 @@ body {
 /* El pie ya es oscuro en claro (#12141c). Acá baja por debajo del lienzo
    para seguir cerrando la página, y toma el tinte violeta. */
 [data-theme="dark"] .main-footer {
-  background-color: #07060d;
+  background-color: #111015;
   border-top-color: var(--dk-hairline);
 }
+/* `background-image`, NO el atajo `background`: la regla base recorta este
+   gradiente contra el texto (`background-clip: text` + `-webkit-text-fill-color:
+   transparent`) y el atajo resetea `background-clip` a `border-box`. Con el
+   atajo el gradiente pintaba la caja entera y el nombre quedaba invisible: una
+   barra lavanda en el pie. Igual en `.info-title`. */
 [data-theme="dark"] .footer-name {
-  background: linear-gradient(to right, var(--text-primary), var(--accent-hover));
+  background-image: linear-gradient(to right, var(--text-primary), var(--accent-hover));
 }
 [data-theme="dark"] .footer-col h4 { color: var(--text-primary); }
 /* `:not(.cv-btn)`: el botón de CV es un `a` dentro de .footer-col y se pinta
@@ -663,7 +692,7 @@ body {
 /* En claro el pie de legales va a rgba(255,255,255,.3) sobre #12141c: 2.6:1.
    Sobre un pie más oscuro empeoraba, así que sube a AA. */
 [data-theme="dark"] .footer-copyright,
-[data-theme="dark"] .legal-dots { color: rgba(233, 229, 245, 0.62); }
+[data-theme="dark"] .legal-dots { color: rgba(244, 242, 248, 0.62); }
 
 /* --- 20. PANEL DE AJUSTES / TUERCA ------------------------------- */
 
@@ -691,7 +720,7 @@ body {
 [data-theme="dark"] .settings-divider { background: var(--border); }
 
 /* Interruptores */
-[data-theme="dark"] .slider { background-color: #38315a; }
+[data-theme="dark"] .slider { background-color: #3d3a49; }
 [data-theme="dark"] input:checked + .slider { background-color: var(--accent); }
 
 [data-theme="dark"] .cv-btn-settings,
@@ -704,7 +733,7 @@ body {
 }
 [data-theme="dark"] .lang-option { color: var(--text-secondary); }
 [data-theme="dark"] .lang-option:hover {
-  background: rgba(145, 101, 247, 0.16);
+  background: rgba(162, 122, 255, 0.16);
   color: var(--text-primary);
 }
 
@@ -744,11 +773,15 @@ body {
 [data-theme="dark"] .contact-input:focus,
 [data-theme="dark"] .contact-textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(145, 101, 247, 0.22);
+  box-shadow: 0 0 0 3px rgba(162, 122, 255, 0.22);
 }
 [data-theme="dark"] .contact-charcount,
 [data-theme="dark"] .contact-optional { color: var(--text-muted); }
+/* Rojo claro, no el rojo pleno: #ef4444 da 4.06:1 sobre la superficie de la
+   tarjeta. El asterisco de campo obligatorio va acá porque es la única marca
+   que dice que el campo no es opcional. */
 [data-theme="dark"] .contact-field-error,
+[data-theme="dark"] .contact-required,
 [data-theme="dark"] .contact-error { color: #fca5a5; }
 [data-theme="dark"] .contact-success-title { color: var(--text-primary); }
 [data-theme="dark"] .contact-success-subtitle { color: var(--text-secondary); }
@@ -772,13 +805,13 @@ body {
 /* Las auroras son el único movimiento de color de la página: apagadas se
    pierde el motivo por el que existen. */
 [data-theme="dark"] .ct-aurora--a {
-  background: radial-gradient(circle, rgba(145, 101, 247, 0.38), rgba(124, 58, 237, 0.14) 55%, transparent 74%);
+  background: radial-gradient(circle, rgba(162, 122, 255, 0.18), rgba(162, 122, 255, 0.06) 55%, transparent 74%);
 }
 [data-theme="dark"] .ct-aurora--b {
-  background: radial-gradient(circle, rgba(109, 40, 217, 0.34), rgba(76, 29, 149, 0.12) 52%, transparent 70%);
+  background: radial-gradient(circle, rgba(140, 118, 205, 0.16), rgba(140, 118, 205, 0.05) 52%, transparent 70%);
 }
 [data-theme="dark"] .ct-aurora--c {
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.26), rgba(145, 101, 247, 0.09) 55%, transparent 72%);
+  background: radial-gradient(circle, rgba(198, 194, 214, 0.13), rgba(162, 122, 255, 0.04) 55%, transparent 72%);
 }
 
 /* El panel del hero es el único respaldo del título: detrás hay una
@@ -788,15 +821,15 @@ body {
    sobre fondo oscuro un filo blanco al 45% se lee como un borde, no como
    vidrio. */
 [data-theme="dark"] .ct-hero-wrap {
-  border-color: rgba(167, 139, 250, 0.24);
+  border-color: rgba(198, 194, 214, 0.24);
   background:
     linear-gradient(
       160deg,
-      rgba(145, 101, 247, 0.1),
-      rgba(12, 10, 20, 0.14) 45%,
-      rgba(12, 10, 20, 0.19)
+      rgba(162, 122, 255, 0.1),
+      rgba(23, 22, 28, 0.14) 45%,
+      rgba(23, 22, 28, 0.19)
     ),
-    rgba(12, 10, 20, 0.15);
+    rgba(23, 22, 28, 0.15);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 22px 60px -24px rgba(0, 0, 0, 0.7);
@@ -805,11 +838,14 @@ body {
 /* Sin `backdrop-filter` no hay separación posible salvo el velo opaco. */
 @supports not (backdrop-filter: blur(1px)) {
   [data-theme="dark"] .ct-hero-wrap {
-    background: rgba(12, 10, 20, 0.82);
+    background: rgba(23, 22, 28, 0.82);
   }
 }
+/* En oscuro el halo se invierte: el texto es claro, así que lo que lo despega
+   de una zona clara de la ilustración es un halo oscuro. */
+[data-theme="dark"] .ct-hero-wrap { --ct-hero-halo: rgba(10, 10, 12, 0.75); }
 [data-theme="dark"] .ct-hero__title { color: var(--text-primary); }
-[data-theme="dark"] .ct-hero__lede { color: var(--text-secondary); }
+[data-theme="dark"] .ct-hero__lede { color: var(--text-primary); }
 [data-theme="dark"] .ct-hero__file {
   border-color: var(--dk-edge);
   background: var(--dk-tint);
@@ -826,9 +862,9 @@ body {
 [data-theme="dark"] .ct-info-card:hover,
 [data-theme="dark"] .ct-social-card:hover,
 [data-theme="dark"] .ct-cv-card:hover {
-  border-color: rgba(167, 139, 250, 0.42);
+  border-color: rgba(198, 194, 214, 0.42);
   background: var(--surface-2);
-  box-shadow: var(--ct-shadow), 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(145, 101, 247, 0.5);
+  box-shadow: var(--ct-shadow), 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(162, 122, 255, 0.5);
 }
 [data-theme="dark"] .ct-form-wrap__fig { background: var(--surface-1); color: var(--accent-text); }
 
@@ -845,7 +881,7 @@ body {
 }
 [data-theme="dark"] .ct-info-card__label { color: var(--text-muted); }
 [data-theme="dark"] .ct-info-card__value { color: var(--text-primary); }
-[data-theme="dark"] .ct-cv-card__btn { box-shadow: 0 4px 18px -4px rgba(145, 101, 247, 0.5); }
+[data-theme="dark"] .ct-cv-card__btn { box-shadow: 0 4px 18px -4px rgba(162, 122, 255, 0.5); }
 
 [data-theme="dark"] .ct-info-card .bp-corner,
 [data-theme="dark"] .ct-form-wrap .bp-corner,
@@ -854,14 +890,14 @@ body {
 
 /* --- 24. LIGHTBOX ------------------------------------------------ */
 
-[data-theme="dark"] .lightbox { background: rgba(6, 5, 12, 0.97); }
+[data-theme="dark"] .lightbox { background: rgba(10, 10, 12, 0.97); }
 [data-theme="dark"] .lightbox-info-panel {
-  background: rgba(26, 21, 48, 0.92);
+  background: rgba(38, 36, 47, 0.92);
   border-color: var(--dk-edge);
   color: var(--text-primary);
 }
 [data-theme="dark"] .info-title {
-  background: linear-gradient(90deg, var(--text-primary), var(--accent-hover));
+  background-image: linear-gradient(90deg, var(--text-primary), var(--accent-hover));
 }
 [data-theme="dark"] .lb-meta,
 [data-theme="dark"] .lb-inspiration,
@@ -879,15 +915,21 @@ body {
 /* El contenedor vacío es idéntico para admin y visitante (solo cambia si
    se ven el icono y el nombre). El marco violeta translúcido está calibrado
    contra blanco: sobre el lienzo oscuro hay que subirlo o desaparece. */
+/* El marco punteado violeta es identidad del contenedor vacío y no se toca
+   (regla de CLAUDE.md). Lo que sí baja es el RELLENO: secciones como
+   Ilustraciones son una grilla entera de contenedores vacíos, y a 0.10 el
+   violeta se sumaba celda tras celda hasta leerse como una pared morada.
+   A 0.04 sigue siendo "violeta claro casi transparente" —lo que pide la
+   regla— y la grilla se lee como paneles oscuros con marco violeta. */
 [data-theme="dark"] .cms-empty-overlay {
-  border-color: rgba(167, 139, 250, 0.42);
-  background: rgba(145, 101, 247, 0.10);
+  border-color: rgba(162, 122, 255, 0.45);
+  background: rgba(162, 122, 255, 0.04);
   color: var(--accent-text);
 }
-[data-theme="dark"] .cms-empty-overlay:hover { background: rgba(145, 101, 247, 0.20); }
+[data-theme="dark"] .cms-empty-overlay:hover { background: rgba(162, 122, 255, 0.14); }
 
 [data-theme="dark"] .cms-confirm-overlay,
-[data-theme="dark"] .cms-modal-overlay { background: rgba(6, 5, 12, 0.86); }
+[data-theme="dark"] .cms-modal-overlay { background: rgba(10, 10, 12, 0.86); }
 [data-theme="dark"] .cms-confirm-dialog,
 [data-theme="dark"] .cms-modal {
   background: var(--surface-1);
