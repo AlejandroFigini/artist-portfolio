@@ -61,10 +61,33 @@ export function trackLoaderMedia(): () => void {
   let done = 0
   const seen = new WeakSet<Element>()
 
+  /* El gate NO puede llegar a 1 hasta que el descubrimiento esté cerrado.
+     `markLoaderGate` es monótono a propósito (la barra nunca retrocede), y eso
+     tiene un filo: si el primer escaneo corre antes de que exista el contenido
+     —`<main>` todavía sin montar, o el motor del CMS sin pintar— el total es 0,
+     la fracción da 1 y el gate queda cumplido PARA SIEMPRE. Todo lo que
+     aparezca después ya no lo puede bajar.
+     Medido en producción antes de este cierre: el loader se iba a los 4s con
+     4 de 25 videos y 16 de 95 imágenes, y 94 seguían en `lazy`. En local no se
+     veía porque hay menos contenido y llega antes.
+     Hasta que se sella, se reporta como mucho 0.99: la barra avanza pero el
+     loader no se puede ir. */
+  let sealed = false
   const report = () => {
     if (!alive) return
-    // Sin nada que esperar, el gate está cumplido.
-    markLoaderGate('media', total === 0 ? 1 : done / total)
+    const frac = total === 0 ? 1 : done / total
+    markLoaderGate('media', sealed ? frac : Math.min(frac, 0.99))
+  }
+
+  /* Sellado = el navegador terminó de cargar el documento. A esa altura están
+     en el DOM tanto las secciones (las pinta el servidor) como el contenido que
+     el motor del CMS aplica al hidratar, así que un último escaneo cierra la
+     lista. Es un EVENTO, no un reloj. */
+  const seal = () => {
+    if (sealed || !alive) return
+    scan()
+    sealed = true
+    report()
   }
 
   const settle = () => { done++; report() }
@@ -155,8 +178,12 @@ export function trackLoaderMedia(): () => void {
   })
   mo.observe(document.body, { childList: true, subtree: true })
 
+  if (document.readyState === 'complete') queueMicrotask(seal)
+  else window.addEventListener('load', seal, { once: true })
+
   return () => {
     alive = false
+    window.removeEventListener('load', seal)
     mo.disconnect()
     cleanups.forEach((fn) => fn())
   }
