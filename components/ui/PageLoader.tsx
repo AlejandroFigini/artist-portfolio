@@ -29,6 +29,7 @@ import {
   subscribeLoaderGates,
   trackWindowLoad,
 } from '@/lib/loader-ready'
+import { trackLoaderMedia } from '@/lib/loader-media'
 import { videoInlineSrc, videoPosterSrc, attachMediaRetry, keepVideoMuted } from '@/lib/utils'
 
 declare global {
@@ -242,6 +243,16 @@ export default function PageLoader() {
     if (gone) return
     return trackWindowLoad()
   }, [gone])
+
+  /* 3c. Gate de la MEDIA. El loader espera a que toda la media de la portada
+        tenga con qué reproducirse, así el visitante no encuentra ni un
+        contenedor cargando cuando se levanta el telón. Es lo que más tarda, a
+        propósito: la decisión es que el loader dure lo que dure la carga real.
+        En la vista previa de gestión no corre — ahí no hay carga que medir. */
+  useEffect(() => {
+    if (gone || isPreview) return
+    return trackLoaderMedia()
+  }, [gone, isPreview])
 
   useEffect(() => {
     if (serverReady) markLoaderGate('serverState')

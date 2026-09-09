@@ -27,9 +27,13 @@ export type LoaderGate =
   | 'heroBackdrop'  // primera slide del fondo decodificada
   | 'heroPanel'     // primera imagen del carrusel principal pintada
   | 'windowLoad'    // el navegador terminó de cargar el documento
+  | 'media'         // toda la media de la portada con su primer frame listo
 
-/* El peso define cuánto aporta cada uno a la barra. `windowLoad` es el que
-   más tarda en la vida real, así que se lleva la porción más grande. */
+/* El peso define cuánto aporta cada uno a la barra. `media` se lleva la porción
+   más grande porque es, por lejos, lo que más tarda: son megabytes de video y
+   de imagen contra los kilobytes del resto. Avanza por fracción (archivos
+   resueltos sobre el total), así que la barra se mueve todo el tiempo en vez de
+   plantarse en un número mientras baja el contenido. */
 const WEIGHTS: Record<LoaderGate, number> = {
   serverState: 3,
   fonts: 1,
@@ -37,6 +41,7 @@ const WEIGHTS: Record<LoaderGate, number> = {
   heroBackdrop: 3,
   heroPanel: 2,
   windowLoad: 4,
+  media: 12,
 }
 
 const GATE_IDS = Object.keys(WEIGHTS) as LoaderGate[]

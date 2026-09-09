@@ -7,7 +7,10 @@ async function fresh() {
   return import('@/lib/loader-ready')
 }
 
-const ALL = ['serverState', 'fonts', 'i18n', 'heroBackdrop', 'heroPanel', 'windowLoad'] as const
+const ALL = ['serverState', 'fonts', 'i18n', 'heroBackdrop', 'heroPanel', 'windowLoad', 'media'] as const
+/* serverState 3 + fonts 1 + i18n 1 + heroBackdrop 3 + heroPanel 2 +
+   windowLoad 4 + media 12. Al tocar un peso, este número acompaña. */
+const TOTAL = 26
 
 describe('loader gates', () => {
   beforeEach(() => vi.resetModules())
@@ -24,6 +27,22 @@ describe('loader gates', () => {
     expect(m.loaderProgress()).toBe(1)
   })
 
+  /* `media` es el gate largo: mientras baja el contenido de la portada la barra
+     tiene que avanzar igual, o parece colgada. */
+  it('media avanza por fraccion y pesa mas que ningun otro', async () => {
+    const m = await fresh()
+    m.markLoaderGate('media', 0.25)
+    expect(m.loaderProgress()).toBeCloseTo(3 / TOTAL, 10)
+    m.markLoaderGate('media', 1)
+    expect(m.loaderProgress()).toBeCloseTo(12 / TOTAL, 10)
+  })
+
+  it('no llega a 1 mientras falte la media', async () => {
+    const m = await fresh()
+    ALL.filter((id) => id !== 'media').forEach((id) => m.markLoaderGate(id))
+    expect(m.loaderProgress()).toBeLessThan(1)
+  })
+
   it('no llega a 1 mientras falte el gate del navegador', async () => {
     const m = await fresh()
     ALL.filter((id) => id !== 'windowLoad').forEach((id) => m.markLoaderGate(id))
@@ -32,32 +51,32 @@ describe('loader gates', () => {
     expect(m.loaderProgress()).toBeLessThan(1)
   })
 
-  it('reparte por peso: windowLoad es 4 de 14', async () => {
+  it('reparte por peso: windowLoad es 4 del total', async () => {
     const m = await fresh()
     m.markLoaderGate('windowLoad')
-    expect(m.loaderProgress()).toBeCloseTo(4 / 14, 10)
+    expect(m.loaderProgress()).toBeCloseTo(4 / TOTAL, 10)
   })
 
   it('acepta crédito parcial y lo completa después', async () => {
     const m = await fresh()
     m.markLoaderGate('windowLoad', 0.5)
-    expect(m.loaderProgress()).toBeCloseTo(2 / 14, 10)
+    expect(m.loaderProgress()).toBeCloseTo(2 / TOTAL, 10)
     m.markLoaderGate('windowLoad')
-    expect(m.loaderProgress()).toBeCloseTo(4 / 14, 10)
+    expect(m.loaderProgress()).toBeCloseTo(4 / TOTAL, 10)
   })
 
   it('es monótona: un reporte menor no hace retroceder la barra', async () => {
     const m = await fresh()
     m.markLoaderGate('windowLoad')
     m.markLoaderGate('windowLoad', 0.2)
-    expect(m.loaderProgress()).toBeCloseTo(4 / 14, 10)
+    expect(m.loaderProgress()).toBeCloseTo(4 / TOTAL, 10)
   })
 
   it('clampea el ratio fuera de rango', async () => {
     const m = await fresh()
     m.markLoaderGate('fonts', 5)
     m.markLoaderGate('i18n', -3)
-    expect(m.loaderProgress()).toBeCloseTo(1 / 14, 10)
+    expect(m.loaderProgress()).toBeCloseTo(1 / TOTAL, 10)
   })
 
   it('avisa a los suscriptores solo cuando el progreso sube', async () => {
