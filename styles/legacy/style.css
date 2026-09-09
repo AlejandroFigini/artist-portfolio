@@ -2758,9 +2758,7 @@ html.perf-lite .wave-item {
       backdrop-filter viejo sobre `.carousel-overlay`, que ya no existe.
       El resto de la regla 1 sigue en pie: lightbox, modales y paneles siguen
       sin backdrop-filter en modo ligero. */
-html.perf-lite .carousel-slide {
-    filter: blur(2px);
-}
+/* (la portada ya no lleva desenfoque en ningun modo: ver `.carousel-slide`) */
 
 /* 2d. `about-video-breathe` es un `scale()` sobre un <video> EN REPRODUCCION:
       cada frame obliga a recomponer el frame de video con un transform nuevo.
@@ -4502,13 +4500,10 @@ html.motion-off #animBlobCanvas {
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0;
-    /* PERF: el desenfoque vive ACA y no en un backdrop-filter sobre el overlay.
-       El overlay cubre el 100% de .hero-bg-carousel, que es `fixed` y mide
-       100vw x 100vh: con backdrop-filter el navegador tenia que re-desenfocar el
-       viewport ENTERO en cada frame del crossfade, para siempre y en todo el
-       scroll de la portada. Aplicado a la slide, la textura se desenfoca una
-       sola vez y despues solo se compone (opacidad). */
-    filter: blur(2px);
+    /* SIN desenfoque. El blur de 2px era lo que hacia leer la portada como
+       "lavada"/con opacidad: la ilustracion va a plena definicion. Quien separa
+       el texto del dibujo es el panel de cristal, que tiene su propio
+       backdrop-filter y para eso esta. */
     animation: hero-slide-drift 24s ease-in-out infinite alternate;
 }
 
@@ -4523,12 +4518,14 @@ html.motion-off #animBlobCanvas {
 
    El `scale` base es lo que impide que el corrimiento descubra un borde: el
    margen es `(scale - 1) / 2` y el corrimiento real es `scale x translate`
-   -`scale()` va antes en la lista y multiplica al `translate`-. Con 1.06 el
-   margen es 3% y el corrimiento 2.33%. */
+   -`scale()` va antes en la lista y multiplica al `translate`-. Con 1.03 el
+   margen es 1.5% y el corrimiento real 1.13%. La escala se bajo de 1.06-1.12 a
+   1.03-1.07: el aumento del vaiven era lo que sumaba la mayor parte del zoom
+   percibido sobre la ilustracion. */
 @keyframes hero-slide-drift {
-    0%   { transform: scale(1.06) translate3d(0, 0, 0); }
-    50%  { transform: scale(1.12) translate3d(-2.2%, -1.6%, 0); }
-    100% { transform: scale(1.06) translate3d(2%, 1.2%, 0); }
+    0%   { transform: scale(1.03) translate3d(0, 0, 0); }
+    50%  { transform: scale(1.07) translate3d(-1.2%, -0.9%, 0); }
+    100% { transform: scale(1.03) translate3d(1.1%, 0.7%, 0); }
 }
 
 /* Aparcado = el hero salio de viewport. La capa ya esta oculta, pero un
@@ -4571,12 +4568,13 @@ html.motion-off #animBlobCanvas {
 }
 
 /* Hero from demo */
-/* La portada ocupaba el viewport entero. Baja a 82vh: sigue siendo la primera
-   pantalla y sigue tapando el pliegue, pero deja asomar la seccion siguiente
-   —que es lo que invita a bajar— y acorta el tramo en el que la capa `fixed`
-   del carrusel esta a la vista. El wrapper de los dos carruseles flotantes
-   baja con ella: estaba en 80vh, casi el alto entero de la seccion nueva. */
-.hero { min-height: 82vh; padding: clamp(4rem, 8vh, 6.5rem) clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vh, 4rem); display: flex; align-items: center; }
+/* La portada vuelve a medir el viewport completo. A 82vh asomaban ~160px de
+   About debajo del pliegue y eso es exactamente lo que se pidio sacar: el
+   criterio es "que no se vea nada de About", y el techo es la pantalla — no
+   crece mas alla de 100vh. El wrapper de los dos carruseles flotantes sigue en
+   66vh, asi que la altura extra es aire alrededor de la composicion, no
+   contenido mas grande. */
+.hero { min-height: 100vh; padding: clamp(4rem, 8vh, 6.5rem) clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vh, 4rem); display: flex; align-items: center; }
 /* Panel de cristal del texto, misma receta que `.ct-hero-wrap` (/contact).
    Aca SI hay `backdrop-filter`: detras esta el carrusel de portada, y el
    desenfoque no inventa material, revela el de atras. Es un solo elemento, no
@@ -4593,8 +4591,8 @@ html.motion-off #animBlobCanvas {
        celda del grid tomaba ~600px en escritorio y el cristal quedaba con
        medio panel vacio a la derecha. Por debajo de 34rem de columna no hace
        nada, asi que en movil sigue a lo ancho. */
-    max-width: 34rem;
-    padding: clamp(2.1rem, 4vw, 3.4rem) clamp(1.8rem, 3.4vw, 3rem);
+    max-width: 30rem;
+    padding: clamp(1.5rem, 2.6vw, 2.1rem) clamp(1.4rem, 2.3vw, 1.9rem);
     border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
     border-radius: 4px;
     background:
@@ -4619,6 +4617,13 @@ html.motion-off #animBlobCanvas {
    al padding dejaba un hueco muerto de casi 5rem. Es consecuencia directa de
    meter el texto en una caja, asi que se corrige aca. */
 .hero-content > :last-child { margin-bottom: 0; }
+
+/* Los margenes de `.badge` (2rem) y `.hero-title` (2rem) son los del texto
+   suelto sobre la portada, de cuando no habia caja. Dentro del panel inflan el
+   cristal sin aportar ritmo: el panel tiene que ir sobre el texto, no
+   alrededor de un bloque de aire. */
+.hero-content .badge { margin-bottom: 1rem; }
+.hero-content .hero-title { margin-bottom: 0.9rem; }
 
 /* Sin `backdrop-filter` (Firefox con la bandera apagada, navegadores viejos) el
    texto quedaria sobre la ilustracion a pelo. Ahi y solo ahi se vuelve al velo

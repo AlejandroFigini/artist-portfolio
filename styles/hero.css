@@ -154,21 +154,33 @@
    svh (no vh) → la barra de URL no provoca salto de alto. --- */
 @media (max-width: 768px) {
   .hero {
-    /* Acompaña el recorte de escritorio (82vh). En un teléfono se afloja menos
-       —88svh— porque acá abajo va la franja del wave marquee y el par de
-       carruseles ya está apretado contra ella. */
-    min-height: 88svh;
-    padding-top: clamp(3.5rem, 9svh, 5rem);
-    padding-bottom: 7rem; /* deja libre la franja del wave marquee (absolute) */
+    /* Acompaña el 100vh de escritorio, en svh para que la barra de URL no
+       provoque salto de alto. El alto completo es lo que da el aire que
+       necesita la composición: sin él los tres bloques —panel, par de planos y
+       franja de burbujas— entran justos y el panel queda pegado al borde de
+       arriba, que es el defecto que se corrigió acá. */
+    min-height: 100svh;
+    /* El reparto vertical lo hace `justify-content: center` sobre el grid (ver
+       abajo): el padding solo reserva el paso de la barra de navegación arriba
+       y de la franja del wave marquee abajo. */
+    padding-top: clamp(4.5rem, 10svh, 5.5rem);
+    padding-bottom: 6.5rem; /* deja libre la franja del wave marquee (absolute) */
   }
-  .hero-grid { gap: clamp(1.5rem, 5svh, 2.5rem); }
+  /* El grid mide `height: 100%` y sus dos filas suman menos que eso: sin
+     `align-content` las filas se apilan arriba y el sobrante queda todo al pie,
+     que es por qué el panel se veía contra el borde superior. Centrado, el aire
+     se reparte arriba y abajo y los tres bloques quedan en eje. */
+  .hero-grid {
+    gap: clamp(1.5rem, 5svh, 2.5rem);
+    align-content: center;
+  }
 
-  /* Fondo del hero. Las portadas son 4174×2226 (≈1.88): con `contain` quedaban
-     apoyadas en el ancho dejando el 75% de la pantalla vacío, y con `cover` se
-     escalan a ~1520px de ancho y solo se ve un cuarto de la imagen. El alto fijo
-     es el punto medio: llena la mayor parte del viewport y deja ver ~45% del
-     encuadre. Subir/bajar este único número regula cuánto se acerca. */
-  .carousel-slide { background-size: auto 70%; }
+  /* Fondo del hero: `cover`, igual que en escritorio. El `auto 70%` que había
+     acá dejaba la portada apoyada en el alto y el resto lo pintaba el blanco de
+     `.hero-bg-carousel` — y el vaivén, al desplazarla, descubría esas franjas
+     arriba y abajo. `cover` llena SIEMPRE los dos ejes: no hay borde que
+     descubrir. El precio es el recorte lateral (la portada es ≈1.88 y el
+     teléfono ≈0.46), y por eso el vaivén va con la escala mínima. */
 
   /* Bloque de texto: ritmo vertical compacto y cajas centradas de verdad
      (text-align solo centra el texto, no la caja con max-width). */

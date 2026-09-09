@@ -195,6 +195,13 @@
     inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent),
     0 18px 50px -20px rgba(0, 0, 0, 0.26);
   overflow: hidden;
+
+  /* Halo del texto del hero. Va CLARO y no oscuro: el texto de este panel es
+     oscuro, y lo que hay que resolver es que caiga sobre una zona oscura de la
+     ilustración —donde una sombra oscura lo hundiría todavía más—. Un halo del
+     color del fondo lo despega de cualquier cosa que le toque detrás, y sobre
+     zonas claras no se nota. */
+  --ct-hero-halo: rgba(255, 255, 255, 0.72);
 }
 
 /* Sin `backdrop-filter` (Firefox con la bandera apagada, navegadores viejos) el
@@ -340,6 +347,17 @@
 }
 
 
+/* Todo el texto del panel se apoya en el halo: el velo del cristal es
+   deliberadamente tenue, así que el contraste no puede depender solo de él ni
+   de qué zona de la portada le toque detrás. */
+.ct-hero__file,
+.ct-hero__title,
+.ct-hero__lede {
+  text-shadow:
+    0 1px 1px var(--ct-hero-halo),
+    0 0 10px var(--ct-hero-halo);
+}
+
 .ct-hero__file {
   position: relative;
   z-index: 1;
@@ -365,7 +383,10 @@
   font-size: clamp(0.95rem, 1.3vw, 1.15rem);
   font-weight: 300;
   line-height: 1.8;
-  color: var(--text-secondary);
+  /* Color pleno, no el gris secundario: es texto sobre una ilustración, no
+     sobre un fondo liso, así que no puede permitirse el contraste rebajado que
+     sí funciona en el resto de la página. */
+  color: var(--text-primary);
   max-width: 55ch;
   letter-spacing: 0.03em;
   margin: 0;
