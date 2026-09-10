@@ -29,11 +29,12 @@ export type LoaderGate =
   | 'windowLoad'    // el navegador terminó de cargar el documento
   | 'media'         // toda la media de la portada con su primer frame listo
 
-/* El peso define cuánto aporta cada uno a la barra. `media` se lleva la porción
-   más grande porque es, por lejos, lo que más tarda: son megabytes de video y
-   de imagen contra los kilobytes del resto. Avanza por fracción (archivos
-   resueltos sobre el total), así que la barra se mueve todo el tiempo en vez de
-   plantarse en un número mientras baja el contenido. */
+/* El peso define cuánto aporta cada uno a la barra. `media` avanza por fracción
+   (archivos resueltos sobre el total). Su peso es 4 y no 12: 12 estaba
+   dimensionado para cuando el gate esperaba ~120 archivos de toda la portada;
+   ahora espera solo el primer viewport —un puñado— y con un peso grande la
+   barra saltaba de a cuartos. El tramo largo lo lleva `windowLoad`, que ya
+   reporta con granularidad por script. */
 const WEIGHTS: Record<LoaderGate, number> = {
   serverState: 3,
   fonts: 1,
@@ -41,7 +42,7 @@ const WEIGHTS: Record<LoaderGate, number> = {
   heroBackdrop: 3,
   heroPanel: 2,
   windowLoad: 4,
-  media: 12,
+  media: 4,
 }
 
 const GATE_IDS = Object.keys(WEIGHTS) as LoaderGate[]

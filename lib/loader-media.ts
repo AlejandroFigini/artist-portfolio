@@ -1,103 +1,114 @@
-/* Gate `media`: la pantalla de carga espera a que TODA la media de la portada
- * esté lista antes de irse.
+/* Gate `media`: la pantalla de carga espera a la media del PRIMER VIEWPORT.
  *
- * Hasta acá el loader tenía seis gates y ninguno miraba un <video> ni una
- * imagen de sección: cerraba con el documento cargado, y recién ahí empezaba a
- * traerse el contenido a medida que el visitante scrolleaba. De ahí la queja
- * real: llegás a Animations y la tarjeta muestra el póster quieto mientras el
- * clip todavía baja. Ahora el loader no se va hasta que cada pieza terminó.
+ * Historia corta, porque la primera versión de este archivo se equivocó de
+ * población y hay que no repetirlo.
  *
- * QUÉ CUENTA COMO "LISTA":
- * - <video> → `canplaythrough` (hay buffer para reproducir de corrido). No
- *   alcanza `loadeddata`: eso es UN frame decodificado, así que el contenedor
- *   deja de estar negro pero la reproducción igual se corta a los dos
- *   segundos, que es exactamente lo que se está tratando de eliminar.
- * - <img> → `load`.
+ * v1 bloqueaba con TODA la media de la portada y, para conseguirla, promovía
+ * cada <video> a `preload="auto"` y cada <img> a `loading="eager"`. Medido en
+ * producción con arranque en frío: 10,7 MB descargados antes de que el telón se
+ * levantara, 7,1 MB de ellos video. En fibra eran 3-7 s; en 4G, decenas. Y aun
+ * así la página seguía cargando después, porque el barrido solo miraba
+ * `<img>`/`<video>` dentro de `main`: los 118 fondos CSS, los pósters y lo que
+ * vive fuera de `main` no los esperaba nadie.
  *
- * CADA PIEZA RESUELVE SU PARTE, BIEN O MAL. Un archivo roto cuenta igual que uno
- * cargado: no puede dejar la pantalla de carga puesta para siempre. Es la misma
- * regla que el resto de los gates (lib/loader-ready.ts) — no hay temporizador de
- * cierre en ninguna parte, cada operación cierra la suya al terminar. Y también
- * cierra el navegador que deja de bajar teniendo ya con qué seguir, que es la
- * salida sin reloj para un archivo que se queda a mitad de camino.
+ * Las dos quejas eran el mismo error: el gate apuntaba a la población
+ * equivocada. El visitante ve UN viewport cuando se levanta el telón. Esperar
+ * media que está 8000 px más abajo es tiempo que paga por algo que todavía no
+ * mira, y encima le quita ancho de banda a lo que sí está mirando.
  *
- * `preload="none"` y `loading="lazy"` se promueven acá. Es deliberado y es lo
- * contrario de lo que hace HomeFx: allá la media se difiere para no competir
- * con el arranque, acá se pide toda junta PORQUE el arranque no termina hasta
- * tenerla. Los dos caminos conviven: cuando HomeFx corre su barrido después de
- * `load`, ya está todo en caché y no vuelve a pedir nada.
+ * Entonces:
+ * - BLOQUEA lo que está en el primer viewport (con un 20% de margen). Nada más.
+ * - PROMUEVE solo eso. Lo de abajo conserva su `preload="none"` y su
+ *   `loading="lazy"`, que están puestos a propósito (ver HeroMediaCarousel y
+ *   app/(site)/page.tsx) y los levanta HomeFx un viewport antes de que el
+ *   visitante llegue.
+ * - Cubre las tres formas en que esta página pinta media, no solo una: el
+ *   elemento (<img>/<video>), el `poster` de un <video> —que es lo que se ve
+ *   mientras el clip no decodifica— y el `background-image` en estilo inline,
+ *   que es como se pintan la portada, las burbujas y los personajes.
+ *
+ * QUÉ CUENTA COMO "LISTA": el primer frame decodificado (`readyState >= 2`).
+ * No es un número elegido acá: es exactamente el umbral con el que
+ * components/ui/ViewportGate marca `has-frame`, o sea el punto en que este
+ * sitio considera que un <video> muestra contenido en vez de un rectángulo
+ * negro. Pedir `canplaythrough` (readyState 4) obliga a bajar el clip entero, y
+ * eso era el grueso de los 7,1 MB.
+ *
+ * NADA PUEDE COLGAR EL TELÓN, y sin un solo temporizador nuestro: un archivo
+ * roto cierra por `error`, una fuente inservible por `networkState`, y una
+ * conexión que se cuelga sin cortar por `stalled`. Es la misma regla que el
+ * resto de los gates (lib/loader-ready.ts).
  */
 
 import { markLoaderGate } from '@/lib/loader-ready'
+import { canWarmMedia } from '@/lib/media-warm'
 
-/* El <video> de la propia pantalla de carga queda afuera: es el único que se
-   reproduce MIENTRAS el loader está puesto, va en `preload="metadata"` a
-   propósito (con `auto` retiene el evento `load` que el gate `windowLoad`
-   espera) y esperarlo sería esperarse a sí mismo. */
-const VIDEO_SEL = 'main video, .main-footer video'
-const IMG_SEL = 'main img, .main-footer img'
+/* Un 20% más que el alto de la ventana: lo que asoma apenas se levanta el telón
+   cuenta como primer viewport. Más que eso ya es scroll, y de eso se encarga
+   HomeFx con su propio margen de un viewport entero. */
+const FIRST_VIEW_RATIO = 1.2
 
-/** Ahorro de datos activo: el visitante pidió explícitamente NO gastar. Se
- *  respeta y el gate se da por cumplido — la media sigue llegando diferida por
- *  el camino de siempre (HomeFx). */
-function saveDataOn(): boolean {
-  const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
-  return !!conn?.saveData
+/* El <video> de la propia pantalla de carga queda afuera: va en
+   `preload="metadata"` a propósito (con `auto` retiene el evento `load`, que es
+   lo que espera el gate `windowLoad`) y esperarlo sería esperarse a sí mismo. */
+const VIDEO_SEL = 'video:not(.loader-gallop)'
+const IMG_SEL = 'img'
+/* Los fondos de contenido de este sitio se escriben SIEMPRE como estilo inline
+   —engine.ts, Slideshow, CharactersShowcase—; en las hojas de estilo no hay un
+   solo `url()` de media. Así que alcanza con un selector, y no hace falta
+   barrer `getComputedStyle` sobre el documento entero. */
+const BG_SEL = '[style*="background-image"]'
+
+/** URL real de un `background-image`, ignorando degradados y data URIs. */
+function bgUrlOf(el: HTMLElement): string {
+  const raw = el.style.backgroundImage
+  if (!raw || raw === 'none') return ''
+  const m = raw.match(/url\(["']?(?!data:)([^"')]+)["']?\)/)
+  return m ? m[1] : ''
 }
 
 export function trackLoaderMedia(): () => void {
   if (typeof document === 'undefined') return () => {}
-  if (saveDataOn()) { markLoaderGate('media'); return () => {} }
+  /* Con ahorro de datos o en 2g el gate se da por cumplido: el telón se levanta
+     rápido y el contenido entra por detrás. Es la contrapartida aceptada — mejor
+     eso que retener un teléfono lento un minuto. Se usa el mismo predicado que
+     el resto del sitio para que no se separen. */
+  if (!canWarmMedia()) { markLoaderGate('media'); return () => {} }
 
   const cleanups: (() => void)[] = []
   let alive = true
-
-  /* Denominador vivo: el motor del CMS puede pintar media después de hidratar,
-     así que el total crece a medida que aparece. `markLoaderGate` nunca
-     retrocede, de modo que si crece la barra se queda quieta un momento pero
-     jamás miente hacia atrás. Mismo patrón que el conteo de scripts de
-     `trackWindowLoad`. */
   let total = 0
   let done = 0
   const seen = new WeakSet<Element>()
+  const seenUrls = new Set<string>()
 
   /* El gate NO puede llegar a 1 hasta que el descubrimiento esté cerrado.
-     `markLoaderGate` es monótono a propósito (la barra nunca retrocede), y eso
-     tiene un filo: si el primer escaneo corre antes de que exista el contenido
-     —`<main>` todavía sin montar, o el motor del CMS sin pintar— el total es 0,
-     la fracción da 1 y el gate queda cumplido PARA SIEMPRE. Todo lo que
-     aparezca después ya no lo puede bajar.
-     Medido en producción antes de este cierre: el loader se iba a los 4s con
-     4 de 25 videos y 16 de 95 imágenes, y 94 seguían en `lazy`. En local no se
-     veía porque hay menos contenido y llega antes.
-     Hasta que se sella, se reporta como mucho 0.99: la barra avanza pero el
-     loader no se puede ir. */
+     `markLoaderGate` es monótono a propósito (la barra nunca retrocede) y eso
+     tiene un filo: si el primer escaneo corre antes de que exista el contenido,
+     el total da 0, la fracción da 1 y el gate queda cumplido PARA SIEMPRE.
+     Medido: con ese agujero el telón se levantaba a los 4 s con 4 de 25 videos
+     listos. Hasta sellar se reporta como mucho 0.99. */
   let sealed = false
   const report = () => {
     if (!alive) return
     const frac = total === 0 ? 1 : done / total
     markLoaderGate('media', sealed ? frac : Math.min(frac, 0.99))
   }
-
-  /* Sellado = el navegador terminó de cargar el documento. A esa altura están
-     en el DOM tanto las secciones (las pinta el servidor) como el contenido que
-     el motor del CMS aplica al hidratar, así que un último escaneo cierra la
-     lista. Es un EVENTO, no un reloj. */
-  const seal = () => {
-    if (sealed || !alive) return
-    scan()
-    sealed = true
-    report()
-  }
-
   const settle = () => { done++; report() }
 
-  /* `isReady` se re-evalúa en cada evento en vez de cerrar con el primero: hay
-     eventos que solo a veces significan "listo". `suspend` es el caso: el
-     navegador lo emite tanto cuando terminó de bufferear como cuando decidió
-     pausar la descarga apenas empezó, así que solo cuenta con `readyState`
-     suficiente. Sin esa distinción un `suspend` temprano cerraría el gate con
-     el video todavía vacío, que es justo lo que este gate viene a evitar. */
+  /** ¿Está en el primer viewport? Sin layout todavía (rect en cero) se
+   *  considera que NO: equivocarse hacia afuera lo cubre HomeFx un rato
+   *  después, equivocarse hacia adentro retiene el telón. */
+  const inFirstView = (el: Element): boolean => {
+    const r = el.getBoundingClientRect()
+    if (!r.width || !r.height) return false
+    return r.top < window.innerHeight * FIRST_VIEW_RATIO && r.bottom > 0
+  }
+
+  /* `isReady` se re-evalúa en CADA evento en vez de cerrar con el primero: hay
+     eventos que solo a veces significan "listo" (`suspend` lo emite el
+     navegador tanto al terminar de bufferear como al pausar la descarga apenas
+     empezó). */
   const watch = (el: Element, events: readonly string[], isReady: (ev?: string) => boolean) => {
     if (seen.has(el)) return
     seen.add(el)
@@ -114,51 +125,75 @@ export function trackLoaderMedia(): () => void {
     cleanups.push(() => { if (!settled) events.forEach((ev) => el.removeEventListener(ev, on)) })
   }
 
-  const VIDEO_EVENTS = ['canplaythrough', 'error', 'abort', 'emptied', 'suspend', 'stalled'] as const
+  /** Espera una URL suelta (póster o fondo CSS), que no tiene elemento con
+   *  eventos propios. La <img> no agrega bytes: es la misma URL que ya está
+   *  pidiendo el elemento, así que sale de la caché. */
+  const watchUrl = (url: string) => {
+    if (!url || seenUrls.has(url)) return
+    seenUrls.add(url)
+    total++
+    const img = new Image()
+    let settled = false
+    const finish = () => { if (!settled) { settled = true; settle() } }
+    img.onload = finish
+    img.onerror = finish
+    img.src = url
+    /* `complete` es ESTADO y se consulta al montar: la imagen puede haber
+       terminado antes y su `load` no vuelve. NO se mira `naturalWidth`: vale 0
+       de forma transitoria mientras el navegador reevalúa el candidato del
+       srcSet, y tratarlo como fallo es un bug ya pisado en este proyecto. */
+    if (img.complete) finish()
+  }
+
+  /* `loadeddata` es imprescindible en esta lista: es el único evento que se
+     emite AL LLEGAR a readyState 2, que es el umbral que espera el gate. Sin
+     él, bajar el umbral no cambia nada — el elemento llega a tener frame y
+     nadie se entera hasta `canplaythrough`. */
+  const VIDEO_EVENTS = ['loadeddata', 'canplay', 'canplaythrough', 'error', 'abort', 'emptied', 'suspend', 'stalled'] as const
   const IMG_EVENTS = ['load', 'error'] as const
 
-  /* Listo, por cualquiera de estos caminos, y ninguno depende de un reloj
-     nuestro:
-     - hay buffer para reproducir de corrido (`readyState` 4);
+  /* Listo por cualquiera de estos caminos, ninguno con reloj propio:
+     - hay un frame decodificado (el mismo umbral que `has-frame`);
      - el elemento no va a cargar nunca (error, o fuente inservible);
-     - el navegador dejó de bajar teniendo ya con qué seguir;
-     - `stalled` con al menos un frame decodificado. Ese evento lo emite el
-       navegador cuando deja de llegarle data, y es la única salida para una
-       conexión que se cuelga sin cortar: sin esto, un archivo que nunca
-       termina ni falla dejaría la pantalla de carga puesta para siempre. Se
-       exige el frame porque con él el contenedor ya no está vacío, que es lo
-       que este gate viene a garantizar; sin frame se sigue esperando. */
+     - `stalled`: el navegador avisa que dejó de llegarle data. Es la única
+       salida para una conexión que se cuelga sin cortar. */
   const videoReady = (v: HTMLVideoElement, ev?: string) =>
-    v.readyState >= 4 || !!v.error || v.networkState === 3 /* NETWORK_NO_SOURCE */
-    || (v.networkState === 1 /* NETWORK_IDLE */ && v.readyState >= 3)
-    || (ev === 'stalled' && v.readyState >= 2)
+    v.readyState >= 2 || !!v.error || v.networkState === 3 /* NETWORK_NO_SOURCE */
+    || ev === 'stalled'
 
   const scan = () => {
     if (!alive) return
 
     document.querySelectorAll<HTMLVideoElement>(VIDEO_SEL).forEach((v) => {
-      // Sin fuente no hay nada que esperar; el contenedor vacío ya se ve solo.
+      if (seen.has(v)) return
       if (!v.getAttribute('src') && !v.querySelector('source[src]')) return
-      /* `preload` primero y `load()` después: asignar el atributo por sí solo no
-         reinicia una carga que ya se descartó con `preload="none"`. */
+      if (!inFirstView(v)) return
+      /* Promoción SOLO de lo que se bloquea. `auto` y no `metadata`: con
+         `metadata` el readyState se queda en 1 —hay cabecera pero no frame— y
+         ninguna de las salidas de `videoReady` cubre ese estado, así que el
+         telón no se levantaría nunca. No se revierte al cerrar: son los pocos
+         que están EN PANTALLA, y ahí `auto` es lo correcto. */
       if (v.preload !== 'auto') v.preload = 'auto'
       watch(v, VIDEO_EVENTS, (ev) => videoReady(v, ev))
-      // HAVE_ENOUGH_DATA ya alcanzado → `watch` cerró; si no, se pide la carga.
-      if (v.readyState < 4 && v.networkState !== 2 /* NETWORK_LOADING */) {
+      if (v.readyState < 2 && v.networkState !== 2 /* NETWORK_LOADING */) {
         try { v.load() } catch {}
       }
+      // El póster es lo que se ve mientras el clip no decodifica.
+      watchUrl(v.getAttribute('poster') || '')
     })
 
     document.querySelectorAll<HTMLImageElement>(IMG_SEL).forEach((img) => {
+      if (seen.has(img)) return
       if (!img.getAttribute('src') && !img.getAttribute('srcset')) return
+      if (!inFirstView(img)) return
       // `lazy` no baja nada mientras el overlay del loader tapa la página.
       if (img.loading === 'lazy') img.loading = 'eager'
-      /* `complete` es ESTADO y se puede consultar al montar: una imagen que
-         pintó el servidor puede haber terminado antes de que esto corra, y su
-         `load` no vuelve. No se mira `naturalWidth` — vale 0 de forma
-         transitoria mientras el navegador reevalúa el candidato del srcSet, y
-         tratarlo como fallo es un bug ya pisado en este proyecto. */
       watch(img, IMG_EVENTS, () => img.complete)
+    })
+
+    document.querySelectorAll<HTMLElement>(BG_SEL).forEach((el) => {
+      if (!inFirstView(el)) return
+      watchUrl(bgUrlOf(el))
     })
 
     report()
@@ -166,18 +201,36 @@ export function trackLoaderMedia(): () => void {
 
   scan()
 
-  /* Media que aparece después: secciones que hidratan tarde y todo lo que
-     escribe el motor del CMS. Microtask y no rAF — rAF no se agenda en una
-     pestaña de fondo y el gate quedaría colgado. */
+  /* Media que aparece o cambia después: secciones que hidratan tarde, y el
+     motor del CMS, que escribe `src`/`style` como ATRIBUTO (no agrega nodos).
+     Sin `attributes` esas piezas dependían de que el escaneo final del sellado
+     cayera después del motor — funcionaba por suerte, no por diseño.
+     Microtask y no rAF: rAF no se agenda en una pestaña de fondo y el gate
+     quedaría colgado. */
   let queued = false
-  const mo = new MutationObserver((records) => {
+  const mo = new MutationObserver(() => {
     if (queued) return
-    if (!records.some((r) => r.addedNodes.length > 0)) return
     queued = true
     queueMicrotask(() => { queued = false; scan() })
   })
-  mo.observe(document.body, { childList: true, subtree: true })
+  mo.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src', 'srcset', 'poster', 'style'],
+  })
 
+  /* Sellado con el evento `load`: a esa altura están en el DOM las secciones
+     (las pinta el servidor) y lo que el motor aplica al hidratar, así que un
+     último escaneo cierra la lista. Ya no es circular como en v1: ahora solo se
+     promueve el primer viewport, así que este gate no retiene `load` con
+     decenas de descargas propias. */
+  const seal = () => {
+    if (sealed || !alive) return
+    scan()
+    sealed = true
+    report()
+  }
   if (document.readyState === 'complete') queueMicrotask(seal)
   else window.addEventListener('load', seal, { once: true })
 

@@ -9,8 +9,8 @@ async function fresh() {
 
 const ALL = ['serverState', 'fonts', 'i18n', 'heroBackdrop', 'heroPanel', 'windowLoad', 'media'] as const
 /* serverState 3 + fonts 1 + i18n 1 + heroBackdrop 3 + heroPanel 2 +
-   windowLoad 4 + media 12. Al tocar un peso, este número acompaña. */
-const TOTAL = 26
+   windowLoad 4 + media 4. Al tocar un peso, este número acompaña. */
+const TOTAL = 18
 
 describe('loader gates', () => {
   beforeEach(() => vi.resetModules())
@@ -29,12 +29,12 @@ describe('loader gates', () => {
 
   /* `media` es el gate largo: mientras baja el contenido de la portada la barra
      tiene que avanzar igual, o parece colgada. */
-  it('media avanza por fraccion y pesa mas que ningun otro', async () => {
+  it('media avanza por fraccion', async () => {
     const m = await fresh()
     m.markLoaderGate('media', 0.25)
-    expect(m.loaderProgress()).toBeCloseTo(3 / TOTAL, 10)
+    expect(m.loaderProgress()).toBeCloseTo(1 / TOTAL, 10)
     m.markLoaderGate('media', 1)
-    expect(m.loaderProgress()).toBeCloseTo(12 / TOTAL, 10)
+    expect(m.loaderProgress()).toBeCloseTo(4 / TOTAL, 10)
   })
 
   it('no llega a 1 mientras falte la media', async () => {
