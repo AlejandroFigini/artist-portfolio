@@ -82,17 +82,28 @@ export function trackLoaderMedia(): () => void {
   const seen = new WeakSet<Element>()
   const seenUrls = new Set<string>()
 
-  /* El gate NO puede llegar a 1 hasta que el descubrimiento esté cerrado.
-     `markLoaderGate` es monótono a propósito (la barra nunca retrocede) y eso
-     tiene un filo: si el primer escaneo corre antes de que exista el contenido,
-     el total da 0, la fracción da 1 y el gate queda cumplido PARA SIEMPRE.
-     Medido: con ese agujero el telón se levantaba a los 4 s con 4 de 25 videos
-     listos. Hasta sellar se reporta como mucho 0.99. */
-  let sealed = false
+  /* POBLACIÓN CONGELADA. Es la parte más delicada del archivo y ya falló de las
+     dos maneras posibles:
+     - Si se marca ANTES de que exista el contenido, el total da 0, la fracción
+       da 1 y `markLoaderGate` —que es monótono— deja el gate cumplido PARA
+       SIEMPRE. Medido: el telón se iba a los 4 s con 4 de 25 videos listos.
+     - Si la población nunca deja de crecer, la fracción nunca llega a 1 y la
+       barra se clava justo por debajo del 100%. Medido en producción: 99%
+       eterno. La causa era la cinta de burbujas: se mueve escribiendo `style`,
+       el observador escuchaba `style`, y en cada rescan entraban burbujas
+       nuevas al primer viewport. Denominador infinito.
+     La salida es la misma para las dos: la lista se cierra de una vez, en el
+     primer escaneo que encuentra algo, y no se vuelve a tocar. Antes de cerrar
+     no se marca nada; después, la fracción es honesta y termina. */
+  let frozen = false
   const report = () => {
     if (!alive) return
-    const frac = total === 0 ? 1 : done / total
-    markLoaderGate('media', sealed ? frac : Math.min(frac, 0.99))
+    /* Antes de congelar NO se marca nada. El tope de 0.99 que había acá era
+       peor: si la población nunca terminaba de cerrarse, la barra se quedaba
+       clavada justo por debajo del 100% para siempre. Con la población fija,
+       la fracción es honesta y termina. */
+    if (!frozen) return
+    markLoaderGate('media', total === 0 ? 1 : done / total)
   }
   const settle = () => { done++; report() }
 
@@ -162,7 +173,7 @@ export function trackLoaderMedia(): () => void {
     || ev === 'stalled'
 
   const scan = () => {
-    if (!alive) return
+    if (!alive || frozen) return
 
     document.querySelectorAll<HTMLVideoElement>(VIDEO_SEL).forEach((v) => {
       if (seen.has(v)) return
@@ -196,39 +207,41 @@ export function trackLoaderMedia(): () => void {
       watchUrl(bgUrlOf(el))
     })
 
-    report()
+    /* El primer escaneo que encuentra algo CIERRA la lista. La media del primer
+       viewport la pinta el servidor, así que ya está en el DOM cuando corre
+       esto; lo que aparezca después es contenido que se mueve (cintas,
+       carruseles) o que está más abajo, y de eso se encarga HomeFx. */
+    if (total > 0) { frozen = true; report() }
   }
 
   scan()
 
-  /* Media que aparece o cambia después: secciones que hidratan tarde, y el
-     motor del CMS, que escribe `src`/`style` como ATRIBUTO (no agrega nodos).
-     Sin `attributes` esas piezas dependían de que el escaneo final del sellado
-     cayera después del motor — funcionaba por suerte, no por diseño.
-     Microtask y no rAF: rAF no se agenda en una pestaña de fondo y el gate
-     quedaría colgado. */
+  /* Solo hasta que la lista se cierra, y solo por `childList`. NUNCA por
+     `style`: ése es el canal de las animaciones —GSAP y las cintas escriben
+     estilo en cada frame— y escucharlo era lo que hacía crecer el denominador
+     sin fin. `src`/`poster` tampoco hacen falta: lo que el motor del CMS
+     rellena tarde está mayormente fuera del primer viewport, y meterlo no vale
+     el riesgo de volver a abrir la lista.
+     Microtask y no rAF: rAF no se agenda en una pestaña de fondo. */
   let queued = false
   const mo = new MutationObserver(() => {
-    if (queued) return
+    if (queued || frozen) return
     queued = true
-    queueMicrotask(() => { queued = false; scan() })
+    queueMicrotask(() => { queued = false; scan(); if (frozen) mo.disconnect() })
   })
-  mo.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['src', 'srcset', 'poster', 'style'],
-  })
+  mo.observe(document.body, { childList: true, subtree: true })
+  if (frozen) mo.disconnect()
 
-  /* Sellado con el evento `load`: a esa altura están en el DOM las secciones
-     (las pinta el servidor) y lo que el motor aplica al hidratar, así que un
-     último escaneo cierra la lista. Ya no es circular como en v1: ahora solo se
-     promueve el primer viewport, así que este gate no retiene `load` con
-     decenas de descargas propias. */
+  /* Última red, para el caso en que ningún escaneo haya encontrado nada (una
+     ruta sin media, o un layout que nunca llegó a medir). Con `load` ya
+     disparado no queda nada por descubrir: se cierra la lista como esté —vacía
+     incluida, y ahí el gate vale 1— así que el telón no puede quedarse puesto
+     esperando a una lista que nunca se llenó. */
   const seal = () => {
-    if (sealed || !alive) return
+    if (frozen || !alive) return
     scan()
-    sealed = true
+    frozen = true
+    mo.disconnect()
     report()
   }
   if (document.readyState === 'complete') queueMicrotask(seal)
