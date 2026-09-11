@@ -18,7 +18,7 @@ type Listener = (e: { type: string }) => void
 class FakeEl {
   tag: string
   attrs: Record<string, string>
-  rect: { top: number; bottom: number; width: number; height: number }
+  rect: { top: number; bottom: number; left: number; right: number; width: number; height: number }
   listeners: Record<string, Listener[]> = {}
   complete = false
   readyState = 0
@@ -28,10 +28,10 @@ class FakeEl {
   loading = 'lazy'
   style: { backgroundImage: string }
 
-  constructor(tag: string, attrs: Record<string, string> = {}, top = 0, bg = '') {
+  constructor(tag: string, attrs: Record<string, string> = {}, top = 0, bg = '', left = 0) {
     this.tag = tag
     this.attrs = attrs
-    this.rect = { top, bottom: top + 100, width: 100, height: 100 }
+    this.rect = { top, bottom: top + 100, left, right: left + 100, width: 100, height: 100 }
     this.style = { backgroundImage: bg }
   }
   getAttribute(n: string) { return this.attrs[n] ?? null }
@@ -76,6 +76,7 @@ function installDom() {
   }
   g.window = {
     innerHeight: 800,
+    innerWidth: 400,
     addEventListener: (t: string, fn: Listener) => { (winListeners[t] ||= []).push(fn) },
     removeEventListener: () => {},
   }
@@ -98,6 +99,11 @@ function installDom() {
 /** Resuelve todas las <Image> pendientes (pósters y fondos CSS). */
 function resolveImages() {
   images.splice(0).forEach((i) => i.onload?.())
+}
+
+/** Hace fallar todas las <Image> pendientes, como un 404. */
+function failImages() {
+  images.splice(0).forEach((i) => i.onerror?.())
 }
 
 /* `loaderProgress()` es el progreso de TODOS los gates; `media` pesa 4 de 18.
@@ -178,14 +184,81 @@ describe('gate media', () => {
     expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
   })
 
-  it('un archivo roto no deja el telon puesto', async () => {
-    const v = new FakeEl('video', { src: '/roto.webm' }, 10)
+  /* LA REGRESIÓN DEL 98%. Que un <video> decodifique un frame lo decide el
+     NAVEGADOR, no la página: iOS Safari ignora `preload="auto"` y no baja nada
+     hasta que el clip se reproduce, y en modo bajo consumo no se reproduce.
+     Ese video se queda en readyState 0 sin emitir `error` ni `stalled` — no
+     hay descarga en curso que pueda atascarse. Si el gate lo espera, el telón
+     no se levanta nunca. Lo que se ve mientras tanto es el PÓSTER, y un póster
+     es una imagen: siempre termina, bien o mal. */
+  it('un video que el navegador nunca decodifica no retiene el telon', async () => {
+    const v = new FakeEl('video', { src: '/a.webm', poster: '/a.jpg' }, 10)
     els = [v]
     const m = await fresh()
     m.trackLoaderMedia()
-    v.error = new Error('404')
-    v.fire('error')
+    // El video NUNCA emite nada. Solo carga su póster.
     resolveImages()
+    expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
+  })
+
+  /* Un <video> que el componente remonta (DecorAnim usa `key={current}`) deja
+     desconectado el elemento que se estaba mirando: no emite ningún evento más.
+     Mismo desenlace: no puede retener el telón. */
+  it('un video sin poster no se espera', async () => {
+    const v = new FakeEl('video', { src: '/a.webm' }, 10)
+    const i = new FakeEl('img', { src: '/b.webp' }, 20)
+    els = [v, i]
+    const m = await fresh()
+    m.trackLoaderMedia()
+    i.becomeReady()
+    expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
+  })
+
+  /* `load` es la red final, y tiene que rescatar TAMBIÉN una lista ya cerrada.
+     Después de `load` el navegador terminó con todo lo que iba a pedir por su
+     cuenta; lo que siga pendiente es algo que decidió no bajar (lazy, fuera de
+     cuadro), y esperarlo es esperar algo que puede no pasar nunca. */
+  it('despues de load el gate se libera aunque quede algo pendiente', async () => {
+    const colgada = new FakeEl('img', { src: '/nunca.webp' }, 10)
+    els = [colgada]
+    const m = await fresh()
+    m.trackLoaderMedia()
+    expect(m.loaderProgress()).toBe(0)
+    winListeners['load']?.forEach((fn) => fn({ type: 'load' }))
+    expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
+  })
+
+  /* El primer viewport también tiene bordes a los costados. Las slides del
+     carrusel y las burbujas de la cinta están a la ALTURA correcta pero corridas
+     a la derecha: si se cuentan, el gate espera cosas que nadie ve. */
+  it('no cuenta lo que esta fuera del viewport hacia los costados', async () => {
+    const visible = new FakeEl('img', { src: '/a.webp' }, 10, '', 0)
+    const aLaDerecha = new FakeEl('img', { src: '/b.webp' }, 10, '', 5000)
+    els = [visible, aLaDerecha]
+    const m = await fresh()
+    m.trackLoaderMedia()
+    visible.becomeReady()
+    expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
+  })
+
+  /* De un <video> se espera el póster, así que el caso roto que importa es el
+     póster roto: un 404 tiene que cerrar su parte igual que una imagen que
+     cargó, o el telón queda puesto por un archivo que no existe. */
+  it('un poster roto no deja el telon puesto', async () => {
+    const v = new FakeEl('video', { src: '/a.webm', poster: '/roto.jpg' }, 10)
+    els = [v]
+    const m = await fresh()
+    m.trackLoaderMedia()
+    failImages()
+    expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
+  })
+
+  it('una imagen rota no deja el telon puesto', async () => {
+    const img = new FakeEl('img', { src: '/roto.webp' }, 10)
+    els = [img]
+    const m = await fresh()
+    m.trackLoaderMedia()
+    img.fire('error')
     expect(m.loaderProgress()).toBeCloseTo(MEDIA_LISTO, 10)
   })
 })

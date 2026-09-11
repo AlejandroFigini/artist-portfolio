@@ -113,7 +113,11 @@ export function trackLoaderMedia(): () => void {
   const inFirstView = (el: Element): boolean => {
     const r = el.getBoundingClientRect()
     if (!r.width || !r.height) return false
+    /* También los costados: las slides del carrusel y las burbujas de la cinta
+       están a la ALTURA correcta pero corridas a la derecha. Contarlas era
+       esperar cosas que nadie ve. */
     return r.top < window.innerHeight * FIRST_VIEW_RATIO && r.bottom > 0
+      && r.left < window.innerWidth && r.right > 0
   }
 
   /* `isReady` se re-evalúa en CADA evento en vez de cerrar con el primero: hay
@@ -156,40 +160,29 @@ export function trackLoaderMedia(): () => void {
     if (img.complete) finish()
   }
 
-  /* `loadeddata` es imprescindible en esta lista: es el único evento que se
-     emite AL LLEGAR a readyState 2, que es el umbral que espera el gate. Sin
-     él, bajar el umbral no cambia nada — el elemento llega a tener frame y
-     nadie se entera hasta `canplaythrough`. */
-  const VIDEO_EVENTS = ['loadeddata', 'canplay', 'canplaythrough', 'error', 'abort', 'emptied', 'suspend', 'stalled'] as const
   const IMG_EVENTS = ['load', 'error'] as const
-
-  /* Listo por cualquiera de estos caminos, ninguno con reloj propio:
-     - hay un frame decodificado (el mismo umbral que `has-frame`);
-     - el elemento no va a cargar nunca (error, o fuente inservible);
-     - `stalled`: el navegador avisa que dejó de llegarle data. Es la única
-       salida para una conexión que se cuelga sin cortar. */
-  const videoReady = (v: HTMLVideoElement, ev?: string) =>
-    v.readyState >= 2 || !!v.error || v.networkState === 3 /* NETWORK_NO_SOURCE */
-    || ev === 'stalled'
 
   const scan = () => {
     if (!alive || frozen) return
 
+    /* De un <video> se espera el PÓSTER, nunca el frame.
+       Que el elemento decodifique lo decide el navegador, no la página: iOS
+       Safari ignora `preload="auto"` y no baja nada hasta que el clip se
+       reproduce —y en modo bajo consumo no se reproduce—; un componente que
+       remonta su <video> (DecorAnim, `key={current}`) deja desconectado el que
+       se estaba mirando. En los dos casos `readyState` se queda en 0 sin
+       `error` ni `stalled`, porque no hay descarga en curso que pueda
+       atascarse. Esperarlo era el 98% eterno.
+       Lo que el visitante ve mientras el clip no decodifica es el póster, y un
+       póster es una imagen: termina siempre, bien o mal. Sin póster (media que
+       no vino de Cloudinary) no se espera nada: la regla `has-frame` ya deja
+       ver el fondo del contenedor, nunca un rectángulo negro.
+       Tampoco se promueve el `preload`: con `auto` el video retiene el evento
+       `load`, y eso tomaba de rehén al gate `windowLoad`. */
     document.querySelectorAll<HTMLVideoElement>(VIDEO_SEL).forEach((v) => {
       if (seen.has(v)) return
-      if (!v.getAttribute('src') && !v.querySelector('source[src]')) return
+      seen.add(v)
       if (!inFirstView(v)) return
-      /* Promoción SOLO de lo que se bloquea. `auto` y no `metadata`: con
-         `metadata` el readyState se queda en 1 —hay cabecera pero no frame— y
-         ninguna de las salidas de `videoReady` cubre ese estado, así que el
-         telón no se levantaría nunca. No se revierte al cerrar: son los pocos
-         que están EN PANTALLA, y ahí `auto` es lo correcto. */
-      if (v.preload !== 'auto') v.preload = 'auto'
-      watch(v, VIDEO_EVENTS, (ev) => videoReady(v, ev))
-      if (v.readyState < 2 && v.networkState !== 2 /* NETWORK_LOADING */) {
-        try { v.load() } catch {}
-      }
-      // El póster es lo que se ve mientras el clip no decodifica.
       watchUrl(v.getAttribute('poster') || '')
     })
 
@@ -199,7 +192,11 @@ export function trackLoaderMedia(): () => void {
       if (!inFirstView(img)) return
       // `lazy` no baja nada mientras el overlay del loader tapa la página.
       if (img.loading === 'lazy') img.loading = 'eager'
-      watch(img, IMG_EVENTS, () => img.complete)
+      /* `error` cierra por sí mismo, sin depender de que `complete` pase a true:
+         el navegador lo hace, pero atar el cierre de un archivo roto a un
+         efecto secundario de otra propiedad es justo el tipo de detalle que
+         deja un telón puesto. */
+      watch(img, IMG_EVENTS, (ev) => ev === 'error' || img.complete)
     })
 
     document.querySelectorAll<HTMLElement>(BG_SEL).forEach((el) => {
@@ -232,17 +229,18 @@ export function trackLoaderMedia(): () => void {
   mo.observe(document.body, { childList: true, subtree: true })
   if (frozen) mo.disconnect()
 
-  /* Última red, para el caso en que ningún escaneo haya encontrado nada (una
-     ruta sin media, o un layout que nunca llegó a medir). Con `load` ya
-     disparado no queda nada por descubrir: se cierra la lista como esté —vacía
-     incluida, y ahí el gate vale 1— así que el telón no puede quedarse puesto
-     esperando a una lista que nunca se llenó. */
+  /* RED FINAL: `load` libera el gate, esté la lista cerrada o no.
+     Después de `load` el navegador terminó con todo lo que iba a pedir por su
+     cuenta. Lo que siga pendiente es algo que decidió NO bajar —lazy, fuera de
+     cuadro, video que no precarga— y esperarlo es esperar algo que puede no
+     pasar nunca. La versión anterior hacía `if (frozen) return` acá, así que
+     una lista ya cerrada con un elemento colgado quedaba sin rescate: la barra
+     se clavaba en 98-99%. Es un evento del navegador, no un reloj. */
   const seal = () => {
-    if (frozen || !alive) return
-    scan()
+    if (!alive) return
     frozen = true
     mo.disconnect()
-    report()
+    markLoaderGate('media')
   }
   if (document.readyState === 'complete') queueMicrotask(seal)
   else window.addEventListener('load', seal, { once: true })
