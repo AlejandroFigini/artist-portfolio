@@ -278,7 +278,12 @@ export default function CharactersShowcase() {
 
   useCarouselSync(api, signature, [ids.length])
 
-  // Retomar el movimiento automático casi instantáneamente (120ms) tras soltar el mouse o finalizar arrastre
+  // Retomar el movimiento automático al `settle`, NUNCA en `pointerUp`:
+  // `autoScroll.play()` reemplaza el `scrollBody` del motor por el de
+  // velocidad constante, así que llamarlo al soltar el dedo descarta la
+  // inercia de `dragFree` — el panel frenaba en seco donde terminaba el
+  // gesto y el recorrido por swipe quedaba en móvil igual al arrastre
+  // físico. `settle` llega recién cuando la inercia terminó.
   useEffect(() => {
     if (!api) return
     const autoScroll = api.plugins().autoScroll
@@ -310,14 +315,12 @@ export default function CharactersShowcase() {
       onModalOpen()
     }
 
-    api.on('pointerUp', resumeFast)
     api.on('settle', resumeFast)
     window.addEventListener('modal:open', onModalOpen)
     window.addEventListener('modal:close', onModalClose)
 
     return () => {
       clearTimeout(timer)
-      api.off('pointerUp', resumeFast)
       api.off('settle', resumeFast)
       window.removeEventListener('modal:open', onModalOpen)
       window.removeEventListener('modal:close', onModalClose)
