@@ -136,17 +136,28 @@ body {
 
 /* --- 3b. RELLENOS DE ACENTO CON TEXTO BLANCO --------------------- */
 
-/* Lista cerrada: son TODAS las reglas del CSS de secciones que pintan
-   `background: var(--accent)` y encima ponen `color: #fff`. Salen de un
-   escaneo del CSS, no de ir viendo pantallazos — con `--accent` aclarado
-   para que el texto acentuado pase AA, el blanco sobre el relleno caía a
-   3.9:1. Si se agrega un botón primario nuevo, va también acá.
-   Los que rellenan en :hover llevan el hover en el selector: en reposo su
-   fondo es fantasma y ahí el acento claro es el correcto. */
+/* EL violeta de los botones. Un solo valor para TODO relleno violeta de
+   control —reposo, hover y foco—, y es el que se ve en "Send message" y
+   "Download CV". Que un botón se rellene con un violeta y otro con otro es
+   lo que hace ver la paleta desprolija.
+
+   Existe separado de `--accent` porque los dos tiran para lados opuestos:
+   `--accent` es TEXTO sobre oscuro y necesita ser claro; acá el texto es
+   blanco y va ENCIMA del relleno, así que el relleno necesita ser oscuro.
+   Con `--accent` (#a27aff) el blanco encima da 3.0:1; con este, 5.7:1.
+
+   La lista es cerrada y sale de dos barridos, no de mirar pantallazos: uno
+   del CSS buscando `background: var(--accent)` + `color: #fff`, y otro en
+   runtime listando todo elemento con relleno violeta. Si se agrega un botón
+   violeta nuevo, va acá.
+   Ojo con la diferencia entre relleno y tinte: `.cv-min-btn` o
+   `.login-min-btn` en reposo son fantasma (`color-mix` al 6-8%) y ahí el
+   acento claro ES el correcto — por eso solo entra su `:hover`. */
 [data-theme="dark"] .about-social a:hover,
 [data-theme="dark"] .anim-card__btn:hover,
 [data-theme="dark"] .ch-lightbox__close:hover,
 [data-theme="dark"] .ch-lightbox__info-btn,
+[data-theme="dark"] .ch-lightbox__info-btn:hover,
 /* `.cms-btn` vive en admin.css, que NO es solo de admin: `Modal.tsx` lo
    importa on-demand al montar cualquier modal, y los de contacto y login son
    públicos. El botón de enviar del modal de contacto es `.cms-btn--primary`. */
@@ -159,10 +170,14 @@ body {
 [data-theme="dark"] .cv-btn,
 [data-theme="dark"] .cv-btn:hover,
 [data-theme="dark"] .cv-min-btn:hover,
+[data-theme="dark"] .cvp__btn:hover,
+[data-theme="dark"] .cvp__btn:focus-visible,
 [data-theme="dark"] .gd-tile__btn:hover,
 [data-theme="dark"] .illu-cell__hud:hover,
+[data-theme="dark"] .info-toggle-btn:hover,
 [data-theme="dark"] .lightbox.info-open .info-toggle-btn,
 [data-theme="dark"] .settings-gear,
+[data-theme="dark"] .social-bubble:hover,
 [data-theme="dark"] .srail__flash {
   background: var(--accent-solid);
   border-color: var(--accent-solid);
@@ -211,10 +226,13 @@ body {
   color: var(--text-primary);
 }
 
-/* Regla de progreso del nav */
-[data-theme="dark"] .nav-progress { background: rgba(198, 194, 214, 0.12); }
+/* Regla de progreso del nav.
+   NO se pisa el `background`: la regla base es
+   `linear-gradient(90deg, var(--accent), #22d3ee)` y ese celeste es parte de
+   la identidad en los DOS modos. Pisarla con un color plano se lo comia y
+   dejaba la barra violeta entera. Aca solo se agrega el glow, que sobre
+   oscuro es lo que le da presencia a una barra de 1.5px. */
 [data-theme="dark"] .nav-progress-fill {
-  background: var(--accent);
   box-shadow: 0 0 10px -2px rgba(162, 122, 255, 0.7);
 }
 
@@ -245,36 +263,52 @@ body {
 
 [data-theme="dark"] .hero-bg-carousel { background: var(--bg-primary); }
 
-/* Velo sobre el carrusel de fondo. En claro es rgba(255,255,255,.03): un
-   toque de luz sobre ilustraciones ya claras. Acá tiene que hacer el
-   trabajo inverso y es la ÚNICA pieza que lo hace — sin scrim la portada
-   queda blanca sobre un sitio violeta y el título del hero, ilegible.
-   Va más denso a la izquierda, que es donde vive el texto, y se abre en el
-   centro-derecha para que la ilustración siga viéndose.
-   Solo gradientes: un `filter` sobre una imagen a pantalla completa se
-   recompone en cada frame del carrusel. */
+/* Velo sobre el carrusel de portada.
+
+   Estaba al 0.95 en el borde izquierdo y apagaba la ilustracion entera. Ese
+   valor es de cuando el titulo del hero iba suelto sobre la imagen y el velo
+   era lo UNICO que lo hacia legible. Ya no: el texto vive dentro de
+   `.hero-content`, que es un panel de cristal con su propio `backdrop-filter`
+   y su propio velo. El scrim a pantalla completa quedo haciendo un trabajo
+   que ya hace otro, y de paso hundia la ilustracion.
+
+   Baja a un tercio. No se saca del todo —el tema claro no lo tiene— porque
+   sobre un lienzo oscuro una ilustracion clara a plena fuerza se despega del
+   resto de la pagina; lo que queda es un vineteado que la asienta, no una
+   cortina. Solo gradientes: un `filter` sobre una imagen a pantalla completa
+   se recompone en cada frame del carrusel. */
 [data-theme="dark"] .carousel-overlay {
   background:
     linear-gradient(
       100deg,
-      rgba(23, 22, 28, 0.95) 0%,
-      rgba(23, 22, 28, 0.80) 34%,
-      rgba(23, 22, 28, 0.50) 62%,
-      rgba(23, 22, 28, 0.66) 100%
+      rgba(23, 22, 28, 0.38) 0%,
+      rgba(23, 22, 28, 0.22) 34%,
+      rgba(23, 22, 28, 0.08) 62%,
+      rgba(23, 22, 28, 0.20) 100%
     ),
     linear-gradient(
       to bottom,
-      rgba(23, 22, 28, 0.62) 0%,
-      rgba(23, 22, 28, 0.18) 34%,
-      rgba(23, 22, 28, 0.82) 100%
+      rgba(23, 22, 28, 0.16) 0%,
+      rgba(23, 22, 28, 0.02) 34%,
+      rgba(23, 22, 28, 0.36) 100%
     );
 }
 
 [data-theme="dark"] .hero-overlay h1,
 [data-theme="dark"] .hero-title { color: var(--text-primary); }
+/* Halo del texto del hero, mismo recurso que `.ct-hero-wrap` en /contact.
+   Hace falta desde que el scrim de pantalla completa bajo a un tercio: el
+   panel de cristal es deliberadamente tenue, asi que el contraste no puede
+   depender de que zona de la ilustracion le toque detras. El subtitulo va a
+   19px con peso 200 —texto normal, no grande— y sin halo caia a 3.2:1 con una
+   zona clara atras. */
 [data-theme="dark"] .hero-overlay h1,
-[data-theme="dark"] .hero-title .line {
-  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.75);
+[data-theme="dark"] .hero-title .line,
+[data-theme="dark"] .hero-subtitle,
+[data-theme="dark"] .badge {
+  text-shadow:
+    0 1px 2px rgba(10, 10, 14, 0.85),
+    0 0 12px rgba(10, 10, 14, 0.7);
 }
 [data-theme="dark"] .hero-overlay p { color: var(--text-secondary); }
 
@@ -286,7 +320,7 @@ body {
   text-stroke-color: var(--accent-hover);
 }
 
-[data-theme="dark"] .badge { color: var(--accent-text); }
+[data-theme="dark"] .badge { color: var(--accent); }
 [data-theme="dark"] .badge .badge-dot {
   background: var(--accent);
   box-shadow: var(--dk-glow);
@@ -325,8 +359,8 @@ body {
       rgba(23, 22, 28, 0.10) 45%,
       rgba(23, 22, 28, 0.14)
     ),
-    rgba(47, 45, 58, 0.82);
-  border-color: rgba(198, 194, 214, 0.20);
+    rgba(82, 78, 98, 0.72);
+  border-color: rgba(198, 194, 214, 0.30);
   /* El filo es mucho mas tenue que en claro: sobre fondo oscuro un realce
      blanco marcado se lee como borde, no como vidrio. Mismo criterio que
      `.ct-hero-wrap`. */
@@ -346,16 +380,19 @@ body {
 /* Panel de cristal del texto del hero. Espejo exacto de `.ct-hero-wrap`: el
    velo solo aporta el tinte oscuro que hace legible el texto claro; quien
    separa de la ilustracion es el desenfoque. */
+/* El velo del panel sube (0.15 -> 0.34) justo lo que bajo el scrim de
+   pantalla completa: el oscurecimiento se concentra DONDE esta el texto en
+   vez de repartirse sobre toda la ilustracion. */
 [data-theme="dark"] .hero-content {
   border-color: rgba(198, 194, 214, 0.24);
   background:
     linear-gradient(
       160deg,
-      rgba(162, 122, 255, 0.1),
-      rgba(23, 22, 28, 0.14) 45%,
-      rgba(23, 22, 28, 0.19)
+      rgba(162, 122, 255, 0.16),
+      rgba(23, 22, 28, 0.34) 45%,
+      rgba(23, 22, 28, 0.46)
     ),
-    rgba(23, 22, 28, 0.15);
+    rgba(23, 22, 28, 0.58);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 22px 60px -24px rgba(0, 0, 0, 0.7);
@@ -384,8 +421,8 @@ body {
    punteado va violeta como el resto (la excepción de la regla es que oculta
    el nombre por falta de espacio, no que cambie de color). */
 [data-theme="dark"] .wave-item:not(.wave-has-content) {
-  border-color: rgba(162, 122, 255, 0.42);
-  background: rgba(162, 122, 255, 0.06);
+  border-color: rgba(162, 122, 255, 0.5);
+  background: rgba(162, 122, 255, 0.12);
 }
 [data-theme="dark"] .wave-item .cms-empty-overlay:hover {
   background: rgba(162, 122, 255, 0.16);
@@ -395,17 +432,21 @@ body {
 
 /* Compartido por Animations / Character Design / 3D. En claro es blanco
    sólido; acá pasa a la superficie de popover. */
+/* Misma pildora que `.cv-min-btn` en la barra superior: fantasma con tinte
+   de acento, borde de acento y texto de acento. En oscuro estaba en blanco
+   sobre gris y era la unica pieza de control de las secciones que no se leia
+   como violeta. */
 [data-theme="dark"] .sw-trigger {
-  color: var(--text-primary);
-  background: var(--surface-2);
-  border-color: var(--dk-edge);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
 }
 [data-theme="dark"] .sw-trigger:hover,
 [data-theme="dark"] .sw-dropdown:hover .sw-trigger,
 [data-theme="dark"] .sw-dropdown:focus-within .sw-trigger,
 [data-theme="dark"] .sw-dropdown.is-open .sw-trigger {
-  background: var(--surface-3);
-  border-color: rgba(198, 194, 214, 0.48);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   box-shadow: 0 6px 18px -8px rgba(162, 122, 255, 0.5);
 }
 [data-theme="dark"] .sw-list {
@@ -441,7 +482,7 @@ body {
 [data-theme="dark"] .about-title { color: var(--text-primary); }
 [data-theme="dark"] .about-lede { color: var(--text-secondary) !important; }
 [data-theme="dark"] .about-fig,
-[data-theme="dark"] .about-meta-head { color: var(--accent-text); }
+[data-theme="dark"] .about-meta-head { color: var(--accent); }
 [data-theme="dark"] .about-spec-k { color: var(--text-muted); }
 [data-theme="dark"] .about-spec-v { color: var(--text-primary); }
 [data-theme="dark"] .about-bio p { color: var(--text-secondary); }
@@ -472,7 +513,7 @@ body {
 }
 [data-theme="dark"] .anim-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .anim-showcase__desc { color: var(--text-secondary); }
-[data-theme="dark"] .anim-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .anim-showcase__fig { color: var(--accent); }
 
 [data-theme="dark"] .anim-card,
 [data-theme="dark"] .animation-item.video-container {
@@ -497,7 +538,7 @@ body {
 /* --- 13. PROJECTS SHOWCASE --------------------------------------- */
 
 [data-theme="dark"] .proj-showcase { background-color: var(--bg-secondary); }
-[data-theme="dark"] .proj-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .proj-showcase__fig { color: var(--accent); }
 [data-theme="dark"] .proj-showcase__rail-fig { color: var(--text-muted); }
 
 /* La tarjeta ya lee `--surface-1` desde el componente; acá solo el aro y
@@ -518,7 +559,7 @@ body {
   border-color: var(--dk-edge) !important;
   box-shadow: var(--shadow-lg) !important;
 }
-[data-theme="dark"] .proj-card-date { color: var(--accent-text); }
+[data-theme="dark"] .proj-card-date { color: var(--accent); }
 
 [data-theme="dark"] .proj-showcase__manage {
   border-color: var(--dk-edge);
@@ -537,7 +578,7 @@ body {
 [data-theme="dark"] .ch-showcase__header { background-color: transparent; }
 [data-theme="dark"] .ch-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .ch-showcase__desc { color: var(--text-secondary); }
-[data-theme="dark"] .ch-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .ch-showcase__fig { color: var(--accent); }
 [data-theme="dark"] .ch-showcase__fig::before { background: var(--accent); }
 
 [data-theme="dark"] .ch-showcase__rail-fig { color: var(--text-muted); }
@@ -571,9 +612,9 @@ body {
   border-color: var(--dk-hairline);
 }
 [data-theme="dark"] .ch-counter { color: var(--text-muted); }
-[data-theme="dark"] .ch-counter b { color: var(--accent-text); }
+[data-theme="dark"] .ch-counter b { color: var(--accent); }
 [data-theme="dark"] .ch-name { color: var(--text-primary); }
-[data-theme="dark"] .ch-role { color: var(--accent-text); }
+[data-theme="dark"] .ch-role { color: var(--accent); }
 [data-theme="dark"] .ch-desc { color: var(--text-secondary); }
 [data-theme="dark"] .ch-ghost { color: rgba(198, 194, 214, 0.06); }
 [data-theme="dark"] .ch-corner { border-color: var(--dk-edge); }
@@ -594,7 +635,7 @@ body {
 }
 [data-theme="dark"] .m3d-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .m3d-showcase__desc { color: var(--text-secondary); }
-[data-theme="dark"] .m3d-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .m3d-showcase__fig { color: var(--accent); }
 [data-theme="dark"] .m3d-text__title { color: var(--text-primary); }
 [data-theme="dark"] .m3d-text__body { color: var(--text-secondary); }
 [data-theme="dark"] .m3d-slide__media,
@@ -620,7 +661,7 @@ body {
 }
 [data-theme="dark"] .gd-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .gd-showcase__desc { color: var(--text-secondary); }
-[data-theme="dark"] .gd-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .gd-showcase__fig { color: var(--accent); }
 [data-theme="dark"] .gd-text__title { color: var(--text-primary); }
 [data-theme="dark"] .gd-text__body { color: var(--text-secondary); }
 [data-theme="dark"] .gd-tile {
@@ -639,7 +680,7 @@ body {
 [data-theme="dark"] .illu-showcase { background: var(--bg-secondary); }
 [data-theme="dark"] .illu-showcase__title { color: var(--text-primary); }
 [data-theme="dark"] .illu-showcase__desc { color: var(--text-secondary); }
-[data-theme="dark"] .illu-showcase__fig { color: var(--accent-text); }
+[data-theme="dark"] .illu-showcase__fig { color: var(--accent); }
 [data-theme="dark"] .illu-cell {
   background: var(--surface-1);
   border-color: var(--dk-hairline);
@@ -682,12 +723,17 @@ body {
   background-image: linear-gradient(to right, var(--text-primary), var(--accent-hover));
 }
 [data-theme="dark"] .footer-col h4 { color: var(--text-primary); }
-/* `:not(.cv-btn)`: el botón de CV es un `a` dentro de .footer-col y se pinta
-   solo (borde de acento en reposo, relleno de acento + texto blanco en
-   hover). Sin la exclusión esta regla le gana por especificidad y deja el
-   texto secundario sobre el relleno violeta — 1.5:1. */
-[data-theme="dark"] .footer-col a:not(.cv-btn) { color: var(--text-secondary); }
-[data-theme="dark"] .footer-col a:not(.cv-btn):hover { color: var(--accent-text); }
+/* Las exclusiones son los `a` del pie que se pintan solos porque se rellenan
+   de violeta: el botón de CV y las burbujas de redes. Sin ellas esta regla
+   les gana por especificidad —lleva `:not()`, que suma— y deja el color de
+   texto del pie encima del relleno: 1.5:1 en el CV y 3.1:1 en las burbujas.
+   El color de esos dos lo pone el bloque de rellenos (sección 3b). */
+[data-theme="dark"] .footer-col a:not(.cv-btn):not(.social-bubble) {
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .footer-col a:not(.cv-btn):not(.social-bubble):hover {
+  color: var(--accent);
+}
 
 /* En claro el pie de legales va a rgba(255,255,255,.3) sobre #12141c: 2.6:1.
    Sobre un pie más oscuro empeoraba, así que sube a AA. */
@@ -719,9 +765,12 @@ body {
 [data-theme="dark"] .settings-panel h4 { color: var(--text-primary); }
 [data-theme="dark"] .settings-divider { background: var(--border); }
 
-/* Interruptores */
+/* Interruptores. El encendido es un relleno violeta con la perilla blanca
+   encima, o sea la misma pieza que un botón: va con el violeta de relleno,
+   no con el de detalle. Con `--accent` quedaba lavanda claro al lado de la
+   tuerca de ajustes, que está en el mismo panel y es violeta pleno. */
 [data-theme="dark"] .slider { background-color: #3d3a49; }
-[data-theme="dark"] input:checked + .slider { background-color: var(--accent); }
+[data-theme="dark"] input:checked + .slider { background-color: var(--accent-solid); }
 
 [data-theme="dark"] .cv-btn-settings,
 [data-theme="dark"] .lang-btn-settings { color: var(--text-primary); }
@@ -849,7 +898,7 @@ body {
 [data-theme="dark"] .ct-hero__file {
   border-color: var(--dk-edge);
   background: var(--dk-tint);
-  color: var(--accent-text);
+  color: var(--accent);
 }
 
 [data-theme="dark"] .ct-info-card,
@@ -866,14 +915,20 @@ body {
   background: var(--surface-2);
   box-shadow: var(--ct-shadow), 0 12px 34px -10px rgba(0, 0, 0, 0.65), 0 0 24px -12px rgba(162, 122, 255, 0.5);
 }
-[data-theme="dark"] .ct-form-wrap__fig { background: var(--surface-1); color: var(--accent-text); }
+[data-theme="dark"] .ct-form-wrap__fig { background: var(--surface-1); color: var(--accent); }
 
+/* El pocillo va con el tinte flojo (0.05), no el fuerte (0.11): al 0.11 el
+   fondo del circulo sube a rgb(52,45,70) y el icono en `--accent` cae a
+   4.19:1. Con el tinte flojo el fondo se queda cerca de --surface-1 y el
+   mismo violeta da 4.8:1. Aclarar el fondo de un pocillo cuesta contraste
+   del icono: es el mismo mecanismo que hace fallar `--accent` sobre
+   --surface-3. */
 [data-theme="dark"] .ct-info-card__icon,
 [data-theme="dark"] .ct-cv-card__icon-wrap,
 [data-theme="dark"] .ct-form-success__icon {
-  background: var(--dk-tint-2);
+  background: var(--dk-tint);
   border-color: var(--dk-edge);
-  color: var(--accent-text);
+  color: var(--accent);
 }
 [data-theme="dark"] .ct-info-card:hover .ct-info-card__icon {
   background: var(--accent);
@@ -904,11 +959,11 @@ body {
 [data-theme="dark"] .lb-desc > p { color: var(--text-secondary); }
 [data-theme="dark"] .lb-meta__item > i,
 [data-theme="dark"] .lb-inspiration > i,
-[data-theme="dark"] .lb-desc__label { color: var(--accent-text); }
+[data-theme="dark"] .lb-desc__label { color: var(--accent); }
 [data-theme="dark"] .lb-inline-label { color: var(--text-primary); }
 [data-theme="dark"] .lb-desc { border-top-color: var(--dk-edge); }
 [data-theme="dark"] .info-divider { background: var(--border); }
-[data-theme="dark"] .info-link { color: var(--accent-text); }
+[data-theme="dark"] .info-link { color: var(--accent); }
 
 /* --- 25. CHROME DEL CMS ------------------------------------------ */
 
@@ -924,7 +979,7 @@ body {
 [data-theme="dark"] .cms-empty-overlay {
   border-color: rgba(162, 122, 255, 0.45);
   background: rgba(162, 122, 255, 0.04);
-  color: var(--accent-text);
+  color: var(--accent);
 }
 [data-theme="dark"] .cms-empty-overlay:hover { background: rgba(162, 122, 255, 0.14); }
 
