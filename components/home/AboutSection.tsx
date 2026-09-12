@@ -298,20 +298,25 @@ export default function AboutSection() {
 
             <div className="about-video-container" ref={videoBoxRef}>
               {/* Sin `autoplay`: el atributo hace que el navegador baje y arranque
-                  el archivo apenas monta, esté o no en cuadro — es el reel más
-                  pesado de la portada (medido: 4,9 MB antes del primer scroll).
-                  Tampoco lleva `data-preload-defer`: esa marca sirve para los
-                  videos que NO se reproducen solos y necesitan su primer frame
-                  pintado, y acá promocionar a "metadata" 300px antes vuelve a
-                  traer el archivo completo. Este lo arranca el observer de
-                  HomeFx al entrar en cuadro, y hasta entonces el hueco lo tapa
-                  el póster que el motor del CMS le pone al slot. */}
+                  el archivo apenas monta, esté o no en cuadro. Lo arranca el
+                  observer de HomeFx al entrar en cuadro.
+
+                  `data-preload-defer` SÍ, y esto cambió. El comentario anterior
+                  lo excluía por pesar 4,9 MB, pero ese número es de cuando el
+                  reel se entregaba sin `w_`, o sea el original tal como se
+                  subió. Medido con HEAD sobre la URL que se sirve hoy
+                  (`videoInlineSrc`, w_640): 55 KB. Con la marca, el archivo
+                  entra en la barrida de precalentado de lib/media-warm y está
+                  en caché mucho antes de que el visitante llegue — que es lo
+                  que evita el segundo de espera y el parpadeo al entrar en
+                  cuadro. */}
               <video
                 className="about-video"
                 muted
                 loop
                 playsInline
                 preload="none"
+                data-preload-defer=""
                 src={aboutVideoSrc || undefined}
                 poster={aboutVideoPoster || undefined}
               />

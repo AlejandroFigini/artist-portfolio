@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react'
 import { whenLoaderDone } from '@/lib/loader-ready'
-import { afterLoadIdle, canWarmMedia } from '@/lib/media-warm'
+import { afterLoadIdle, canWarmMedia, playWhenReady, warmAllDeferredVideos } from '@/lib/media-warm'
 
 const REVEAL_SELECTOR = [
   '.fade-in', '.presentation-container', '.section-title', '.animations-grid',
@@ -202,14 +202,25 @@ export default function HomeFx() {
           pending.push(() => first.removeEventListener('loadeddata', bump))
         }
       }),
-      /* Un viewport completo de anticipación, no 300px fijos: en un teléfono
-         eso es un tercio de pantalla y el video entraba en cuadro sin haber
-         decodificado su primer frame todavía. */
-      { rootMargin: '100% 0px' },
+      /* DOS viewports de anticipación. Con uno solo no alcanzaba: en un
+         teléfono, 844 px de scroll se recorren en bastante menos de lo que
+         tarda en bajar un clip de 300 KB-1,2 MB por 4G, así que el contenedor
+         entraba en cuadro con la descarga todavía en vuelo. Subirlo a dos ya
+         no cuesta ancho de banda extra: `warmAllDeferredVideos` dejó el
+         archivo en la caché, y esta promoción solo lo levanta de disco. */
+      { rootMargin: '200% 0px' },
     )
     vids.forEach((v) => io.observe(v))
     return () => { io.disconnect(); pending.forEach((off) => off()) }
   }, [])
+
+  /* Precalentado de TODA la media diferida de la portada, a la caché y de a
+     uno, después de `load`. Es la respuesta al problema de fondo: hasta acá el
+     sitio no bajaba un solo byte de un video hasta tenerlo casi encima, así
+     que la primera vez que se miraba cualquier animación había que esperarla.
+     El detalle de por qué a la caché y no a los elementos está en
+     lib/media-warm.ts. */
+  useEffect(() => warmAllDeferredVideos('video[data-preload-defer]'), [])
 
   /* Imágenes que viven dentro de un carrusel. Una slide desplazada fuera de
      pantalla NO está en el viewport, así que `loading="lazy"` no pide un byte
@@ -237,14 +248,24 @@ export default function HomeFx() {
   // Motor de autoplay: obs/decor/about se reproducen en viewport;
   // .anim-video (hover-play) solo se pausa al salir
   useEffect(() => {
+    /* Un play en cola por elemento: `playWhenReady` puede quedar esperando el
+       primer cuadro, y si el visitante ya scrolleó y el video salió de cuadro,
+       ese play no tiene que dispararse tarde. */
+    const queued = new Map<Element, () => void>()
+    const cancelQueued = (v: Element) => { queued.get(v)?.(); queued.delete(v) }
     const playObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const vid = entry.target as HTMLVideoElement
           if (entry.isIntersecting) {
-            if (vid.paused) vid.play().catch(() => {})
-          } else if (!vid.paused) {
-            vid.pause()
+            /* `playWhenReady` y no `play()` a secas: con `preload="none"` el
+               elemento no tiene un solo cuadro cuando entra en cuadro, y
+               arrancar la reproducción ahí es lo que deja el contenedor
+               mostrando su propio fondo durante toda la descarga. */
+            if (vid.paused) queued.set(vid, playWhenReady(vid))
+          } else {
+            cancelQueued(vid)
+            if (!vid.paused) vid.pause()
           }
         })
       },
@@ -274,13 +295,17 @@ export default function HomeFx() {
     const retryOnGesture = () => {
       document.querySelectorAll<HTMLVideoElement>('.obs-video, .decor-video, .about-video').forEach((v) => {
         const r = v.getBoundingClientRect()
-        if (v.paused && r.bottom > 0 && r.top < window.innerHeight) void v.play().catch(() => {})
+        if (v.paused && r.bottom > 0 && r.top < window.innerHeight) queued.set(v, playWhenReady(v))
       })
     }
     document.addEventListener('pointerdown', retryOnGesture, { once: true, passive: true })
 
     return () => {
       document.removeEventListener('pointerdown', retryOnGesture)
+      // Nada de plays en cola sobreviviendo al desmontaje: dispararian sobre
+      // un elemento que ya nadie esta mirando.
+      queued.forEach((cancel) => cancel())
+      queued.clear()
       playObserver.disconnect()
       pauseObserver.disconnect()
     }

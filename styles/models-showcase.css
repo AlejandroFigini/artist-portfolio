@@ -202,7 +202,13 @@
   margin: 0;
   border-radius: 14px;
   overflow: hidden;
-  background: #0d0d12;
+  /* NUNCA casi-negro: ver la nota en .anim-card (styles/animations-showcase
+     .css). El video es `object-fit: cover`, asi que este fondo solo se ve
+     mientras el clip no tiene cuadro — y con #0d0d12 eso se lee como un
+     recuadro negro. Ademas le daba muy poco contraste a las esquinas del
+     marco (.bp-corner, violeta), que es parte de que se las vea aparecer de a
+     una al navegar el coverflow. */
+  background: rgba(124, 58, 237, 0.1);
   box-shadow:
     0 18px 50px -12px rgba(0, 0, 0, 0.55),
     0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
@@ -350,7 +356,9 @@
   margin-right: clamp(0.7rem, 1.4vw, 1.2rem);
   border-radius: 14px;
   overflow: hidden;
-  background: #0d0d12;
+  /* Mismo motivo que .m3d-slide: el hueco previo a que la imagen pinte tiene
+     que leerse como "cargando", no como un recuadro negro. */
+  background: rgba(124, 58, 237, 0.1);
   box-shadow:
     0 14px 40px -14px rgba(0, 0, 0, 0.45),
     0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);

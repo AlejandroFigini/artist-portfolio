@@ -218,7 +218,16 @@
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  background: #0d0d12;
+  /* NUNCA casi-negro. El video es `object-fit: cover`, así que este fondo solo
+     se ve mientras el clip todavía no tiene cuadro que pintar — y con #0d0d12
+     ese momento se lee como un RECUADRO NEGRO. Es el "frame negro al
+     reproducir una animación" que se reporta: no es un fallo de carga, es
+     literalmente el fondo de la tarjeta. Medido: ni los pósters (luminancia
+     media 66-173) ni el primer cuadro de los clips (70-176) son negros; el
+     negro lo ponía el contenedor.
+     Mismo violeta translúcido que `.cvp` (styles/video-player.css) y que el
+     contenedor vacío: el hueco pasa a leerse como "cargando", no como roto. */
+  background: rgba(124, 58, 237, 0.1);
   box-shadow:
     0 6px 24px -6px rgba(0, 0, 0, 0.4),
     0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),

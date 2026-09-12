@@ -112,12 +112,108 @@ export function warmVideoOnce(url: string): Promise<void> {
       probe.load()
       resolve()
     }
-    // `error` también resuelve: un fallo deja el comportamiento de siempre.
-    probe.addEventListener('loadeddata', finish, { once: true })
-    probe.addEventListener('error', finish, { once: true })
+    /* `canplaythrough` y `suspend` antes que `loadeddata`: lo que se quiere
+       dejar en la caché es el ARCHIVO, no el primer frame. Con `loadeddata`
+       la sonda se soltaba apenas decodificaba un cuadro y el resto del clip
+       se bajaba después, al reproducirlo — justo la demora que esto evita.
+       `suspend` es la señal de que el navegador dejó de pedir por su cuenta
+       (con `preload="auto"` eso es "ya tengo todo"), y cubre a los motores
+       que no emiten `canplaythrough`. `error` resuelve igual: un fallo deja
+       el comportamiento de siempre, nunca cuelga la cadena. */
+    const SETTLE = ['canplaythrough', 'suspend', 'error'] as const
+    SETTLE.forEach((ev) => probe.addEventListener(ev, finish, { once: true }))
     probe.src = url
   })
 
   warmed.set(url, done)
   return done
+}
+
+/** Posición absoluta del centro del elemento en el documento. */
+function docCenterY(el: Element): number {
+  const r = el.getBoundingClientRect()
+  return window.scrollY + r.top + r.height / 2
+}
+
+/* PRECALENTADO DE TODA LA MEDIA DIFERIDA DE LA PÁGINA.
+
+   El sitio entero arranca en `preload="none"`: medido en producción sobre un
+   teléfono de 390px, con la portada COMPLETAMENTE cargada y asentada, los 24
+   <video> de contenido seguían en `readyState` 0. O sea que cada animación
+   empezaba a bajarse recién al acercarse a ella, y lo que se veía durante esa
+   descarga era el fondo del contenedor. Ése es el segundo de espera que se
+   reporta, y es la misma causa del recuadro oscuro y del parpadeo.
+
+   Lo que cuesta arreglarlo: medido con HEAD sobre las 19 URLs distintas de la
+   portada a `w_640`, la portada entera pesa 6,57 MB de video — entre 33 KB y
+   1,2 MB por archivo. Es poco, y es exactamente lo que hay que tener listo.
+
+   Reglas de esta barrida, cada una por un fallo ya pisado:
+   - DESPUÉS de `load` y en idle. Un pedido lanzado antes retrasa el propio
+     evento `load`, y el gate `windowLoad` de la pantalla de carga lo espera.
+   - A la CACHÉ, no a los elementos reales. Subir los 24 <video> a
+     `preload="auto"` los deja a todos con decoder y buffer vivos, y iOS limita
+     cuántos puede sostener a la vez: pasado el tope deja de cargar los que
+     siguen. La sonda de `warmVideoOnce` baja el archivo, lo suelta y deja los
+     bytes en la caché HTTP; el elemento real los levanta de disco cuando le
+     toca, en milisegundos en vez de segundos.
+   - DE A UNO. En paralelo las 19 descargas se pelean el mismo caño y ninguna
+     termina; en serie, la primera —la que el visitante está por mirar— llega
+     entera antes de que empiece la segunda.
+   - POR CERCANÍA al viewport de arranque, no por orden de documento: quien
+     entra por un enlace a `#animations` tiene que recibir esa sección primero.
+   - Nunca con ahorro de datos ni en 2g (`canWarmMedia`). */
+export function warmAllDeferredVideos(selector: string): () => void {
+  if (typeof document === 'undefined') return () => {}
+  let cancelled = false
+
+  const cancelIdle = afterLoadIdle(() => {
+    void (async () => {
+      if (cancelled || !canWarmMedia()) return
+      const anchor = window.scrollY + window.innerHeight / 2
+      const urls: string[] = []
+      const seen = new Set<string>()
+      Array.from(document.querySelectorAll<HTMLVideoElement>(selector))
+        .map((v) => ({ url: v.getAttribute('src') || '', d: Math.abs(docCenterY(v) - anchor) }))
+        .filter((x) => !!x.url)
+        .sort((a, b) => a.d - b.d)
+        .forEach((x) => { if (!seen.has(x.url)) { seen.add(x.url); urls.push(x.url) } })
+
+      for (const url of urls) {
+        // Se re-consulta en cada vuelta: la red puede cambiar a mitad de la barrida.
+        if (cancelled || !canWarmMedia()) return
+        await warmVideoOnce(url)
+      }
+    })()
+  }, { timeout: 4000, fallbackMs: 600 })
+
+  return () => { cancelled = true; cancelIdle() }
+}
+
+/* REPRODUCIR SIN HUECO.
+
+   `play()` sobre un <video> que todavía no decodificó un cuadro deja el
+   contenedor mostrando su propio fondo hasta que el archivo llega. Con
+   `preload="none"` eso es SIEMPRE: el elemento no pidió un solo byte.
+   Y es justo lo que delata la asimetría que se reporta — con el ahorro de
+   energía activo el autoplay se deniega, no hay `play()`, el póster se queda
+   puesto y se ve el primer cuadro quieto; sin ahorro de energía sí hay
+   `play()` y aparece el hueco.
+   Acá la reproducción espera a tener cuadro. Devuelve su cancelador: quien
+   tiene un "dejá de querer reproducir" propio (salir de cuadro, sacar el
+   puntero) lo llama y el play que estaba en cola no se dispara tarde. */
+export function playWhenReady(v: HTMLVideoElement): () => void {
+  if (v.readyState >= 2) { void v.play().catch(() => {}); return () => {} }
+  /* Sin esto el elemento nunca llega a `readyState` 2 por su cuenta:
+     `preload="none"` no pide nada y `metadata` se planta en 1 (hay cabecera,
+     no hay cuadro). Subirlo acá es tardío pero honesto — el que lo tenía que
+     haber adelantado es el precalentado de arriba. */
+  if (v.preload !== 'auto') {
+    v.preload = 'auto'
+    if (v.getAttribute('src') || v.querySelector('source[src]')) v.load()
+  }
+  let cancelled = false
+  const on = () => { if (!cancelled) void v.play().catch(() => {}) }
+  v.addEventListener('loadeddata', on, { once: true })
+  return () => { cancelled = true; v.removeEventListener('loadeddata', on) }
 }

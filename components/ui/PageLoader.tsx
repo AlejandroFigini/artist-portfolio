@@ -119,18 +119,34 @@ export default function PageLoader() {
     // Retry si la derivada de Cloudinary (transcode) todavía no está lista → sin
     // video negro; fallback al original (videoSrc) si sigue fallando.
     attachMediaRetry(v, videoSrc)
-    const tryPlay = () => { void v.play().catch(() => {}) }
+    /* NO se pide play sin cuadro decodificado (`readyState >= 2`). El elemento
+       va en `preload="metadata"`, o sea que se planta en readyState 1: hay
+       cabecera pero NO imagen. Pedir play ahí arranca la reproducción sobre un
+       elemento que no tiene nada que pintar, y lo que queda a la vista durante
+       toda la descarga es el hueco — es el parpadeo de un segundo que se
+       reporta al abrir el sitio. La asimetría lo delata: con el ahorro de
+       energía activo el play se deniega, el póster se queda puesto y se ve el
+       primer cuadro quieto; sin ahorro de energía el play entra y aparece el
+       hueco.
+       No hace falta forzarlo: el atributo `autoplay` ya arranca solo en cuanto
+       el navegador puede reproducir, y estos dos eventos son la red para los
+       motores que no reintentan cuando la fuente aparece después. */
+    const tryPlay = () => { if (v.readyState >= 2) void v.play().catch(() => {}) }
     tryPlay()
     v.addEventListener('loadeddata', tryPlay)
     v.addEventListener('canplay', tryPlay)
     /* Último recurso: si el navegador denegó igual (bajo consumo en iOS), el
        primer toque en cualquier parte de la pantalla de carga lo arranca. Sin
-       esto la animación se queda congelada en su primer frame toda la espera. */
-    document.addEventListener('pointerdown', tryPlay, { once: true, passive: true })
+       esto la animación se queda congelada en su primer frame toda la espera.
+       Acá SÍ va sin condición: con el autoplay denegado el navegador puede no
+       pasar nunca de readyState 1, y este gesto es la única salida — el hueco
+       de la descarga es preferible a una animación congelada para siempre. */
+    const forcePlay = () => { void v.play().catch(() => {}) }
+    document.addEventListener('pointerdown', forcePlay, { once: true, passive: true })
     return () => {
       v.removeEventListener('loadeddata', tryPlay)
       v.removeEventListener('canplay', tryPlay)
-      document.removeEventListener('pointerdown', tryPlay)
+      document.removeEventListener('pointerdown', forcePlay)
     }
   }, [videoSrc])
 

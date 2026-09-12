@@ -10,6 +10,7 @@ import VideoPlayer from '@/components/ui/VideoPlayer'
 import { state, useUiText } from '@/lib/cms/store'
 import { useCmsItems } from '@/lib/cms/content-context'
 import { optimizedMediaSrc, videoInlineSrc, videoPosterSrc } from '@/lib/utils'
+import { playWhenReady } from '@/lib/media-warm'
 import { sendGAEvent } from '@/lib/ga'
 
 /* 6 contenedores = 2 filas de 3 en la grilla de escritorio. Al cambiar este
@@ -153,6 +154,12 @@ function AnimCard({ index }: { index: number }) {
     return () => unlockPageScroll()
   }, [expanded])
 
+  /* Cancelador del play en cola. `playWhenReady` puede quedar esperando el
+     primer cuadro; si para entonces el visitante ya sacó el dedo o pausó, ese
+     play no tiene que dispararse tarde. */
+  const playCancel = useRef<(() => void) | null>(null)
+  const stopQueuedPlay = useCallback(() => { playCancel.current?.(); playCancel.current = null }, [])
+
   const handleMouseEnter = useCallback(() => {
     if (!hasContent) return
     const v = videoRef.current
@@ -160,32 +167,40 @@ function AnimCard({ index }: { index: number }) {
     // Leerlo es gratis; ESCRIBIRLO obliga a resolver el recurso y anula el
     // `preload="none"` de la tarjeta (mismo motivo que en syncContent).
     try { if (v.currentTime > 0) v.currentTime = 0 } catch {}
-    v.play().catch(() => {})
+    /* `playWhenReady` y no `play()`: el fondo de la tarjeta es el que se veía
+       como recuadro oscuro mientras el clip todavía no tenía cuadro. En táctil
+       esto entra por el mouseenter de compatibilidad, o sea al TOCAR la
+       tarjeta — que es exactamente cuando se reportaba. */
+    stopQueuedPlay()
+    playCancel.current = playWhenReady(v)
     setPlaying(true)
-  }, [hasContent])
+  }, [hasContent, stopQueuedPlay])
 
   const handleMouseLeave = useCallback(() => {
     const v = videoRef.current
     if (!v) return
+    stopQueuedPlay()
     v.pause()
     // Rebobinar acá y no solo al entrar: si no, la tarjeta queda congelada en
     // el frame donde se cortó y la miniatura "recuerda" dónde quedó.
     try { if (v.currentTime > 0) v.currentTime = 0 } catch {}
     setPlaying(false)
-  }, [])
+  }, [stopQueuedPlay])
 
   const togglePlay = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     const v = videoRef.current
     if (!v) return
     if (v.paused) {
-      v.play().catch(() => {})
+      stopQueuedPlay()
+      playCancel.current = playWhenReady(v)
       setPlaying(true)
     } else {
+      stopQueuedPlay()
       v.pause()
       setPlaying(false)
     }
-  }, [])
+  }, [stopQueuedPlay])
 
   /* Antes de que monte la pantalla completa: copiar el frame que la tarjeta ya
      decodificó y usarlo de póster. Va en `pointerdown` porque ocurre antes del
@@ -210,17 +225,19 @@ function AnimCard({ index }: { index: number }) {
        decodificador competiría con el de la pantalla completa justo mientras
        éste intenta sacar su primer frame. */
     const v = videoRef.current
+    stopQueuedPlay()
     if (v) { v.pause(); setPlaying(false) }
     setExpanded(true)
     sendGAEvent('event', 'fullscreen_open')
-  }, [])
+  }, [stopQueuedPlay])
 
   const closeExpanded = useCallback(() => {
     setExpanded(false)
     setShowInfo(false)
     const v = videoRef.current
+    stopQueuedPlay()
     if (v) { v.pause(); setPlaying(false) }
-  }, [])
+  }, [stopQueuedPlay])
 
   return (
     <>

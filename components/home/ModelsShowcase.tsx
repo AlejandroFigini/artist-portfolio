@@ -18,6 +18,7 @@ import { useUiText } from '@/lib/cms/store'
 import { useCmsItems, useCmsText } from '@/lib/cms/content-context'
 import { videoInlineSrc, videoPosterSrc } from '@/lib/utils'
 import { trackFlick, releaseFlick, decayFlick } from '@/lib/flick'
+import { playWhenReady } from '@/lib/media-warm'
 import { useTapReveal, TAP_REVEAL_CLASS } from '@/hooks/useTapReveal'
 const SLIDE_COUNT = 4
 const GALLERY_COUNT = 5
@@ -119,15 +120,22 @@ function Slide({ index, isActive, off }: { index: number; isActive: boolean; off
     const v = videoRef.current
     if (!v || !hasContent) return
     if (!isActive) { v.pause(); return }
+    /* `playWhenReady`: la slide llega al frente con `preload="none"` si el
+       precalentado no alcanzo a cubrirla, y arrancar la reproduccion sin
+       cuadro deja la slide mostrando su propio fondo mientras baja el clip.
+       Eso es lo que se ve como "el marco aparece de a pedazos" al navegar:
+       cuando el primer cuadro por fin llega, la capa de la slide se invalida
+       y se vuelve a rasterizar entera. */
+    let cancelPlay: (() => void) | null = null
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) void v.play().catch(() => {})
-        else v.pause()
+        if (e.isIntersecting) { cancelPlay?.(); cancelPlay = playWhenReady(v) }
+        else { cancelPlay?.(); cancelPlay = null; v.pause() }
       },
       { threshold: 0.15 },
     )
     io.observe(v)
-    return () => { io.disconnect(); v.pause() }
+    return () => { cancelPlay?.(); io.disconnect(); v.pause() }
   }, [isActive, hasContent])
 
   // Ficha al tocar, igual que la cinta (ver GalleryCell).
