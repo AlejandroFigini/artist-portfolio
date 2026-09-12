@@ -58,6 +58,7 @@ class FakeVideo {
 let probes: FakeVideo[] = []
 let dom: FakeVideo[] = []
 let idleJobs: (() => void)[] = []
+let timers: { fn: () => void; cleared: boolean }[] = []
 let loadListeners: Listener[] = []
 
 /** Deja correr la cadena de promesas de la barrida. */
@@ -67,6 +68,7 @@ function installDom(opts: { readyState?: string; conn?: unknown } = {}) {
   probes = []
   dom = []
   idleJobs = []
+  timers = []
   loadListeners = []
   const g = globalThis as unknown as Record<string, unknown>
   g.document = {
@@ -81,8 +83,11 @@ function installDom(opts: { readyState?: string; conn?: unknown } = {}) {
     innerHeight: 800,
     requestIdleCallback: (fn: () => void) => { idleJobs.push(fn); return idleJobs.length },
     cancelIdleCallback: () => {},
-    setTimeout: (fn: () => void) => { idleJobs.push(fn); return idleJobs.length },
-    clearTimeout: () => {},
+    /* `setTimeout` va a su propia lista: acá lo usa SOLO el tope por archivo
+       de `warmVideoOnce` (el hueco de idle lo da `requestIdleCallback`), así
+       que los tests pueden vencerlo a mano sin tocar la barrida. */
+    setTimeout: (fn: () => void) => { timers.push({ fn, cleared: false }); return timers.length },
+    clearTimeout: (id: number) => { const t = timers[id - 1]; if (t) t.cleared = true },
     addEventListener: (t: string, fn: Listener) => { if (t === 'load') loadListeners.push(fn) },
     removeEventListener: () => {},
   }
@@ -95,6 +100,8 @@ function installDom(opts: { readyState?: string; conn?: unknown } = {}) {
 
 /** Dispara el hueco de idle que reservó `afterLoadIdle`. */
 const runIdle = () => { idleJobs.splice(0).forEach((fn) => fn()) }
+/** Vence los topes por archivo que siguen vivos. */
+const runTimers = () => { timers.filter((t) => !t.cleared).forEach((t) => { t.cleared = true; t.fn() }) }
 const fireLoad = () => { loadListeners.splice(0).forEach((fn) => fn({ type: 'load' })) }
 
 async function fresh() {
@@ -219,6 +226,38 @@ describe('warmAllDeferredVideos', () => {
     probes[0].fire('error')
     await tick()
     expect(probes).toHaveLength(2)
+  })
+
+  /* Una conexión que se cuelga sin cortar no emite `canplaythrough` ni
+     `suspend`. Como la barrida es SERIAL, sin tope esa sonda se lleva puesto
+     todo lo que venía detrás: el resto de la portada no se precalienta nunca. */
+  it('una descarga colgada no traba la cola: el tope la suelta', async () => {
+    installDom()
+    dom = [new FakeVideo('/colgada.webm', 0), new FakeVideo('/b.webm', 10)]
+    const m = await fresh()
+    m.warmAllDeferredVideos('video')
+    runIdle()
+    await tick()
+    expect(probes).toHaveLength(1)
+
+    // La sonda nunca emite nada. Vence el tope.
+    runTimers()
+    await tick()
+    expect(probes).toHaveLength(2)
+  })
+
+  it('el tope se cancela cuando el archivo llega bien', async () => {
+    installDom()
+    dom = [new FakeVideo('/a.webm', 0)]
+    const m = await fresh()
+    m.warmAllDeferredVideos('video')
+    runIdle()
+    await tick()
+    probes[0].fire('canplaythrough')
+    await tick()
+    // Sin cancelar, el tope volveria a resolver una promesa ya resuelta y
+    // dejaria un reloj vivo por archivo durante 20s.
+    expect(timers.every((t) => t.cleared)).toBe(true)
   })
 
   /* Lo que se quiere dejar en la caché es el ARCHIVO, no el primer cuadro.

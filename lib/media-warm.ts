@@ -95,6 +95,12 @@ export function afterLoadIdle(fn: () => void, { timeout = 3000, fallbackMs = 400
    después el elemento real y golpee la misma entrada de caché. */
 const warmed = new Map<string, Promise<void>>()
 
+/* Tope por archivo de la sonda de precalentado. Generoso a propósito: el clip
+   más pesado de la portada son 1,2 MB y esto tiene que dejar pasar una 4G
+   lenta sin cortarla por la mitad. Solo existe para que una conexión colgada
+   no trabe la cola serial. */
+const WARM_CAP_MS = 20000
+
 /** Deja `url` en la caché HTTP. Una sola descarga aunque la pidan N veces. */
 export function warmVideoOnce(url: string): Promise<void> {
   const running = warmed.get(url)
@@ -118,10 +124,28 @@ export function warmVideoOnce(url: string): Promise<void> {
        se bajaba después, al reproducirlo — justo la demora que esto evita.
        `suspend` es la señal de que el navegador dejó de pedir por su cuenta
        (con `preload="auto"` eso es "ya tengo todo"), y cubre a los motores
-       que no emiten `canplaythrough`. `error` resuelve igual: un fallo deja
-       el comportamiento de siempre, nunca cuelga la cadena. */
-    const SETTLE = ['canplaythrough', 'suspend', 'error'] as const
+       que no emiten `canplaythrough`. Medido en producción sobre uno de estos
+       clips: `progress` y `suspend` llegan juntos y `canplaythrough` 29 ms
+       después, así que el archivo está entero cuando esto resuelve.
+       `error` y `abort` resuelven igual: un fallo deja el comportamiento de
+       siempre, nunca cuelga la cadena. */
+    const SETTLE = ['canplaythrough', 'suspend', 'error', 'abort'] as const
     SETTLE.forEach((ev) => probe.addEventListener(ev, finish, { once: true }))
+
+    /* TOPE. Una conexión que se cuelga sin cortar no emite ninguno de esos
+       eventos, y como la barrida es SERIAL, una sola sonda trabada dejaría
+       sin precalentar todo lo que viene detrás.
+       Sí, es un temporizador, y la regla del proyecto es que los gates de la
+       pantalla de carga no llevan ninguno. Esta no es un gate: corre después
+       de `load`, nadie la espera y no puede tapar ni esconder nada — lo peor
+       que hace al vencer es soltar la sonda y seguir con el archivo
+       siguiente, que es exactamente el comportamiento que había antes de
+       existir esta función. La regla protege contra relojes que DECIDEN por
+       la carga real; éste solo evita que una cola se trabe. */
+    const cap = window.setTimeout(finish, WARM_CAP_MS)
+    const clearCap = () => window.clearTimeout(cap)
+    SETTLE.forEach((ev) => probe.addEventListener(ev, clearCap, { once: true }))
+
     probe.src = url
   })
 
